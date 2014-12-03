@@ -32,7 +32,7 @@ import java.util.Map;
  * @author Andreas Haufler (aha@scireum.de)
  * @since 2013/11
  */
-@Register
+@Register(classes = Databases.class)
 public class Databases {
 
     protected static final Log LOG = Log.get("db");

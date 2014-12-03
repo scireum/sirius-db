@@ -8,17 +8,16 @@
 
 package sirius.db.jdbc;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.dbcp.BasicDataSource;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.di.std.Register;
 import sirius.kernel.extensions.Extension;
 import sirius.kernel.extensions.Extensions;
 import sirius.kernel.nls.Formatter;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -56,21 +55,21 @@ public class Database {
         ctx.putAll(ext.getContext());
         this.name = name;
         this.driver = ext.get("driver").isEmptyString() ? Formatter.create(profile.get("driver").asString())
-                .set(ctx)
-                .format() : ext.get("driver").asString();
+                                                                   .set(ctx)
+                                                                   .format() : ext.get("driver").asString();
         this.url = ext.get("url").isEmptyString() ? Formatter.create(profile.get("url").asString())
-                .set(ctx)
-                .format() : ext.get("url").asString();
+                                                             .set(ctx)
+                                                             .format() : ext.get("url").asString();
         this.username = ext.get("user").isEmptyString() ? Formatter.create(profile.get("user").asString())
-                .set(ctx)
-                .format() : ext.get("user").asString();
+                                                                   .set(ctx)
+                                                                   .format() : ext.get("user").asString();
         this.password = ext.get("password").isEmptyString() ? Formatter.create(profile.get("password").asString())
-                .set(ctx)
-                .format() : ext.get("password").asString();
+                                                                       .set(ctx)
+                                                                       .format() : ext.get("password").asString();
         this.initialSize = ext.get("initialSize").isFilled() ? ext.get("initialSize").asInt(0) : profile.get(
                 "initialSize").asInt(0);
         this.maxActive = ext.get("maxActive").isFilled() ? ext.get("maxActive").asInt(10) : profile.get("maxActive")
-                .asInt(10);
+                                                                                                   .asInt(10);
         this.maxIdle = ext.get("maxIdle").isFilled() ? ext.get("maxIdle").asInt(1) : profile.get("maxIdle").asInt(1);
         this.validationQuery = ext.get("validationQuery").isEmptyString() ? Formatter.create(profile.get(
                 "validationQuery").asString()).set(ctx).format() : ext.get("validationQuery").asString();
@@ -152,16 +151,15 @@ public class Database {
      * Generates an INSERT statement for the given table inserting all supplied parameters in <tt>ctx</tt>.
      *
      * @param table the target table to insert a row
-     * @param ctx   the parameter names and values to insert into the database
+     * @param ctx   contains names and values to insert into the database
      * @return a Row containing all generated keys
      * @throws SQLException in case of a database error
      */
     public Row insertRow(String table, Context ctx) throws SQLException {
-        Connection c = getConnection();
-        try {
+        try (Connection c = getConnection()) {
             StringBuilder fields = new StringBuilder();
             StringBuilder values = new StringBuilder();
-            List<Object> valueList = new ArrayList<Object>();
+            List<Object> valueList = Lists.newArrayList();
             for (Map.Entry<String, Object> entry : ctx.entrySet()) {
                 if (entry.getValue() != null) {
                     if (fields.length() > 0) {
@@ -174,20 +172,18 @@ public class Database {
                 }
             }
             String sql = "INSERT INTO " + table + " (" + fields.toString() + ") VALUES(" + values + ")";
-            PreparedStatement stmt = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            try {
+            try (PreparedStatement stmt = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 int index = 1;
                 for (Object o : valueList) {
                     try {
                         stmt.setObject(index++, o);
                     } catch (Exception e) {
                         throw new IllegalArgumentException(e.getMessage() + " - Index: " + index + ", Value: " + o + ", Query: " + sql,
-                                e);
+                                                           e);
                     }
                 }
                 stmt.executeUpdate();
-                ResultSet rs = stmt.getGeneratedKeys();
-                try {
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
                     Row row = new Row();
                     if (rs.next()) {
                         for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
@@ -195,15 +191,23 @@ public class Database {
                         }
                     }
                     return row;
-                } finally {
-                    rs.close();
                 }
-            } finally {
-                stmt.close();
             }
-        } finally {
-            c.close();
         }
+    }
+
+    /**
+     * Boilerplate method to use {@link #insertRow(String, sirius.kernel.commons.Context)} with plan maps.
+     *
+     * @param table the target table to insert a row
+     * @param row   contains names and values to insert into the database
+     * @return a Row containing all generated keys
+     * @throws SQLException in case of a database error
+     */
+    public Row insertRow(String table, Map<String, Object> row) throws SQLException {
+        Context context = Context.create();
+        context.putAll(row);
+        return insertRow(table, context);
     }
 
     private void initialize() {
