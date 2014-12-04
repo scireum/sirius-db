@@ -26,7 +26,6 @@ import java.util.Map;
  * <p>
  * Use {@link #createQuery(String)} to create an SQL query with built in connection management.
  * Use {@link #getConnection()} to obtain a regular JDBC connection (which has to be handled with some caution).
- * </p>
  *
  * @author Andreas Haufler (aha@scireum.de)
  * @since 2013/11
@@ -102,7 +101,6 @@ public class Database {
      * connections are busy. Consider using {@link #createQuery(String)} or
      * {@link #createFunctionCall(String, Integer)} or {@link #createProcedureCall(String)} to access the database
      * in a safe manner.
-     * </p>
      *
      * @return a new {@link Connection} to the database
      * @throws SQLException in case of a database error
@@ -115,7 +113,6 @@ public class Database {
      * Creates a new query wrapper which permits safe and convenient queries.
      * <p>
      * Using this wrapper ensures proper connection handling and simplifies query creation.
-     * </p>
      *
      * @param sql the SQL to send to the database. For syntax help concerning parameter names and optional query parts,
      *            see {@link SQLQuery}

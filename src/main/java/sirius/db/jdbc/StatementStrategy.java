@@ -15,7 +15,6 @@ import java.sql.SQLException;
  * <p>
  * The default implementation is {@link SQLStatementStrategy} which generates a {@link java.sql.PreparedStatement}
  * for SQL queries
- * </p>
  *
  * @author Andreas Haufler (aha@scireum.de)
  * @since 2013/11

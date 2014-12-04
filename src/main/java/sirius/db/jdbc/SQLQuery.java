@@ -33,11 +33,9 @@ import java.util.Optional;
  * <p>
  * Supports named parameters in form of ${name}. Also #{name} can be used in LIKE expressions and will be
  * surrounded by % signs (if not empty).
- * </p>
  * <p>
  * Optional blocks can be surrounded with angular braces: SELECT * FROM x WHERE test = 1[ AND test2=${val}]
  * The surrounded block will only be added to the query, if the parameter within has a non-null value.
- * </p>
  *
  * @author Andreas Haufler (aha@scireum.de)
  * @since 2013/11
@@ -106,7 +104,7 @@ public class SQLQuery {
     /**
      * Executes the given query returning the result as list with at most <tt>maxRows</tt> entries
      *
-     * @param maxRows maximal number of rows to be returned
+     * @param maxRows maximal number of rows to be returned or 0 to indicate that no limit should be applied
      * @return a list of {@link Row}s
      * @throws SQLException in case of a database error
      */
@@ -148,11 +146,12 @@ public class SQLQuery {
      * this method only processes one row at a time, this might be much more memory efficient.
      *
      * @param handler the row handler invoked for each row
+     * @param maxRows maximal number of rows to be returned or 0 to indicate that no limit should be applied
      * @throws SQLException in case of a database error
      */
     public void perform(RowHandler handler, int maxRows) throws SQLException {
         Watch w = Watch.start();
-        try(Connection c = ds.getConnection()) {
+        try (Connection c = ds.getConnection()) {
             SQLStatementStrategy sa = new SQLStatementStrategy(c, ds.isMySQL());
             StatementCompiler.buildParameterizedStatement(sa, sql, params);
             if (sa.getStmt() == null) {
@@ -181,8 +180,7 @@ public class SQLQuery {
     /**
      * Executes the given query returning the first matching row wrapped as {@link java.util.Optional}.
      * <p>
-     * This method behaves like {@link #queryFirst()} but returns an optional value instead of {@link null}.
-     * </p>
+     * This method behaves like {@link #queryFirst()} but returns an optional value instead of <tt>null</tt>.
      *
      * @return the resulting row wrapped as optional, or an empty optional if no matching row was found.
      * @throws SQLException in case of a database error
@@ -198,7 +196,6 @@ public class SQLQuery {
      * If the resulting row contains a {@link Blob} an {@link OutputStream} as to be passed in as parameter
      * with the name name as the column. The contents of the blob will then be written into the given
      * output stream (without closing it).
-     * </p>
      *
      * @return the first matching row for the given query or <tt>null</tt> if no matching row was found
      * @throws SQLException in case of a database error
@@ -214,8 +211,7 @@ public class SQLQuery {
             }
             try (ResultSet rs = sa.getStmt().executeQuery()) {
                 if (rs.next()) {
-                    Row row = loadIntoRow(rs);
-                    return row;
+                    return loadIntoRow(rs);
                 }
                 return null;
             } finally {
@@ -264,7 +260,6 @@ public class SQLQuery {
      * Executes the query as update.
      * <p>
      * Requires the SQL statement to be an UPDATE or DELETE statement.
-     * </p>
      *
      * @return the number of rows changed
      * @throws SQLException in case of a database error
@@ -292,7 +287,6 @@ public class SQLQuery {
      * Executes the update and returns the generated keys.
      * <p>
      * Requires the SQL statement to be an UPDATE or DELETE statement.
-     * </p>
      *
      * @return the a row representing all generated keys
      * @throws SQLException in case of a database error

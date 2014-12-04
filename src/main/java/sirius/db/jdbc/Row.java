@@ -45,17 +45,16 @@ public class Row {
      */
     @Nonnull
     public Value getValue(Object key) {
-        if (!fields.containsKey(key)) {
+        if (key == null || !fields.containsKey(key.toString())) {
             throw new IllegalArgumentException(Strings.apply("Unknown column: %s in %s", key, this));
         }
-        return Value.of(fields.get(key));
+        return Value.of(fields.get(key.toString()));
     }
 
     /**
      * Returns a sub list which was stored for a given key.
      * <p>
      * It is assumed that the object associated with the given key is a <code>List&lt;Row&gt;</code>.
-     * </p>
      *
      * @param key the name of the field to retrieve
      * @return the list associated with the given key
@@ -71,7 +70,6 @@ public class Row {
      * Stores a value for the given key.
      * <p>
      * Can be used to add computed values for further processing.
-     * </p>
      *
      * @param key   the key to bind the value to
      * @param value the value to be stored
