@@ -14,6 +14,7 @@ import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.extensions.Extension;
 import sirius.kernel.extensions.Extensions;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.Formatter;
 
 import javax.sql.DataSource;
@@ -49,6 +50,12 @@ public class Database {
      */
     protected Database(String name) {
         Extension ext = Extensions.getExtension("jdbc.database", name);
+        if (ext == null) {
+            throw Exceptions.handle()
+                            .to(Databases.LOG)
+                            .withSystemErrorMessage("Unknown JDBC database: %s", name)
+                            .handle();
+        }
         Extension profile = Extensions.getExtension("jdbc.profile", ext.get("profile").asString("default"));
         Context ctx = profile.getContext();
         ctx.putAll(ext.getContext());
