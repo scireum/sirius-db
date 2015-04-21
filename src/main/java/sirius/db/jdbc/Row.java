@@ -37,6 +37,17 @@ public class Row {
     }
 
     /**
+     * Determines if a value for a given key is present.
+     *
+     * @param key the key to check for
+     * @return <tt>true</tt> if a value for the given key is present (even if it is <tt>null</tt>),
+     * <tt>false</tt> otherwise
+     */
+    public boolean hasValue(String key) {
+        return fields.containsKey(key);
+    }
+
+    /**
      * Returns the value associated with the given key.
      *
      * @param key the name of the field to retrieve

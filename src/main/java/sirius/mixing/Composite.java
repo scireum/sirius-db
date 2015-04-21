@@ -6,15 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.mixing.query;
-
-import sirius.mixing.Entity;
+package sirius.mixing;
 
 /**
- * Created by aha on 29.11.14.
+ * Created by aha on 20.04.15.
  */
-public class Query<E extends Entity> {
-    public Query(Class<E> type) {
-
-    }
+public class Composite extends Mixable {
 }

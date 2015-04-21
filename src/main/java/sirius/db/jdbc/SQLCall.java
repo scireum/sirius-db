@@ -8,16 +8,16 @@
 
 package sirius.db.jdbc;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Represents a flexible way of executing parameterized SQL calls without
@@ -30,15 +30,15 @@ public class SQLCall {
 
     private static final String RETURN_VALUE = "_RETVAL";
     private final Database ds;
-    private final List<String> names = new ArrayList<String>();
-    private final List<Object> data = new ArrayList<Object>();
-    private final List<Integer> types = new ArrayList<Integer>();
+    private final List<String> names = Lists.newArrayList();
+    private final List<Object> data = Lists.newArrayList();
+    private final List<Integer> types = Lists.newArrayList();
     private final String fun;
-    private final Map<String, Object> output = new TreeMap<String, Object>();
+    private final Map<String, Object> output = Maps.newTreeMap();
     private Integer returnType;
 
     /*
-     * Use Databases.createFunctionCall or Databases.createFunctionCall to create an instance
+     * Use Database.createFunctionCall or Database.createFunctionCall to create an instance
      */
     protected SQLCall(Database ds, String fun, Integer returnType) {
         this.ds = ds;

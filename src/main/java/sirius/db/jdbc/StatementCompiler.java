@@ -9,16 +9,16 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
-import sirius.kernel.commons.Context;
-import sirius.kernel.commons.Reflection;
-import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Value;
+import sirius.kernel.commons.*;
 import sirius.kernel.nls.NLS;
 
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAccessor;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Provides methods to compile statements with embedded parameters and optional blocks.
@@ -28,46 +28,80 @@ import java.util.*;
  */
 class StatementCompiler {
 
+    private PreparedStatement stmt;
+    private List<Tuple<Integer, Object>> parameters = Lists.newArrayList();
+    private Connection c;
+    private StringBuilder sb;
+    private boolean mysql;
+    private boolean retrieveGeneratedKeys;
+
+    protected StatementCompiler(Connection c, boolean mysql, boolean retrieveGeneratedKeys) {
+        this.c = c;
+        this.mysql = mysql;
+        this.retrieveGeneratedKeys = retrieveGeneratedKeys;
+        this.sb = new StringBuilder();
+    }
+
+    protected PreparedStatement getStmt() throws SQLException {
+        if (stmt == null) {
+            if (retrieveGeneratedKeys) {
+                stmt = c.prepareStatement(sb.toString(), Statement.RETURN_GENERATED_KEYS);
+            } else {
+                stmt = c.prepareStatement(sb.toString(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+            }
+            if (mysql) {
+                // Switch MySQL driver into streaming mode...
+                stmt.setFetchSize(Integer.MIN_VALUE);
+            }
+            for (Tuple<Integer, Object> t : parameters) {
+                stmt.setObject(t.getFirst(), t.getSecond());
+            }
+
+        }
+        return stmt;
+    }
+
     /**
      * Builds a PreparedStatement where references to parameters (${Param} for
      * normal substitution and #{Param} for LIKE substitution) are replaced by
      * the given parameters. Blocks created with [ and ] are taken out if the
      * parameter referenced in between is null.
      *
-     * @param adapter used to determine the dialect to generate (SQL, HQL...)
      * @param query   the query to compile
      * @param context the context defining the parameters available
      */
-    static void buildParameterizedStatement(StatementStrategy adapter,
-                                            String query,
-                                            Context context) throws SQLException {
-        List<Object> params = new ArrayList<Object>();
+    protected void buildParameterizedStatement(String query, Context context) throws SQLException {
+        List<Object> params = Lists.newArrayList();
         if (query != null) {
-            parseSection(query, query, adapter, params, context);
+            parseSection(query, query, params, context);
         }
-        try {
-            int index = 0;
-            for (Object param : params) {
-                if (param instanceof Collection<?>) {
-                    for (Object obj : (Collection<?>) param) {
-                        if ((obj != null) && (obj instanceof TemporalAccessor)) {
-                            adapter.set(++index, Date.from(Value.of(obj).asLocalDateTime(null).atZone(ZoneId.systemDefault()).toInstant()));
-                        } else {
-                            adapter.set(++index, obj);
-                        }
-                        Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
-                    }
-                } else {
-                    if ((param != null) && (param instanceof TemporalAccessor)) {
-                        adapter.set(++index, Date.from(Value.of(param).asLocalDateTime(null).atZone(ZoneId.systemDefault()).toInstant()));
+        int index = 0;
+        for (Object param : params) {
+            if (param instanceof Collection<?>) {
+                for (Object obj : (Collection<?>) param) {
+                    if ((obj != null) && (obj instanceof TemporalAccessor)) {
+                        parameters.add(Tuple.create(++index,
+                                                    Date.from(Value.of(obj)
+                                                                   .asLocalDateTime(null)
+                                                                   .atZone(ZoneId.systemDefault())
+                                                                   .toInstant())));
                     } else {
-                        adapter.set(++index, param);
+                        parameters.add(Tuple.create(++index, obj));
                     }
-                    Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(param));
+                    Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
                 }
+            } else {
+                if ((param != null) && (param instanceof TemporalAccessor)) {
+                    parameters.add(Tuple.create(++index,
+                                                Date.from(Value.of(param)
+                                                               .asLocalDateTime(null)
+                                                               .atZone(ZoneId.systemDefault())
+                                                               .toInstant())));
+                } else {
+                    parameters.add(Tuple.create(++index, param));
+                }
+                Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(param));
             }
-        } catch (SQLException e) {
-            throw new SQLException(Strings.apply("Error compiling: %s - %s", adapter.getQueryString(), e.getMessage()));
         }
     }
 
@@ -80,11 +114,7 @@ class StatementCompiler {
      * If no [ was found, the complete string is compiled and added to the
      * result SQL.
      */
-    private static void parseSection(String originalSQL,
-                                     String sql,
-                                     StatementStrategy adapter,
-                                     List<Object> params,
-                                     Context context) throws SQLException {
+    private void parseSection(String originalSQL, String sql, List<Object> params, Context context) throws SQLException {
         int index = sql.indexOf("[");
         if (index > -1) {
             int nextClose = sql.indexOf("]", index + 1);
@@ -94,14 +124,14 @@ class StatementCompiler {
             int nextOpen = sql.indexOf("[", index + 1);
             if ((nextOpen > -1) && (nextOpen < nextClose)) {
                 throw new SQLException(Strings.apply("Cannot nest blocks of angular brackets at %d in: %s ",
-                        index,
-                        originalSQL));
+                                                     index,
+                                                     originalSQL));
             }
-            compileSection(false, sql, sql.substring(0, index), adapter, params, context);
-            compileSection(true, sql, sql.substring(index + 1, nextClose), adapter, params, context);
-            parseSection(originalSQL, sql.substring(nextClose + 1), adapter, params, context);
+            compileSection(false, sql, sql.substring(0, index), params, context);
+            compileSection(true, sql, sql.substring(index + 1, nextClose), params, context);
+            parseSection(originalSQL, sql.substring(nextClose + 1), params, context);
         } else {
-            compileSection(false, sql, sql, adapter, params, context);
+            compileSection(false, sql, sql, params, context);
         }
     }
 
@@ -116,7 +146,7 @@ class StatementCompiler {
         if (searchString == null) {
             return null;
         }
-        if (searchString == "") {
+        if ("".equals(searchString)) {
             return "%";
         }
         if ((!searchString.contains("%")) && (searchString.contains("*"))) {
@@ -136,12 +166,11 @@ class StatementCompiler {
      * in context.
      */
     @SuppressWarnings("unchecked")
-    private static void compileSection(boolean ignoreIfParametersNull,
-                                       String originalSQL,
-                                       String sql,
-                                       StatementStrategy adapter,
-                                       List<Object> params,
-                                       Map<String, Object> context) throws SQLException {
+    private void compileSection(boolean ignoreIfParametersNull,
+                                String originalSQL,
+                                String sql,
+                                List<Object> params,
+                                Map<String, Object> context) throws SQLException {
         boolean parameterFound = !ignoreIfParametersNull;
         List<Object> tempParams = Lists.newArrayList();
         StringBuilder sqlBuilder = new StringBuilder();
@@ -151,9 +180,9 @@ class StatementCompiler {
             int endIndex = sql.indexOf("}", index);
             if (endIndex < 0) {
                 throw new SQLException(NLS.fmtr("StatementCompiler.errorUnbalancedCurlyBracket")
-                        .set("index", index)
-                        .set("query", originalSQL)
-                        .format());
+                                          .set("index", index)
+                                          .set("query", originalSQL)
+                                          .format());
             }
             String parameterName = sql.substring(index + 2, endIndex);
             String accessPath = null;
@@ -168,11 +197,11 @@ class StatementCompiler {
                     paramValue = Reflection.evalAccessPath(accessPath, paramValue);
                 } catch (Throwable e) {
                     throw new SQLException(NLS.fmtr("StatementCompiler.cannotEvalAccessPath")
-                            .set("name", parameterName)
-                            .set("path", accessPath)
-                            .set("value", paramValue)
-                            .set("query", originalSQL)
-                            .format());
+                                              .set("name", parameterName)
+                                              .set("path", accessPath)
+                                              .set("value", paramValue)
+                                              .set("query", originalSQL)
+                                              .format());
                 }
             }
             // A parameter was found, if its value is not null or if it is a non
@@ -190,14 +219,10 @@ class StatementCompiler {
                     if (i > 0) {
                         sqlBuilder.append(",");
                     }
-                    sqlBuilder.append(" ");
-                    sqlBuilder.append(adapter.getParameterName());
-                    sqlBuilder.append(" ");
+                    sqlBuilder.append(" ? ");
                 }
             } else {
-                sqlBuilder.append(" ");
-                sqlBuilder.append(adapter.getParameterName());
-                sqlBuilder.append(" ");
+                sqlBuilder.append(" ? ");
             }
             sql = sql.substring(endIndex + 1);
             index = getNextRelevantIndex(sql);
@@ -205,7 +230,7 @@ class StatementCompiler {
         }
         sqlBuilder.append(sql);
         if (parameterFound || !ignoreIfParametersNull) {
-            adapter.appendString(sqlBuilder.toString());
+            sb.append(sqlBuilder.toString());
             params.addAll(tempParams);
         }
     }
@@ -213,7 +238,7 @@ class StatementCompiler {
     /*
      * Returns the next index of ${ or #{ in the given string.
      */
-    private static int getNextRelevantIndex(String sql) {
+    private int getNextRelevantIndex(String sql) {
         int index = sql.indexOf("${");
         int sharpIndex = sql.indexOf("#{");
         if ((sharpIndex > -1) && ((index < 0) || (sharpIndex < index))) {

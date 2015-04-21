@@ -6,10 +6,13 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.mixing.schema;
+package sirius.mixing;
 
 /**
  * Created by aha on 29.11.14.
  */
-public class Property {
+public class Query<E extends Entity> {
+    public Query(Class<E> type) {
+
+    }
 }

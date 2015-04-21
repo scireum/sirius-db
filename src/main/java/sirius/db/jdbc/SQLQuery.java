@@ -110,32 +110,10 @@ public class SQLQuery {
      */
     @Nonnull
     public List<Row> queryList(int maxRows) throws SQLException {
-        Watch w = Watch.start();
         List<Row> result = Lists.newArrayList();
-        try (Connection c = ds.getConnection()) {
-            SQLStatementStrategy sa = new SQLStatementStrategy(c, ds.isMySQL());
-            StatementCompiler.buildParameterizedStatement(sa, sql, params);
-            if (sa.getStmt() == null) {
-                return result;
-            }
-            try {
-                if (maxRows > 0) {
-                    sa.getStmt().setMaxRows(maxRows);
-                }
-                try (ResultSet rs = sa.getStmt().executeQuery()) {
-                    while (rs.next()) {
-                        Row row = loadIntoRow(rs);
-                        result.add(row);
-                    }
-                    return result;
-                }
-            } finally {
-                sa.getStmt().close();
-            }
+        perform(result::add, maxRows);
 
-        } finally {
-            w.submitMicroTiming("SQL", sql);
-        }
+        return result;
     }
 
     /**
@@ -152,15 +130,15 @@ public class SQLQuery {
     public void perform(RowHandler handler, int maxRows) throws SQLException {
         Watch w = Watch.start();
         try (Connection c = ds.getConnection()) {
-            SQLStatementStrategy sa = new SQLStatementStrategy(c, ds.isMySQL());
-            StatementCompiler.buildParameterizedStatement(sa, sql, params);
-            if (sa.getStmt() == null) {
+            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), false);
+            compiler.buildParameterizedStatement(sql, params);
+            if (compiler.getStmt() == null) {
                 return;
             }
             if (maxRows > 0) {
-                sa.getStmt().setMaxRows(maxRows);
+                compiler.getStmt().setMaxRows(maxRows);
             }
-            try (ResultSet rs = sa.getStmt().executeQuery()) {
+            try (ResultSet rs = compiler.getStmt().executeQuery()) {
                 TaskContext tc = TaskContext.get();
                 while (rs.next() && tc.isActive()) {
                     Row row = loadIntoRow(rs);
@@ -169,7 +147,7 @@ public class SQLQuery {
                     }
                 }
             } finally {
-                sa.getStmt().close();
+                compiler.getStmt().close();
             }
 
         } finally {
@@ -204,18 +182,18 @@ public class SQLQuery {
     public Row queryFirst() throws SQLException {
         Watch w = Watch.start();
         try (Connection c = ds.getConnection()) {
-            SQLStatementStrategy sa = new SQLStatementStrategy(c, ds.isMySQL());
-            StatementCompiler.buildParameterizedStatement(sa, sql, params);
-            if (sa.getStmt() == null) {
+            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), false);
+            compiler.buildParameterizedStatement(sql, params);
+            if (compiler.getStmt() == null) {
                 return null;
             }
-            try (ResultSet rs = sa.getStmt().executeQuery()) {
+            try (ResultSet rs = compiler.getStmt().executeQuery()) {
                 if (rs.next()) {
                     return loadIntoRow(rs);
                 }
                 return null;
             } finally {
-                sa.getStmt().close();
+                compiler.getStmt().close();
             }
 
         } finally {
@@ -268,15 +246,15 @@ public class SQLQuery {
         Watch w = Watch.start();
 
         try (Connection c = ds.getConnection()) {
-            SQLStatementStrategy sa = new SQLStatementStrategy(c, ds.isMySQL());
-            StatementCompiler.buildParameterizedStatement(sa, sql, params);
-            if (sa.getStmt() == null) {
+            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), false);
+            compiler.buildParameterizedStatement(sql, params);
+            if (compiler.getStmt() == null) {
                 return 0;
             }
             try {
-                return sa.getStmt().executeUpdate();
+                return compiler.getStmt().executeUpdate();
             } finally {
-                sa.getStmt().close();
+                compiler.getStmt().close();
             }
         } finally {
             w.submitMicroTiming("SQL", sql);
@@ -295,15 +273,14 @@ public class SQLQuery {
         Watch w = Watch.start();
 
         try (Connection c = ds.getConnection()) {
-            SQLStatementStrategy sa = new SQLStatementStrategy(c, ds.isMySQL());
-            sa.setRetrieveGeneratedKeys(true);
-            StatementCompiler.buildParameterizedStatement(sa, sql, params);
-            if (sa.getStmt() == null) {
+            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), true);
+            compiler.buildParameterizedStatement(sql, params);
+            if (compiler.getStmt() == null) {
                 return new Row();
             }
             try {
-                sa.getStmt().executeUpdate();
-                try (ResultSet rs = sa.getStmt().getGeneratedKeys()) {
+                compiler.getStmt().executeUpdate();
+                try (ResultSet rs = compiler.getStmt().getGeneratedKeys()) {
                     Row row = new Row();
                     if (rs.next()) {
                         for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
@@ -313,7 +290,7 @@ public class SQLQuery {
                     return row;
                 }
             } finally {
-                sa.getStmt().close();
+                compiler.getStmt().close();
             }
         } finally {
             w.submitMicroTiming("SQL", sql);

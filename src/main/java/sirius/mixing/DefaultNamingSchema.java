@@ -6,9 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.mixing.schema;
+package sirius.mixing;
 
 import sirius.kernel.di.std.Register;
+import sirius.mixing.properties.Property;
 
 import javax.annotation.Nonnull;
 
@@ -19,13 +20,13 @@ import javax.annotation.Nonnull;
 public class DefaultNamingSchema implements NamingSchema {
 
     @Override
-    public String generateColumnName(Property property) {
-        return "f_" ;//+ property.getName();
+    public String generateColumnName(String propertyName) {
+        return propertyName;
     }
 
     @Override
     public String generateTableName(Class<?> type) {
-        return "t_" + type.getSimpleName().toLowerCase();
+        return type.getSimpleName().toLowerCase();
     }
 
     @Nonnull
