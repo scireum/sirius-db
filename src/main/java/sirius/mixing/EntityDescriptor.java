@@ -9,20 +9,24 @@
 package sirius.mixing;
 
 import com.google.common.collect.Maps;
+import sirius.db.jdbc.Row;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.mixing.annotations.Versioned;
 import sirius.mixing.properties.AccessPath;
+import sirius.mixing.properties.Mixing;
 import sirius.mixing.properties.Property;
-import sirius.mixing.properties.ReflectionScanner;
 import sirius.mixing.schema.Column;
 import sirius.mixing.schema.Table;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by aha on 29.11.14.
@@ -156,7 +160,7 @@ public class EntityDescriptor {
     }
 
     protected void initialize() {
-        ReflectionScanner.addFields(AccessPath.IDENTITY, type, p -> {
+        Mixing.addFields(AccessPath.IDENTITY, type, p -> {
             if (properties.containsKey(p.getName())) {
                 OMA.LOG.SEVERE(Strings.apply(
                         "A property named '%s' already exists for the type '%s'. Skipping redefinition: %s",
@@ -170,5 +174,86 @@ public class EntityDescriptor {
         });
     }
 
+    public Entity readFrom(String alias, Row row) throws Exception {
+        Entity entity = type.newInstance();
+        entity.fetchRow = row;
+        readIdAndVersion(alias, row, entity);
+        for (Property p : getProperties()) {
+            String columnName = (alias == null) ? p.getColumnName() : alias + "_" + p.getColumnName();
+            if (row.hasValue(columnName)) {
+                p.setValue(entity, row.getValue(columnName).get());
+            }
+        }
+        return entity;
+    }
 
+    private void readIdAndVersion(String alias, Row row, Entity entity) {
+        String idColumnLabel = getIdColumnLabel(alias).toUpperCase();
+        if (!row.hasValue(idColumnLabel)) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage(
+                                    "Error loading entity from row: Missing id column for type '%s'.",
+                                    type.getName())
+                            .handle();
+        }
+        entity.setId(row.getValue(idColumnLabel).asLong(-1));
+        if (isVersioned()) {
+            String versionColumnLabel = getVersionColumnLabel(alias).toUpperCase();
+            if (!row.hasValue(versionColumnLabel)) {
+                throw Exceptions.handle()
+                                .to(OMA.LOG)
+                                .withSystemErrorMessage(
+                                        "Error loading entity from row: Missing version column for type '%s'.",
+                                        type.getName())
+                                .handle();
+            }
+            setVersion(entity, row.getValue(versionColumnLabel).asInt(0));
+        }
+    }
+
+    public Entity readFrom(String alias, Set<String> columns, ResultSet rs) throws Exception {
+        Entity entity = type.newInstance();
+        readIdAndVersion(alias, columns, rs, entity);
+        for (Property p : getProperties()) {
+            String columnName = (alias == null) ? p.getColumnName() : alias + "_" + p.getColumnName();
+            if (columns.contains(columnName.toUpperCase())) {
+                p.setValue(entity, rs.getObject(columnName));
+            }
+        }
+        return entity;
+    }
+
+    private void readIdAndVersion(String alias, Set<String> columns, ResultSet rs, Entity entity) throws SQLException {
+        String idColumnLabel = getIdColumnLabel(alias);
+        if (!columns.contains(idColumnLabel.toUpperCase())) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage(
+                                    "Error loading entity from row: Missing id column for type '%s'.",
+                                    type.getName())
+                            .handle();
+        }
+        entity.setId(rs.getLong(idColumnLabel));
+        if (isVersioned()) {
+            String versionColumnLabel = getVersionColumnLabel(alias);
+            if (!columns.contains(versionColumnLabel.toUpperCase())) {
+                throw Exceptions.handle()
+                                .to(OMA.LOG)
+                                .withSystemErrorMessage(
+                                        "Error loading entity from row: Missing version column for type '%s'.",
+                                        type.getName())
+                                .handle();
+            }
+            setVersion(entity, rs.getInt(versionColumnLabel));
+        }
+    }
+
+    private String getVersionColumnLabel(String alias) {
+        return (alias == null) ? "version" : alias + "_version";
+    }
+
+    private String getIdColumnLabel(String alias) {
+        return (alias == null) ? "id" : alias + "_id";
+    }
 }

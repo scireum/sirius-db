@@ -9,10 +9,12 @@
 package sirius.mixing;
 
 import com.google.common.collect.Maps;
+import sirius.db.jdbc.Row;
 import sirius.kernel.di.morphium.Adaptable;
 import sirius.kernel.di.std.Part;
 import sirius.mixing.annotations.Transient;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
 /**
@@ -33,7 +35,7 @@ public abstract class Entity extends Mixable {
     protected Map<String, Object> persistedData = Maps.newHashMap();
 
     @Transient
-    protected Map<Class<?>, Object> mixins;
+    protected Row fetchRow;
 
     public EntityDescriptor getDescriptor() {
         return schema.getDescriptor(getClass());
@@ -54,7 +56,6 @@ public abstract class Entity extends Mixable {
     public void setId(long id) {
         this.id = id;
     }
-
 
     @Override
     public int hashCode() {
@@ -87,5 +88,8 @@ public abstract class Entity extends Mixable {
         return id == ((Entity) other).id;
     }
 
-
+    @Nullable
+    public Row getFetchRow() {
+        return fetchRow;
+    }
 }

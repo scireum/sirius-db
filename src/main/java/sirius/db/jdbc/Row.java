@@ -43,8 +43,8 @@ public class Row {
      * @return <tt>true</tt> if a value for the given key is present (even if it is <tt>null</tt>),
      * <tt>false</tt> otherwise
      */
-    public boolean hasValue(String key) {
-        return fields.containsKey(key);
+    public boolean hasValue(@Nonnull String key) {
+        return fields.containsKey(key.toUpperCase());
     }
 
     /**
@@ -55,11 +55,12 @@ public class Row {
      * @throws java.lang.IllegalArgumentException if an unknown column key is requested
      */
     @Nonnull
-    public Value getValue(Object key) {
-        if (key == null || !fields.containsKey(key.toString())) {
-            throw new IllegalArgumentException(Strings.apply("Unknown column: %s in %s", key, this));
+    public Value getValue(@Nonnull Object key) {
+        String upperCaseKey = key.toString().toUpperCase();
+        if (!fields.containsKey(upperCaseKey)) {
+            throw new IllegalArgumentException(Strings.apply("Unknown column: %s in %s", upperCaseKey, this));
         }
-        return Value.of(fields.get(key.toString()));
+        return Value.of(fields.get(upperCaseKey));
     }
 
     /**
@@ -73,7 +74,7 @@ public class Row {
      */
     @SuppressWarnings("unchecked")
     @Nonnull
-    public List<Row> getSublist(Object key) {
+    public List<Row> getSublist(@Nonnull Object key) {
         return (List<Row>) getValue(key).get(Collections.emptyList());
     }
 
@@ -85,8 +86,8 @@ public class Row {
      * @param key   the key to bind the value to
      * @param value the value to be stored
      */
-    public void setValue(String key, Object value) {
-        fields.put(key, value);
+    public void setValue(@Nonnull String key, Object value) {
+        fields.put(key.toUpperCase(), value);
     }
 
     @Override

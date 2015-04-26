@@ -12,6 +12,8 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
 
+import java.util.function.Function
+
 @Stepwise
 class DatabaseSpec extends BaseSpecification {
 
@@ -92,7 +94,7 @@ class DatabaseSpec extends BaseSpecification {
         when:
         def qry = db.createQuery('SELECT a,b FROM test_a');
         then:
-        qry.perform({ it.getFields().size() == 2 } as SQLQuery.RowHandler, 0)
+        qry.iterate({ it.getFields().size() == 2 } as Function, 0)
     }
 
     def "SQLQuery#queryFirst returns null for an empty result set"() {

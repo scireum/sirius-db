@@ -134,7 +134,7 @@ public class SchemaTool {
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.tableDoesNotExist")
+                action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
                                     .set("table", targetTable.getName())
                                     .format());
                 action.setDataLossPossible(false);
@@ -149,7 +149,7 @@ public class SchemaTool {
             for (Table table : currentSchema) {
                 if (findInList(targetSchema, table) == null) {
                     SchemaUpdateAction action = new SchemaUpdateAction();
-                    action.setReason(NLS.fmtr("scireum.db.schema.tableUnused").set("table", table.getName()).format());
+                    action.setReason(NLS.fmtr("SchemaTool.tableUnused").set("table", table.getName()).format());
                     action.setDataLossPossible(true);
                     action.setSql(dialect.generateDropTable(table));
                     result.add(action);
@@ -211,7 +211,7 @@ public class SchemaTool {
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
             SchemaUpdateAction action = new SchemaUpdateAction();
-            action.setReason(NLS.fmtr("scireum.db.schema.pkChanged").set("table", targetTable.getName()).format());
+            action.setReason(NLS.fmtr("SchemaTool.pkChanged").set("table", targetTable.getName()).format());
             action.setDataLossPossible(true);
             action.setSql(dialect.generateAlterPrimaryKey(targetTable));
             result.add(action);
@@ -223,7 +223,7 @@ public class SchemaTool {
             Key otherKey = findInList(other.getKeys(), targetKey);
             if (otherKey == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.indexDoesNotExist")
+                action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
                                     .set("key", targetKey.getName())
                                     .set("table", targetTable.getName())
                                     .format());
@@ -233,7 +233,7 @@ public class SchemaTool {
             } else {
                 if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())) {
                     SchemaUpdateAction action = new SchemaUpdateAction();
-                    action.setReason(NLS.fmtr("scireum.db.schema.indexNeedsChange")
+                    action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
                                         .set("key", targetKey.getName())
                                         .set("table", targetTable.getName())
                                         .format());
@@ -253,7 +253,7 @@ public class SchemaTool {
                     other,
                     key)) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.indexUnused")
+                action.setReason(NLS.fmtr("SchemaTool.indexUnused")
                                     .set("key", key.getName())
                                     .set("table", other.getName())
                                     .format());
@@ -269,7 +269,7 @@ public class SchemaTool {
             ForeignKey otherKey = findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.fkDoesNotExist")
+                action.setReason(NLS.fmtr("SchemaTool.fkDoesNotExist")
                                     .set("key", targetKey.getName())
                                     .set("table", targetTable.getName())
                                     .format());
@@ -283,7 +283,7 @@ public class SchemaTool {
                                                                                                                      .equalsIgnoreCase(
                                                                                                                              otherKey.getForeignTable())) {
                     SchemaUpdateAction action = new SchemaUpdateAction();
-                    action.setReason(NLS.fmtr("scireum.db.schema.fkNeedsChange")
+                    action.setReason(NLS.fmtr("SchemaTool.fkNeedsChange")
                                         .set("key", targetKey.getName())
                                         .set("table", targetTable.getName())
                                         .format());
@@ -297,7 +297,7 @@ public class SchemaTool {
         for (ForeignKey key : other.getForeignKeys()) {
             if (findInList(targetTable.getForeignKeys(), key) == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.fkUnused")
+                action.setReason(NLS.fmtr("SchemaTool.fkUnused")
                                     .set("key", key.getName())
                                     .set("table", other.getName())
                                     .format());
@@ -320,7 +320,7 @@ public class SchemaTool {
             }
             if (otherCol == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.columnDoesNotExist")
+                action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
                                     .set("column", targetCol.getName())
                                     .set("table", targetTable.getName())
                                     .format());
@@ -333,12 +333,12 @@ public class SchemaTool {
                 // Check for renaming...
                 if (reason == null && !Strings.areEqual(targetCol.getName(),
                                                         otherCol.getName()) && dialect.isColumnCaseSensitive()) {
-                    reason = NLS.fmtr("scireum.db.schema.columnNeedsRename")
+                    reason = NLS.fmtr("SchemaTool.columnNeedsRename")
                                 .set("column", otherCol.getName())
                                 .set("newName", targetCol.getName())
                                 .format();
                 } else if (reason != null) {
-                    reason = NLS.fmtr("scireum.db.schema.columnNeedsChange")
+                    reason = NLS.fmtr("SchemaTool.columnNeedsChange")
                                 .set("column", otherCol.getName())
                                 .set("reason", reason)
                                 .format();
@@ -355,7 +355,7 @@ public class SchemaTool {
         for (Column col : other.getColumns()) {
             if (!usedColumns.contains(col.getName())) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("scireum.db.schema.columnUnused")
+                action.setReason(NLS.fmtr("SchemaTool.columnUnused")
                                     .set("column", col.getName())
                                     .set("table", other.getName())
                                     .format());

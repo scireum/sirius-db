@@ -13,6 +13,7 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 import sirius.mixing.Entity;
 import sirius.mixing.NamingSchema;
+import sirius.mixing.annotations.DefaultValue;
 import sirius.mixing.annotations.Length;
 import sirius.mixing.annotations.NullAllowed;
 import sirius.mixing.schema.Column;
@@ -20,7 +21,6 @@ import sirius.mixing.schema.Table;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
-import java.util.function.Function;
 
 /**
  * Created by aha on 29.11.14.
@@ -29,23 +29,54 @@ public abstract class Property {
 
     protected String name;
     protected String columnName;
+
+    protected String label;
     protected String propertyKey;
     protected String alternativePropertyKey;
-    protected String defaultValue;
-    protected Field field;
+
     protected AccessPath accessPath;
+    protected Field field;
+
+    protected String defaultValue;
+    protected int length = 0;
+    protected int scale = 0;
+    protected int precision = 0;
+    protected boolean nullable;
 
     @Part(configPath = "mixing.namingSchema")
     private static NamingSchema namingSchema;
 
     public Property(@Nonnull AccessPath accessPath, @Nonnull Field field) {
+        this.accessPath = accessPath;
         this.field = field;
         this.propertyKey = field.getDeclaringClass().getSimpleName() + "." + field.getName();
         this.alternativePropertyKey = "Model." + field.getName();
         this.field.setAccessible(true);
         this.name = accessPath.prefix() + field.getName();
         this.columnName = namingSchema.generateColumnName(name);
-        this.accessPath = accessPath;
+        determineNullability();
+        determineLengths();
+        determineDefaultValue();
+    }
+
+    private void determineDefaultValue() {
+        DefaultValue dv = field.getAnnotation(DefaultValue.class);
+        if (dv != null) {
+            this.defaultValue = dv.value();
+        }
+    }
+
+    private void determineLengths() {
+        Length len = field.getAnnotation(Length.class);
+        if (len != null) {
+            this.length = len.length();
+            this.scale = len.scale();
+            this.precision = len.precision();
+        }
+    }
+
+    private void determineNullability() {
+        this.nullable = field.getType().isPrimitive() && field.isAnnotationPresent(NullAllowed.class);
     }
 
     public String getColumnName() {
@@ -56,7 +87,14 @@ public abstract class Property {
         return name;
     }
 
+    public Field getField() {
+        return field;
+    }
+
     public String getLabel() {
+        if (label != null) {
+            return label;
+        }
         return NLS.getIfExists(propertyKey, NLS.getCurrentLang()).orElseGet(() -> NLS.get(alternativePropertyKey));
     }
 
@@ -129,42 +167,30 @@ public abstract class Property {
         if (getScale() > 0) {
             column.setScale(getScale());
         }
-        specifyColumn(column);
+        finalizeColumn(column);
         return column;
     }
 
     protected boolean isNullable() {
-        return !field.getType().isPrimitive() && field.isAnnotationPresent(NullAllowed.class);
+        return nullable;
     }
 
     protected int getScale() {
-        Length len = field.getAnnotation(Length.class);
-        if (len != null) {
-            return len.scale();
-        }
-        return 0;
+        return scale;
     }
 
     protected int getPrecision() {
-        Length len = field.getAnnotation(Length.class);
-        if (len != null) {
-            return len.precision();
-        }
-        return 0;
+        return precision;
     }
 
     protected int getLength() {
-        Length len = field.getAnnotation(Length.class);
-        if (len != null) {
-            return len.length();
-        }
-        return 0;
+        return length;
     }
 
     protected abstract int getSQLType();
 
 
-    protected void specifyColumn(Column column) {
+    protected void finalizeColumn(Column column) {
     }
 
 

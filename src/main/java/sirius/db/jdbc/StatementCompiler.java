@@ -32,12 +32,10 @@ class StatementCompiler {
     private List<Tuple<Integer, Object>> parameters = Lists.newArrayList();
     private Connection c;
     private StringBuilder sb;
-    private boolean mysql;
     private boolean retrieveGeneratedKeys;
 
-    protected StatementCompiler(Connection c, boolean mysql, boolean retrieveGeneratedKeys) {
+    protected StatementCompiler(Connection c, boolean retrieveGeneratedKeys) {
         this.c = c;
-        this.mysql = mysql;
         this.retrieveGeneratedKeys = retrieveGeneratedKeys;
         this.sb = new StringBuilder();
     }
@@ -48,10 +46,6 @@ class StatementCompiler {
                 stmt = c.prepareStatement(sb.toString(), Statement.RETURN_GENERATED_KEYS);
             } else {
                 stmt = c.prepareStatement(sb.toString(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-            }
-            if (mysql) {
-                // Switch MySQL driver into streaming mode...
-                stmt.setFetchSize(Integer.MIN_VALUE);
             }
             for (Tuple<Integer, Object> t : parameters) {
                 stmt.setObject(t.getFirst(), t.getSecond());

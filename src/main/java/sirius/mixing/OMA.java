@@ -9,8 +9,10 @@
 package sirius.mixing;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Row;
+import sirius.db.jdbc.SQLQuery;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
@@ -23,8 +25,10 @@ import sirius.mixing.properties.Property;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Register(classes = {OMA.class})
 public class OMA {
@@ -205,8 +209,15 @@ public class OMA {
         }
     }
 
-    public <E extends Entity> Query<E> select(Class<E> type) {
-        return new Query<E>(type);
+    public <E extends Entity> SmartQuery<E> select(Class<E> type) {
+        return new SmartQuery<>(type);
+    }
+
+    public <E extends Entity> TransformedQuery<E> transform(Class<E> type, SQLQuery qry) {
+        return new TransformedQuery<>(type, null, qry);
+    }
+    public <E extends Entity> TransformedQuery<E> transform(Class<E> type, String alias, SQLQuery qry) {
+        return new TransformedQuery<>(type, alias, qry);
     }
 
     @SuppressWarnings("unchecked")
@@ -218,15 +229,8 @@ public class OMA {
                     stmt.setLong(1, Value.of(id).asLong(-1));
                     try (ResultSet rs = stmt.executeQuery()) {
                         if (rs.next()) {
-                            Entity entity = type.newInstance();
-                            entity.setId(rs.getLong("id"));
-                            if (ed.isVersioned()) {
-                                ed.setVersion(entity, rs.getInt("version"));
-                            }
-                            for (Property p : ed.getProperties()) {
-                                p.setValue(entity, rs.getObject(p.getColumnName()));
-                            }
-
+                            Set<String> columns = readColumns(rs);
+                            Entity entity = ed.readFrom(null, columns, rs);
                             return Optional.of((E) entity);
                         } else {
                             return Optional.empty();
@@ -243,6 +247,15 @@ public class OMA {
                             .withSystemErrorMessage("Unable to FIND  %s (%s): %s (%s)", type.getSimpleName(), id)
                             .handle();
         }
+    }
+
+    private Set<String> readColumns(ResultSet rs) throws SQLException {
+        Set<String> result = Sets.newHashSet();
+        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+            result.add(rs.getMetaData().getColumnLabel(col).toUpperCase());
+        }
+
+        return result;
     }
 
     public <E extends Entity> E findOrFail(Class<E> type, Object id) {

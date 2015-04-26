@@ -9,6 +9,8 @@
 package sirius.mixing.properties;
 
 import sirius.kernel.di.std.Register;
+import sirius.mixing.OMA;
+import sirius.mixing.schema.Column;
 
 import java.lang.reflect.Field;
 import java.sql.Types;
@@ -37,7 +39,6 @@ public class StringProperty extends Property {
 
     }
 
-
     public StringProperty(AccessPath accessPath, Field field) {
         super(accessPath, field);
     }
@@ -45,5 +46,17 @@ public class StringProperty extends Property {
     @Override
     protected int getSQLType() {
         return Types.CHAR;
+    }
+
+    @Override
+    protected void finalizeColumn(Column column) {
+        if (column.getLength() <= 0) {
+            OMA.LOG.WARN(
+                    "Error in property '%s' ('%s' of '%s'): A string property needs a length! (Use @Length to specify one). Defaulting to 255.",
+                    getName(),
+                    field.getName(),
+                    field.getDeclaringClass().getName());
+            column.setLength(255);
+        }
     }
 }

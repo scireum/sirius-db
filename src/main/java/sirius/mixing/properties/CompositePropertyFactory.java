@@ -13,11 +13,9 @@ import sirius.kernel.health.Exceptions;
 import sirius.mixing.Composite;
 import sirius.mixing.OMA;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Created by aha on 15.04.15.
@@ -40,7 +38,7 @@ public class CompositePropertyFactory implements PropertyFactory {
 
         field.setAccessible(true);
         accessPath = expandAccessPath(accessPath, field);
-        ReflectionScanner.addFields(accessPath, field.getType(), propertyConsumer);
+        Mixing.addFields(accessPath, field.getType(), propertyConsumer);
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {

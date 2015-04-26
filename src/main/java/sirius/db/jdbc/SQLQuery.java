@@ -12,6 +12,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Limit;
+import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 
 import javax.annotation.Nonnull;
@@ -26,6 +28,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Represents a flexible way of executing parameterized SQL queries without
@@ -41,19 +45,6 @@ import java.util.Optional;
  * @since 2013/11
  */
 public class SQLQuery {
-
-    /**
-     * Used by {@link #perform(sirius.db.jdbc.SQLQuery.RowHandler, int)} to invoke a given handler for each row.*
-     */
-    public interface RowHandler {
-        /**
-         * Invoked for each row returned by the query.
-         *
-         * @param row the row to handle
-         * @return <tt>true</tt> to continue processing the result, <tt>false</tt> to abort
-         */
-        boolean handle(Row row);
-    }
 
     private final Database ds;
     private final String sql;
@@ -98,51 +89,63 @@ public class SQLQuery {
      */
     @Nonnull
     public List<Row> queryList() throws SQLException {
-        return queryList(0);
+        return queryList(Limit.UNLIMITED);
     }
 
     /**
      * Executes the given query returning the result as list with at most <tt>maxRows</tt> entries
      *
-     * @param maxRows maximal number of rows to be returned or 0 to indicate that no limit should be applied
+     * @param limit the limit which controls which and how many rows are output
      * @return a list of {@link Row}s
      * @throws SQLException in case of a database error
      */
     @Nonnull
-    public List<Row> queryList(int maxRows) throws SQLException {
+    public List<Row> queryList(Limit limit) throws SQLException {
         List<Row> result = Lists.newArrayList();
-        perform(result::add, maxRows);
+        iterate(result::add, limit);
 
         return result;
     }
 
     /**
-     * Executes the given query by invoking the {@link RowHandler} for each
-     * result row.
+     * Executes the given query by invoking the given <tt>handler</tt> for each result row.
      * <p>
      * Consider using the method instead of {@link #queryList()} if a large result set is expected as this method. As
      * this method only processes one row at a time, this might be much more memory efficient.
      *
      * @param handler the row handler invoked for each row
-     * @param maxRows maximal number of rows to be returned or 0 to indicate that no limit should be applied
+     * @param limit   the limit which controls which and how many rows are output. Can be <tt>null</tt> to indicate
+     *                that there is no limit.
      * @throws SQLException in case of a database error
      */
-    public void perform(RowHandler handler, int maxRows) throws SQLException {
+    public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
         Watch w = Watch.start();
         try (Connection c = ds.getConnection()) {
-            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), false);
+            StatementCompiler compiler = new StatementCompiler(c, false);
             compiler.buildParameterizedStatement(sql, params);
             if (compiler.getStmt() == null) {
                 return;
             }
-            if (maxRows > 0) {
-                compiler.getStmt().setMaxRows(maxRows);
+            if (limit == null) {
+                limit = Limit.UNLIMITED;
+            }
+            if (limit.getMaxItems() > 0) {
+                compiler.getStmt().setMaxRows(limit.getMaxItems());
+            }
+            if (ds.isMySQL() && (limit.getMaxItems() > 1000 || limit.getMaxItems() <= 0)) {
+                compiler.getStmt().setFetchSize(Integer.MIN_VALUE);
             }
             try (ResultSet rs = compiler.getStmt().executeQuery()) {
                 TaskContext tc = TaskContext.get();
                 while (rs.next() && tc.isActive()) {
+                    limit.nextRow();
                     Row row = loadIntoRow(rs);
-                    if (!handler.handle(row)) {
+                    if (limit.shouldOutput()) {
+                        if (!handler.apply(row)) {
+                            break;
+                        }
+                    }
+                    if (!limit.shouldContinue()) {
                         break;
                     }
                 }
@@ -151,8 +154,24 @@ public class SQLQuery {
             }
 
         } finally {
-            w.submitMicroTiming("SQL", sql);
+            w.submitMicroTiming("SQL-QUERY", sql);
         }
+    }
+
+    /**
+     * Executes the given query by invoking the {@link Consumer} for each
+     * result row.
+     *
+     * @param consumer the row handler invoked for each row
+     * @param limit    the limit which controls which and how many rows are output. Can be <tt>null</tt> to indicate
+     *                 that there is no limit.
+     * @throws SQLException in case of a database error
+     */
+    public void iterateAll(Consumer<Row> consumer, @Nullable Limit limit) throws SQLException {
+        iterate(r -> {
+            consumer.accept(r);
+            return true;
+        }, limit);
     }
 
     /**
@@ -180,25 +199,10 @@ public class SQLQuery {
      */
     @Nullable
     public Row queryFirst() throws SQLException {
-        Watch w = Watch.start();
-        try (Connection c = ds.getConnection()) {
-            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), false);
-            compiler.buildParameterizedStatement(sql, params);
-            if (compiler.getStmt() == null) {
-                return null;
-            }
-            try (ResultSet rs = compiler.getStmt().executeQuery()) {
-                if (rs.next()) {
-                    return loadIntoRow(rs);
-                }
-                return null;
-            } finally {
-                compiler.getStmt().close();
-            }
+        ValueHolder<Row> result = ValueHolder.of(null);
+        iterateAll(result, Limit.SINGLE_ITEM);
 
-        } finally {
-            w.submitMicroTiming("SQL", sql);
-        }
+        return result.get();
     }
 
     /*
@@ -211,7 +215,7 @@ public class SQLQuery {
             if (obj instanceof Blob) {
                 writeBlobToParameter(rs, col, (Blob) obj);
             } else {
-                row.fields.put(rs.getMetaData().getColumnLabel(col), obj);
+                row.fields.put(rs.getMetaData().getColumnLabel(col).toUpperCase(), obj);
             }
         }
         return row;
@@ -246,7 +250,7 @@ public class SQLQuery {
         Watch w = Watch.start();
 
         try (Connection c = ds.getConnection()) {
-            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), false);
+            StatementCompiler compiler = new StatementCompiler(c, false);
             compiler.buildParameterizedStatement(sql, params);
             if (compiler.getStmt() == null) {
                 return 0;
@@ -273,7 +277,7 @@ public class SQLQuery {
         Watch w = Watch.start();
 
         try (Connection c = ds.getConnection()) {
-            StatementCompiler compiler = new StatementCompiler(c, ds.isMySQL(), true);
+            StatementCompiler compiler = new StatementCompiler(c, true);
             compiler.buildParameterizedStatement(sql, params);
             if (compiler.getStmt() == null) {
                 return new Row();
@@ -293,13 +297,13 @@ public class SQLQuery {
                 compiler.getStmt().close();
             }
         } finally {
-            w.submitMicroTiming("SQL", sql);
+            w.submitMicroTiming("SQL-QUERY", sql);
         }
     }
 
     @Override
     public String toString() {
-        return "JDBCQuery [" + sql + "]";
+        return "SQLQuery [" + sql + "]";
     }
 
 }

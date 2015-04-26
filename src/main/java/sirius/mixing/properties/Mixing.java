@@ -9,6 +9,7 @@
 package sirius.mixing.properties;
 
 import sirius.kernel.commons.MultiMap;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Parts;
@@ -25,7 +26,7 @@ import java.util.function.Consumer;
 /**
  * Created by aha on 20.04.15.
  */
-public class ReflectionScanner {
+public class Mixing {
 
     /*
      * Contains all known property factories. These are used to transform fields defined by entity classes to
@@ -33,6 +34,9 @@ public class ReflectionScanner {
      */
     @Parts(PropertyFactory.class)
     protected static PartCollection<PropertyFactory> factories;
+
+    @Parts(PropertyModifier.class)
+    protected static PartCollection<PropertyModifier> modifiers;
 
     private static MultiMap<Class<? extends Mixable>, Class<?>> mixins;
 
@@ -61,10 +65,8 @@ public class ReflectionScanner {
      * Adds all properties of the given class (and its superclasses)
      */
     @SuppressWarnings("unchecked")
-    public static void addFields(AccessPath accessPath,
-                                 Class<?> clazz,
-                                 Consumer<Property> propertyConsumer) {
-       addFields(accessPath, clazz, clazz, propertyConsumer);
+    public static void addFields(AccessPath accessPath, Class<?> clazz, Consumer<Property> propertyConsumer) {
+        addFields(accessPath, clazz, clazz, propertyConsumer);
     }
 
     /*
@@ -72,9 +74,9 @@ public class ReflectionScanner {
      */
     @SuppressWarnings("unchecked")
     private static void addFields(AccessPath accessPath,
-                                 Class<?> rootClass,
-                                 Class<?> clazz,
-                                 Consumer<Property> propertyConsumer) {
+                                  Class<?> rootClass,
+                                  Class<?> clazz,
+                                  Consumer<Property> propertyConsumer) {
         for (Field field : clazz.getDeclaredFields()) {
             addField(accessPath, rootClass, clazz, field, propertyConsumer);
         }
@@ -91,7 +93,7 @@ public class ReflectionScanner {
     }
 
     private static AccessPath expandAccessPath(Class<?> mixin, AccessPath accessPath) {
-        return accessPath.append(mixin.getSimpleName()+"_", obj -> ((Mixable) obj).as(mixin));
+        return accessPath.append(mixin.getSimpleName() + "_", obj -> ((Mixable) obj).as(mixin));
     }
 
     private static void addField(AccessPath accessPath,
@@ -102,7 +104,7 @@ public class ReflectionScanner {
         if (!field.isAnnotationPresent(Transient.class) && !Modifier.isStatic(field.getModifiers())) {
             for (PropertyFactory f : factories.getParts()) {
                 if (f.accepts(field)) {
-                    f.create(accessPath, field, propertyConsumer);
+                    f.create(accessPath, field, p -> propertyConsumer.accept(modifyProperty(p)));
                     return;
                 }
             }
@@ -111,6 +113,20 @@ public class ReflectionScanner {
                          rootClass.getName(),
                          clazz.getName());
         }
+    }
+
+    private static Property modifyProperty(Property p) {
+        for (PropertyModifier modifier : modifiers) {
+            if (modifier.targetType() == null || modifier.targetType()
+                                                         .isAssignableFrom(p.getField().getDeclaringClass())) {
+                if (Strings.isEmpty(modifier.targetFieldName()) || Strings.areEqual(p.getField().getName(),
+                                                                                    modifier.targetFieldName())) {
+                    p = modifier.modify(p);
+                }
+            }
+        }
+
+        return p;
     }
 
 }

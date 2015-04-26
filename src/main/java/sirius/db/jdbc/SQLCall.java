@@ -53,7 +53,7 @@ public class SQLCall {
      * Adds an in parameter.
      *
      * @param value the value to pass in
-     * @return the call itself to perform fluent calls
+     * @return the call itself to iterate fluent calls
      */
     public SQLCall addInParam(Object value) {
         names.add("");
@@ -67,7 +67,7 @@ public class SQLCall {
      *
      * @param parameter the name of the parameter
      * @param type      the SQL type ({@link java.sql.Types}) of the parameter
-     * @return the call itself to perform fluent calls
+     * @return the call itself to iterate fluent calls
      */
     public SQLCall addOutParam(String parameter, int type) {
         names.add(parameter);
@@ -79,7 +79,7 @@ public class SQLCall {
     /**
      * Invokes the call
      *
-     * @return the call itself to perform fluent calls in order to read the result
+     * @return the call itself to iterate fluent calls in order to read the result
      * @throws SQLException in case of a database error
      */
     public SQLCall call() throws SQLException {
