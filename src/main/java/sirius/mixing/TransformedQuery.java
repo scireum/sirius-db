@@ -23,10 +23,7 @@ public class TransformedQuery<E extends Entity> extends BaseQuery<E> {
     protected final String alias;
     protected final SQLQuery qry;
 
-    @Part
-    private static Schema schema;
-
-    public TransformedQuery(Class<E> type, String alias, SQLQuery qry) {
+    protected TransformedQuery(Class<E> type, String alias, SQLQuery qry) {
         super(type);
         this.alias = alias;
         this.qry = qry;
@@ -36,7 +33,7 @@ public class TransformedQuery<E extends Entity> extends BaseQuery<E> {
     @Override
     public void iterate(Function<E, Boolean> handler) {
         try {
-            EntityDescriptor ed = schema.getDescriptor(type);
+            EntityDescriptor ed = getDescriptor();
             qry.iterate(row -> {
                 try {
                     return handler.apply((E) ed.readFrom(alias, row));
@@ -60,5 +57,10 @@ public class TransformedQuery<E extends Entity> extends BaseQuery<E> {
                                                     qry.toString())
                             .handle();
         }
+    }
+
+    @Override
+    public String toString() {
+        return type + " [" + qry + "]";
     }
 }

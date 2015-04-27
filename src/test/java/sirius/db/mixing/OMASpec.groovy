@@ -12,6 +12,8 @@ import sirius.db.jdbc.SQLQuery
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import sirius.mixing.OMA
+import sirius.mixing.SmartQuery
+import sirius.mixing.constraints.FieldEqual
 import spock.lang.Stepwise
 
 @Stepwise
@@ -117,6 +119,15 @@ class OMASpec extends BaseSpecification {
         e.getLastname() == "Entity"
         and:
         e.getFetchRow().getValue("doubleAge").asInt(-1) == 24
+    }
+
+    def "simple query works"() {
+        given:
+        SmartQuery<TestEntity> qry = oma.select(TestEntity.class).where(new FieldEqual("firstname","Test")).orderAsc("lastname");
+        when:
+        def e = qry.queryList();
+        then:
+        e.size() == 1
     }
 
 }

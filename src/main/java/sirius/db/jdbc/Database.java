@@ -15,10 +15,14 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.extensions.Extension;
 import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.Formatter;
+import sirius.mixing.OMA;
 
+import javax.annotation.Nullable;
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +48,7 @@ public class Database {
     private boolean testOnBorrow;
     private String validationQuery;
     private BasicDataSource ds;
+    private EnumSet<Capability> capabilities;
 
     /*
      * Use the get(name) method to create a new object.
@@ -89,7 +94,6 @@ public class Database {
      * connections are busy. Consider using {@link #createQuery(String)} or
      * {@link #createFunctionCall(String, Integer)} or {@link #createProcedureCall(String)} to access the database
      * in a safe manner.
-     * </p>
      *
      * @return the connection pool as DataSource
      */
@@ -113,7 +117,115 @@ public class Database {
      * @throws SQLException in case of a database error
      */
     public Connection getConnection() throws SQLException {
-        return new WrappedConnection(getDatasource().getConnection(), this);
+        Transaction txn = getTransaction();
+        if (txn != null) {
+            return txn;
+        } else {
+            return new WrappedConnection(getDatasource().getConnection(), this);
+        }
+    }
+
+    @Nullable
+    protected Transaction getTransaction() throws SQLException {
+        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        if (transactions.isEmpty()) {
+            return null;
+        } else {
+            return transactions.get(transactions.size() - 1);
+        }
+    }
+
+    protected Transaction startTransaction() throws SQLException {
+        Transaction txn = new Transaction(new WrappedConnection(getDatasource().getConnection(), this));
+        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        transactions.add(txn);
+        return txn;
+    }
+
+    public void begin() throws SQLException {
+        startTransaction();
+    }
+
+    public Transaction join() throws SQLException {
+        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        if (transactions.isEmpty()) {
+            begin();
+            return transactions.get(0);
+        } else {
+            Transaction result = transactions.get(transactions.size() - 1).copy();
+            transactions.add(result);
+            return result;
+        }
+    }
+
+    public void tryCommit() throws SQLException {
+        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        if (transactions == null || transactions.isEmpty()) {
+            return;
+        } else {
+            Transaction txn = transactions.get(transactions.size() - 1);
+            transactions.remove(transactions.size() - 1);
+            txn.tryCommit();
+        }
+    }
+
+    public void commit() throws SQLException {
+        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        if (transactions == null || transactions.isEmpty()) {
+            throw new SQLException("Cannot commit a transaction: No transaction active!");
+        } else {
+            Transaction txn = transactions.get(transactions.size() - 1);
+            transactions.remove(transactions.size() - 1);
+            txn.commit();
+        }
+    }
+
+    public void rollback() throws SQLException {
+        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        if (transactions == null || transactions.isEmpty()) {
+            throw new SQLException("Cannot rollback a transaction: No transaction active!");
+        } else {
+            // Rollback this and all joined (copied) transactions
+            HandledException ex = null;
+            int lastIndex = transactions.size() - 1;
+            for (int idx = lastIndex; idx >= 0; idx--) {
+                try {
+                    Transaction txn = transactions.get(idx);
+                    txn.rollback();
+                    if (!txn.isCopy()) {
+                        break;
+                    }
+                } catch (SQLException e) {
+                    ex = Exceptions.handle()
+                                   .to(OMA.LOG)
+                                   .error(e)
+                                   .withSystemErrorMessage("Error while rolling back transaction: %s (%s)")
+                                   .handle();
+                }
+            }
+            transactions.remove(lastIndex);
+            if (ex != null) {
+                throw ex;
+            }
+        }
+    }
+
+    public void transaction(Runnable r) throws SQLException {
+        join();
+        try {
+            r.run();
+        } finally {
+            tryCommit();
+        }
+    }
+
+    public void separateTransaction(Runnable r) throws SQLException {
+        begin();
+        try {
+            r.run();
+        } finally {
+            tryCommit();
+        }
     }
 
     /**
@@ -271,13 +383,20 @@ public class Database {
         return ds.getNumActive();
     }
 
-    /**
-     * Determines if the target database is MySQL
-     *
-     * @return <tt>true</tt> if the target database is MySQL, <tt>false</tt> otherwise
-     */
-    public boolean isMySQL() {
-        return "com.mysql.jdbc.Driver".equalsIgnoreCase(driver);
+    public boolean hasCapability(Capability cap) {
+        if (capabilities == null) {
+            if ("com.mysql.jdbc.Driver".equalsIgnoreCase(driver)) {
+                capabilities = Capability.MYSQL_CAPABILITIES;
+            } else if ("org.hsqldb.jdbc.JDBCDriver".equalsIgnoreCase(driver)) {
+                capabilities = Capability.HSQLDB_CAPABILITIES;
+            } else if ("org.postgresql.Driver".equalsIgnoreCase(driver)) {
+                capabilities = Capability.POSTGRES_CAPABILITIES;
+            } else {
+                capabilities = EnumSet.noneOf(Capability.class);
+            }
+        }
+
+        return capabilities.contains(cap);
     }
 
     @Override

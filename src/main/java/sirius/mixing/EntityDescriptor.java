@@ -192,9 +192,8 @@ public class EntityDescriptor {
         if (!row.hasValue(idColumnLabel)) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
-                            .withSystemErrorMessage(
-                                    "Error loading entity from row: Missing id column for type '%s'.",
-                                    type.getName())
+                            .withSystemErrorMessage("Error loading entity from row: Missing id column for type '%s'.",
+                                                    type.getName())
                             .handle();
         }
         entity.setId(row.getValue(idColumnLabel).asLong(-1));
@@ -229,9 +228,8 @@ public class EntityDescriptor {
         if (!columns.contains(idColumnLabel.toUpperCase())) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
-                            .withSystemErrorMessage(
-                                    "Error loading entity from row: Missing id column for type '%s'.",
-                                    type.getName())
+                            .withSystemErrorMessage("Error loading entity from row: Missing id column for type '%s'.",
+                                                    type.getName())
                             .handle();
         }
         entity.setId(rs.getLong(idColumnLabel));
@@ -255,5 +253,10 @@ public class EntityDescriptor {
 
     private String getIdColumnLabel(String alias) {
         return (alias == null) ? "id" : alias + "_id";
+    }
+
+    @Override
+    public String toString() {
+        return tableName + " (" + type.getName() + ")";
     }
 }

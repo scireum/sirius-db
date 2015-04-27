@@ -8,33 +8,41 @@
 
 package sirius.db.jdbc;
 
-import sirius.kernel.async.ExecutionPoint;
-
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
- * Used to make connection pooling more robust. (Doesn't call close() twice,
- * etc.).
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
+ * Created by aha on 27.04.15.
  */
-class WrappedConnection implements Connection {
+public class Transaction implements Connection {
+    private WrappedConnection delegate;
+    private boolean copy;
+    private boolean closed;
 
-    private final Connection delegate;
-    private final Database ds;
+    public Transaction(WrappedConnection delegate) throws SQLException {
+        this.delegate = delegate;
+        this.delegate.setAutoCommit(false);
+    }
 
-    WrappedConnection(Connection c, Database ds) {
-        this.delegate = c;
-        this.ds = ds;
+    protected Transaction copy() throws SQLException {
+        Transaction result = new Transaction(delegate);
+        result.copy = true;
+        return result;
+    }
+
+    protected boolean isCopy() {
+        return copy;
     }
 
     @Override
     public String toString() {
-        return "WrappedConnection [" + ds.getUrl() + "] (" + delegate.toString() + ")";
+        if (copy) {
+            return "Transaction (copy): " + delegate.toString();
+        } else {
+            return "Transaction: " + delegate.toString();
+        }
     }
 
     @Override
@@ -44,26 +52,39 @@ class WrappedConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
-        try {
-            delegate.close();
-        } catch (SQLException e) {
-            // Most likely this exception will be a false alert because DBCP
-            // 1.2.2 cannot deal with
-            // connections which are closed by their driver (due to network
-            // issues).
-            // The next release of DBCP will fix this problem. The exception is
-            // logged at INFO level
-            // in case a "real" problem occurred. If we wouldn't call
-            // delegate.close, the connection would
-            // remain active and might block the pool.
-            Databases.LOG.INFO("Error closing connection");
-            Databases.LOG.INFO(e);
+        // Transactions close on commit or rollback
+    }
+
+    public void tryCommit() throws SQLException {
+        if (copy) {
+            return;
         }
+        if (closed) {
+            return;
+        }
+        closed = true;
+        delegate.commit();
     }
 
     @Override
     public void commit() throws SQLException {
+        if (copy) {
+            return;
+        }
+        if (closed) {
+            throw new SQLException("Transaction has already been committed or rolled back");
+        }
+        closed = true;
         delegate.commit();
+    }
+
+    @Override
+    public void rollback() throws SQLException {
+        if (copy || closed) {
+            return;
+        }
+        closed = true;
+        delegate.rollback();
     }
 
     @Override
@@ -93,20 +114,19 @@ class WrappedConnection implements Connection {
 
     @Override
     public Statement createStatement() throws SQLException {
-        return new WrappedStatement(delegate.createStatement(), ds);
+        return delegate.createStatement();
     }
 
     @Override
     public Statement createStatement(int resultSetType,
                                      int resultSetConcurrency,
                                      int resultSetHoldability) throws SQLException {
-        return new WrappedStatement(delegate.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability),
-                                    ds);
+        return delegate.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 
     @Override
     public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
-        return new WrappedStatement(delegate.createStatement(resultSetType, resultSetConcurrency), ds);
+        return delegate.createStatement(resultSetType, resultSetConcurrency);
     }
 
     @Override
@@ -232,62 +252,49 @@ class WrappedConnection implements Connection {
                                               int resultSetType,
                                               int resultSetConcurrency,
                                               int resultSetHoldability) throws SQLException {
-        return new WrappedPreparedStatement(ds,
-                                            delegate.prepareStatement(sql,
-                                                                      resultSetType,
-                                                                      resultSetConcurrency,
-                                                                      resultSetHoldability),
-                                            sql
-        );
+        return delegate.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql,
                                               int resultSetType,
                                               int resultSetConcurrency) throws SQLException {
-        return new WrappedPreparedStatement(ds,
-                                            delegate.prepareStatement(sql, resultSetType, resultSetConcurrency),
-                                            sql);
+        return delegate.prepareStatement(sql, resultSetType, resultSetConcurrency);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
-        return new WrappedPreparedStatement(ds, delegate.prepareStatement(sql, autoGeneratedKeys), sql);
+        return delegate.prepareStatement(sql, autoGeneratedKeys);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
-        return new WrappedPreparedStatement(ds, delegate.prepareStatement(sql, columnIndexes), sql);
+        return delegate.prepareStatement(sql, columnIndexes);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
-        return new WrappedPreparedStatement(ds, delegate.prepareStatement(sql, columnNames), sql);
+        return delegate.prepareStatement(sql, columnNames);
     }
 
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
-        return new WrappedPreparedStatement(ds, delegate.prepareStatement(sql), sql);
+        return delegate.prepareStatement(sql);
     }
 
     @Override
     public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-        delegate.releaseSavepoint(savepoint);
-    }
-
-    @Override
-    public void rollback() throws SQLException {
-        delegate.rollback();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
-        delegate.rollback(savepoint);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
-        delegate.setAutoCommit(autoCommit);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -339,4 +346,5 @@ class WrappedConnection implements Connection {
     public <T> T unwrap(Class<T> iface) throws SQLException {
         return delegate.unwrap(iface);
     }
+
 }

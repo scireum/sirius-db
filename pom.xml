@@ -166,7 +166,6 @@
     </build>
 
     <dependencies>
-
         <dependency>
             <groupId>com.scireum</groupId>
             <artifactId>sirius-kernel</artifactId>

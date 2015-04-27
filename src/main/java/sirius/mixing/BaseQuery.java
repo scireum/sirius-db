@@ -11,6 +11,7 @@ package sirius.mixing;
 import com.google.common.collect.Lists;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.ValueHolder;
+import sirius.kernel.di.std.Part;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,10 +21,13 @@ import java.util.function.Function;
 /**
  * Created by aha on 26.04.15.
  */
-public abstract class BaseQuery<E extends Entity> {
+abstract class BaseQuery<E extends Entity> {
     protected Class<E> type;
     protected int limit;
     protected int start;
+
+    @Part
+    private static Schema schema;
 
     public BaseQuery(Class<E> type) {
         this.type = type;
@@ -47,6 +51,10 @@ public abstract class BaseQuery<E extends Entity> {
         List<E> result = Lists.newArrayList();
         iterateAll(result::add);
         return result;
+    }
+
+    protected EntityDescriptor getDescriptor() {
+        return schema.getDescriptor(type);
     }
 
     public abstract void iterate(Function<E, Boolean> handler);

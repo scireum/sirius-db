@@ -129,11 +129,13 @@ public class SQLQuery {
             if (limit == null) {
                 limit = Limit.UNLIMITED;
             }
-            if (limit.getMaxItems() > 0) {
-                compiler.getStmt().setMaxRows(limit.getMaxItems());
+            if (limit.getTotalItems() > 0) {
+                compiler.getStmt().setMaxRows(limit.getTotalItems());
             }
-            if (ds.isMySQL() && (limit.getMaxItems() > 1000 || limit.getMaxItems() <= 0)) {
+            if (ds.hasCapability(Capability.STREAMING) && (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0)) {
                 compiler.getStmt().setFetchSize(Integer.MIN_VALUE);
+            } else {
+                compiler.getStmt().setFetchSize(1000);
             }
             try (ResultSet rs = compiler.getStmt().executeQuery()) {
                 TaskContext tc = TaskContext.get();

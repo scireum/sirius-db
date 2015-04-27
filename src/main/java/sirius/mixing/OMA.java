@@ -81,8 +81,6 @@ public class OMA {
                 Row keys = getDatabase().insertRow(ed.getTableName(), insertData);
                 if (keys.hasValue("id")) {
                     entity.setId(keys.getValue("id").asLong(-1));
-                } else {
-                    entity.setId(keys.getValue("ID").asLong(-1));
                 }
             } else {
                 StringBuilder sb = new StringBuilder("UPDATE ");
@@ -210,7 +208,7 @@ public class OMA {
     }
 
     public <E extends Entity> SmartQuery<E> select(Class<E> type) {
-        return new SmartQuery<>(type);
+        return new SmartQuery<>(type, getDatabase());
     }
 
     public <E extends Entity> TransformedQuery<E> transform(Class<E> type, SQLQuery qry) {
@@ -225,11 +223,11 @@ public class OMA {
         try {
             EntityDescriptor ed = schema.getDescriptor(type);
             try (Connection c = getDatabase().getConnection()) {
-                try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getTableName() + " WHERE id = ?")) {
+                try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getTableName() + " WHERE id = ?",ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
                     stmt.setLong(1, Value.of(id).asLong(-1));
                     try (ResultSet rs = stmt.executeQuery()) {
                         if (rs.next()) {
-                            Set<String> columns = readColumns(rs);
+                            Set<String> columns = SmartQuery.readColumns(rs);
                             Entity entity = ed.readFrom(null, columns, rs);
                             return Optional.of((E) entity);
                         } else {
@@ -249,14 +247,6 @@ public class OMA {
         }
     }
 
-    private Set<String> readColumns(ResultSet rs) throws SQLException {
-        Set<String> result = Sets.newHashSet();
-        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-            result.add(rs.getMetaData().getColumnLabel(col).toUpperCase());
-        }
-
-        return result;
-    }
 
     public <E extends Entity> E findOrFail(Class<E> type, Object id) {
         Optional<E> result = find(type, id);
