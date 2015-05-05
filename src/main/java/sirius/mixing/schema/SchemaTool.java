@@ -108,7 +108,7 @@ public class SchemaTool {
         // Columns
         ResultSet rs = c.getMetaData().getColumns(catalog, null, table.getName(), null);
         while (rs.next()) {
-            Column column = new Column();
+            TableColumn column = new TableColumn();
             column.setName(rs.getString("COLUMN_NAME"));
             column.setNullable(DatabaseMetaData.columnNullable == rs.getInt("NULLABLE"));
             column.setType(rs.getInt("DATA_TYPE"));
@@ -310,9 +310,9 @@ public class SchemaTool {
 
     private void syncColumns(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         Set<String> usedColumns = new TreeSet<String>();
-        for (Column targetCol : targetTable.getColumns()) {
+        for (TableColumn targetCol : targetTable.getColumns()) {
             // Try to find column by name
-            Column otherCol = findColumn(other, targetCol.getName());
+            TableColumn otherCol = findColumn(other, targetCol.getName());
             // If we didn't find a column and the col has rename infos, try to
             // find an appropriate column for renaming.
             if (otherCol == null && targetCol.getOldName() != null) {
@@ -352,7 +352,7 @@ public class SchemaTool {
                 }
             }
         }
-        for (Column col : other.getColumns()) {
+        for (TableColumn col : other.getColumns()) {
             if (!usedColumns.contains(col.getName())) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.columnUnused")
@@ -366,9 +366,9 @@ public class SchemaTool {
         }
     }
 
-    private Column findColumn(Table other, String name) {
+    private TableColumn findColumn(Table other, String name) {
         name = dialect.translateColumnName(name);
-        for (Column col : other.getColumns()) {
+        for (TableColumn col : other.getColumns()) {
             if (Strings.areEqual(col.getName(), name)) {
                 return col;
             }

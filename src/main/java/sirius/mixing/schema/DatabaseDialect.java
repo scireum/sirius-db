@@ -27,7 +27,7 @@ public interface DatabaseDialect {
      * @return null if they are equal or a string which contains a reason why
      *         they are not.
      */
-    String areColumnsEqual(Column target, Column current);
+    String areColumnsEqual(TableColumn target, TableColumn current);
 
     /**
      * Builds a CREATE TABLE statement.
@@ -42,17 +42,17 @@ public interface DatabaseDialect {
     /**
      * Alters the given column.
      */
-    List<String> generateAlterColumnTo(Table table, String oldName, Column toColumn);
+    List<String> generateAlterColumnTo(Table table, String oldName, TableColumn toColumn);
 
     /**
      * Generates an alter statement to add the given column.
      */
-    String generateAddColumn(Table table, Column col);
+    String generateAddColumn(Table table, TableColumn col);
 
     /**
      * Generates an alter statement to drop the given column.
      */
-    String generateDropColumn(Table table, Column col);
+    String generateDropColumn(Table table, TableColumn col);
 
     /**
      * Alters the table so that the PK is updated.

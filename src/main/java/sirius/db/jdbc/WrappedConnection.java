@@ -8,9 +8,11 @@
 
 package sirius.db.jdbc;
 
-import sirius.kernel.async.ExecutionPoint;
+import sirius.kernel.async.Operation;
+import sirius.kernel.commons.Watch;
 
 import java.sql.*;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -25,7 +27,8 @@ import java.util.concurrent.Executor;
 class WrappedConnection implements Connection {
 
     private final Connection delegate;
-    private final Database ds;
+    protected final Database ds;
+    private final Watch watch = Watch.start();
 
     WrappedConnection(Connection c, Database ds) {
         this.delegate = c;
@@ -44,6 +47,7 @@ class WrappedConnection implements Connection {
 
     @Override
     public void close() throws SQLException {
+        Operation op = Operation.create("sql", () -> ds.name + ".close()", Duration.ofSeconds(5));
         try {
             delegate.close();
         } catch (SQLException e) {
@@ -58,6 +62,9 @@ class WrappedConnection implements Connection {
             // remain active and might block the pool.
             Databases.LOG.INFO("Error closing connection");
             Databases.LOG.INFO(e);
+        } finally {
+            Operation.release(op);
+            watch.submitMicroTiming("SQL", "Connection Duration: " + ds.name);
         }
     }
 
@@ -237,8 +244,7 @@ class WrappedConnection implements Connection {
                                                                       resultSetType,
                                                                       resultSetConcurrency,
                                                                       resultSetHoldability),
-                                            sql
-        );
+                                            sql);
     }
 
     @Override

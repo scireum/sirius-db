@@ -14,12 +14,9 @@ import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Databases;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.Injector;
-import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.di.std.Parts;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
-import sirius.mixing.properties.PropertyFactory;
 import sirius.mixing.schema.DatabaseDialect;
 import sirius.mixing.schema.SchemaTool;
 import sirius.mixing.schema.SchemaUpdateAction;
@@ -34,16 +31,37 @@ import java.util.Map;
 public class Schema implements Initializable {
 
     private Map<Class<?>, EntityDescriptor> descriptorsByType = Maps.newHashMap();
+    private Map<String, EntityDescriptor> descriptorsByName = Maps.newHashMap();
 
     public EntityDescriptor getDescriptor(Class<? extends Entity> aClass) {
-        return descriptorsByType.get(aClass);
+        EntityDescriptor ed = descriptorsByType.get(aClass);
+        if (ed == null) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage("The class '%s' is not a managed entity!", aClass.getName())
+                            .handle();
+        }
+
+        return ed;
+    }
+
+    public EntityDescriptor getDescriptor(String aClassName) {
+        EntityDescriptor ed = descriptorsByName.get(aClassName);
+        if (ed == null) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage("The name '%s' is not a known entity!", aClassName)
+                            .handle();
+        }
+
+        return ed;
     }
 
     @Part
     private Databases dbs;
     private Database db;
 
-    public Database getDatabase() {
+    protected Database getDatabase() {
         if (db == null) {
             db = dbs.get("mixing");
         }
@@ -58,9 +76,11 @@ public class Schema implements Initializable {
         for (Entity e : Injector.context().getParts(Entity.class)) {
             EntityDescriptor ed = e.createDescriptor();
             ed.initialize();
-            ed = applyMixins(ed);
-            ed = applyModifications(ed);
             descriptorsByType.put(e.getClass(), ed);
+            descriptorsByName.put(e.getClass().getSimpleName().toUpperCase(), ed);
+        }
+        for (EntityDescriptor ed : descriptorsByType.values()) {
+            ed.link();
         }
 
         List<Table> target = Lists.newArrayList();
@@ -90,13 +110,5 @@ public class Schema implements Initializable {
                 }
             }
         }
-    }
-
-    private EntityDescriptor applyModifications(EntityDescriptor ed) {
-        return ed;
-    }
-
-    private EntityDescriptor applyMixins(EntityDescriptor ed) {
-        return ed;
     }
 }

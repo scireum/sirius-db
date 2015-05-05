@@ -10,6 +10,7 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.dbcp.BasicDataSource;
+import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.extensions.Extension;
@@ -22,6 +23,7 @@ import sirius.mixing.OMA;
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
 import java.sql.*;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +39,7 @@ import java.util.Map;
  */
 public class Database {
 
-    private final String name;
+    protected final String name;
     private String driver;
     private String url;
     private String username;
@@ -121,7 +123,16 @@ public class Database {
         if (txn != null) {
             return txn;
         } else {
+            return createConnection();
+        }
+    }
+
+    private Connection createConnection() throws SQLException {
+        Operation op = Operation.create("sql", () -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5));
+        try {
             return new WrappedConnection(getDatasource().getConnection(), this);
+        } finally {
+            Operation.release(op);
         }
     }
 
@@ -136,7 +147,8 @@ public class Database {
     }
 
     protected Transaction startTransaction() throws SQLException {
-        Transaction txn = new Transaction(new WrappedConnection(getDatasource().getConnection(), this));
+        Databases.LOG.FINE("BEGIN " + name);
+        Transaction txn = new Transaction(new WrappedConnection(createConnection(), this));
         List<Transaction> transactions = TransactionManager.getTransactionStack(name);
         transactions.add(txn);
         return txn;

@@ -8,6 +8,8 @@
 
 package sirius.db.jdbc;
 
+import sirius.kernel.commons.Watch;
+
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -20,6 +22,7 @@ public class Transaction implements Connection {
     private WrappedConnection delegate;
     private boolean copy;
     private boolean closed;
+    private Watch watch = Watch.start();
 
     public Transaction(WrappedConnection delegate) throws SQLException {
         this.delegate = delegate;
@@ -62,6 +65,7 @@ public class Transaction implements Connection {
         if (closed) {
             return;
         }
+        Databases.LOG.FINE("COMMIT "+delegate.ds.name);
         closed = true;
         delegate.commit();
     }
@@ -74,6 +78,7 @@ public class Transaction implements Connection {
         if (closed) {
             throw new SQLException("Transaction has already been committed or rolled back");
         }
+        Databases.LOG.FINE("COMMIT "+delegate.ds.name);
         closed = true;
         delegate.commit();
     }
@@ -83,8 +88,10 @@ public class Transaction implements Connection {
         if (copy || closed) {
             return;
         }
+        Databases.LOG.FINE("ROLLBACK "+delegate.ds.name);
         closed = true;
         delegate.rollback();
+        watch.submitMicroTiming("SQL", "Transaction Duration: " + delegate.ds.name);
     }
 
     @Override

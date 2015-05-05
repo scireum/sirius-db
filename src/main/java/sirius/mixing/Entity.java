@@ -10,7 +10,6 @@ package sirius.mixing;
 
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.Row;
-import sirius.kernel.di.morphium.Adaptable;
 import sirius.kernel.di.std.Part;
 import sirius.mixing.annotations.Transient;
 
@@ -27,9 +26,11 @@ public abstract class Entity extends Mixable {
 
     @Transient
     protected long id = -1;
+    public static final Column ID = Column.named("id");
 
     @Transient
     protected int version = 0;
+    public static final Column VERSION = Column.named("version");
 
     @Transient
     protected Map<String, Object> persistedData = Maps.newHashMap();
@@ -42,7 +43,7 @@ public abstract class Entity extends Mixable {
     }
 
     protected EntityDescriptor createDescriptor() {
-        return new EntityDescriptor(getClass());
+        return new EntityDescriptor(getClass(), this);
     }
 
     public boolean isNew() {
@@ -91,5 +92,29 @@ public abstract class Entity extends Mixable {
     @Nullable
     public Row getFetchRow() {
         return fetchRow;
+    }
+
+    protected void asString(StringBuilder sb) {
+        if (isNew()) {
+            sb.append("new ");
+            sb.append(getClass().getSimpleName());
+        } else {
+            sb.append(getUniqueName());
+        }
+    }
+
+    private String getUniqueName() {
+        if (isNew()) {
+            return "";
+        }
+        return getClass().getSimpleName().toUpperCase() + "-" + getId();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        asString(sb);
+        return sb.toString();
+
     }
 }

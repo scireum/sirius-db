@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.mixing.properties;
+package sirius.mixing;
 
 import javax.annotation.Nonnull;
 import java.util.function.Function;

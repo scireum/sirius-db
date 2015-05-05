@@ -10,8 +10,7 @@ package sirius.mixing.properties;
 
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
-import sirius.mixing.Composite;
-import sirius.mixing.OMA;
+import sirius.mixing.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -29,7 +28,7 @@ public class CompositePropertyFactory implements PropertyFactory {
     }
 
     @Override
-    public void create(AccessPath accessPath,
+    public void create(EntityDescriptor descriptor, AccessPath accessPath,
                        Field field,
                        Consumer<Property> propertyConsumer) {
         if (!Modifier.isFinal(field.getModifiers())) {
@@ -38,7 +37,7 @@ public class CompositePropertyFactory implements PropertyFactory {
 
         field.setAccessible(true);
         accessPath = expandAccessPath(accessPath, field);
-        Mixing.addFields(accessPath, field.getType(), propertyConsumer);
+        EntityDescriptor.addFields(descriptor, accessPath, field.getType(), propertyConsumer);
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {

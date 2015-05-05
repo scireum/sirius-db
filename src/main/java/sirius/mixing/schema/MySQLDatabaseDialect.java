@@ -16,7 +16,7 @@ import java.util.List;
 public class MySQLDatabaseDialect implements DatabaseDialect {
 
     @Override
-    public String areColumnsEqual(Column target, Column current) {
+    public String areColumnsEqual(TableColumn target, TableColumn current) {
         if (!areTypesEqual(target.getType(), current.getType())) {
             return NLS.fmtr("scireum.db.schema.mysql.differentTypes")
                       .set("target", SchemaTool.getJdbcTypeName(target.getType()))
@@ -87,7 +87,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
 
     @Override
     public Table completeTableInfos(Table table) {
-        for (Column col : table.getColumns()) {
+        for (TableColumn col : table.getColumns()) {
             if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType() || Types.DATE == col
                     .getType() || Types.TIMESTAMP == col.getType() || Types.LONGVARCHAR == col.getType() || Types.TIME == col
                     .getType()) {
@@ -103,7 +103,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     }
 
     @Override
-    public String generateAddColumn(Table table, Column col) {
+    public String generateAddColumn(Table table, TableColumn col) {
         return MessageFormat.format("ALTER TABLE `{0}` ADD COLUMN `{1}` {2} {3} {4} {5}",
                                     table.getName(),
                                     col.getName(),
@@ -113,7 +113,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
                                     getDefaultValueAsString(col));
     }
 
-    private String getDefaultValueAsString(Column col) {
+    private String getDefaultValueAsString(TableColumn col) {
         if (col.getDefaultValue() == null) {
             return "";
         }
@@ -239,7 +239,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     }
 
     @Override
-    public List<String> generateAlterColumnTo(Table table, String oldName, Column toColumn) {
+    public List<String> generateAlterColumnTo(Table table, String oldName, TableColumn toColumn) {
         if (oldName == null) {
             oldName = toColumn.getName();
         }
@@ -288,7 +288,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         sb.append("CREATE TABLE `");
         sb.append(table.getName());
         sb.append("` (\n");
-        for (Column col : table.getColumns()) {
+        for (TableColumn col : table.getColumns()) {
             sb.append(MessageFormat.format("  `{0}` {1} {2} {3} {4},\n",
                                            col.getName(),
                                            getTypeName(col.getType(),
@@ -317,7 +317,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     }
 
     @Override
-    public String generateDropColumn(Table table, Column col) {
+    public String generateDropColumn(Table table, TableColumn col) {
         return MessageFormat.format("ALTER TABLE `{0}` DROP COLUMN `{1}`", table.getName(), col.getName());
     }
 

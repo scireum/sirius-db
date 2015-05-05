@@ -140,9 +140,8 @@ public class SQLQuery {
             try (ResultSet rs = compiler.getStmt().executeQuery()) {
                 TaskContext tc = TaskContext.get();
                 while (rs.next() && tc.isActive()) {
-                    limit.nextRow();
                     Row row = loadIntoRow(rs);
-                    if (limit.shouldOutput()) {
+                    if (limit.nextRow()) {
                         if (!handler.apply(row)) {
                             break;
                         }
@@ -202,7 +201,7 @@ public class SQLQuery {
     @Nullable
     public Row queryFirst() throws SQLException {
         ValueHolder<Row> result = ValueHolder.of(null);
-        iterateAll(result, Limit.SINGLE_ITEM);
+        iterateAll(result, Limit.singleItem());
 
         return result.get();
     }

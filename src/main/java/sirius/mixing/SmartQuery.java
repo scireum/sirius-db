@@ -9,6 +9,7 @@
 package sirius.mixing;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.Database;
@@ -17,14 +18,20 @@ import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
+import sirius.mixing.constraints.FieldOperator;
+import sirius.mixing.properties.EntityRefProperty;
 
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -33,10 +40,9 @@ import java.util.function.Function;
  */
 public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     protected final EntityDescriptor descriptor;
-    protected String[] fields;
-    protected List<Tuple<String, Boolean>> orderBys = Lists.newArrayList();
+    protected List<Column> fields;
+    protected List<Tuple<Column, Boolean>> orderBys = Lists.newArrayList();
     protected List<Constraint> containts = Lists.newArrayList();
-    protected List<Tuple<String, String[]>> joinFetches = Lists.newArrayList();
     protected Database db;
 
     protected SmartQuery(Class<E> type, Database db) {
@@ -46,8 +52,8 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     @Override
-    public SmartQuery<E> start(int start) {
-        return (SmartQuery<E>) super.start(start);
+    public SmartQuery<E> skip(int skip) {
+        return (SmartQuery<E>) super.skip(skip);
     }
 
     @Override
@@ -63,28 +69,44 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         return this;
     }
 
-    public SmartQuery<E> orderAsc(String field) {
+    public SmartQuery<E> eq(Column field, Object value) {
+        this.containts.add(FieldOperator.on(field).equal(value));
+        return this;
+    }
+
+    public SmartQuery<E> eqIgnoreNull(Column field, Object value) {
+        this.containts.add(FieldOperator.on(field).equal(value).ignoreNull());
+        return this;
+    }
+
+    public SmartQuery<E> orderAsc(Column field) {
         orderBys.add(Tuple.create(field, true));
         return this;
     }
 
-    public SmartQuery<E> orderDesc(String field) {
+    public SmartQuery<E> orderDesc(Column field) {
         orderBys.add(Tuple.create(field, false));
         return this;
     }
 
-    public SmartQuery<E> fields(String... fields) {
-        this.fields = fields;
-        return this;
-    }
-
-    public SmartQuery<E> joinFetch(String relation, String... fields) {
-        joinFetches.add(Tuple.create(relation, fields));
+    public SmartQuery<E> fields(Column... fields) {
+        this.fields = Arrays.asList(fields);
         return this;
     }
 
     public long count() {
         return 0;
+    }
+
+    public boolean exists() {
+        return count() > 0;
+    }
+
+    @Part
+    private static OMA oma;
+
+    public void delete() {
+        iterateAll(oma::delete);
     }
 
     protected static Set<String> readColumns(ResultSet rs) throws SQLException {
@@ -102,31 +124,26 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         try {
             Watch w = Watch.start();
             try (Connection c = db.getConnection()) {
-                PreparedStatement stmt = compileStatement(c);
+                Compiler compiler = compile();
+                PreparedStatement stmt = compiler.prepareStatement(c);
                 if (stmt == null) {
                     return;
                 }
                 Limit limit = getLimit();
-                if (limit.getTotalItems() > 0) {
-                    stmt.setMaxRows(limit.getTotalItems());
-                }
-                if (db.hasCapability(Capability.STREAMING) && (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0)) {
-                    stmt.setFetchSize(Integer.MIN_VALUE);
-                } else {
-                    stmt.setFetchSize(1000);
-                }
+                boolean nativeLimit = db.hasCapability(Capability.LIMIT);
+                tuneStatement(stmt, limit, nativeLimit);
                 try (ResultSet rs = stmt.executeQuery()) {
                     TaskContext tc = TaskContext.get();
                     Set<String> columns = readColumns(rs);
                     while (rs.next() && tc.isActive()) {
-                        limit.nextRow();
-                        if (limit.shouldOutput()) {
+                        if (nativeLimit || limit.nextRow()) {
                             Entity e = descriptor.readFrom(null, columns, rs);
+                            compiler.executeJoinFetches(e, columns, rs);
                             if (!handler.apply((E) e)) {
                                 break;
                             }
                         }
-                        if (!limit.shouldContinue()) {
+                        if (!nativeLimit && !limit.shouldContinue()) {
                             break;
                         }
                     }
@@ -149,13 +166,124 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
     }
 
+    protected void tuneStatement(PreparedStatement stmt, Limit limit, boolean nativeLimit) throws SQLException {
+        if (!nativeLimit && limit.getTotalItems() > 0) {
+            stmt.setMaxRows(limit.getTotalItems());
+        }
+        if (db.hasCapability(Capability.STREAMING) && (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0)) {
+            stmt.setFetchSize(Integer.MIN_VALUE);
+        } else {
+            stmt.setFetchSize(1000);
+        }
+    }
+
+
     public static class Compiler {
 
-        protected StringBuilder sb = new StringBuilder();
-        protected List<Object> parameters = Lists.newArrayList();
+        private static class JoinFetch {
+            String tableAlias;
+            EntityRefProperty property;
+            Map<String, JoinFetch> subFetches = Maps.newTreeMap();
+        }
 
-        public StringBuilder getSQLBuilder() {
-            return sb;
+
+        protected EntityDescriptor ed;
+        protected StringBuilder preJoinQuery = new StringBuilder();
+        protected StringBuilder joins = new StringBuilder();
+        protected StringBuilder postJoinQuery = new StringBuilder();
+        protected List<Object> parameters = Lists.newArrayList();
+        protected Map<String, Tuple<String, EntityDescriptor>> joinTable = Maps.newTreeMap();
+        protected JoinFetch rootFetch = new JoinFetch();
+
+        public Compiler(@Nullable EntityDescriptor ed) {
+            this.ed = ed;
+        }
+
+        public StringBuilder getSELECTBuilder() {
+            return preJoinQuery;
+        }
+
+        public StringBuilder getWHEREBuilder() {
+            return postJoinQuery;
+        }
+
+        private Tuple<String, EntityDescriptor> determineAlias(Column parent) {
+            if (parent == null || ed == null) {
+                return Tuple.create("e", ed);
+            }
+            String path = parent.toString();
+            Tuple<String, EntityDescriptor> result = joinTable.get(path);
+            if (result != null) {
+                return result;
+            }
+            Tuple<String, EntityDescriptor> parentAlias = determineAlias(parent.getParent());
+            EntityRefProperty refProperty = (EntityRefProperty) parentAlias.getSecond().getProperty(parent.getName());
+            EntityDescriptor other = refProperty.getReferencedDescriptor();
+            if (joins == null) {
+                joins = new StringBuilder();
+            }
+            String tableAlias = "t" + joinTable.size();
+            joins.append(" LEFT JOIN ")
+                 .append(other.getTableName())
+                 .append(" ")
+                 .append(tableAlias)
+                 .append(" ON ")
+                 .append(tableAlias)
+                 .append(".id = ")
+                 .append(parentAlias.getFirst())
+                 .append(".")
+                 .append(parent.getName());
+            result = Tuple.create(tableAlias, other);
+            joinTable.put(path, result);
+            return result;
+        }
+
+        public String translateColumnName(Column column) {
+            String alias = determineAlias(column.getParent()).getFirst();
+            return alias + "." + column.getName();
+        }
+
+        private void createJoinFetch(Column field) {
+            List<Column> fetchPath = Lists.newArrayList();
+            Column parent = field.getParent();
+            while(parent != null) {
+                fetchPath.add(0, parent);
+                parent = parent.getParent();
+            }
+            JoinFetch jf = rootFetch;
+            EntityDescriptor currentDescriptor = ed;
+            for(Column col : fetchPath) {
+                JoinFetch subFetch = jf.subFetches.get(col.getName());
+                if (subFetch == null) {
+                    subFetch = new JoinFetch();
+                    Tuple<String, EntityDescriptor> parentInfo = determineAlias(col);
+                    subFetch.tableAlias = parentInfo.getFirst();
+                    subFetch.property = (EntityRefProperty)currentDescriptor.getProperty(col.getName());
+                    jf.subFetches.put(col.getName(), subFetch);
+                }
+                jf = subFetch;
+                currentDescriptor = subFetch.property.getDescriptor();
+            }
+        }
+
+        protected void executeJoinFetches(Entity entity, Set<String> columns, ResultSet rs) {
+            executeJoinFetch(rootFetch, entity, columns, rs);
+        }
+
+        private void executeJoinFetch(JoinFetch jf, Entity parent, Set<String> columns, ResultSet rs) {
+            try {
+                Entity child = parent;
+                if (jf.property != null) {
+                    child = jf.property.getReferencedDescriptor().readFrom(jf.tableAlias, columns, rs);
+                    jf.property.setReferencedEntity(parent, child);
+                }
+                for (JoinFetch subFetch : jf.subFetches.values()) {
+                    executeJoinFetch(subFetch,child, columns, rs);
+                }
+            } catch (Exception e) {
+                //TODO error reporting
+                Exceptions.handle(e);
+            }
         }
 
         public void addParameter(Object parameter) {
@@ -163,7 +291,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         private PreparedStatement prepareStatement(Connection c) throws SQLException {
-            PreparedStatement stmt = c.prepareStatement(sb.toString(),
+            PreparedStatement stmt = c.prepareStatement(getQuery(),
                                                         ResultSet.TYPE_FORWARD_ONLY,
                                                         ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < parameters.size(); i++) {
@@ -172,24 +300,23 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             return stmt;
         }
 
+        protected String getQuery() {
+            return preJoinQuery.toString() + joins + postJoinQuery;
+        }
+
         @Override
         public String toString() {
             if (parameters.isEmpty()) {
-                return sb.toString();
+                return getQuery();
             } else {
-                return sb.toString() + " " + parameters;
+                return getQuery() + " " + parameters;
             }
         }
-    }
-
-    private PreparedStatement compileStatement(Connection c) throws SQLException {
-        return compile().prepareStatement(c);
     }
 
     private Compiler compile() {
         Compiler compiler = select();
         from(compiler);
-        join(compiler);
         where(compiler);
         orderBy(compiler);
         limit(compiler);
@@ -197,17 +324,37 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     private Compiler select() {
-        Compiler c = new Compiler();
-        c.getSQLBuilder().append("SELECT ").append(" *\n");
+        Compiler c = new Compiler(descriptor);
+        c.getSELECTBuilder().append("SELECT ");
+        if (fields == null || fields.isEmpty()) {
+            c.getSELECTBuilder().append(" e.*");
+        } else {
+            Monoflop mf = Monoflop.create();
+            for (Column field : fields) {
+                if (mf.successiveCall()) {
+                    c.getSELECTBuilder().append(", ");
+                }
+                String alias = c.determineAlias(field.getParent()).getFirst();
+                if ("e".equals(alias)) {
+                    c.getSELECTBuilder().append(field);
+                } else {
+                    c.getSELECTBuilder().append(alias);
+                    c.getSELECTBuilder().append(".");
+                    c.getSELECTBuilder().append(field.getName());
+                    c.getSELECTBuilder().append(" AS ");
+                    c.getSELECTBuilder().append(alias);
+                    c.getSELECTBuilder().append("_");
+                    c.getSELECTBuilder().append(field.getName());
+                    c.createJoinFetch(field);
+                }
+            }
+        }
+        c.getSELECTBuilder().append(" ");
         return c;
     }
 
     private void from(Compiler compiler) {
-        compiler.getSQLBuilder().append("   FROM ").append(descriptor.getTableName()).append("\n");
-    }
-
-    private void join(Compiler compiler) {
-
+        compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getTableName()).append(" e");
     }
 
     private void where(Compiler compiler) {
@@ -221,40 +368,38 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         if (!hasConstraints) {
             return;
         }
-        compiler.getSQLBuilder().append("   WHERE ");
+        compiler.getWHEREBuilder().append(" WHERE ");
         Monoflop mf = Monoflop.create();
         for (Constraint c : containts) {
             if (c.addsConstraint()) {
                 if (mf.successiveCall()) {
-                    compiler.getSQLBuilder().append("\n      AND ");
+                    compiler.getWHEREBuilder().append(" AND ");
                 }
                 c.appendSQL(compiler);
             }
         }
-        compiler.getSQLBuilder().append("\n");
     }
 
     private void orderBy(Compiler compiler) {
         if (!orderBys.isEmpty()) {
-            compiler.getSQLBuilder().append("   ORDER BY ");
+            compiler.getWHEREBuilder().append(" ORDER BY ");
             Monoflop mf = Monoflop.create();
-            for (Tuple<String, Boolean> e : orderBys) {
+            for (Tuple<Column, Boolean> e : orderBys) {
                 if (mf.successiveCall()) {
-                    compiler.getSQLBuilder().append(", ");
+                    compiler.getWHEREBuilder().append(", ");
                 }
-                compiler.getSQLBuilder().append(e.getFirst());
-                compiler.getSQLBuilder().append(e.getSecond() ? " ASC" : " DESC");
+                compiler.getWHEREBuilder().append(compiler.translateColumnName(e.getFirst()));
+                compiler.getWHEREBuilder().append(e.getSecond() ? " ASC" : " DESC");
             }
-            compiler.getSQLBuilder().append("\n");
         }
     }
 
     private void limit(Compiler compiler) {
         if (limit > 0 && db.hasCapability(Capability.LIMIT)) {
-            if (start > 0) {
-                compiler.getSQLBuilder().append("   LIMIT ").append(limit).append("\n");
+            if (skip > 0) {
+                compiler.getWHEREBuilder().append(" LIMIT ").append(skip).append(", ").append(limit);
             } else {
-                compiler.getSQLBuilder().append("   LIMIT ").append(start).append(", ").append(limit).append("\n");
+                compiler.getWHEREBuilder().append(" LIMIT ").append(limit);
             }
         }
     }

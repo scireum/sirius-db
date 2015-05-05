@@ -9,8 +9,8 @@
 package sirius.mixing.properties;
 
 import sirius.kernel.di.std.Register;
-import sirius.mixing.OMA;
-import sirius.mixing.schema.Column;
+import sirius.mixing.*;
+import sirius.mixing.schema.TableColumn;
 
 import java.lang.reflect.Field;
 import java.sql.Types;
@@ -33,14 +33,30 @@ public class StringProperty extends Property {
         }
 
         @Override
-        public void create(AccessPath accessPath, Field field, Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new StringProperty(accessPath, field));
+        public void create(EntityDescriptor descriptor,
+                           AccessPath accessPath,
+                           Field field,
+                           Consumer<Property> propertyConsumer) {
+            propertyConsumer.accept(new StringProperty(descriptor, accessPath, field));
         }
 
     }
 
-    public StringProperty(AccessPath accessPath, Field field) {
-        super(accessPath, field);
+    public StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+        super(descriptor, accessPath, field);
+    }
+
+    @Override
+    public void onBeforeSave(Entity entity) {
+        String value = (String) getValue(entity);
+        if (value != null) {
+            value = value.trim();
+            if ("".equals(value)) {
+                value = null;
+            }
+            setValue(entity, value);
+        }
+        super.onBeforeSave(entity);
     }
 
     @Override
@@ -49,7 +65,7 @@ public class StringProperty extends Property {
     }
 
     @Override
-    protected void finalizeColumn(Column column) {
+    protected void finalizeColumn(TableColumn column) {
         if (column.getLength() <= 0) {
             OMA.LOG.WARN(
                     "Error in property '%s' ('%s' of '%s'): A string property needs a length! (Use @Length to specify one). Defaulting to 255.",

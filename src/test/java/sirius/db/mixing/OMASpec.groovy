@@ -8,12 +8,9 @@
 
 package sirius.db.mixing
 
-import sirius.db.jdbc.SQLQuery
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import sirius.mixing.OMA
-import sirius.mixing.SmartQuery
-import sirius.mixing.constraints.FieldEqual
 import spock.lang.Stepwise
 
 @Stepwise
@@ -88,46 +85,5 @@ class OMASpec extends BaseSpecification {
         readBack.as(TestMixin.class).as(TestMixinMixin.class).getInitial() == "J"
     }
 
-    def "transform works when reading a TestEntity"() {
-        given:
-        SQLQuery qry = oma.getDatabase().createQuery("SELECT * FROM testentity");
-        when:
-        def e = oma.transform(TestEntity.class, qry).queryFirst();
-        then:
-        e.getFirstname() == "Test"
-        and:
-        e.getLastname() == "Entity"
-        and:
-        e.getAge() == 12
-    }
-
-    def "transform works when reading a TestEntity with alias"() {
-        given:
-        SQLQuery qry = oma.getDatabase().createQuery("SELECT id as x_id, lastname as x_lastname  FROM testentity");
-        when:
-        def e = oma.transform(TestEntity.class, "x", qry).queryFirst();
-        then:
-        e.getLastname() == "Entity"
-    }
-
-    def "transform works when reading a TestEntity with a computed column"() {
-        given:
-        SQLQuery qry = oma.getDatabase().createQuery("SELECT id, lastname, age * 2 AS doubleAge FROM testentity");
-        when:
-        def e = oma.transform(TestEntity.class, qry).queryFirst();
-        then:
-        e.getLastname() == "Entity"
-        and:
-        e.getFetchRow().getValue("doubleAge").asInt(-1) == 24
-    }
-
-    def "simple query works"() {
-        given:
-        SmartQuery<TestEntity> qry = oma.select(TestEntity.class).where(new FieldEqual("firstname","Test")).orderAsc("lastname");
-        when:
-        def e = qry.queryList();
-        then:
-        e.size() == 1
-    }
 
 }

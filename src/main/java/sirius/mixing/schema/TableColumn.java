@@ -5,7 +5,7 @@ import sirius.kernel.commons.Strings;
 /**
  * Represents a column of a database table.
  */
-public class Column {
+public class TableColumn {
     private String oldName;
     private String name;
     private boolean autoIncrement;
@@ -103,10 +103,10 @@ public class Column {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof Column)) {
+        if (!(obj instanceof TableColumn)) {
             return false;
         }
-        return Strings.areEqual(((Column) obj).name, name);
+        return Strings.areEqual(((TableColumn) obj).name, name);
     }
 
     @Override

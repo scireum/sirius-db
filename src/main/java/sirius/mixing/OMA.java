@@ -9,23 +9,22 @@
 package sirius.mixing;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Row;
 import sirius.db.jdbc.SQLQuery;
 import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.health.Log;
-import sirius.mixing.properties.Property;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -157,14 +156,30 @@ public class OMA {
     }
 
     public <E extends Entity> void tryDelete(E entity) throws OptimisticLockException {
-        delete(entity, false);
+        doDelete(entity, false);
     }
 
     public <E extends Entity> void forceDelete(E entity) {
-        delete(entity, true);
+        try {
+            doDelete(entity, true);
+        } catch (OptimisticLockException e) {
+            // Should really not happen....
+            throw Exceptions.handle(e);
+        }
+
     }
 
-    private <E extends Entity> void delete(E entity, boolean force) {
+    public <E extends Entity> void delete(E entity) {
+        try {
+            doDelete(entity, false);
+        } catch (OptimisticLockException e) {
+            throw Exceptions.handle(e);
+        }
+
+    }
+
+
+    private <E extends Entity> void doDelete(E entity, boolean force) throws OptimisticLockException {
         if (entity == null || entity.isNew()) {
             return;
         }
@@ -214,6 +229,7 @@ public class OMA {
     public <E extends Entity> TransformedQuery<E> transform(Class<E> type, SQLQuery qry) {
         return new TransformedQuery<>(type, null, qry);
     }
+
     public <E extends Entity> TransformedQuery<E> transform(Class<E> type, String alias, SQLQuery qry) {
         return new TransformedQuery<>(type, alias, qry);
     }
@@ -223,7 +239,9 @@ public class OMA {
         try {
             EntityDescriptor ed = schema.getDescriptor(type);
             try (Connection c = getDatabase().getConnection()) {
-                try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getTableName() + " WHERE id = ?",ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
+                try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getTableName() + " WHERE id = ?",
+                                                                 ResultSet.TYPE_FORWARD_ONLY,
+                                                                 ResultSet.CONCUR_READ_ONLY)) {
                     stmt.setLong(1, Value.of(id).asLong(-1));
                     try (ResultSet rs = stmt.executeQuery()) {
                         if (rs.next()) {
@@ -257,6 +275,23 @@ public class OMA {
                             .to(LOG)
                             .withSystemErrorMessage("Cannot find entity of type '%s' with id '%s'", type.getName(), id)
                             .handle();
+        }
+    }
+
+    public Optional<? extends Entity> resolve(String name) {
+        if (Strings.isEmpty(name)) {
+            return Optional.empty();
+        }
+        Tuple<String, String> typeAndId = Strings.split(name, "-");
+        return find(schema.getDescriptor(name).getType(), typeAndId.getSecond());
+    }
+
+    public Entity resolveOrFail(String name) {
+        Optional<? extends Entity> result = resolve(name);
+        if (result.isPresent()) {
+            return result.get();
+        } else {
+            throw Exceptions.handle().to(LOG).withSystemErrorMessage("Cannot find entity named '%s'", name).handle();
         }
     }
 

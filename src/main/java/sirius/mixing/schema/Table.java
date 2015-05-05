@@ -11,7 +11,7 @@ import java.util.List;
 public class Table {
     private String name;
     private List<String> primaryKey = new ArrayList<String>();
-    private List<Column> columns = new ArrayList<Column>();
+    private List<TableColumn> columns = new ArrayList<TableColumn>();
     private List<Key> keys = new ArrayList<Key>();
     private List<ForeignKey> foreignKeys = new ArrayList<ForeignKey>();
 
@@ -27,7 +27,7 @@ public class Table {
         this.name = name;
     }
 
-    public List<Column> getColumns() {
+    public List<TableColumn> getColumns() {
         return columns;
     }
 
@@ -66,7 +66,7 @@ public class Table {
         StringBuilder sb = new StringBuilder("TABLE ");
         sb.append(name);
         sb.append("{\n");
-        for (Column col : columns) {
+        for (TableColumn col : columns) {
             sb.append("   COLUMN: ");
             sb.append(col);
             sb.append("\n");

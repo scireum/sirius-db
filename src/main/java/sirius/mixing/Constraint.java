@@ -8,8 +8,6 @@
 
 package sirius.mixing;
 
-import javax.management.Query;
-
 /**
  * Created by aha on 27.04.15.
  */
@@ -24,7 +22,7 @@ public abstract class Constraint {
         if (!addsConstraint()) {
             return "[inactive constraint]";
         }
-        SmartQuery.Compiler c = new SmartQuery.Compiler();
+        SmartQuery.Compiler c = new SmartQuery.Compiler(null);
         appendSQL(c);
         return c.toString();
     }

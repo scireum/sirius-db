@@ -9,13 +9,14 @@
 package sirius.db.jdbc
 
 import sirius.kernel.BaseSpecification
+import sirius.kernel.commons.Limit
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
 
 import java.util.function.Function
 
 @Stepwise
-class DatabaseSpec extends BaseSpecification {
+class JDBCSpec extends BaseSpecification {
 
     @Part
     static Databases dbs;
@@ -61,6 +62,53 @@ class DatabaseSpec extends BaseSpecification {
         thrown(IllegalArgumentException)
     }
 
+    def "queryList returns all inserted rows"() {
+        given:
+        def db = dbs.get("test");
+        when:
+        def qry = db.createQuery('SELECT * FROM test_a');
+        then:
+        qry.queryList().size() == 2
+    }
+
+    def "SQLQuery#queryFirst returns a row"() {
+        given:
+        def db = dbs.get("test");
+        when:
+        def qry = db.createQuery('SELECT * FROM test_a ORDER BY a ASC');
+        then:
+        qry.queryFirst().getValue("a").asString() == "Hello"
+    }
+
+    def "SQLQuery#queryFirst returns null for an empty result set"() {
+        given:
+        def db = dbs.get("test");
+        when:
+        def qry = db.createQuery("SELECT a,b FROM test_a WHERE a = 'xxx'");
+        then:
+        qry.queryFirst() == null
+    }
+
+    def "SQLQuery#first returns an empty optional"() {
+        given:
+        def db = dbs.get("test");
+        when:
+        def qry = db.createQuery("SELECT * FROM test_a WHERE a = 'xxx'");
+        then:
+        !qry.first().isPresent()
+    }
+
+    def "SQLQuery#executeUpdate works changes a row"() {
+        given:
+        def db = dbs.get("test");
+        when:
+        int numberOfRowsChanged = db.createQuery("UPDATE test_a SET a = 'xxx' WHERE a = 'Test'").executeUpdate();
+        then:
+        numberOfRowsChanged == 1
+        and:
+        db.createQuery("SELECT * FROM test_a WHERE a = 'xxx'").first().isPresent()
+    }
+
     def "the statement compiler omits an empty clause"() {
         given:
         def db = dbs.get("test");
@@ -88,22 +136,13 @@ class DatabaseSpec extends BaseSpecification {
         qry.queryList().size() == 1
     }
 
-    def "SQLQuery#perform is evaluated correctly"() {
+    def "SQLQuery#iterate is evaluated correctly"() {
         given:
         def db = dbs.get("test");
         when:
         def qry = db.createQuery('SELECT a,b FROM test_a');
         then:
-        qry.iterate({ it.getFields().size() == 2 } as Function, 0)
-    }
-
-    def "SQLQuery#queryFirst returns null for an empty result set"() {
-        given:
-        def db = dbs.get("test");
-        when:
-        def qry = db.createQuery("SELECT a,b FROM test_a WHERE a = 'XXX'");
-        then:
-        qry.queryFirst() == null
+        qry.iterate({ it.getFields().size() == 2 } as Function, Limit.UNLIMITED)
     }
 
 }
