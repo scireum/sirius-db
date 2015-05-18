@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 /**
  * Created by aha on 15.04.15.
  */
-public class IntegerProperty extends Property {
+public class BooleanProperty extends Property {
 
     /**
      * Factory for generating properties based on their field type
@@ -32,7 +32,7 @@ public class IntegerProperty extends Property {
 
         @Override
         public boolean accepts(Field field) {
-            return Integer.class.equals(field.getType()) || int.class.equals(field.getType());
+            return Boolean.class.equals(field.getType()) || boolean.class.equals(field.getType());
         }
 
         @Override
@@ -40,31 +40,34 @@ public class IntegerProperty extends Property {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new IntegerProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new BooleanProperty(descriptor, accessPath, field));
         }
 
     }
 
 
-    public IntegerProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    public BooleanProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+        this.nullable = false;
     }
 
     @Override
     protected Object transformValue(Value value) {
-        if (!value.isFilled()) {
-            return null;
-        } else {
-            Integer result = value.getInteger();
-            if (result == null) {
-                throw illegalFieldValue(value);
-            }
-            return result;
-        }
+        return value.asBoolean(false);
+    }
+
+    @Override
+    protected Object transformFromColumn(Object object) {
+        return ((Integer) object) != 0;
+    }
+
+    @Override
+    protected Object transformToColumn(Object object) {
+        return ((Boolean) object) ? 1 : 0;
     }
 
     @Override
     protected int getSQLType() {
-        return Types.INTEGER;
+        return Types.TINYINT;
     }
 }

@@ -25,6 +25,7 @@ import sirius.kernel.health.Log;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -73,71 +74,9 @@ public class OMA {
             ed.beforeSave(entity);
 
             if (entity.isNew()) {
-                Context insertData = Context.create();
-                for (Property p : ed.getProperties()) {
-                    insertData.set(p.getColumnName(), p.getValue(entity));
-                }
-                Row keys = getDatabase().insertRow(ed.getTableName(), insertData);
-                if (keys.hasValue("id")) {
-                    entity.setId(keys.getValue("id").asLong(-1));
-                }
+                doINSERT(entity, ed);
             } else {
-                StringBuilder sb = new StringBuilder("UPDATE ");
-                sb.append(ed.getTableName());
-                sb.append(" SET ");
-                List<Object> data = Lists.newArrayList();
-                for (Property p : ed.getProperties()) {
-                    if (ed.isChanged(entity, p.getName())) {
-                        if (!data.isEmpty()) {
-                            sb.append(", ");
-                        }
-                        sb.append(p.getColumnName());
-                        sb.append(" = ? ");
-                        data.add(p.getValue(entity));
-                    }
-                }
-
-                if (ed.isVersioned()) {
-                    if (!data.isEmpty()) {
-                        sb.append(",");
-                    }
-                    sb.append("version = ? ");
-                    data.add(ed.getVersion(entity) + 1);
-                }
-
-                sb.append(" WHERE id = ?");
-                if (ed.isVersioned() && !force) {
-                    sb.append(" AND version = ?");
-                }
-                try (Connection c = getDatabase().getConnection()) {
-                    try (PreparedStatement stmt = c.prepareStatement(sb.toString())) {
-                        int index = 1;
-                        for (Object o : data) {
-                            stmt.setObject(index++, o);
-                        }
-                        if (ed.isVersioned()) {
-                            stmt.setInt(index++, ed.getVersion(entity) + 1);
-                        }
-                        stmt.setLong(index++, entity.getId());
-                        if (ed.isVersioned() && !force) {
-                            stmt.setInt(index++, ed.getVersion(entity));
-                        }
-                        int updatedRows = stmt.executeUpdate();
-                        if (updatedRows == 0) {
-                            if (find(entity.getClass(), entity.getId()).isPresent()) {
-                                throw new OptimisticLockException();
-                            } else {
-                                throw Exceptions.handle()
-                                                .to(LOG)
-                                                .withSystemErrorMessage(
-                                                        "The entity %s (%s) cannot be updated as it does not exist in the database!",
-                                                        entity,
-                                                        entity.getId())
-                                                .handle();
-                            }
-                        }
-                    }
-                }
+                doUPDATE(entity, force, ed);
             }
 
             ed.afterSave(entity);
@@ -152,6 +91,85 @@ public class OMA {
                                                     entity.getClass().getSimpleName(),
                                                     entity.getId())
                             .handle();
+        }
+    }
+
+    private <E extends Entity> void doINSERT(E entity, EntityDescriptor ed) throws SQLException {
+        Context insertData = Context.create();
+        for (Property p : ed.getProperties()) {
+            insertData.set(p.getColumnName(), p.getValueForColumn(entity));
+        }
+        Row keys = getDatabase().insertRow(ed.getTableName(), insertData);
+        if (keys.hasValue("id")) {
+            // Normally the name of the generated column is reported
+            entity.setId(keys.getValue("id").asLong(-1));
+        } else if (keys.hasValue("GENERATED_KEY")) {
+            // however MySQL reports "GENERATED_KEY"...
+            entity.setId(keys.getValue("GENERATED_KEY").asLong(-1));
+        }
+    }
+
+    private <E extends Entity> void doUPDATE(E entity,
+                                             boolean force,
+                                             EntityDescriptor ed) throws SQLException, OptimisticLockException {
+        StringBuilder sb = new StringBuilder("UPDATE ");
+        sb.append(ed.getTableName());
+        List<Object> data = Lists.newArrayList();
+        sb.append(" SET ");
+        for (Property p : ed.getProperties()) {
+            if (!ed.isFetched(entity, p)) {
+                //TODO throw exception
+            }
+            if (ed.isChanged(entity, p)) {
+                if (!data.isEmpty()) {
+                    sb.append(", ");
+                }
+                sb.append(p.getColumnName());
+                sb.append(" = ? ");
+                data.add(p.getValueForColumn(entity));
+            }
+        }
+
+        if (ed.isVersioned()) {
+            if (!data.isEmpty()) {
+                sb.append(",");
+            }
+            sb.append("version = ? ");
+            data.add(ed.getVersion(entity) + 1);
+        }
+
+        sb.append(" WHERE id = ?");
+        if (ed.isVersioned() && !force) {
+            sb.append(" AND version = ?");
+        }
+        try (Connection c = getDatabase().getConnection()) {
+            try (PreparedStatement stmt = c.prepareStatement(sb.toString())) {
+                int index = 1;
+                for (Object o : data) {
+                    stmt.setObject(index++, o);
+                }
+                if (ed.isVersioned()) {
+                    stmt.setInt(index++, ed.getVersion(entity) + 1);
+                }
+                stmt.setLong(index++, entity.getId());
+                if (ed.isVersioned() && !force) {
+                    stmt.setInt(index++, ed.getVersion(entity));
+                }
+                int updatedRows = stmt.executeUpdate();
+                if (!force && updatedRows == 0) {
+                    if (find(entity.getClass(), entity.getId()).isPresent()) {
+                        throw new OptimisticLockException();
+                    } else {
+                        throw Exceptions.handle()
+                                        .to(LOG)
+                                        .withSystemErrorMessage(
+                                                "The entity %s (%s) cannot be updated as it does not exist in the database!",
+                                                entity,
+                                                entity.getId())
+                                        .handle();
+                    }
+                }
+            }
         }
     }
 

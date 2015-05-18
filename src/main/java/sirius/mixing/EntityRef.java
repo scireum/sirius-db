@@ -8,6 +8,10 @@
 
 package sirius.mixing;
 
+import sirius.kernel.di.std.Part;
+
+import java.util.Optional;
+
 /**
  * Created by aha on 30.04.15.
  */
@@ -16,6 +20,9 @@ public class EntityRef<E extends Entity> {
     public enum OnDelete {
         CASCADE, SET_NULL, REJECT, SOFT_CASCADE, LAZY_CASCADE
     }
+
+    @Part
+    private static OMA oma;
 
     private Class<E> type;
     private OnDelete deleteHandler;
@@ -51,6 +58,14 @@ public class EntityRef<E extends Entity> {
     }
 
     public E getValue() {
+        if (value == null && id != null) {
+            Optional<E> entity = oma.find(type, id);
+            if (entity.isPresent()) {
+                value = entity.get();
+            } else {
+                id = null;
+            }
+        }
         return value;
     }
 
@@ -69,6 +84,18 @@ public class EntityRef<E extends Entity> {
 
     public boolean isFilled() {
         return id != null;
+    }
+
+    public boolean isEmpty() {
+        return id == null;
+    }
+
+    public boolean is(E entity) {
+        return entity == null ? isEmpty() : id != null && entity.getId() == id;
+    }
+
+    public boolean is(Long otherId) {
+        return otherId == null ? isEmpty() : id != null && otherId == id;
     }
 
     public boolean containsNonpersistentValue() {

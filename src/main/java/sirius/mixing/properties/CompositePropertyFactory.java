@@ -28,11 +28,14 @@ public class CompositePropertyFactory implements PropertyFactory {
     }
 
     @Override
-    public void create(EntityDescriptor descriptor, AccessPath accessPath,
+    public void create(EntityDescriptor descriptor,
+                       AccessPath accessPath,
                        Field field,
                        Consumer<Property> propertyConsumer) {
         if (!Modifier.isFinal(field.getModifiers())) {
-            OMA.LOG.WARN("Field %s in %s is not final! This will probably result in errors.", field.getName(), field.getDeclaringClass().getName());
+            OMA.LOG.WARN("Field %s in %s is not final! This will probably result in errors.",
+                         field.getName(),
+                         field.getDeclaringClass().getName());
         }
 
         field.setAccessible(true);
@@ -41,7 +44,7 @@ public class CompositePropertyFactory implements PropertyFactory {
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {
-        accessPath = accessPath.append(field.getName() + "_",obj -> {
+        accessPath = accessPath.append(field.getName() + Column.SUBFIELD_SEPARATOR, obj -> {
             try {
                 return field.get(obj);
             } catch (Throwable e) {

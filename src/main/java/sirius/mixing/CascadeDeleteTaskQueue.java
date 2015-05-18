@@ -18,7 +18,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by aha on 01.05.15.
+ * Constantly checks if there are unsatisfied foreign key constraints and removes the entities accordingly.
+ * <p>
+ * An {@link EntityRef} which has {@link sirius.mixing.EntityRef.OnDelete#LAZY_CASCADE} as delete handler does not
+ * instantly remove the entity if its parent is deleted. Rather this background handler eventually picks it up and
+ * deletes it. We also check references of type {@link sirius.mixing.EntityRef.OnDelete#SOFT_CASCADE} as those are
+ * not protected by the database and therefore orphans might exist.
+ *
+ * @author Andreas Haufler (aha@scireum.de)
+ * @since 2015/05
  */
 @Register(classes = {CascadeDeleteTaskQueue.class, BackgroundTaskQueue.class})
 public class CascadeDeleteTaskQueue implements BackgroundTaskQueue {
@@ -46,6 +54,11 @@ public class CascadeDeleteTaskQueue implements BackgroundTaskQueue {
         }
     }
 
+    /**
+     * Adds a reference to be checked.
+     *
+     * @param check the actual check to be performed
+     */
     public void addReferenceToCheck(Runnable check) {
         synchronized (referencesToCheck) {
             referencesToCheck.add(check);

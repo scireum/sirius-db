@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 /**
  * Created by aha on 15.04.15.
  */
-public class IntegerProperty extends Property {
+public class EnumProperty extends Property {
 
     /**
      * Factory for generating properties based on their field type
@@ -32,7 +32,7 @@ public class IntegerProperty extends Property {
 
         @Override
         public boolean accepts(Field field) {
-            return Integer.class.equals(field.getType()) || int.class.equals(field.getType());
+            return field.getType().isEnum();
         }
 
         @Override
@@ -40,31 +40,41 @@ public class IntegerProperty extends Property {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new IntegerProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new EnumProperty(descriptor, accessPath, field));
         }
 
     }
 
 
-    public IntegerProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    public EnumProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
+    @SuppressWarnings({"unchecked", "raw"})
     @Override
     protected Object transformValue(Value value) {
-        if (!value.isFilled()) {
-            return null;
-        } else {
-            Integer result = value.getInteger();
-            if (result == null) {
-                throw illegalFieldValue(value);
-            }
-            return result;
-        }
+        return value.asEnum((Class<Enum>) field.getType());
     }
 
     @Override
     protected int getSQLType() {
-        return Types.INTEGER;
+        return Types.BIGINT;
+    }
+
+    @SuppressWarnings({"unchecked", "raw"})
+    @Override
+    protected Object transformFromColumn(Object object) {
+        if (object == null) {
+            return null;
+        }
+        return Value.of(object).asEnum((Class<Enum>) field.getType());
+    }
+
+    @Override
+    protected Object transformToColumn(Object object) {
+        if (object == null) {
+            return null;
+        }
+        return ((Enum<?>) object).name();
     }
 }

@@ -21,7 +21,6 @@ import java.util.Calendar;
 
 /**
  * Wrapper for {@link PreparedStatement} to add microtiming.
- * <p>
  *
  * @author Andreas Haufler (aha@scireum.de)
  * @since 2013/11

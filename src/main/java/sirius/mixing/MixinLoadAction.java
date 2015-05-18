@@ -8,8 +8,11 @@
 
 package sirius.mixing;
 
+import org.hsqldb.lib.FrameworkLogger;
+import sirius.kernel.Sirius;
 import sirius.kernel.di.ClassLoadAction;
 import sirius.kernel.di.MutableGlobalContext;
+import sirius.kernel.di.std.Framework;
 import sirius.mixing.annotations.Mixin;
 
 import javax.annotation.Nullable;
@@ -27,6 +30,12 @@ public class MixinLoadAction implements ClassLoadAction {
 
     @Override
     public void handle(MutableGlobalContext ctx, Class<?> clazz) throws Exception {
-        ctx.registerPart(clazz, Mixin.class);
+        if (clazz.isAnnotationPresent(Framework.class)) {
+            if (Sirius.isFrameworkEnabled(clazz.getAnnotation(Framework.class).value())) {
+                ctx.registerPart(clazz, Mixin.class);
+            }
+        } else {
+            ctx.registerPart(clazz, Mixin.class);
+        }
     }
 }

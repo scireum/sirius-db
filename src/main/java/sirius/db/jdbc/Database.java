@@ -9,7 +9,7 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.dbcp.BasicDataSource;
+import org.apache.commons.dbcp2.BasicDataSource;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
@@ -345,11 +345,11 @@ public class Database {
             ds.setUsername(username);
             ds.setPassword(password);
             ds.setInitialSize(initialSize);
-            ds.setMaxActive(maxActive == 0 ? 20 : maxActive);
+            ds.setMaxTotal(maxActive == 0 ? 20 : maxActive);
             ds.setMaxIdle(maxIdle);
             ds.setTestOnBorrow(testOnBorrow);
             ds.setValidationQuery(validationQuery);
-            ds.setMaxWait(1000);
+            ds.setMaxWaitMillis(1000);
         }
     }
 

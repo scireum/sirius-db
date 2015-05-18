@@ -18,13 +18,13 @@ import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Parts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
-import sirius.mixing.annotations.Mixin;
-import sirius.mixing.annotations.Transient;
-import sirius.mixing.annotations.Versioned;
+import sirius.mixing.annotations.*;
 import sirius.mixing.schema.Table;
 import sirius.mixing.schema.TableColumn;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,29 +33,93 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 29.11.14.
+ * Represents the recipe on how to write an entity class into a database table.
+ * <p>
+ * For each subclass of {@link Entity} a <tt>descriptor</tt> is created by the {@link Schema}. This descriptor
+ * is in charge of reading and writing from and to the database as well as ensuring consistency of the data.
+ * <p>
+ * The descriptor is automatically creates and its properties are discovered by checking all fields, composites
+ * and mixins.
+ *
+ * @author Andreas Haufler (aha@scireum.de)
+ * @since 2015/05
  */
 public class EntityDescriptor {
 
+    /**
+     * Determines if the entity uses optimistic locking
+     */
     protected boolean versioned;
+
+    /**
+     * Contains the entity class
+     */
     protected Class<? extends Entity> type;
+
+    /**
+     * Contains the instance which was created by the {@link EntityLoadAction}
+     */
     protected final Entity referenceInstance;
+
+    /**
+     * Contains the effective table name in the database
+     */
     protected String tableName;
+
+    /**
+     * Contains all properties (defined via fields, composites or mixins)
+     */
     protected Map<String, Property> properties = Maps.newTreeMap();
+
+    /**
+     * A list of all additional handlers to be executed once an entity was deleted
+     */
     protected List<Consumer<Entity>> cascadeDeleteHandlers = Lists.newArrayList();
+
+    /**
+     * A list of all additional handlers to be executed once an entity is about to be deleted
+     */
     protected List<Consumer<Entity>> beforeDeleteHandlers = Lists.newArrayList();
 
-    public EntityDescriptor(Class<? extends Entity> type, Entity referenceInstance) {
-        this.type = type;
+    /**
+     * A list of all additional handlers to be executed once an entity is about to be saved
+     */
+    protected List<Consumer<Entity>> beforeSaveHandlers = Lists.newArrayList();
+
+    /**
+     * Creates a new entity for the given reference instance.
+     *
+     * @param referenceInstance the instance from which the descriptor is filled
+     */
+    protected EntityDescriptor(Entity referenceInstance) {
+        this.type = referenceInstance.getClass();
         this.referenceInstance = referenceInstance;
         this.versioned = type.isAnnotationPresent(Versioned.class);
         this.tableName = type.getSimpleName().toLowerCase();
     }
 
+    /**
+     * Returns the "end user friendly" name of the entity
+     * <p>
+     * This is determined by calling <tt>NLS.get()</tt>
+     * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore
+     * the property keys for "org.acme.model.Customer" would be the class name and "Model.customer". The fallback
+     * key will be the same which is tried for a property named "customer" and can therefore be reused.
+     *
+     * @return a translated name which can be shown to the end user
+     */
     public String getLabel() {
-        return NLS.get(getType().getName());
+        return NLS.getIfExists(getType().getName(), NLS.getCurrentLang())
+                  .orElseGet(() -> NLS.get("Model." + type.getSimpleName().toLowerCase()));
     }
 
+    /**
+     * Returns the "end user friendly" plural of the entity
+     * <p>
+     * The i18n keys tried are the same as for {@link #getLabel()} with ".plural" appended.
+     *
+     * @return a translated plural which can be shown to the end user
+     */
     public String getPluralLabel() {
         return NLS.get(getType().getName() + ".plural");
     }
@@ -78,18 +142,17 @@ public class EntityDescriptor {
         return properties.values();
     }
 
-    public <E extends Entity> boolean isChanged(E entity, String name) {
-        if (!entity.persistedData.containsKey(name)) {
-            return true;
+
+    public <E extends Entity> boolean isFetched(E entity, Property property) {
+        if (entity.isNew()) {
+            return false;
         }
-        Property p = properties.get(name);
-        if (p == null) {
-            throw Exceptions.handle()
-                            .to(OMA.LOG)
-                            .withSystemErrorMessage("Unknown property '%s' for '%s'", name, type.getName())
-                            .handle();
-        }
-        return !Objects.equals(entity.persistedData.get(name), p.getValue(entity));
+        return entity.persistedData.containsKey(property);
+    }
+
+    public <E extends Entity> boolean isChanged(E entity, Property property) {
+        return true; //TODO
+//        return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
     }
 
     public <E extends Entity> int getVersion(E entity) {
@@ -103,6 +166,9 @@ public class EntityDescriptor {
 
     protected final void beforeSave(Entity entity) {
         beforeSaveChecks(entity);
+        for(Consumer<Entity> c : beforeSaveHandlers) {
+            c.accept(entity);
+        }
         for (Property property : properties.values()) {
             property.onBeforeSave(entity);
         }
@@ -245,25 +311,60 @@ public class EntityDescriptor {
      * Adds all properties of the given class (and its superclasses)
      */
     @SuppressWarnings("unchecked")
-    public static void addFields(EntityDescriptor descriptor, AccessPath accessPath, Class<?> clazz, Consumer<Property> propertyConsumer) {
-        addFields(descriptor,accessPath, clazz, clazz, propertyConsumer);
+    public static void addFields(EntityDescriptor descriptor,
+                                 AccessPath accessPath,
+                                 Class<?> clazz,
+                                 Consumer<Property> propertyConsumer) {
+        addFields(descriptor, accessPath, clazz, clazz, propertyConsumer);
     }
 
     /*
      * Adds all properties of the given class (and its superclasses)
      */
     @SuppressWarnings("unchecked")
-    private static void addFields(EntityDescriptor descriptor, AccessPath accessPath,
+    private static void addFields(EntityDescriptor descriptor,
+                                  AccessPath accessPath,
                                   Class<?> rootClass,
                                   Class<?> clazz,
                                   Consumer<Property> propertyConsumer) {
         for (Field field : clazz.getDeclaredFields()) {
             addField(descriptor, accessPath, rootClass, clazz, field, propertyConsumer);
         }
+        for(Method m : clazz.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(BeforeSave.class)) {
+                descriptor.beforeSaveHandlers.add(e -> {
+                    try {
+                        if (m.getParameterCount() == 0) {
+                            m.invoke(accessPath.apply(e));
+                        } else {
+                            m.invoke(accessPath.apply(e), e);
+                        }
+                    } catch (IllegalAccessException ex) {
+                        throw Exceptions.handle(OMA.LOG, ex);
+                    } catch (InvocationTargetException ex) {
+                        throw Exceptions.handle(OMA.LOG, ex.getTargetException());
+                    }
+                });
+            } else if (m.isAnnotationPresent(BeforeDelete.class)) {
+                descriptor.beforeDeleteHandlers.add(e -> {
+                    try {
+                        if (m.getParameterCount() == 0) {
+                            m.invoke(accessPath.apply(e));
+                        } else {
+                            m.invoke(accessPath.apply(e), e);
+                        }
+                    } catch (IllegalAccessException ex) {
+                        throw Exceptions.handle(OMA.LOG, ex);
+                    } catch (InvocationTargetException ex) {
+                        throw Exceptions.handle(OMA.LOG, ex.getTargetException());
+                    }
+                });
+            }
+        }
 
         if (Mixable.class.isAssignableFrom(clazz)) {
             for (Class<?> mixin : getMixins((Class<? extends Mixable>) clazz)) {
-                addFields(descriptor,expandAccessPath(mixin, accessPath), rootClass, mixin, propertyConsumer);
+                addFields(descriptor, expandAccessPath(mixin, accessPath), rootClass, mixin, propertyConsumer);
             }
         }
 
@@ -273,10 +374,11 @@ public class EntityDescriptor {
     }
 
     private static AccessPath expandAccessPath(Class<?> mixin, AccessPath accessPath) {
-        return accessPath.append(mixin.getSimpleName() + "_", obj -> ((Mixable) obj).as(mixin));
+        return accessPath.append(mixin.getSimpleName() + Column.SUBFIELD_SEPARATOR, obj -> ((Mixable) obj).as(mixin));
     }
 
-    private static void addField(EntityDescriptor descriptor, AccessPath accessPath,
+    private static void addField(EntityDescriptor descriptor,
+                                 AccessPath accessPath,
                                  Class<?> rootClass,
                                  Class<?> clazz,
                                  Field field,
@@ -316,7 +418,7 @@ public class EntityDescriptor {
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getColumnName() : alias + "_" + p.getColumnName();
             if (row.hasValue(columnName)) {
-                p.setValue(entity, row.getValue(columnName).get());
+                p.setValueFromColumn(entity, row.getValue(columnName).get());
             }
         }
         return entity;
@@ -341,7 +443,7 @@ public class EntityDescriptor {
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getColumnName() : alias + "_" + p.getColumnName();
             if (columns.contains(columnName.toUpperCase())) {
-                p.setValue(entity, rs.getObject(columnName));
+                p.setValueFromColumn(entity, rs.getObject(columnName));
             }
         }
         return entity;
@@ -370,11 +472,18 @@ public class EntityDescriptor {
 
     @Override
     public String toString() {
-        return tableName + " (" + type.getName() + ")";
+        return tableName + " [" + type.getName() + "]";
     }
 
     public Class<? extends Entity> getType() {
         return type;
+    }
+
+    public Property getProperty(Column column) {
+        if (column.getParent() != null) {
+            throw new IllegalArgumentException(Strings.apply("Cannot fetch joined property: %s", column));
+        }
+        return getProperty(column.getName());
     }
 
     public Property getProperty(String property) {

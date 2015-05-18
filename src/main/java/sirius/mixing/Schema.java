@@ -74,10 +74,23 @@ public class Schema implements Initializable {
     @Override
     public void initialize() throws Exception {
         for (Entity e : Injector.context().getParts(Entity.class)) {
-            EntityDescriptor ed = e.createDescriptor();
+            EntityDescriptor ed = new EntityDescriptor(e);
             ed.initialize();
             descriptorsByType.put(e.getClass(), ed);
-            descriptorsByName.put(e.getClass().getSimpleName().toUpperCase(), ed);
+            String className = e.getClass().getSimpleName();
+            EntityDescriptor conflictingDescriptor = descriptorsByName.get(className);
+            if (conflictingDescriptor != null) {
+                Exceptions.handle()
+                          .to(OMA.LOG)
+                          .withSystemErrorMessage(
+                                  "Cannot register entity descriptor for '%s' as '%s' as this name is already taken by '%s'",
+                                  e.getClass().getName(),
+                                  className,
+                                  conflictingDescriptor.getType().getName())
+                          .handle();
+            } else {
+                descriptorsByName.put(className.toUpperCase(), ed);
+            }
         }
         for (EntityDescriptor ed : descriptorsByType.values()) {
             ed.link();
@@ -88,7 +101,7 @@ public class Schema implements Initializable {
             target.add(ed.createTable());
         }
 
-        SchemaTool tool = new SchemaTool("test", dialect);
+        SchemaTool tool = new SchemaTool(dialect);
         List<SchemaUpdateAction> actions = null;
         Database database = getDatabase();
         try (Connection c = database.getConnection()) {
@@ -96,7 +109,9 @@ public class Schema implements Initializable {
         }
 
         for (SchemaUpdateAction action : actions) {
-            if (!action.isDataLossPossible()) {
+//            if (action.isDataLossPossible()) {
+//                System.out.println(action.getReason()+ "::: "+action.getSql());
+//            } else {
                 //FIXME
                 System.out.println(action.getReason());
                 for (String statement : action.getSql()) {
@@ -108,7 +123,7 @@ public class Schema implements Initializable {
                         Exceptions.handle(e);
                     }
                 }
-            }
+//            }
         }
     }
 }

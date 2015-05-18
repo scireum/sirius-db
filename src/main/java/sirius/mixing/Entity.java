@@ -17,47 +17,110 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 /**
- * Created by aha on 29.11.14.
+ * Represents a data object stored into the database.
+ * <p>
+ * Each non-abstract subclass of <tt>Entity</tt> will become a table in the target database. Each field
+ * will become a column, unless it is annotated with {@link Transient}.
+ * <p>
+ * The framework highly encourages composition over inheritance. Therefore {@link Composite} fields will directly
+ * result in the equivalent columns required to store the fields declared there. Still inheritance might be
+ * useful and is fully supported for both, entities and composites.
+ * <p>
+ * What is not supported, is merging distinct subclasses into one table or other weired inheritance methods. Therefore
+ * all superclasses should be abstract.
+ * <p>
+ * Additionally all <tt>Mixins</tt> {@link sirius.mixing.annotations.Mixin} will be used to add columns to the
+ * target table. This is especially useful to extend existing entities from within customizations.
  */
 public abstract class Entity extends Mixable {
 
     @Part
     private static Schema schema;
 
+    /**
+     * Contains the unique ID of the entity.
+     * <p>
+     * This is automatically assigned by the database. Never assign manually a value unless you are totally aware
+     * of what you're doing. Also you should not use this ID for external purposes (e.g. as customer number or
+     * invoice number) as it cannot be changed.
+     * <p>
+     * This field is marked as transient as this column is automatically managed by the framework.
+     */
     @Transient
     protected long id = -1;
     public static final Column ID = Column.named("id");
 
+    /**
+     * Contains the current version number read from the database. If optimistic locking is enabled for this
+     * entity (via the {@link sirius.mixing.annotations.Versioned} annotation, this is used to protect from
+     * conflicting writes an a entity (will throw an {@link OptimisticLockException}.
+     * <p>
+     * This field is marked as transient as this column is automatically managed by the framework.
+     */
     @Transient
     protected int version = 0;
     public static final Column VERSION = Column.named("version");
 
+    // TODO
     @Transient
     protected Map<String, Object> persistedData = Maps.newHashMap();
 
+    /**
+     * If this entity was loaded from a {@link TransformedQuery} (read from a plain JDBC query), this will contain
+     * the complete result row. This can be used to access unmapped columns (aggregations or computed ones).
+     */
     @Transient
     protected Row fetchRow;
 
+    /**
+     * Returns the descriptor which maps the entity to the database table.
+     *
+     * @return the ddescriptor which is in charge of checking and mapping the entity to the database
+     */
     public EntityDescriptor getDescriptor() {
         return schema.getDescriptor(getClass());
     }
 
-    protected EntityDescriptor createDescriptor() {
-        return new EntityDescriptor(getClass(), this);
-    }
-
+    /**
+     * Determines if the entity is new (not yet written to the database).
+     *
+     * @return <tt>true</tt> if the entity has not been written to the database yes, <tt>false</tt> otherwise
+     */
     public boolean isNew() {
         return id < 0;
     }
 
+    /**
+     * Returns the ID of the entity.
+     *
+     * @return the ID of the entity or a negative value if the entity was not written to the database yet
+     */
     public long getId() {
         return id;
     }
 
+    /**
+     * Sets the ID of the entity.
+     * <p>
+     * This method must be used very carefully. For normal operations, this method should ne be used at all
+     * as the database ID is managed by the framework.
+     *
+     * @param id the id of the entity in the database
+     */
     public void setId(long id) {
         this.id = id;
     }
 
+    /**
+     * Returns a hash code value for the object. This method is
+     * supported for the benefit of hash tables such as those provided by
+     * {@link java.util.HashMap}.
+     * <p>
+     * The hash code of an entity is based on its ID. If the entity is not written to the database yet, we use
+     * the hash code as computed by {@link Object#hashCode()}. This matches the behaviour of {@link #equals(Object)}.
+     *
+     * @return a hash code value for this object.
+     */
     @Override
     public int hashCode() {
         if (id < 0) {
@@ -67,6 +130,16 @@ public abstract class Entity extends Mixable {
         return (int) (id % Integer.MAX_VALUE);
     }
 
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     * <p>
+     * Equality of two entities is based on their type and ID. If an entity is not written to the database yet, we
+     * determine equality as computed by {@link Object#equals(Object)}. This matches the behaviour of
+     * {@link #hashCode()}.
+     *
+     * @return {@code true} if this object is the same as the obj
+     * argument; {@code false} otherwise.
+     */
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -75,35 +148,42 @@ public abstract class Entity extends Mixable {
         if (other == null) {
             return false;
         }
-        if (!(other instanceof Entity)) {
+        if (!(other.getClass().equals(getClass()))) {
             return false;
         }
+        Entity otherEntity = (Entity) other;
         if (isNew()) {
-            if (((Entity) other).isNew()) {
-                return super.equals(other);
-            } else {
-                return false;
-            }
+            return otherEntity.isNew() && super.equals(other);
         }
 
-        return id == ((Entity) other).id;
+        return id == otherEntity.id;
     }
 
+    /**
+     * Returns the complete result row from which this entity was loaded by a <tt>TransformedQuery</tt>
+     * <p>
+     * If this entity was loaded from a {@link TransformedQuery} (read from a plain JDBC query), this will contain
+     * the complete result row. This can be used to access unmapped columns (aggregations or computed ones).
+     *
+     * @return the complete result row from which this entity was read or <tt>null</tt> if this entity was not
+     * read from a <tt>TransformedQuery</tt>
+     */
     @Nullable
     public Row getFetchRow() {
         return fetchRow;
     }
 
-    protected void asString(StringBuilder sb) {
-        if (isNew()) {
-            sb.append("new ");
-            sb.append(getClass().getSimpleName());
-        } else {
-            sb.append(getUniqueName());
-        }
-    }
 
-    private String getUniqueName() {
+    /**
+     * Returns an unique name of this entity.
+     * <p>
+     * This unique string representation of this entity is made up of its type along with its id. It can be resolved
+     * using {@link OMA#resolve(String)}.
+     *
+     * @return an unique representation of this entity or an empty string if the entity was not written to the
+     * database yet
+     */
+    public String getUniqueName() {
         if (isNew()) {
             return "";
         }
@@ -112,9 +192,10 @@ public abstract class Entity extends Mixable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        asString(sb);
-        return sb.toString();
-
+        if (isNew()) {
+            return "new " + getClass().getSimpleName();
+        } else {
+            return getUniqueName();
+        }
     }
 }

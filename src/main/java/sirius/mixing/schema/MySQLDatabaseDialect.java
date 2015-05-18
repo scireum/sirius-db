@@ -177,10 +177,10 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
             return "DOUBLE";
         }
         if (Types.DECIMAL == type) {
-            return "DECIMAL(" + scale + "," + precision + ")";
+            return "DECIMAL(" + precision + "," + scale + ")";
         }
         if (Types.NUMERIC == type) {
-            return "DECIMAL(" + scale + "," + precision + ")";
+            return "DECIMAL(" + precision + "," + scale + ")";
         }
         if (Types.FLOAT == type) {
             return "FLOAT";

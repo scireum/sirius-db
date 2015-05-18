@@ -9,14 +9,14 @@
 package sirius.mixing.constraints;
 
 import sirius.kernel.commons.Amount;
-import sirius.mixing.Column;
-import sirius.mixing.Constraint;
-import sirius.mixing.SmartQuery;
+import sirius.mixing.*;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 
 /**
@@ -126,8 +126,19 @@ public class FieldOperator extends Constraint {
             return new Timestamp(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
         } else if (value instanceof LocalDate) {
             return new Date(((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        } else if (value instanceof LocalTime) {
+            return new Time(((LocalTime) value).atDate(LocalDate.of(1970, 01, 01))
+                                               .atZone(ZoneId.systemDefault())
+                                               .toInstant()
+                                               .toEpochMilli());
         } else if (value instanceof Amount) {
             return ((Amount) value).getAmount();
+        } else if (value.getClass().isEnum()) {
+            return ((Enum<?>) value).name();
+        } else if (value instanceof EntityRef) {
+            return ((EntityRef<?>) value).getId();
+        } else if (value instanceof Entity) {
+            return ((Entity) value).getId();
         }
 
         return value;

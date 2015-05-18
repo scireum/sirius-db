@@ -18,11 +18,9 @@ import java.util.*;
  */
 public class SchemaTool {
 
-    private final String catalog;
     private final DatabaseDialect dialect;
 
-    public SchemaTool(String catalog, DatabaseDialect dialect) {
-        this.catalog = catalog;
+    public SchemaTool(DatabaseDialect dialect) {
         this.dialect = dialect;
     }
 
@@ -31,7 +29,7 @@ public class SchemaTool {
      */
     public List<Table> getSchema(Connection c) throws SQLException {
         List<Table> tables = new ArrayList<Table>();
-        ResultSet rs = c.getMetaData().getTables(catalog, null, null, null);
+        ResultSet rs = c.getMetaData().getTables(c.getSchema(), null, null, null);
         while (rs.next()) {
             if ("TABLE".equalsIgnoreCase(rs.getString(4))) {
                 Table table = new Table();
@@ -54,7 +52,7 @@ public class SchemaTool {
     private void fillFKs(Connection c, Table table) throws SQLException {
         ResultSet rs;
         // FKs
-        rs = c.getMetaData().getImportedKeys(catalog, null, table.getName());
+        rs = c.getMetaData().getImportedKeys(c.getSchema(), null, table.getName());
         while (rs.next()) {
             String indexName = rs.getString("FK_NAME");
             if (indexName != null) {
@@ -74,7 +72,7 @@ public class SchemaTool {
 
     private void fillIndices(Connection c, Table table) throws SQLException {
         // Indices
-        ResultSet rs = c.getMetaData().getIndexInfo(catalog, null, table.getName(), false, false);
+        ResultSet rs = c.getMetaData().getIndexInfo(c.getSchema(), null, table.getName(), false, false);
         while (rs.next()) {
             String indexName = rs.getString("INDEX_NAME");
             if (indexName != null) {
@@ -92,7 +90,7 @@ public class SchemaTool {
 
     private void fillPK(Connection c, Table table) throws SQLException {
         // PKs
-        ResultSet rs = c.getMetaData().getPrimaryKeys(catalog, null, table.getName());
+        ResultSet rs = c.getMetaData().getPrimaryKeys(c.getSchema(), null, table.getName());
         List<ComparableTuple<Integer, String>> keyFields = new ArrayList<ComparableTuple<Integer, String>>();
         while (rs.next()) {
             keyFields.add(ComparableTuple.create(rs.getInt("KEY_SEQ"), rs.getString("COLUMN_NAME")));
@@ -106,7 +104,7 @@ public class SchemaTool {
 
     private void fillColumns(Connection c, Table table) throws SQLException {
         // Columns
-        ResultSet rs = c.getMetaData().getColumns(catalog, null, table.getName(), null);
+        ResultSet rs = c.getMetaData().getColumns(c.getSchema(), null, table.getName(), null);
         while (rs.next()) {
             TableColumn column = new TableColumn();
             column.setName(rs.getString("COLUMN_NAME"));
@@ -134,9 +132,7 @@ public class SchemaTool {
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
-                                    .set("table", targetTable.getName())
-                                    .format());
+                action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist").set("table", targetTable.getName()).format());
                 action.setDataLossPossible(false);
                 action.setSql(dialect.generateCreateTable(targetTable));
                 result.add(action);
@@ -336,10 +332,12 @@ public class SchemaTool {
                     reason = NLS.fmtr("SchemaTool.columnNeedsRename")
                                 .set("column", otherCol.getName())
                                 .set("newName", targetCol.getName())
+                                .set("table", targetTable.getName())
                                 .format();
                 } else if (reason != null) {
                     reason = NLS.fmtr("SchemaTool.columnNeedsChange")
                                 .set("column", otherCol.getName())
+                                .set("table", targetTable.getName())
                                 .set("reason", reason)
                                 .format();
                 }

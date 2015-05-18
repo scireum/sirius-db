@@ -8,6 +8,7 @@
 
 package sirius.mixing.properties;
 
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -19,6 +20,7 @@ import sirius.mixing.schema.Table;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Types;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -108,8 +110,8 @@ public class EntityRefProperty extends Property {
     }
 
     @Override
-    protected void onBeforeSave(Entity entity) {
-        EntityRef<?> ref = getEntityRef(entity);
+    protected void onBeforeSaveChecks(Entity entity) {
+        EntityRef<?> ref = getEntityRef(accessPath.apply(entity));
         if (ref.containsNonpersistentValue()) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
@@ -205,14 +207,27 @@ public class EntityRefProperty extends Property {
 
     private EntityRef<?> getEntityRef() {
         if (entityRef == null) {
-            this.entityRef = getEntityRef(descriptor.getReferenceInstance());
+            this.entityRef = getEntityRef(accessPath.apply(descriptor.getReferenceInstance()));
         }
         return entityRef;
     }
 
     @Override
-    protected Object getValueFromField(Object target) throws Exception {
+    protected Object getValueFromField(Object target) {
         return getEntityRef(target).getId();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected Object transformValue(Value value) {
+        if (value.isEmptyString()) {
+            return null;
+        }
+        Optional<Entity> e = oma.find((Class<Entity>) entityRef.getType(), value.asString());
+        if (!e.isPresent()) {
+            throw illegalFieldValue(value);
+        }
+        return e.get();
     }
 
     protected EntityRef<?> getEntityRef(Object entity) {
@@ -232,13 +247,19 @@ public class EntityRefProperty extends Property {
 
     @SuppressWarnings("unchecked")
     public void setReferencedEntity(Entity parent, Entity child) {
-        ((EntityRef<Entity>) getEntityRef(parent)).setValue(child);
+        ((EntityRef<Entity>) getEntityRef(accessPath.apply(parent))).setValue(child);
     }
 
 
+    @SuppressWarnings("unchecked")
     @Override
-    protected void setValueToField(Object value, Object target) throws Exception {
-        ((EntityRef<?>) super.getValueFromField(target)).setId((Long) value);
+    protected void setValueToField(Object value, Object target) {
+        EntityRef<Entity> ref = (EntityRef<Entity>) super.getValueFromField(target);
+        if (value == null || value instanceof Entity) {
+            ref.setValue((Entity)value);
+        } else {
+            ref.setId((Long) value);
+        }
     }
 
 }
