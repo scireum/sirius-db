@@ -1,5 +1,11 @@
 package sirius.mixing.schema;
 
+import sirius.db.jdbc.Database;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.health.Exceptions;
+import sirius.mixing.OMA;
+
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,12 +19,15 @@ public class SchemaUpdateAction {
     private String reason;
     private List<String> sql;
     private boolean dataLossPossible;
+    private boolean errorIsNegligible;
+    private String error;
+    private volatile boolean executed;
 
     public String getReason() {
         return reason;
     }
 
-    public void setReason(String reason) {
+    protected void setReason(String reason) {
         this.reason = reason;
     }
 
@@ -26,11 +35,11 @@ public class SchemaUpdateAction {
         return sql;
     }
 
-    public void setSql(String sql) {
+    protected void setSql(String sql) {
         this.sql = Collections.singletonList(sql);
     }
 
-    public void setSql(List<String> sql) {
+    protected void setSql(List<String> sql) {
         this.sql = sql;
     }
 
@@ -38,8 +47,38 @@ public class SchemaUpdateAction {
         return dataLossPossible;
     }
 
-    public void setDataLossPossible(boolean dataLossPossible) {
+    protected void setDataLossPossible(boolean dataLossPossible) {
         this.dataLossPossible = dataLossPossible;
+    }
+
+    public void execute(Database db) {
+        error = null;
+        for (String statement : getSql()) {
+            if (TaskContext.get().isActive()) {
+                try {
+                    OMA.LOG.FINE("Executing Schema Update: %s", statement);
+                    db.createQuery(statement).executeUpdate();
+                } catch (SQLException e) {
+                    if (!errorIsNegligible) {
+                        error = e.getMessage();
+                        Exceptions.handle()
+                                  .to(OMA.LOG)
+                                  .error(e)
+                                  .withSystemErrorMessage("Error executing schema update '%s': %s", statement)
+                                  .handle();
+                    }
+                }
+            }
+        }
+        executed = !isFailed();
+    }
+
+    public boolean isFailed() {
+        return error != null;
+    }
+
+    public boolean isExecuted() {
+        return executed;
     }
 
     @Override
@@ -48,6 +87,12 @@ public class SchemaUpdateAction {
         for (String statement : sql) {
             sb.append("\n");
             sb.append(statement);
+        }
+
+        if (error != null) {
+            sb.append("\n");
+            sb.append("Error: ");
+            sb.append(error);
         }
 
         return sb.toString();

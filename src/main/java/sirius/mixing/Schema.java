@@ -14,6 +14,7 @@ import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Databases;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.Injector;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -24,6 +25,7 @@ import sirius.mixing.schema.Table;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -63,16 +65,57 @@ public class Schema implements Initializable {
 
     protected Database getDatabase() {
         if (db == null) {
-            db = dbs.get("mixing");
+            db = dbs.get(database);
         }
         return db;
     }
 
     @Part(configPath = "mixing.dialect")
-    private static DatabaseDialect dialect;
+    private DatabaseDialect dialect;
+
+    @ConfigValue("mixing.database")
+    private String database;
+
+    @ConfigValue("mixing.updateSchema")
+    private boolean updateSchema;
+
+    private List<SchemaUpdateAction> requiredSchemaChanges = Lists.newArrayList();
 
     @Override
     public void initialize() throws Exception {
+        loadEntities();
+        linkSchema();
+
+        if (updateSchema) {
+            updateSchemaAtStartup();
+        }
+    }
+
+    protected void updateSchemaAtStartup() {
+        computeRequiredSchemaChanges();
+        OMA.LOG.INFO("Executing Schema Updates....");
+        executeLosslessActions();
+        List<SchemaUpdateAction> schemaUpdateActions = getSchemaUpdateActions();
+        if (!schemaUpdateActions.isEmpty()) {
+            OMA.LOG.INFO("------------------------------------------------------------");
+            int successes = 0;
+            for (SchemaUpdateAction action : schemaUpdateActions) {
+                if (action.isDataLossPossible()) {
+                    OMA.LOG.INFO("SKIPPED: " + action);
+                } else if (action.isFailed()) {
+                    OMA.LOG.WARN("FAILED: " + action);
+                } else {
+                    successes++;
+                }
+            }
+            if (successes > 0) {
+                OMA.LOG.INFO("Successfully executed %d actions...", successes);
+            }
+            OMA.LOG.INFO("------------------------------------------------------------");
+        }
+    }
+
+    protected void loadEntities() {
         for (Entity e : Injector.context().getParts(Entity.class)) {
             EntityDescriptor ed = new EntityDescriptor(e);
             ed.initialize();
@@ -92,38 +135,45 @@ public class Schema implements Initializable {
                 descriptorsByName.put(className.toUpperCase(), ed);
             }
         }
+    }
+
+    protected void linkSchema() {
         for (EntityDescriptor ed : descriptorsByType.values()) {
             ed.link();
         }
+    }
 
-        List<Table> target = Lists.newArrayList();
-        for (EntityDescriptor ed : descriptorsByType.values()) {
-            target.add(ed.createTable());
+    public void computeRequiredSchemaChanges() {
+        try {
+            List<Table> target = Lists.newArrayList();
+            for (EntityDescriptor ed : descriptorsByType.values()) {
+                target.add(ed.createTable());
+            }
+            SchemaTool tool = new SchemaTool(dialect);
+            Database database = getDatabase();
+            try (Connection c = database.getConnection()) {
+                requiredSchemaChanges = tool.migrateSchemaTo(c, target, true);
+            }
+        } catch (SQLException e) {
+            Exceptions.handle(OMA.LOG, e);
         }
+    }
 
-        SchemaTool tool = new SchemaTool(dialect);
-        List<SchemaUpdateAction> actions = null;
-        Database database = getDatabase();
-        try (Connection c = database.getConnection()) {
-            actions = tool.migrateSchemaTo(c, target, true);
+    public List<SchemaUpdateAction> getSchemaUpdateActions() {
+        return Collections.unmodifiableList(requiredSchemaChanges);
+    }
+
+    public void executeLosslessActions() {
+        for (SchemaUpdateAction action : getSchemaUpdateActions()) {
+            if (!action.isDataLossPossible()) {
+                action.execute(getDatabase());
+            }
         }
+    }
 
-        for (SchemaUpdateAction action : actions) {
-//            if (action.isDataLossPossible()) {
-//                System.out.println(action.getReason()+ "::: "+action.getSql());
-//            } else {
-                //FIXME
-                System.out.println(action.getReason());
-                for (String statement : action.getSql()) {
-                    try {
-                        System.out.println(" --> " + statement);
-                        database.createQuery(statement).executeUpdate();
-                    } catch (SQLException e) {
-                        // TODO
-                        Exceptions.handle(e);
-                    }
-                }
-//            }
+    public void executeAllActions() {
+        for (SchemaUpdateAction action : getSchemaUpdateActions()) {
+            action.execute(getDatabase());
         }
     }
 }
