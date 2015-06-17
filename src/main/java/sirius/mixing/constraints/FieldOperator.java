@@ -9,7 +9,11 @@
 package sirius.mixing.constraints;
 
 import sirius.kernel.commons.Amount;
-import sirius.mixing.*;
+import sirius.mixing.Column;
+import sirius.mixing.Constraint;
+import sirius.mixing.Entity;
+import sirius.mixing.EntityRef;
+import sirius.mixing.SmartQuery;
 
 import java.sql.Date;
 import java.sql.Time;

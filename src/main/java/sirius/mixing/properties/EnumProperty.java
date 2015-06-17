@@ -42,9 +42,7 @@ public class EnumProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new EnumProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public EnumProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);

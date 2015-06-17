@@ -25,7 +25,7 @@ public interface DatabaseDialect {
      * handle questions like is VARCHAR == CHAR etc.
      *
      * @return null if they are equal or a string which contains a reason why
-     *         they are not.
+     * they are not.
      */
     String areColumnsEqual(TableColumn target, TableColumn current);
 

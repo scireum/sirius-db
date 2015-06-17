@@ -10,7 +10,21 @@ package sirius.db.jdbc;
 
 import sirius.kernel.commons.Watch;
 
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -65,7 +79,7 @@ public class Transaction implements Connection {
         if (closed) {
             return;
         }
-        Databases.LOG.FINE("COMMIT "+delegate.ds.name);
+        Databases.LOG.FINE("COMMIT " + delegate.ds.name);
         closed = true;
         delegate.commit();
     }
@@ -78,7 +92,7 @@ public class Transaction implements Connection {
         if (closed) {
             throw new SQLException("Transaction has already been committed or rolled back");
         }
-        Databases.LOG.FINE("COMMIT "+delegate.ds.name);
+        Databases.LOG.FINE("COMMIT " + delegate.ds.name);
         closed = true;
         delegate.commit();
     }
@@ -88,7 +102,7 @@ public class Transaction implements Connection {
         if (copy || closed) {
             return;
         }
-        Databases.LOG.FINE("ROLLBACK "+delegate.ds.name);
+        Databases.LOG.FINE("ROLLBACK " + delegate.ds.name);
         closed = true;
         delegate.rollback();
         watch.submitMicroTiming("SQL", "Transaction Duration: " + delegate.ds.name);
@@ -125,9 +139,8 @@ public class Transaction implements Connection {
     }
 
     @Override
-    public Statement createStatement(int resultSetType,
-                                     int resultSetConcurrency,
-                                     int resultSetHoldability) throws SQLException {
+    public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+            throws SQLException {
         return delegate.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 
@@ -263,9 +276,8 @@ public class Transaction implements Connection {
     }
 
     @Override
-    public PreparedStatement prepareStatement(String sql,
-                                              int resultSetType,
-                                              int resultSetConcurrency) throws SQLException {
+    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
+            throws SQLException {
         return delegate.prepareStatement(sql, resultSetType, resultSetConcurrency);
     }
 
@@ -353,5 +365,4 @@ public class Transaction implements Connection {
     public <T> T unwrap(Class<T> iface) throws SQLException {
         return delegate.unwrap(iface);
     }
-
 }

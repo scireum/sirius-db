@@ -11,7 +11,21 @@ package sirius.db.jdbc;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Watch;
 
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
@@ -104,9 +118,8 @@ class WrappedConnection implements Connection {
     }
 
     @Override
-    public Statement createStatement(int resultSetType,
-                                     int resultSetConcurrency,
-                                     int resultSetHoldability) throws SQLException {
+    public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+            throws SQLException {
         return new WrappedStatement(delegate.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability),
                                     ds);
     }
@@ -248,9 +261,8 @@ class WrappedConnection implements Connection {
     }
 
     @Override
-    public PreparedStatement prepareStatement(String sql,
-                                              int resultSetType,
-                                              int resultSetConcurrency) throws SQLException {
+    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
+            throws SQLException {
         return new WrappedPreparedStatement(ds,
                                             delegate.prepareStatement(sql, resultSetType, resultSetConcurrency),
                                             sql);

@@ -12,7 +12,11 @@ import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
-import sirius.mixing.*;
+import sirius.mixing.AccessPath;
+import sirius.mixing.EntityDescriptor;
+import sirius.mixing.OMA;
+import sirius.mixing.Property;
+import sirius.mixing.PropertyFactory;
 import sirius.mixing.schema.TableColumn;
 
 import java.lang.reflect.Field;
@@ -43,9 +47,7 @@ public class AmountProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new AmountProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public AmountProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);

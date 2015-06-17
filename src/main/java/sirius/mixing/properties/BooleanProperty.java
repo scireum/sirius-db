@@ -42,9 +42,7 @@ public class BooleanProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new BooleanProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public BooleanProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);

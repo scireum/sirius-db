@@ -22,7 +22,12 @@ import sirius.mixing.OMA;
 
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
@@ -67,25 +72,27 @@ public class Database {
         Context ctx = profile.getContext();
         ctx.putAll(ext.getContext());
         this.name = name;
-        this.driver = ext.get("driver").isEmptyString() ? Formatter.create(profile.get("driver").asString())
-                                                                   .set(ctx)
-                                                                   .format() : ext.get("driver").asString();
-        this.url = ext.get("url").isEmptyString() ? Formatter.create(profile.get("url").asString())
-                                                             .set(ctx)
-                                                             .format() : ext.get("url").asString();
-        this.username = ext.get("user").isEmptyString() ? Formatter.create(profile.get("user").asString())
-                                                                   .set(ctx)
-                                                                   .format() : ext.get("user").asString();
-        this.password = ext.get("password").isEmptyString() ? Formatter.create(profile.get("password").asString())
-                                                                       .set(ctx)
-                                                                       .format() : ext.get("password").asString();
-        this.initialSize = ext.get("initialSize").isFilled() ? ext.get("initialSize").asInt(0) : profile.get(
-                "initialSize").asInt(0);
-        this.maxActive = ext.get("maxActive").isFilled() ? ext.get("maxActive").asInt(10) : profile.get("maxActive")
-                                                                                                   .asInt(10);
+        this.driver = ext.get("driver").isEmptyString() ?
+                      Formatter.create(profile.get("driver").asString()).set(ctx).format() :
+                      ext.get("driver").asString();
+        this.url = ext.get("url").isEmptyString() ?
+                   Formatter.create(profile.get("url").asString()).set(ctx).format() :
+                   ext.get("url").asString();
+        this.username = ext.get("user").isEmptyString() ?
+                        Formatter.create(profile.get("user").asString()).set(ctx).format() :
+                        ext.get("user").asString();
+        this.password = ext.get("password").isEmptyString() ?
+                        Formatter.create(profile.get("password").asString()).set(ctx).format() :
+                        ext.get("password").asString();
+        this.initialSize = ext.get("initialSize").isFilled() ?
+                           ext.get("initialSize").asInt(0) :
+                           profile.get("initialSize").asInt(0);
+        this.maxActive =
+                ext.get("maxActive").isFilled() ? ext.get("maxActive").asInt(10) : profile.get("maxActive").asInt(10);
         this.maxIdle = ext.get("maxIdle").isFilled() ? ext.get("maxIdle").asInt(1) : profile.get("maxIdle").asInt(1);
-        this.validationQuery = ext.get("validationQuery").isEmptyString() ? Formatter.create(profile.get(
-                "validationQuery").asString()).set(ctx).format() : ext.get("validationQuery").asString();
+        this.validationQuery = ext.get("validationQuery").isEmptyString() ?
+                               Formatter.create(profile.get("validationQuery").asString()).set(ctx).format() :
+                               ext.get("validationQuery").asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
     }
 
@@ -306,8 +313,13 @@ public class Database {
                     try {
                         stmt.setObject(index++, o);
                     } catch (Exception e) {
-                        throw new IllegalArgumentException(e.getMessage() + " - Index: " + index + ", Value: " + o + ", Query: " + sql,
-                                                           e);
+                        throw new IllegalArgumentException(e.getMessage()
+                                                           + " - Index: "
+                                                           + index
+                                                           + ", Value: "
+                                                           + o
+                                                           + ", Query: "
+                                                           + sql, e);
                     }
                 }
                 stmt.executeUpdate();

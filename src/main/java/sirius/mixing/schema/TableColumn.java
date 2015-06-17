@@ -113,5 +113,4 @@ public class TableColumn {
     public int hashCode() {
         return name == null ? 0 : name.hashCode();
     }
-
 }

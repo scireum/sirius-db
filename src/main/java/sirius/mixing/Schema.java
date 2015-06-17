@@ -12,6 +12,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Databases;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.async.Tasks;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.std.ConfigValue;
@@ -61,6 +63,10 @@ public class Schema implements Initializable {
 
     @Part
     private Databases dbs;
+
+    @Part
+    private Tasks tasks;
+
     private Database db;
 
     protected Database getDatabase() {
@@ -164,16 +170,28 @@ public class Schema implements Initializable {
     }
 
     public void executeLosslessActions() {
-        for (SchemaUpdateAction action : getSchemaUpdateActions()) {
-            if (!action.isDataLossPossible()) {
-                action.execute(getDatabase());
+        tasks.defaultExecutor().start(() -> {
+            TaskContext ctx = TaskContext.get();
+            ctx.setJobTitle("Executing Schema Changes");
+            for (SchemaUpdateAction action : getSchemaUpdateActions()) {
+                if (ctx.isActive() && !action.isDataLossPossible()) {
+                    ctx.logAsCurrentState("Executing: %s", action.getReason());
+                    action.execute(getDatabase());
+                }
             }
-        }
+        });
     }
 
     public void executeAllActions() {
-        for (SchemaUpdateAction action : getSchemaUpdateActions()) {
-            action.execute(getDatabase());
-        }
+        tasks.defaultExecutor().start(() -> {
+            TaskContext ctx = TaskContext.get();
+            ctx.setJobTitle("Executing Schema Changes");
+            for (SchemaUpdateAction action : getSchemaUpdateActions()) {
+                if (ctx.isActive()) {
+                    ctx.logAsCurrentState("Executing: %s", action.getReason());
+                    action.execute(getDatabase());
+                }
+            }
+        });
     }
 }

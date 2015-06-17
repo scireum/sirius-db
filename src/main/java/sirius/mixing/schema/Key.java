@@ -1,6 +1,5 @@
 package sirius.mixing.schema;
 
-
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
 
@@ -56,5 +55,4 @@ public class Key {
         keyFields.add(ComparableTuple.create(pos, field));
         Collections.sort(keyFields);
     }
-
 }

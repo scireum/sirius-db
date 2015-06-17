@@ -22,7 +22,6 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.function.Consumer;
 
 /**
@@ -48,9 +47,7 @@ public class LocalDateProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new LocalDateProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public LocalDateProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
@@ -76,9 +73,8 @@ public class LocalDateProperty extends Property {
 
     @Override
     protected Object transformToColumn(Object object) {
-        return object == null ? null : new Date(((LocalDate) object).atStartOfDay()
-                                                                    .atZone(ZoneId.systemDefault())
-                                                                    .toInstant()
-                                                                    .toEpochMilli());
+        return object == null ?
+               null :
+               new Date(((LocalDate) object).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
 }

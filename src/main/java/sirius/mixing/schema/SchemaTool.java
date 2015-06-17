@@ -11,7 +11,12 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Helper class for manipulating and inspecting db metadata.
@@ -119,9 +124,8 @@ public class SchemaTool {
         rs.close();
     }
 
-    public List<SchemaUpdateAction> migrateSchemaTo(Connection c,
-                                                    List<Table> targetSchema,
-                                                    boolean dropTables) throws SQLException {
+    public List<SchemaUpdateAction> migrateSchemaTo(Connection c, List<Table> targetSchema, boolean dropTables)
+            throws SQLException {
         List<SchemaUpdateAction> result = new ArrayList<SchemaUpdateAction>();
         List<Table> currentSchema = getSchema(c);
 
@@ -177,7 +181,6 @@ public class SchemaTool {
                 handled.add(t.getName());
             }
         }
-
     }
 
     private boolean hasOpenReferences(Table t, Set<String> handled) {
@@ -243,11 +246,9 @@ public class SchemaTool {
         for (Key key : other.getKeys()) {
             ForeignKey fk = new ForeignKey();
             fk.setName(key.getName());
-            if (findInList(targetTable.getKeys(), key) == null && findInList(targetTable.getForeignKeys(),
-                                                                             fk) == null && dialect.shouldDropKey(
-                    targetTable,
-                    other,
-                    key)) {
+            if (findInList(targetTable.getKeys(), key) == null
+                && findInList(targetTable.getForeignKeys(), fk) == null
+                && dialect.shouldDropKey(targetTable, other, key)) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.indexUnused")
                                     .set("key", key.getName())
@@ -273,11 +274,9 @@ public class SchemaTool {
                 action.setSql(dialect.generateAddForeignKey(targetTable, targetKey));
                 result.add(action);
             } else {
-                if (!keyListEqual(targetKey.getColumns(),
-                                  otherKey.getColumns()) || !keyListEqual(targetKey.getForeignColumns(),
-                                                                          otherKey.getForeignColumns()) || !targetKey.getForeignTable()
-                                                                                                                     .equalsIgnoreCase(
-                                                                                                                             otherKey.getForeignTable())) {
+                if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
+                    || !keyListEqual(targetKey.getForeignColumns(), otherKey.getForeignColumns())
+                    || !targetKey.getForeignTable().equalsIgnoreCase(otherKey.getForeignTable())) {
                     SchemaUpdateAction action = new SchemaUpdateAction();
                     action.setReason(NLS.fmtr("SchemaTool.fkNeedsChange")
                                         .set("key", targetKey.getName())
@@ -327,8 +326,9 @@ public class SchemaTool {
                 usedColumns.add(otherCol.getName());
                 String reason = dialect.areColumnsEqual(targetCol, otherCol);
                 // Check for renaming...
-                if (reason == null && !Strings.areEqual(targetCol.getName(),
-                                                        otherCol.getName()) && dialect.isColumnCaseSensitive()) {
+                if (reason == null
+                    && !Strings.areEqual(targetCol.getName(), otherCol.getName())
+                    && dialect.isColumnCaseSensitive()) {
                     reason = NLS.fmtr("SchemaTool.columnNeedsRename")
                                 .set("column", otherCol.getName())
                                 .set("newName", targetCol.getName())

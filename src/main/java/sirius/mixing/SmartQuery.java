@@ -177,7 +177,6 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
     }
 
-
     public static class Compiler {
 
         private static class JoinFetch {
@@ -185,7 +184,6 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             EntityRefProperty property;
             Map<String, JoinFetch> subFetches = Maps.newTreeMap();
         }
-
 
         protected EntityDescriptor ed;
         protected StringBuilder preJoinQuery = new StringBuilder();
@@ -246,19 +244,19 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         private void createJoinFetch(Column field) {
             List<Column> fetchPath = Lists.newArrayList();
             Column parent = field.getParent();
-            while(parent != null) {
+            while (parent != null) {
                 fetchPath.add(0, parent);
                 parent = parent.getParent();
             }
             JoinFetch jf = rootFetch;
             EntityDescriptor currentDescriptor = ed;
-            for(Column col : fetchPath) {
+            for (Column col : fetchPath) {
                 JoinFetch subFetch = jf.subFetches.get(col.getName());
                 if (subFetch == null) {
                     subFetch = new JoinFetch();
                     Tuple<String, EntityDescriptor> parentInfo = determineAlias(col);
                     subFetch.tableAlias = parentInfo.getFirst();
-                    subFetch.property = (EntityRefProperty)currentDescriptor.getProperty(col.getName());
+                    subFetch.property = (EntityRefProperty) currentDescriptor.getProperty(col.getName());
                     jf.subFetches.put(col.getName(), subFetch);
                 }
                 jf = subFetch;
@@ -278,7 +276,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                     jf.property.setReferencedEntity(parent, child);
                 }
                 for (JoinFetch subFetch : jf.subFetches.values()) {
-                    executeJoinFetch(subFetch,child, columns, rs);
+                    executeJoinFetch(subFetch, child, columns, rs);
                 }
             } catch (Exception e) {
                 //TODO error reporting
@@ -291,9 +289,8 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         private PreparedStatement prepareStatement(Connection c) throws SQLException {
-            PreparedStatement stmt = c.prepareStatement(getQuery(),
-                                                        ResultSet.TYPE_FORWARD_ONLY,
-                                                        ResultSet.CONCUR_READ_ONLY);
+            PreparedStatement stmt =
+                    c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < parameters.size(); i++) {
                 stmt.setObject(i + 1, parameters.get(i));
             }

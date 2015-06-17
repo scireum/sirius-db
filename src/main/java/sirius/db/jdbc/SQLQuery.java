@@ -132,7 +132,7 @@ public class SQLQuery {
             if (limit.getTotalItems() > 0) {
                 compiler.getStmt().setMaxRows(limit.getTotalItems());
             }
-            if (ds.hasCapability(Capability.STREAMING) && (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0)) {
+            if (ds.hasCapability(Capability.STREAMING)) {
                 compiler.getStmt().setFetchSize(Integer.MIN_VALUE);
             } else {
                 compiler.getStmt().setFetchSize(1000);
@@ -153,7 +153,6 @@ public class SQLQuery {
             } finally {
                 compiler.getStmt().close();
             }
-
         } finally {
             w.submitMicroTiming("SQL-QUERY", sql);
         }
@@ -306,5 +305,4 @@ public class SQLQuery {
     public String toString() {
         return "SQLQuery [" + sql + "]";
     }
-
 }

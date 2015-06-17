@@ -48,9 +48,7 @@ public class LocalTimeProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new LocalTimeProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public LocalTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
@@ -76,9 +74,11 @@ public class LocalTimeProperty extends Property {
 
     @Override
     protected Object transformToColumn(Object object) {
-        return object == null ? null : new Time(((LocalTime) object).atDate(LocalDate.of(1970, 01, 01))
-                                                                    .atZone(ZoneId.systemDefault())
-                                                                    .toInstant()
-                                                                    .toEpochMilli());
+        return object == null ?
+               null :
+               new Time(((LocalTime) object).atDate(LocalDate.of(1970, 01, 01))
+                                            .atZone(ZoneId.systemDefault())
+                                            .toInstant()
+                                            .toEpochMilli());
     }
 }

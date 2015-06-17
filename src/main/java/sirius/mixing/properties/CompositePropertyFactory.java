@@ -10,7 +10,13 @@ package sirius.mixing.properties;
 
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
-import sirius.mixing.*;
+import sirius.mixing.AccessPath;
+import sirius.mixing.Column;
+import sirius.mixing.Composite;
+import sirius.mixing.EntityDescriptor;
+import sirius.mixing.OMA;
+import sirius.mixing.Property;
+import sirius.mixing.PropertyFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

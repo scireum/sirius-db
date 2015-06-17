@@ -9,7 +9,6 @@
 package sirius.mixing;
 
 import sirius.db.jdbc.SQLQuery;
-import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
 import java.sql.SQLException;

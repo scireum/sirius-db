@@ -46,9 +46,7 @@ public class LocalDateTimeProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new LocalDateTimeProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public LocalDateTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);

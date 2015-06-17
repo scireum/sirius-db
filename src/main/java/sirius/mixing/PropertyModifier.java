@@ -48,5 +48,4 @@ public interface PropertyModifier {
      */
     @Nonnull
     Property modify(@Nonnull Property property);
-
 }

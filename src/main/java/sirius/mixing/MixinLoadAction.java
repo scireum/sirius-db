@@ -8,14 +8,12 @@
 
 package sirius.mixing;
 
-import org.hsqldb.lib.FrameworkLogger;
 import sirius.kernel.Sirius;
 import sirius.kernel.di.ClassLoadAction;
 import sirius.kernel.di.MutableGlobalContext;
 import sirius.kernel.di.std.Framework;
 import sirius.mixing.annotations.Mixin;
 
-import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 
 /**

@@ -101,5 +101,4 @@ public class EntityRef<E extends Entity> {
     public boolean containsNonpersistentValue() {
         return id == null && value != null;
     }
-
 }

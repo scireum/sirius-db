@@ -173,7 +173,6 @@ public abstract class Entity extends Mixable {
         return fetchRow;
     }
 
-
     /**
      * Returns an unique name of this entity.
      * <p>

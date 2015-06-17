@@ -10,7 +10,12 @@ package sirius.mixing.properties;
 
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
-import sirius.mixing.*;
+import sirius.mixing.AccessPath;
+import sirius.mixing.Entity;
+import sirius.mixing.EntityDescriptor;
+import sirius.mixing.OMA;
+import sirius.mixing.Property;
+import sirius.mixing.PropertyFactory;
 import sirius.mixing.annotations.Lob;
 import sirius.mixing.annotations.Trim;
 import sirius.mixing.schema.TableColumn;
@@ -26,7 +31,6 @@ public class StringProperty extends Property {
 
     private final boolean trim;
     private final boolean lob;
-
 
     /**
      * Factory for generating properties based on their field type
@@ -46,7 +50,6 @@ public class StringProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new StringProperty(descriptor, accessPath, field));
         }
-
     }
 
     public StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
@@ -118,5 +121,4 @@ public class StringProperty extends Property {
         }
         return column;
     }
-
 }

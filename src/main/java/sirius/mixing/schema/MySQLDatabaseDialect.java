@@ -6,7 +6,12 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,21 +23,21 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     @Override
     public String areColumnsEqual(TableColumn target, TableColumn current) {
         if (!areTypesEqual(target.getType(), current.getType())) {
-            return NLS.fmtr("scireum.db.schema.mysql.differentTypes")
+            return NLS.fmtr("MySQLDatabaseDialect.differentTypes")
                       .set("target", SchemaTool.getJdbcTypeName(target.getType()))
                       .set("current", SchemaTool.getJdbcTypeName(current.getType()))
                       .format();
         }
         if (target.isNullable() != current.isNullable()) {
             if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
-                return NLS.get("scireum.db.schema.mysql.differentNull");
+                return NLS.get("MySQLDatabaseDialect.differentNull");
             }
         }
         if (!equalValue(target.getDefaultValue(), current.getDefaultValue())) {
             // TIMESTAMP values cannot be null -> we gracefully ignore this
             // here, sice the alter statement would be ignored anyway.
             if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentDefault")
+                return NLS.fmtr("MySQLDatabaseDialect.differentDefault")
                           .set("target", target.getDefaultValue())
                           .set("current", current.getDefaultValue())
                           .format();
@@ -40,7 +45,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         }
         if (areTypesEqual(Types.CHAR, target.getType())) {
             if (!Strings.areEqual(target.getLength(), current.getLength())) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentLength")
+                return NLS.fmtr("MySQLDatabaseDialect.differentLength")
                           .set("target", target.getLength())
                           .set("current", current.getLength())
                           .format();
@@ -48,13 +53,13 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         }
         if (areTypesEqual(Types.DECIMAL, target.getType())) {
             if (!Strings.areEqual(target.getPrecision(), current.getPrecision())) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentPrecision")
+                return NLS.fmtr("MySQLDatabaseDialect.differentPrecision")
                           .set("target", target.getPrecision())
                           .set("current", current.getPrecision())
                           .format();
             }
             if (!Strings.areEqual(target.getScale(), current.getScale())) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentScale")
+                return NLS.fmtr("MySQLDatabaseDialect.differentScale")
                           .set("target", target.getScale())
                           .set("current", current.getScale())
                           .format();
@@ -88,9 +93,13 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     @Override
     public Table completeTableInfos(Table table) {
         for (TableColumn col : table.getColumns()) {
-            if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType() || Types.DATE == col
-                    .getType() || Types.TIMESTAMP == col.getType() || Types.LONGVARCHAR == col.getType() || Types.TIME == col
-                    .getType()) {
+            if (Types.CHAR == col.getType()
+                || Types.VARCHAR == col.getType()
+                || Types.CLOB == col.getType()
+                || Types.DATE == col.getType()
+                || Types.TIMESTAMP == col.getType()
+                || Types.LONGVARCHAR == col.getType()
+                || Types.TIME == col.getType()) {
                 col.setDefaultValue(col.getDefaultValue() == null ? null : "'" + col.getDefaultValue() + "'");
             }
         }
@@ -124,21 +133,11 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         if (type == other) {
             return true;
         }
-        return in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT) || in(type,
-                                                                              other,
-                                                                              Types.VARCHAR,
-                                                                              Types.CHAR) || in(type,
-                                                                                                other,
-                                                                                                Types.LONGVARCHAR,
-                                                                                                Types.CLOB) || in(type,
-                                                                                                                  other,
-                                                                                                                  Types.LONGVARBINARY,
-                                                                                                                  Types.BLOB,
-                                                                                                                  Types.VARBINARY) || in(
-                type,
-                other,
-                Types.NUMERIC,
-                Types.DECIMAL);
+        return in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT)
+               || in(type, other, Types.VARCHAR, Types.CHAR)
+               || in(type, other, Types.LONGVARCHAR, Types.CLOB)
+               || in(type, other, Types.LONGVARBINARY, Types.BLOB, Types.VARBINARY)
+               || in(type, other, Types.NUMERIC, Types.DECIMAL);
     }
 
     private boolean in(int type, int other, int... types) {
@@ -200,7 +199,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         if (Types.VARCHAR == type) {
             return "VARCHAR(" + length + ")";
         }
-        throw new IllegalArgumentException(NLS.fmtr("scireum.db.schema.mysql.unknownType")
+        throw new IllegalArgumentException(NLS.fmtr("MySQLDatabaseDialect.unknownType")
                                               .set("type", SchemaTool.getJdbcTypeName(type))
                                               .format());
     }
@@ -304,14 +303,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         }
         // AHA 02.11.11 - We rely on the sync tool, to generate the constraints
         // in the next run. Otherwise table with cross-references cannot be
-        // created.
-        // for (ForeignKey key : table.getForeignKeys()) {
-        // sb.append(MessageFormat
-        // .format("   CONSTRAINT `{0}` FOREIGN KEY ({1}) REFERENCES `{2}` ({3}),\n",
-        // key.getName(), listToString(key.getColumns()),
-        // key.getForeignTable(),
-        // listToString(key.getForeignColumns())));
-        // }
+        // created. Therefore only the PK is generated....
         sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB", listToString(table.getPrimaryKey())));
         return sb.toString();
     }
@@ -329,7 +321,6 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     @Override
     public String generateDropKey(Table table, Key key) {
         return MessageFormat.format("ALTER TABLE `{0}` DROP INDEX `{1}`", table.getName(), key.getName());
-
     }
 
     @Override
@@ -390,7 +381,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         if (Blob.class.equals(clazz)) {
             return Types.BLOB;
         }
-        throw new IllegalArgumentException(NLS.fmtr("scireum.db.schema.mysql.invalidType").set("type", clazz).format());
+        throw new IllegalArgumentException(NLS.fmtr("MySQLDatabaseDialect.invalidType").set("type", clazz).format());
     }
 
     @Override
@@ -407,5 +398,4 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     public boolean shouldDropKey(Table targetTable, Table currentTable, Key key) {
         return true;
     }
-
 }

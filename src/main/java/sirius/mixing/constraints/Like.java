@@ -74,7 +74,6 @@ public class Like extends Constraint {
         return this;
     }
 
-
     @Override
     public boolean addsConstraint() {
         return !ignoreEmpty || Strings.isFilled(value);

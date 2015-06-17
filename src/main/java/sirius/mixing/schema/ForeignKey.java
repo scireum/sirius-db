@@ -80,5 +80,4 @@ public class ForeignKey {
         foreignKeyFields.add(ComparableTuple.create(pos, field));
         Collections.sort(foreignKeyFields);
     }
-
 }

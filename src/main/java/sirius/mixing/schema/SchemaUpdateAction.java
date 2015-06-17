@@ -2,7 +2,6 @@ package sirius.mixing.schema;
 
 import sirius.db.jdbc.Database;
 import sirius.kernel.async.TaskContext;
-import sirius.kernel.health.Exceptions;
 import sirius.mixing.OMA;
 
 import java.sql.SQLException;
@@ -19,7 +18,6 @@ public class SchemaUpdateAction {
     private String reason;
     private List<String> sql;
     private boolean dataLossPossible;
-    private boolean errorIsNegligible;
     private String error;
     private volatile boolean executed;
 
@@ -59,14 +57,7 @@ public class SchemaUpdateAction {
                     OMA.LOG.FINE("Executing Schema Update: %s", statement);
                     db.createQuery(statement).executeUpdate();
                 } catch (SQLException e) {
-                    if (!errorIsNegligible) {
-                        error = e.getMessage();
-                        Exceptions.handle()
-                                  .to(OMA.LOG)
-                                  .error(e)
-                                  .withSystemErrorMessage("Error executing schema update '%s': %s", statement)
-                                  .handle();
-                    }
+                    error = e.getMessage();
                 }
             }
         }

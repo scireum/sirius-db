@@ -18,7 +18,11 @@ import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Parts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
-import sirius.mixing.annotations.*;
+import sirius.mixing.annotations.BeforeDelete;
+import sirius.mixing.annotations.BeforeSave;
+import sirius.mixing.annotations.Mixin;
+import sirius.mixing.annotations.Transient;
+import sirius.mixing.annotations.Versioned;
 import sirius.mixing.schema.Table;
 import sirius.mixing.schema.TableColumn;
 
@@ -29,7 +33,10 @@ import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -142,7 +149,6 @@ public class EntityDescriptor {
         return properties.values();
     }
 
-
     public <E extends Entity> boolean isFetched(E entity, Property property) {
         if (entity.isNew()) {
             return false;
@@ -163,10 +169,9 @@ public class EntityDescriptor {
         entity.version = version;
     }
 
-
     protected final void beforeSave(Entity entity) {
         beforeSaveChecks(entity);
-        for(Consumer<Entity> c : beforeSaveHandlers) {
+        for (Consumer<Entity> c : beforeSaveHandlers) {
             c.accept(entity);
         }
         for (Property property : properties.values()) {
@@ -266,13 +271,11 @@ public class EntityDescriptor {
                         p.getName(),
                         type.getSimpleName(),
                         p.getDefinition()));
-
             } else {
                 properties.put(p.getName(), p);
             }
         });
     }
-
 
     /*
      * Contains all known property factories. These are used to transform fields defined by entity classes to
@@ -306,7 +309,6 @@ public class EntityDescriptor {
         return mixins.get(forClass);
     }
 
-
     /*
      * Adds all properties of the given class (and its superclasses)
      */
@@ -330,7 +332,7 @@ public class EntityDescriptor {
         for (Field field : clazz.getDeclaredFields()) {
             addField(descriptor, accessPath, rootClass, clazz, field, propertyConsumer);
         }
-        for(Method m : clazz.getDeclaredMethods()) {
+        for (Method m : clazz.getDeclaredMethods()) {
             if (m.isAnnotationPresent(BeforeSave.class)) {
                 descriptor.beforeSaveHandlers.add(e -> {
                     try {

@@ -6,7 +6,12 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,8 +35,9 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
         }
         if (!equalValue(target.getDefaultValue(), current.getDefaultValue())) {
             // Handle default values for auto-increment columns...
-            if (!(target.isAutoIncrement() && Strings.isEmpty(target.getDefaultValue()) && "AUTOINCREMENT: start 1 increment 1"
-                    .equalsIgnoreCase(current.getDefaultValue()))) {
+            if (!(target.isAutoIncrement()
+                  && Strings.isEmpty(target.getDefaultValue())
+                  && "AUTOINCREMENT: start 1 increment 1".equalsIgnoreCase(current.getDefaultValue()))) {
                 // TIMESTAMP values cannot be null -> we gracefully ignore this
                 // here, since the alter statement would be ignored anyway.
                 if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
@@ -86,9 +92,13 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
     @Override
     public Table completeTableInfos(Table table) {
         for (TableColumn col : table.getColumns()) {
-            if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType() || Types.DATE == col
-                    .getType() || Types.TIMESTAMP == col.getType() || Types.LONGVARCHAR == col.getType() || Types.TIME == col
-                    .getType()) {
+            if (Types.CHAR == col.getType()
+                || Types.VARCHAR == col.getType()
+                || Types.CLOB == col.getType()
+                || Types.DATE == col.getType()
+                || Types.TIMESTAMP == col.getType()
+                || Types.LONGVARCHAR == col.getType()
+                || Types.TIME == col.getType()) {
                 col.setDefaultValue(col.getDefaultValue() == null ? null : "'" + col.getDefaultValue() + "'");
             }
         }
@@ -122,18 +132,16 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
         if (type == other) {
             return true;
         }
-        return in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT, Types.SMALLINT) || in(type,
-                                                                                              other,
-                                                                                              Types.VARCHAR,
-                                                                                              Types.CHAR) || in(type,
-                                                                                                                other,
-                                                                                                                Types.LONGVARCHAR,
-                                                                                                                Types.CLOB) || in(
-                type,
-                other,
-                Types.LONGVARBINARY,
-                Types.BLOB,
-                Types.VARBINARY);
+        return in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT, Types.SMALLINT)
+               || in(type,
+                     other,
+                     Types.VARCHAR,
+                     Types.CHAR)
+               || in(type,
+                     other,
+                     Types.LONGVARCHAR,
+                     Types.CLOB)
+               || in(type, other, Types.LONGVARBINARY, Types.BLOB, Types.VARBINARY);
     }
 
     private boolean in(int type, int other, int... types) {
@@ -329,7 +337,6 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
     @Override
     public String generateDropKey(Table table, Key key) {
         return MessageFormat.format("ALTER TABLE {0} DROP INDEX {1}", table.getName(), key.getName());
-
     }
 
     @Override
@@ -407,5 +414,4 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
     public boolean shouldDropKey(Table targetTable, Table currentTable, Key key) {
         return !key.getName().startsWith("SQL");
     }
-
 }

@@ -515,7 +515,6 @@ public abstract class Property {
      */
     protected abstract int getSQLType();
 
-
     /**
      * Links this property.
      * <p>

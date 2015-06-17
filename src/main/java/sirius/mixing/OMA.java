@@ -109,9 +109,8 @@ public class OMA {
         }
     }
 
-    private <E extends Entity> void doUPDATE(E entity,
-                                             boolean force,
-                                             EntityDescriptor ed) throws SQLException, OptimisticLockException {
+    private <E extends Entity> void doUPDATE(E entity, boolean force, EntityDescriptor ed)
+            throws SQLException, OptimisticLockException {
         StringBuilder sb = new StringBuilder("UPDATE ");
         sb.append(ed.getTableName());
         List<Object> data = Lists.newArrayList();
@@ -184,7 +183,6 @@ public class OMA {
             // Should really not happen....
             throw Exceptions.handle(e);
         }
-
     }
 
     public <E extends Entity> void delete(E entity) {
@@ -193,9 +191,7 @@ public class OMA {
         } catch (OptimisticLockException e) {
             throw Exceptions.handle(e);
         }
-
     }
-
 
     private <E extends Entity> void doDelete(E entity, boolean force) throws OptimisticLockException {
         if (entity == null || entity.isNew()) {
@@ -283,7 +279,6 @@ public class OMA {
         }
     }
 
-
     public <E extends Entity> E findOrFail(Class<E> type, Object id) {
         Optional<E> result = find(type, id);
         if (result.isPresent()) {
@@ -342,5 +337,4 @@ public class OMA {
                             .handle();
         }
     }
-
 }

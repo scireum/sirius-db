@@ -42,9 +42,7 @@ public class IntegerProperty extends Property {
                            Consumer<Property> propertyConsumer) {
             propertyConsumer.accept(new IntegerProperty(descriptor, accessPath, field));
         }
-
     }
-
 
     public IntegerProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);

@@ -149,5 +149,4 @@ public class SQLCall {
     public String toString() {
         return "JDBCCall [" + fun + "]";
     }
-
 }

@@ -25,7 +25,7 @@ import java.util.Map;
  * Use {@link #get(String)} to obtain a managed connection to the given database.
  * <p>
  * Configuration is done via the system configuration. To declare a database provide an extension in
- * <tt>jdbc.database</tt>. For examples see "component-web.conf".
+ * <tt>jdbc.database</tt>. For examples see "component-db.conf".
  *
  * @author Andreas Haufler (aha@scireum.de)
  * @since 2013/11

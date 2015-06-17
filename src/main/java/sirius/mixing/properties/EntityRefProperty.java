@@ -12,7 +12,15 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
-import sirius.mixing.*;
+import sirius.mixing.AccessPath;
+import sirius.mixing.CascadeDeleteTaskQueue;
+import sirius.mixing.Entity;
+import sirius.mixing.EntityDescriptor;
+import sirius.mixing.EntityRef;
+import sirius.mixing.OMA;
+import sirius.mixing.Property;
+import sirius.mixing.PropertyFactory;
+import sirius.mixing.Schema;
 import sirius.mixing.constraints.FieldOperator;
 import sirius.mixing.schema.ForeignKey;
 import sirius.mixing.schema.Table;
@@ -52,13 +60,11 @@ public class EntityRefProperty extends Property {
 
             propertyConsumer.accept(new EntityRefProperty(descriptor, accessPath, field));
         }
-
     }
 
     private EntityRef<? extends Entity> entityRef;
     private Class<? extends Entity> referencedType;
     private EntityDescriptor referencedDescriptor;
-
 
     public EntityRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
@@ -137,7 +143,6 @@ public class EntityRefProperty extends Property {
         if (deleteHandler == EntityRef.OnDelete.LAZY_CASCADE || deleteHandler == EntityRef.OnDelete.SOFT_CASCADE) {
             createBackgroundCascadeHandler();
         }
-
     }
 
     protected void setTypeNameAsAlternativePropertyKey() {
@@ -250,16 +255,14 @@ public class EntityRefProperty extends Property {
         ((EntityRef<Entity>) getEntityRef(accessPath.apply(parent))).setValue(child);
     }
 
-
     @SuppressWarnings("unchecked")
     @Override
     protected void setValueToField(Object value, Object target) {
         EntityRef<Entity> ref = (EntityRef<Entity>) super.getValueFromField(target);
         if (value == null || value instanceof Entity) {
-            ref.setValue((Entity)value);
+            ref.setValue((Entity) value);
         } else {
             ref.setId((Long) value);
         }
     }
-
 }

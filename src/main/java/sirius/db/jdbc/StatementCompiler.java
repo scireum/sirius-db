@@ -9,10 +9,18 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
-import sirius.kernel.commons.*;
+import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Reflection;
+import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
+import sirius.kernel.commons.Value;
 import sirius.kernel.nls.NLS;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
@@ -50,7 +58,6 @@ class StatementCompiler {
             for (Tuple<Integer, Object> t : parameters) {
                 stmt.setObject(t.getFirst(), t.getSecond());
             }
-
         }
         return stmt;
     }
@@ -108,7 +115,8 @@ class StatementCompiler {
      * If no [ was found, the complete string is compiled and added to the
      * result SQL.
      */
-    private void parseSection(String originalSQL, String sql, List<Object> params, Context context) throws SQLException {
+    private void parseSection(String originalSQL, String sql, List<Object> params, Context context)
+            throws SQLException {
         int index = sql.indexOf("[");
         if (index > -1) {
             int nextClose = sql.indexOf("]", index + 1);
@@ -200,8 +208,8 @@ class StatementCompiler {
             }
             // A parameter was found, if its value is not null or if it is a non
             // empty collection
-            parameterFound = (Strings.isFilled(paramValue)) && (!(paramValue instanceof Collection<?>) || !((Collection<?>) paramValue)
-                    .isEmpty());
+            parameterFound = (Strings.isFilled(paramValue)) && (!(paramValue instanceof Collection<?>)
+                                                                || !((Collection<?>) paramValue).isEmpty());
             if (directSubstitution || paramValue == null) {
                 tempParams.add(paramValue);
             } else {
