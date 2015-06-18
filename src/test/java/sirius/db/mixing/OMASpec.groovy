@@ -21,7 +21,7 @@ class OMASpec extends BaseSpecification {
 
     def "write a test entity and read it back"() {
         given:
-        def e = new TestEntity();
+        TestEntity e = new TestEntity();
         e.setFirstname("Test");
         e.setLastname("Entity");
         e.setAge(12);
@@ -39,7 +39,7 @@ class OMASpec extends BaseSpecification {
 
     def "write and read an entity with composite"() {
         given:
-        def e = new TestEntityWithComposite();
+        TestEntityWithComposite e = new TestEntityWithComposite();
         e.getComposite().setCity("x")
         e.getComposite().setStreet("y")
         e.getComposite().setZip("z")
@@ -66,7 +66,7 @@ class OMASpec extends BaseSpecification {
 
     def "write and read an entity with mixin"() {
         given:
-        def e = new TestEntityWithMixin();
+        TestEntityWithMixin e = new TestEntityWithMixin();
         e.setFirstname("Homer");
         e.setLastname("Simpson");
         e.as(TestMixin.class).setMiddleName("Jay");
