@@ -85,5 +85,15 @@ class OMASpec extends BaseSpecification {
         readBack.as(TestMixin.class).as(TestMixinMixin.class).getInitial() == "J"
     }
 
+    def "resolve can resolve an entity by its unique name"() {
+        given:
+        TestClobEntity test = new TestClobEntity();
+        when:
+        test.setLargeValue("test");
+        and:
+        oma.update(test);
+        then:
+        test.equals(oma.resolveOrFail(test.getUniqueName()));
+    }
 
 }

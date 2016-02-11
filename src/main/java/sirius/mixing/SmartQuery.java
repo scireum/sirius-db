@@ -95,7 +95,37 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     public long count() {
-        return 0;
+        Watch w = Watch.start();
+        Compiler compiler = compileCOUNT();
+        try {
+            try (Connection c = db.getConnection()) {
+                PreparedStatement stmt = compiler.prepareStatement(c);
+                if (stmt == null) {
+                    return 0;
+                }
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getLong(1);
+                    } else {
+                        return 0;
+                    }
+                } finally {
+                    stmt.close();
+                }
+            } finally {
+                if (Microtiming.isEnabled()) {
+                    w.submitMicroTiming("OMA", compiler.toString());
+                }
+            }
+        } catch (Throwable e) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
+                                                    compiler,
+                                                    type.getName())
+                            .handle();
+        }
     }
 
     public boolean exists() {
@@ -121,10 +151,10 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     @SuppressWarnings("unchecked")
     @Override
     public void iterate(Function<E, Boolean> handler) {
+        Compiler compiler = compileSELECT();
         try {
             Watch w = Watch.start();
             try (Connection c = db.getConnection()) {
-                Compiler compiler = compile();
                 PreparedStatement stmt = compiler.prepareStatement(c);
                 if (stmt == null) {
                     return;
@@ -152,7 +182,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 }
             } finally {
                 if (Microtiming.isEnabled()) {
-                    w.submitMicroTiming("OMA", toString());
+                    w.submitMicroTiming("OMA", compiler.toString());
                 }
             }
         } catch (Throwable e) {
@@ -160,7 +190,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
-                                                    this,
+                                                    compiler.toString(),
                                                     type.getName())
                             .handle();
         }
@@ -311,12 +341,19 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
     }
 
-    private Compiler compile() {
+    private Compiler compileSELECT() {
         Compiler compiler = select();
         from(compiler);
         where(compiler);
         orderBy(compiler);
         limit(compiler);
+        return compiler;
+    }
+
+    private Compiler compileCOUNT() {
+        Compiler compiler = selectCount();
+        from(compiler);
+        where(compiler);
         return compiler;
     }
 
@@ -346,7 +383,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 }
             }
         }
-        c.getSELECTBuilder().append(" ");
+        return c;
+    }
+
+    private Compiler selectCount() {
+        Compiler c = new Compiler(descriptor);
+        c.getSELECTBuilder().append("SELECT COUNT(*)");
         return c;
     }
 
@@ -403,6 +445,6 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
     @Override
     public String toString() {
-        return compile().toString();
+        return compileSELECT().toString();
     }
 }

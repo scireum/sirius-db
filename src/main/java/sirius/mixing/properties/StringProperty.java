@@ -10,6 +10,7 @@ package sirius.mixing.properties;
 
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 import sirius.mixing.AccessPath;
 import sirius.mixing.Entity;
 import sirius.mixing.EntityDescriptor;
@@ -21,6 +22,8 @@ import sirius.mixing.annotations.Trim;
 import sirius.mixing.schema.TableColumn;
 
 import java.lang.reflect.Field;
+import java.sql.Clob;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.function.Consumer;
 
@@ -68,6 +71,20 @@ public class StringProperty extends Property {
 
     @Override
     protected void setValueToField(Object value, Object target) {
+        if (value instanceof Clob) {
+            try {
+                value = ((Clob) value).getSubString(1, (int)((Clob) value).length());
+            } catch (Throwable e) {
+                throw Exceptions.handle()
+                                .to(OMA.LOG)
+                                .error(e)
+                                .withSystemErrorMessage("Cannot read CLOB property %s of %s (%s): %s (%s)",
+                                                        getColumnName(),
+                                                        getDescriptor().getType().getName(),
+                                                        getDescriptor().getTableName())
+                                .handle();
+            }
+        }
         if (trim) {
             if (value != null) {
                 value = ((String) value).trim();

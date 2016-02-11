@@ -36,15 +36,16 @@ import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
 /**
  * Represents the recipe on how to write an entity class into a database table.
- * <p>
+ * <p/>
  * For each subclass of {@link Entity} a <tt>descriptor</tt> is created by the {@link Schema}. This descriptor
  * is in charge of reading and writing from and to the database as well as ensuring consistency of the data.
- * <p>
+ * <p/>
  * The descriptor is automatically creates and its properties are discovered by checking all fields, composites
  * and mixins.
  *
@@ -107,7 +108,7 @@ public class EntityDescriptor {
 
     /**
      * Returns the "end user friendly" name of the entity
-     * <p>
+     * <p/>
      * This is determined by calling <tt>NLS.get()</tt>
      * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore
      * the property keys for "org.acme.model.Customer" would be the class name and "Model.customer". The fallback
@@ -122,7 +123,7 @@ public class EntityDescriptor {
 
     /**
      * Returns the "end user friendly" plural of the entity
-     * <p>
+     * <p/>
      * The i18n keys tried are the same as for {@link #getLabel()} with ".plural" appended.
      *
      * @return a translated plural which can be shown to the end user
@@ -157,8 +158,7 @@ public class EntityDescriptor {
     }
 
     public <E extends Entity> boolean isChanged(E entity, Property property) {
-        return true; //TODO
-//        return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
+        return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
     }
 
     public <E extends Entity> int getVersion(E entity) {
@@ -334,32 +334,22 @@ public class EntityDescriptor {
         }
         for (Method m : clazz.getDeclaredMethods()) {
             if (m.isAnnotationPresent(BeforeSave.class)) {
+                if (!Modifier.isProtected(m.getModifiers())) {
+                    OMA.LOG.WARN("BeforeSave handler %s.%s is not declared protected!",
+                                 m.getDeclaringClass().getName(),
+                                 m.getName());
+                }
                 descriptor.beforeSaveHandlers.add(e -> {
-                    try {
-                        if (m.getParameterCount() == 0) {
-                            m.invoke(accessPath.apply(e));
-                        } else {
-                            m.invoke(accessPath.apply(e), e);
-                        }
-                    } catch (IllegalAccessException ex) {
-                        throw Exceptions.handle(OMA.LOG, ex);
-                    } catch (InvocationTargetException ex) {
-                        throw Exceptions.handle(OMA.LOG, ex.getTargetException());
-                    }
+                    invokeHandler(accessPath, m, e);
                 });
             } else if (m.isAnnotationPresent(BeforeDelete.class)) {
+                if (!Modifier.isProtected(m.getModifiers())) {
+                    OMA.LOG.WARN("BeforeDelete handler %s.%s is not declared protected!",
+                                 m.getDeclaringClass().getName(),
+                                 m.getName());
+                }
                 descriptor.beforeDeleteHandlers.add(e -> {
-                    try {
-                        if (m.getParameterCount() == 0) {
-                            m.invoke(accessPath.apply(e));
-                        } else {
-                            m.invoke(accessPath.apply(e), e);
-                        }
-                    } catch (IllegalAccessException ex) {
-                        throw Exceptions.handle(OMA.LOG, ex);
-                    } catch (InvocationTargetException ex) {
-                        throw Exceptions.handle(OMA.LOG, ex.getTargetException());
-                    }
+                    invokeHandler(accessPath, m, e);
                 });
             }
         }
@@ -372,6 +362,21 @@ public class EntityDescriptor {
 
         if (clazz.getSuperclass() != null && !Object.class.equals(clazz.getSuperclass())) {
             addFields(descriptor, accessPath, rootClass, clazz.getSuperclass(), propertyConsumer);
+        }
+    }
+
+    private static void invokeHandler(AccessPath accessPath, Method m, Entity e) {
+        try {
+            m.setAccessible(true);
+            if (m.getParameterCount() == 0) {
+                m.invoke(accessPath.apply(e));
+            } else {
+                m.invoke(accessPath.apply(e), e);
+            }
+        } catch (IllegalAccessException ex) {
+            throw Exceptions.handle(OMA.LOG, ex);
+        } catch (InvocationTargetException ex) {
+            throw Exceptions.handle(OMA.LOG, ex.getTargetException());
         }
     }
 
@@ -475,6 +480,26 @@ public class EntityDescriptor {
     @Override
     public String toString() {
         return tableName + " [" + type.getName() + "]";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof EntityDescriptor)) {
+            return false;
+        }
+
+        return type.equals(((EntityDescriptor) obj).type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type);
     }
 
     public Class<? extends Entity> getType() {

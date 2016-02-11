@@ -87,8 +87,13 @@ public class EntityRefProperty extends Property {
         EntityRef.OnDelete deleteHandler = getEntityRef().getDeleteHandler();
         if (deleteHandler != EntityRef.OnDelete.SOFT_CASCADE && deleteHandler != EntityRef.OnDelete.LAZY_CASCADE) {
             ForeignKey fk = new ForeignKey();
-            fk.setName("fk_" + getName());
-            fk.setForeignTable(schema.getDescriptor(getEntityRef().getType()).getTableName());
+            fk.setName("fk_"
+                       + descriptor.getTableName()
+                       + "_"
+                       + getColumnName()
+                       + "_"
+                       + referencedDescriptor.getTableName());
+            fk.setForeignTable(referencedDescriptor.getTableName());
             fk.addForeignColumn(1, Entity.ID.getName());
             fk.addColumn(1, getColumnName());
             table.getForeignKeys().add(fk);

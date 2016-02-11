@@ -18,7 +18,6 @@ import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.Formatter;
-import sirius.mixing.OMA;
 
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
@@ -216,7 +215,7 @@ public class Database {
                     }
                 } catch (SQLException e) {
                     ex = Exceptions.handle()
-                                   .to(OMA.LOG)
+                                   .to(Databases.LOG)
                                    .error(e)
                                    .withSystemErrorMessage("Error while rolling back transaction: %s (%s)")
                                    .handle();

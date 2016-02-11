@@ -75,6 +75,26 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().map({ x -> x.getValue() } as Function).collect(Collectors.toList()) == ["Test", "Hello", "World"]
     }
 
+    def "count returns the number of entity"() {
+        given:
+        SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                .orderAsc(SmartQueryTestEntity.TEST_NUMBER);
+        when:
+        def result = qry.count();
+        then:
+        result == 3
+    }
+
+    def "exists returns a correct value"() {
+        given:
+        SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                .orderAsc(SmartQueryTestEntity.TEST_NUMBER);
+        when:
+        def result = qry.exists();
+        then:
+        result == true
+    }
+
     def "queryFirst returns the first entity"() {
         given:
         SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)

@@ -1,10 +1,13 @@
 package sirius.mixing.schema;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
+import sirius.mixing.OMA;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -13,10 +16,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Helper class for manipulating and inspecting db metadata.
@@ -126,12 +131,34 @@ public class SchemaTool {
 
     public List<SchemaUpdateAction> migrateSchemaTo(Connection c, List<Table> targetSchema, boolean dropTables)
             throws SQLException {
-        List<SchemaUpdateAction> result = new ArrayList<SchemaUpdateAction>();
+        List<SchemaUpdateAction> result = Lists.newArrayList();
         List<Table> currentSchema = getSchema(c);
 
-        List<Table> sortedTarget = new ArrayList<Table>(targetSchema);
-        sort(sortedTarget);
-        // Sync required tables...
+        List<Table> sortedTarget = sort(new ArrayList<>(targetSchema));
+
+        syncRequiredTables(result, currentSchema, sortedTarget);
+        if (dropTables) {
+            dropUnusedTables(result, currentSchema, targetSchema);
+        }
+
+        return result;
+    }
+
+    public void dropUnusedTables(List<SchemaUpdateAction> result, List<Table> currentSchema, List<Table> targetSchema) {
+        for (Table table : currentSchema) {
+            if (findInList(targetSchema, table) == null) {
+                SchemaUpdateAction action = new SchemaUpdateAction();
+                action.setReason(NLS.fmtr("SchemaTool.tableUnused").set("table", table.getName()).format());
+                action.setDataLossPossible(true);
+                action.setSql(dialect.generateDropTable(table));
+                result.add(action);
+            }
+        }
+    }
+
+    public void syncRequiredTables(List<SchemaUpdateAction> result,
+                                   List<Table> currentSchema,
+                                   List<Table> sortedTarget) {
         for (Table targetTable : sortedTarget) {
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
@@ -144,48 +171,49 @@ public class SchemaTool {
                 syncTables(targetTable, other, result);
             }
         }
-        if (dropTables) {
-            // Drop unused tables...
-            for (Table table : currentSchema) {
-                if (findInList(targetSchema, table) == null) {
-                    SchemaUpdateAction action = new SchemaUpdateAction();
-                    action.setReason(NLS.fmtr("SchemaTool.tableUnused").set("table", table.getName()).format());
-                    action.setDataLossPossible(true);
-                    action.setSql(dialect.generateDropTable(table));
-                    result.add(action);
-                }
-            }
-        }
-        return result;
     }
 
-    /**
+    /*
      * Sorts the order of tables, so that a table is handled before it is
      * referenced via a foreign key.
      */
-    private void sort(List<Table> sortedTarget) {
-        Set<String> handled = new TreeSet<String>();
-        int index = 0;
-        // In a worst case, we have to compare each with every table O(n^2).
-        // After that, we can assume that there is a deadlock (circular reference) and exit.
-        int maxOperations = sortedTarget.size() * sortedTarget.size();
-        while (index < sortedTarget.size() && maxOperations-- > 0) {
-            Table t = sortedTarget.get(index);
-            if (hasOpenReferences(t, handled)) {
-                // Table has open references, push to end...
-                sortedTarget.remove(index);
-                sortedTarget.add(t);
-            } else {
-                // Table is ok, check next...
-                index++;
-                handled.add(t.getName());
+    private List<Table> sort(List<Table> tables) {
+        List<Table> sortedResult = new ArrayList<>();
+        Set<String> handled = new TreeSet<>();
+
+        while (!tables.isEmpty()) {
+            Iterator<Table> iter = tables.iterator();
+            boolean removedAtLeastOneTable = false;
+            while (iter.hasNext()) {
+                Table t = iter.next();
+                if (!hasOpenReferences(t, handled)) {
+                    sortedResult.add(t);
+                    handled.add(t.getName());
+                    iter.remove();
+                    removedAtLeastOneTable = true;
+                }
+            }
+            if (!removedAtLeastOneTable) {
+                Exceptions.handle()
+                          .to(OMA.LOG)
+                          .withSystemErrorMessage("Cannot sort tables by FK-dependencies! "
+                                                  + "Aborting - Schema update will most probably fail! "
+                                                  + "Remaining set: %s",
+                                                  tables.stream().map(Table::getName).collect(Collectors.toList()))
+                          .handle();
+
+                // Add remaining tables unsorted...
+                sortedResult.addAll(tables);
+                return sortedResult;
             }
         }
+
+        return sortedResult;
     }
 
     private boolean hasOpenReferences(Table t, Set<String> handled) {
         for (ForeignKey fk : t.getForeignKeys()) {
-            if (!handled.contains(fk.getForeignTable())) {
+            if (!fk.getForeignTable().equals(t.getName()) && !handled.contains(fk.getForeignTable())) {
                 return true;
             }
         }
@@ -397,6 +425,7 @@ public class SchemaTool {
                     // Add to map
                     map.put(value, name);
                 } catch (IllegalAccessException e) {
+                    Exceptions.ignore(e);
                 }
             }
         }

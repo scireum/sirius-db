@@ -49,12 +49,12 @@ public class Schema implements Initializable {
         return ed;
     }
 
-    public EntityDescriptor getDescriptor(String aClassName) {
-        EntityDescriptor ed = descriptorsByName.get(aClassName);
+    public EntityDescriptor getDescriptor(String aTypeName) {
+        EntityDescriptor ed = descriptorsByName.get(aTypeName);
         if (ed == null) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
-                            .withSystemErrorMessage("The name '%s' is not a known entity!", aClassName)
+                            .withSystemErrorMessage("The name '%s' is not a known entity!", aTypeName)
                             .handle();
         }
 
@@ -126,19 +126,19 @@ public class Schema implements Initializable {
             EntityDescriptor ed = new EntityDescriptor(e);
             ed.initialize();
             descriptorsByType.put(e.getClass(), ed);
-            String className = e.getClass().getSimpleName();
-            EntityDescriptor conflictingDescriptor = descriptorsByName.get(className);
+            String typeName = e.getTypeName();
+            EntityDescriptor conflictingDescriptor = descriptorsByName.get(typeName);
             if (conflictingDescriptor != null) {
                 Exceptions.handle()
                           .to(OMA.LOG)
                           .withSystemErrorMessage(
                                   "Cannot register entity descriptor for '%s' as '%s' as this name is already taken by '%s'",
                                   e.getClass().getName(),
-                                  className,
+                                  typeName,
                                   conflictingDescriptor.getType().getName())
                           .handle();
             } else {
-                descriptorsByName.put(className.toUpperCase(), ed);
+                descriptorsByName.put(typeName, ed);
             }
         }
     }
@@ -171,12 +171,16 @@ public class Schema implements Initializable {
 
     public void executeLosslessActions() {
         tasks.defaultExecutor().start(() -> {
+            //TODO as job
             TaskContext ctx = TaskContext.get();
-            ctx.setJobTitle("Executing Schema Changes");
             for (SchemaUpdateAction action : getSchemaUpdateActions()) {
                 if (ctx.isActive() && !action.isDataLossPossible()) {
                     ctx.logAsCurrentState("Executing: %s", action.getReason());
                     action.execute(getDatabase());
+                    if (action.isFailed()) {
+                        ctx.markErroneous();
+                        ctx.log("%s failed: %s", action.getReason(), action);
+                    }
                 }
             }
         });
@@ -184,12 +188,16 @@ public class Schema implements Initializable {
 
     public void executeAllActions() {
         tasks.defaultExecutor().start(() -> {
+            //TODO as job
             TaskContext ctx = TaskContext.get();
-            ctx.setJobTitle("Executing Schema Changes");
             for (SchemaUpdateAction action : getSchemaUpdateActions()) {
                 if (ctx.isActive()) {
                     ctx.logAsCurrentState("Executing: %s", action.getReason());
                     action.execute(getDatabase());
+                    if (action.isFailed()) {
+                        ctx.markErroneous();
+                        ctx.log("%s failed: %s", action.getReason(), action);
+                    }
                 }
             }
         });

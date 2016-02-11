@@ -296,7 +296,7 @@ public class OMA {
             return Optional.empty();
         }
         Tuple<String, String> typeAndId = Strings.split(name, "-");
-        return find(schema.getDescriptor(name).getType(), typeAndId.getSecond());
+        return find(schema.getDescriptor(typeAndId.getFirst()).getType(), typeAndId.getSecond());
     }
 
     public Entity resolveOrFail(String name) {

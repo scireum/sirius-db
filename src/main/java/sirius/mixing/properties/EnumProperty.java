@@ -56,7 +56,14 @@ public class EnumProperty extends Property {
 
     @Override
     protected int getSQLType() {
-        return Types.BIGINT;
+        return Types.CHAR;
+    }
+
+    @Override
+    protected void determineLengths() {
+        for (Enum<?> e : ((Class<Enum<?>>) field.getType()).getEnumConstants()) {
+            this.length = Math.max(this.length, e.name().length());
+        }
     }
 
     @SuppressWarnings({"unchecked", "raw"})
