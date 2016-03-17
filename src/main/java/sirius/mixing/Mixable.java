@@ -10,7 +10,9 @@ package sirius.mixing;
 
 import com.google.common.collect.Maps;
 import sirius.kernel.di.morphium.Adaptable;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 import sirius.mixing.annotations.Mixin;
 import sirius.mixing.annotations.Transient;
 
@@ -70,4 +72,8 @@ public class Mixable implements Adaptable {
             return Adaptable.super.tryAs(adapterType);
         }
     }
+
+    @Part
+    protected static OMA oma;
+
 }

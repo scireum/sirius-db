@@ -10,13 +10,16 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Maps;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
 import sirius.kernel.health.Log;
 import sirius.kernel.health.metrics.MetricProvider;
 import sirius.kernel.health.metrics.MetricsCollector;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Provides a {@link javax.sql.DataSource} which can be configured via the system
@@ -77,5 +80,24 @@ public class Databases {
             }
         }
         return ds;
+    }
+
+    /**
+     * Returns a list of all known (configured) databases from the system config.
+     *
+     * @return a list of all known databases
+     */
+    public List<String> getDatabases() {
+        return Extensions.getExtensions("jdbc.database").stream().map(e -> e.getId()).collect(Collectors.toList());
+    }
+
+    /**
+     * Determines if a databse with the given name is present in the configuration.
+     *
+     * @param name the name of the database
+     * @return <tt>true</tt> if a configuration <tt>jdbc.database.[name]</tt> does exist, <tt>false</tt> otherwise
+     */
+    public boolean hasDatabase(String name) {
+        return Extensions.getExtension("jdbc.database", name) != null;
     }
 }

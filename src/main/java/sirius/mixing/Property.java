@@ -25,11 +25,14 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Maps a field, which is either defined in an entity, a composite or a mixin to a table column.
- * <p/>
+ * <p>
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
  *
@@ -39,11 +42,17 @@ import java.util.Objects;
 public abstract class Property {
 
     /**
-     * Contains the effective property and column name. If the field,for which this property was created, resides
+     * Contains the effective property name. If the field, for which this property was created, resides
      * inside a mixin or composite, the name will be prefixed appropriately. Names are separated by
      * {@link Column#SUBFIELD_SEPARATOR} which is a <tt>_</tt>.
      */
     protected String name;
+
+    /**
+     * Contains the effective column name. This is normally the same as {@link #name} but can be re-written
+     * to support legacy table and column names.
+     */
+    protected String columnName;
 
     /**
      * Represents the name of the property a {@link Column}
@@ -113,7 +122,7 @@ public abstract class Property {
 
     /**
      * Creates a new property for the given descriptor, access path and field.
-     * <p/>
+     * <p>
      * Fills the column description by checking for a {@link Length} annotation. Also initializes <tt>propertyKey</tt>
      * and <tt>alternativePropertyKey</tt> and computes the property name based on the field name and access path.
      *
@@ -129,7 +138,9 @@ public abstract class Property {
         this.alternativePropertyKey = "Model." + field.getName();
         this.field.setAccessible(true);
         this.name = accessPath.prefix() + field.getName();
-        this.nameAsColumn = Column.named(name);
+        this.columnName = descriptor.rewriteColumnName(name);
+        this.nameAsColumn = Column.named(columnName);
+
         determineNullability();
         determineLengths();
         determineDefaultValue();
@@ -159,7 +170,7 @@ public abstract class Property {
 
     /**
      * Determines the nullability of the column by checking for a {@link NullAllowed} annotation on the field.
-     * <p/>
+     * <p>
      * Note that subclasses might overwrite this value if they do not accept null values (like properties
      * for primitive types).
      */
@@ -186,7 +197,7 @@ public abstract class Property {
      * @return the name of the column in the database
      */
     public String getColumnName() {
-        return name;
+        return columnName;
     }
 
     /**
@@ -210,9 +221,9 @@ public abstract class Property {
 
     /**
      * Returns the name of the property which is shown to the user.
-     * <p/>
+     * <p>
      * This can be used in error messages or for labelling in forms.
-     * <p/>
+     * <p>
      * The label can be set in three ways:
      * <ol>
      * <li>Set the <tt>label</tt> field using {@link #setLabel(String)}
@@ -235,7 +246,7 @@ public abstract class Property {
 
     /**
      * Returns the class name and field name which "defined" this property.
-     * <p/>
+     * <p>
      * This is mainly used to report errors for duplicate names etc.
      *
      * @return the "qualified" field name which "defined" this property
@@ -276,7 +287,7 @@ public abstract class Property {
 
     /**
      * Applies the given value to the given entity.
-     * <p/>
+     * <p>
      * The internal access path will be used to find the target object which contains the field.
      *
      * @param entity the entity to write to
@@ -289,7 +300,7 @@ public abstract class Property {
 
     /**
      * Applies the given datbase value to the given entity.
-     * <p/>
+     * <p>
      * The internal access path will be used to find the target object which contains the field.
      *
      * @param entity the entity to write to
@@ -332,7 +343,7 @@ public abstract class Property {
 
     /**
      * Obtains the field value from the given entity.
-     * <p/>
+     * <p>
      * The internal access path will be used to find the target object which contains the field.
      *
      * @param entity the entity to write to
@@ -345,7 +356,7 @@ public abstract class Property {
 
     /**
      * Obtains the database value from the given entity.
-     * <p/>
+     * <p>
      * The internal access path will be used to find the target object which contains the field.
      *
      * @param entity the entity to write to
@@ -398,7 +409,7 @@ public abstract class Property {
 
     /**
      * Invoked before an entity is written to the database.
-     * <p/>
+     * <p>
      * Checks the nullability and uniqueness of the property.
      *
      * @param entity the entity to check
@@ -412,7 +423,7 @@ public abstract class Property {
 
     /**
      * Invoked before an entity is written to the database.
-     * <p/>
+     * <p>
      * This method is intended to be overwritten with custom logic.
      *
      * @param entity the entity to check
@@ -448,18 +459,10 @@ public abstract class Property {
         if (!unique.includingNull() && propertyValue == null) {
             return;
         }
-        SmartQuery<? extends Entity> qry = oma.select(descriptor.getType()).eq(nameAsColumn, propertyValue);
-        for (String field : unique.within()) {
-            qry.eq(Column.named(field), descriptor.getProperty(field).getValue(entity));
-        }
-        Entity other = qry.queryFirst();
-        if (other != null && !other.equals(entity)) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getLabel())
-                            .set("value", NLS.toUserString(propertyValue))
-                            .handle();
-        }
+
+        List<Column> withinColumns =
+                Arrays.asList(unique.within()).stream().map(Column::named).collect(Collectors.toList());
+        entity.assertUnique(nameAsColumn, propertyValue, withinColumns.toArray(new Column[withinColumns.size()]));
     }
 
     /**
@@ -534,7 +537,7 @@ public abstract class Property {
 
     /**
      * Links this property.
-     * <p/>
+     * <p>
      * This is invoked once all <tt>EntityDescriptors</tt> are loaded and can be used to build references to
      * other descriptors / properties.
      */
@@ -580,7 +583,7 @@ public abstract class Property {
 
     /**
      * Explicitely sets the label for this column.
-     * <p/>
+     * <p>
      * This should only be used to customizations, as the label will not be translated anymore.
      * See <tt>getLabel()</tt> on how to set a label for a column.
      *
@@ -593,7 +596,7 @@ public abstract class Property {
 
     /**
      * Can be used by a {@link PropertyModifier} to overwrite the length of the column.
-     * <p/>
+     * <p>
      * Normally, the column length is specified by the type or via a {@link Length} annotation at the field.
      *
      * @param length the new length of the column
@@ -604,7 +607,7 @@ public abstract class Property {
 
     /**
      * Can be used by a {@link PropertyModifier} to overwrite the default value of the column.
-     * <p/>
+     * <p>
      * Normally, the default value is specified via a {@link DefaultValue} annotation at the field.
      *
      * @param defaultValue the new default value of the column
@@ -615,7 +618,7 @@ public abstract class Property {
 
     /**
      * Can be used by a {@link PropertyModifier} to overwrite the scale value of the column.
-     * <p/>
+     * <p>
      * Normally, the column scale is specified by the type or via a {@link Length} annotation at the field.
      *
      * @param scale the new scale of the column
@@ -626,7 +629,7 @@ public abstract class Property {
 
     /**
      * Can be used by a {@link PropertyModifier} to overwrite the precision value of the column.
-     * <p/>
+     * <p>
      * Normally, the column precision is specified by the type or via a {@link Length} annotation at the field.
      *
      * @param precision the new precision of the column
@@ -638,7 +641,7 @@ public abstract class Property {
     /**
      * Can be used by a {@link PropertyModifier} to overwrite the nullability value of the column,
      * if permitted by the type.
-     * <p/>
+     * <p>
      * Normally, the column nullability is specified via a {@link NullAllowed} annotation at the field. Note that if
      * the type of the property does not handle null values (i.e. primitive fields), calling this method has no effect.
      *

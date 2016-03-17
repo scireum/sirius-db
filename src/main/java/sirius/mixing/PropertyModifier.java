@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 /**
  * Used to modify / update a property before it is finally added to the descriptor.
  * <p>
- * Implementations of this interface can be registered (using {@link sirius.kernel.di.std.Register} and will be
+ * Implementations of this interface can be registered (using {@link sirius.kernel.di.std.Register}) and will be
  * discovered and applied by {@link EntityDescriptor}. They can be used to fine-tune properties.
  * <p>
  * This is mostly useful for customer customizations ({@link sirius.kernel.Sirius#getActiveConfigurations()}.

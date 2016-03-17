@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Row;
 import sirius.db.jdbc.SQLQuery;
+import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-@Register(classes = {OMA.class})
+@Register(classes = OMA.class)
 public class OMA {
 
     public static Log LOG = Log.get("oma");
@@ -40,6 +41,10 @@ public class OMA {
 
     public Database getDatabase() {
         return schema.getDatabase();
+    }
+
+    public Future getReadyFuture() {
+        return schema.getReadyFuture();
     }
 
     public <E extends Entity> void update(E entity) {
@@ -168,6 +173,7 @@ public class OMA {
                                         .handle();
                     }
                 }
+                ed.setVersion(entity, ed.getVersion(entity) + 1);
             }
         }
     }

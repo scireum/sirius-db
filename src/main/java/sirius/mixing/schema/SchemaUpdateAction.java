@@ -7,6 +7,7 @@ import sirius.mixing.OMA;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Represents an action which needs to be perfomed onto a schema to make it
@@ -15,6 +16,8 @@ import java.util.List;
  * @author aha
  */
 public class SchemaUpdateAction {
+
+    private String id = UUID.randomUUID().toString();
     private String reason;
     private List<String> sql;
     private boolean dataLossPossible;
@@ -47,6 +50,14 @@ public class SchemaUpdateAction {
 
     protected void setDataLossPossible(boolean dataLossPossible) {
         this.dataLossPossible = dataLossPossible;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getError() {
+        return error;
     }
 
     public void execute(Database db) {

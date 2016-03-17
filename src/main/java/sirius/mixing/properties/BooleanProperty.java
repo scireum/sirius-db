@@ -56,6 +56,10 @@ public class BooleanProperty extends Property {
 
     @Override
     protected Object transformFromColumn(Object object) {
+        if (object instanceof Boolean) {
+            return object;
+        }
+
         return ((Integer) object) != 0;
     }
 

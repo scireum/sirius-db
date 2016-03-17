@@ -17,6 +17,8 @@ import sirius.mixing.Property;
 import sirius.mixing.PropertyFactory;
 
 import java.lang.reflect.Field;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;

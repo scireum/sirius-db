@@ -10,14 +10,20 @@ package sirius.mixing;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigValue;
 import sirius.db.jdbc.Row;
+import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Parts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
+import sirius.mixing.annotations.AfterDelete;
+import sirius.mixing.annotations.AfterSave;
 import sirius.mixing.annotations.BeforeDelete;
 import sirius.mixing.annotations.BeforeSave;
 import sirius.mixing.annotations.Mixin;
@@ -42,10 +48,10 @@ import java.util.function.Consumer;
 
 /**
  * Represents the recipe on how to write an entity class into a database table.
- * <p/>
+ * <p>
  * For each subclass of {@link Entity} a <tt>descriptor</tt> is created by the {@link Schema}. This descriptor
  * is in charge of reading and writing from and to the database as well as ensuring consistency of the data.
- * <p/>
+ * <p>
  * The descriptor is automatically creates and its properties are discovered by checking all fields, composites
  * and mixins.
  *
@@ -90,9 +96,22 @@ public class EntityDescriptor {
     protected List<Consumer<Entity>> beforeDeleteHandlers = Lists.newArrayList();
 
     /**
+     * A list of all additional handlers to be executed once an entity was successfully deleted
+     */
+    protected List<Consumer<Entity>> afterDeleteHandlers = Lists.newArrayList();
+
+    /**
      * A list of all additional handlers to be executed once an entity is about to be saved
      */
     protected List<Consumer<Entity>> beforeSaveHandlers = Lists.newArrayList();
+
+    /**
+     * A list of all additional handlers to be executed once an entity is was saved
+     */
+    protected List<Consumer<Entity>> afterSaveHandlers = Lists.newArrayList();
+
+    protected Config legacyInfo;
+    protected Map<String, String> columnAliases;
 
     /**
      * Creates a new entity for the given reference instance.
@@ -104,11 +123,25 @@ public class EntityDescriptor {
         this.referenceInstance = referenceInstance;
         this.versioned = type.isAnnotationPresent(Versioned.class);
         this.tableName = type.getSimpleName().toLowerCase();
+        String configKey = "mixing.legacy." + type.getSimpleName();
+        this.legacyInfo = Sirius.getConfig().hasPath(configKey) ? Sirius.getConfig().getConfig(configKey) : null;
+        if (legacyInfo != null) {
+            if (legacyInfo.hasPath("tableName")) {
+                this.tableName = legacyInfo.getString("tableName");
+            }
+            if (legacyInfo.hasPath("alias")) {
+                Config aliases = legacyInfo.getConfig("alias");
+                columnAliases = Maps.newHashMap();
+                for (Map.Entry<String, ConfigValue> entry : aliases.entrySet()) {
+                    columnAliases.put(entry.getKey(), Value.of(entry.getValue().unwrapped()).asString());
+                }
+            }
+        }
     }
 
     /**
      * Returns the "end user friendly" name of the entity
-     * <p/>
+     * <p>
      * This is determined by calling <tt>NLS.get()</tt>
      * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore
      * the property keys for "org.acme.model.Customer" would be the class name and "Model.customer". The fallback
@@ -123,7 +156,7 @@ public class EntityDescriptor {
 
     /**
      * Returns the "end user friendly" plural of the entity
-     * <p/>
+     * <p>
      * The i18n keys tried are the same as for {@link #getLabel()} with ".plural" appended.
      *
      * @return a translated plural which can be shown to the end user
@@ -162,7 +195,7 @@ public class EntityDescriptor {
     }
 
     public <E extends Entity> int getVersion(E entity) {
-        return entity.version;
+        return entity.getVersion();
     }
 
     public void setVersion(Entity entity, int version) {
@@ -189,6 +222,9 @@ public class EntityDescriptor {
     }
 
     protected void afterSave(Entity entity) {
+        for (Consumer<Entity> c : afterSaveHandlers) {
+            c.accept(entity);
+        }
         for (Property property : properties.values()) {
             property.onAfterSave(entity);
         }
@@ -228,6 +264,9 @@ public class EntityDescriptor {
         for (Property property : properties.values()) {
             property.onAfterDelete(entity);
         }
+        for (Consumer<Entity> handler : afterDeleteHandlers) {
+            handler.accept(entity);
+        }
         onAfterDelete(entity);
     }
 
@@ -258,6 +297,21 @@ public class EntityDescriptor {
 
         for (Property p : properties.values()) {
             p.contributeToTable(table);
+        }
+
+        if (legacyInfo != null && legacyInfo.hasPath("rename")) {
+            Config renamedColumns = legacyInfo.getConfig("rename");
+            for (TableColumn col : table.getColumns()) {
+                if (columnAliases != null) {
+                    String alias = columnAliases.get(col.getName());
+                    if (Strings.isFilled(alias)) {
+                        col.setName(alias);
+                    }
+                }
+                if (renamedColumns != null && renamedColumns.hasPath(col.getName())) {
+                    col.setOldName(renamedColumns.getString(col.getName()));
+                }
+            }
         }
 
         return table;
@@ -342,6 +396,15 @@ public class EntityDescriptor {
                 descriptor.beforeSaveHandlers.add(e -> {
                     invokeHandler(accessPath, m, e);
                 });
+            } else if (m.isAnnotationPresent(AfterSave.class)) {
+                if (!Modifier.isProtected(m.getModifiers())) {
+                    OMA.LOG.WARN("AfterSave handler %s.%s is not declared protected!",
+                                 m.getDeclaringClass().getName(),
+                                 m.getName());
+                }
+                descriptor.afterSaveHandlers.add(e -> {
+                    invokeHandler(accessPath, m, e);
+                });
             } else if (m.isAnnotationPresent(BeforeDelete.class)) {
                 if (!Modifier.isProtected(m.getModifiers())) {
                     OMA.LOG.WARN("BeforeDelete handler %s.%s is not declared protected!",
@@ -349,6 +412,15 @@ public class EntityDescriptor {
                                  m.getName());
                 }
                 descriptor.beforeDeleteHandlers.add(e -> {
+                    invokeHandler(accessPath, m, e);
+                });
+            } else if (m.isAnnotationPresent(AfterDelete.class)) {
+                if (!Modifier.isProtected(m.getModifiers())) {
+                    OMA.LOG.WARN("AfterDelete handler %s.%s is not declared protected!",
+                                 m.getDeclaringClass().getName(),
+                                 m.getName());
+                }
+                descriptor.afterDeleteHandlers.add(e -> {
                     invokeHandler(accessPath, m, e);
                 });
             }
@@ -475,6 +547,13 @@ public class EntityDescriptor {
 
     private String getIdColumnLabel(String alias) {
         return (alias == null) ? "id" : alias + "_id";
+    }
+
+    public String rewriteColumnName(String basicColumnName) {
+        if (columnAliases != null && columnAliases.containsKey(basicColumnName)) {
+            return columnAliases.get(basicColumnName);
+        }
+        return basicColumnName;
     }
 
     @Override

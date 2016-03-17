@@ -30,12 +30,19 @@ public enum Capability {
     /**
      * Determines if the connected database support the LIMIT clause in SQL queries
      */
-    LIMIT;
+    LIMIT,
+
+    /**
+     * Determines if the database potentially lowercases table names like MySQL commonly does. In this
+     * case the best bet is to only use lower cased table names in the first place to avoid a lot of
+     * trouble.
+     */
+    LOWER_CASE_TABLE_NAMES;
 
     /**
      * Contains the capabilities of a MySQL database
      */
-    public static final EnumSet<Capability> MYSQL_CAPABILITIES = EnumSet.of(STREAMING, LIMIT);
+    public static final EnumSet<Capability> MYSQL_CAPABILITIES = EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT);
 
     /**
      * Contains the capabilities of a HSQL database

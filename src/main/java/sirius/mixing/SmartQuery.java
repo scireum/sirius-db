@@ -268,7 +268,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
         public String translateColumnName(Column column) {
             String alias = determineAlias(column.getParent()).getFirst();
-            return alias + "." + column.getName();
+            return alias + "." + ed.rewriteColumnName(column.getName());
         }
 
         private void createJoinFetch(Column field) {

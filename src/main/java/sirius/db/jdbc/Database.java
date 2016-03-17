@@ -373,6 +373,14 @@ public class Database {
         return url;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     /**
      * Returns the maximal number of concurrent connections
      *

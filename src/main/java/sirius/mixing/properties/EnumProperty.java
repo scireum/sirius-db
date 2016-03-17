@@ -59,6 +59,7 @@ public class EnumProperty extends Property {
         return Types.CHAR;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void determineLengths() {
         for (Enum<?> e : ((Class<Enum<?>>) field.getType()).getEnumConstants()) {

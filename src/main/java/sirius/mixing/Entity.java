@@ -11,6 +11,8 @@ package sirius.mixing;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.Row;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 import sirius.mixing.annotations.Transient;
 
 import javax.annotation.Nullable;
@@ -18,17 +20,17 @@ import java.util.Map;
 
 /**
  * Represents a data object stored into the database.
- * <p/>
+ * <p>
  * Each non-abstract subclass of <tt>Entity</tt> will become a table in the target database. Each field
  * will become a column, unless it is annotated with {@link Transient}.
- * <p/>
+ * <p>
  * The framework highly encourages composition over inheritance. Therefore {@link Composite} fields will directly
  * result in the equivalent columns required to store the fields declared there. Still inheritance might be
  * useful and is fully supported for both, entities and composites.
- * <p/>
+ * <p>
  * What is not supported, is merging distinct subclasses into one table or other weired inheritance methods. Therefore
  * all superclasses should be abstract.
- * <p/>
+ * <p>
  * Additionally all <tt>Mixins</tt> {@link sirius.mixing.annotations.Mixin} will be used to add columns to the
  * target table. This is especially useful to extend existing entities from within customizations.
  */
@@ -39,11 +41,11 @@ public abstract class Entity extends Mixable {
 
     /**
      * Contains the unique ID of the entity.
-     * <p/>
+     * <p>
      * This is automatically assigned by the database. Never assign manually a value unless you are totally aware
      * of what you're doing. Also you should not use this ID for external purposes (e.g. as customer number or
      * invoice number) as it cannot be changed.
-     * <p/>
+     * <p>
      * This field is marked as transient as this column is automatically managed by the framework.
      */
     @Transient
@@ -54,7 +56,7 @@ public abstract class Entity extends Mixable {
      * Contains the current version number read from the database. If optimistic locking is enabled for this
      * entity (via the {@link sirius.mixing.annotations.Versioned} annotation, this is used to protect from
      * conflicting writes an a entity (will throw an {@link OptimisticLockException}.
-     * <p/>
+     * <p>
      * This field is marked as transient as this column is automatically managed by the framework.
      */
     @Transient
@@ -101,7 +103,7 @@ public abstract class Entity extends Mixable {
 
     /**
      * Sets the ID of the entity.
-     * <p/>
+     * <p>
      * This method must be used very carefully. For normal operations, this method should ne be used at all
      * as the database ID is managed by the framework.
      *
@@ -115,7 +117,7 @@ public abstract class Entity extends Mixable {
      * Returns a hash code value for the object. This method is
      * supported for the benefit of hash tables such as those provided by
      * {@link java.util.HashMap}.
-     * <p/>
+     * <p>
      * The hash code of an entity is based on its ID. If the entity is not written to the database yet, we use
      * the hash code as computed by {@link Object#hashCode()}. This matches the behaviour of {@link #equals(Object)}.
      *
@@ -132,7 +134,7 @@ public abstract class Entity extends Mixable {
 
     /**
      * Indicates whether some other object is "equal to" this one.
-     * <p/>
+     * <p>
      * Equality of two entities is based on their type and ID. If an entity is not written to the database yet, we
      * determine equality as computed by {@link Object#equals(Object)}. This matches the behaviour of
      * {@link #hashCode()}.
@@ -161,7 +163,7 @@ public abstract class Entity extends Mixable {
 
     /**
      * Returns the complete result row from which this entity was loaded by a <tt>TransformedQuery</tt>
-     * <p/>
+     * <p>
      * If this entity was loaded from a {@link TransformedQuery} (read from a plain JDBC query), this will contain
      * the complete result row. This can be used to access unmapped columns (aggregations or computed ones).
      *
@@ -175,7 +177,7 @@ public abstract class Entity extends Mixable {
 
     /**
      * Returns an unique name of this entity.
-     * <p/>
+     * <p>
      * This unique string representation of this entity is made up of its type along with its id. It can be resolved
      * using {@link OMA#resolve(String)}.
      *
@@ -200,6 +202,25 @@ public abstract class Entity extends Mixable {
      */
     public String getTypeName() {
         return getClass().getSimpleName().toUpperCase();
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    protected void assertUnique(Column field, Object value, Column... within) {
+        SmartQuery<? extends Entity> qry = oma.select(getClass()).eq(field, value);
+        for (Column withinField : within) {
+            qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
+        }
+        Entity other = qry.queryFirst();
+        if (other != null && !other.equals(this)) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("Property.fieldNotUnique")
+                            .set("field", getDescriptor().getProperty(field).getLabel())
+                            .set("value", NLS.toUserString(value))
+                            .handle();
+        }
     }
 
     @Override

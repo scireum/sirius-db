@@ -19,9 +19,7 @@ import sirius.mixing.PropertyFactory;
 import java.lang.reflect.Field;
 import java.sql.Date;
 import java.sql.Types;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.function.Consumer;
 
 /**
@@ -68,13 +66,11 @@ public class LocalDateProperty extends Property {
         if (object == null) {
             return null;
         }
-        return Instant.ofEpochMilli(((Date) object).getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+        return ((Date) object).toLocalDate();
     }
 
     @Override
     protected Object transformToColumn(Object object) {
-        return object == null ?
-               null :
-               new Date(((LocalDate) object).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        return object == null ? null : Date.valueOf((LocalDate) object);
     }
 }

@@ -10,10 +10,13 @@ package sirius.mixing;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Databases;
+import sirius.kernel.async.Future;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.std.ConfigValue;
@@ -25,6 +28,7 @@ import sirius.mixing.schema.SchemaTool;
 import sirius.mixing.schema.SchemaUpdateAction;
 import sirius.mixing.schema.Table;
 
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -36,6 +40,7 @@ public class Schema implements Initializable {
 
     private Map<Class<?>, EntityDescriptor> descriptorsByType = Maps.newHashMap();
     private Map<String, EntityDescriptor> descriptorsByName = Maps.newHashMap();
+    private Future readyFuture = new Future();
 
     public EntityDescriptor getDescriptor(Class<? extends Entity> aClass) {
         EntityDescriptor ed = descriptorsByType.get(aClass);
@@ -68,6 +73,7 @@ public class Schema implements Initializable {
     private Tasks tasks;
 
     private Database db;
+    private Future ready = new Future();
 
     protected Database getDatabase() {
         if (db == null) {
@@ -89,36 +95,59 @@ public class Schema implements Initializable {
 
     @Override
     public void initialize() throws Exception {
-        loadEntities();
-        linkSchema();
+        if (dbs.hasDatabase(database)) {
+            OMA.LOG.INFO("Mixing is starting up for database '%s'", database);
+            loadEntities();
+            linkSchema();
 
-        if (updateSchema) {
-            updateSchemaAtStartup();
+            if (updateSchema) {
+                tasks.defaultExecutor().fork(this::updateSchemaAtStartup);
+            } else {
+                readyFuture.success();
+            }
+        } else {
+            OMA.LOG.INFO("Mixing is disabled as the database '%s' is not present in the configuration...", database);
         }
+    }
+
+    public Future getReadyFuture() {
+        return readyFuture;
     }
 
     protected void updateSchemaAtStartup() {
         computeRequiredSchemaChanges();
         OMA.LOG.INFO("Executing Schema Updates....");
-        executeLosslessActions();
-        List<SchemaUpdateAction> schemaUpdateActions = getSchemaUpdateActions();
-        if (!schemaUpdateActions.isEmpty()) {
-            OMA.LOG.INFO("------------------------------------------------------------");
-            int successes = 0;
-            for (SchemaUpdateAction action : schemaUpdateActions) {
-                if (action.isDataLossPossible()) {
-                    OMA.LOG.INFO("SKIPPED: " + action);
-                } else if (action.isFailed()) {
-                    OMA.LOG.WARN("FAILED: " + action);
-                } else {
-                    successes++;
+        TaskContext ctx = TaskContext.get();
+        int skipped = 0;
+        int executed = 0;
+        int failed = 0;
+        for (SchemaUpdateAction action : getSchemaUpdateActions()) {
+            if (!ctx.isActive()) {
+                break;
+            }
+            if (!action.isDataLossPossible()) {
+                executed++;
+                action.execute(getDatabase());
+                if (action.isFailed()) {
+                    failed++;
                 }
+            } else {
+                skipped++;
             }
-            if (successes > 0) {
-                OMA.LOG.INFO("Successfully executed %d actions...", successes);
-            }
-            OMA.LOG.INFO("------------------------------------------------------------");
         }
+        if (failed > 0 || skipped > 0) {
+            OMA.LOG.WARN(
+                    "Executed %d schema change actions of which %d failed. %d were skipped due to possible dataloss",
+                    executed,
+                    failed,
+                    skipped);
+        } else if (executed > 0) {
+            OMA.LOG.WARN("Successfully executed %d schema change actions...");
+        } else {
+            OMA.LOG.WARN("Schema is up to date, no changes required");
+        }
+
+        readyFuture.success();
     }
 
     protected void loadEntities() {
@@ -139,6 +168,15 @@ public class Schema implements Initializable {
                           .handle();
             } else {
                 descriptorsByName.put(typeName, ed);
+            }
+
+            if (getDatabase().hasCapability(Capability.LOWER_CASE_TABLE_NAMES)) {
+                if (!Strings.areEqual(ed.getTableName(), ed.getTableName().toLowerCase())) {
+                    OMA.LOG.WARN(
+                            "Warning %s uses %s as table name which is not all lowercase. This might lead to trouble with the type of DBMS you are using!",
+                            ed.getType().getName(),
+                            ed.getTableName());
+                }
             }
         }
     }
@@ -169,37 +207,15 @@ public class Schema implements Initializable {
         return Collections.unmodifiableList(requiredSchemaChanges);
     }
 
-    public void executeLosslessActions() {
-        tasks.defaultExecutor().start(() -> {
-            //TODO as job
-            TaskContext ctx = TaskContext.get();
-            for (SchemaUpdateAction action : getSchemaUpdateActions()) {
-                if (ctx.isActive() && !action.isDataLossPossible()) {
-                    ctx.logAsCurrentState("Executing: %s", action.getReason());
-                    action.execute(getDatabase());
-                    if (action.isFailed()) {
-                        ctx.markErroneous();
-                        ctx.log("%s failed: %s", action.getReason(), action);
-                    }
-                }
+    @Nullable
+    public SchemaUpdateAction executeSchemaUpdateAction(String id) {
+        for (SchemaUpdateAction a : getSchemaUpdateActions()) {
+            if (Strings.areEqual(id, a.getId())) {
+                a.execute(getDatabase());
+                return a;
             }
-        });
-    }
+        }
 
-    public void executeAllActions() {
-        tasks.defaultExecutor().start(() -> {
-            //TODO as job
-            TaskContext ctx = TaskContext.get();
-            for (SchemaUpdateAction action : getSchemaUpdateActions()) {
-                if (ctx.isActive()) {
-                    ctx.logAsCurrentState("Executing: %s", action.getReason());
-                    action.execute(getDatabase());
-                    if (action.isFailed()) {
-                        ctx.markErroneous();
-                        ctx.log("%s failed: %s", action.getReason(), action);
-                    }
-                }
-            }
-        });
+        return null;
     }
 }
