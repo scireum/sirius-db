@@ -8,9 +8,8 @@
 
 package sirius.db.mixing;
 
-import sirius.mixing.Mixable;
-import sirius.mixing.annotations.Length;
-import sirius.mixing.annotations.Mixin;
+import sirius.db.mixing.annotations.Length;
+import sirius.db.mixing.annotations.Mixin;
 
 @Mixin(TestEntityWithMixin.class)
 public class TestMixin extends Mixable {

@@ -83,9 +83,8 @@ public class SQLCall {
      * @throws SQLException in case of a database error
      */
     public SQLCall call() throws SQLException {
-        Connection c = ds.getConnection();
         Watch w = Watch.start();
-        try {
+        try (Connection c = ds.getConnection()) {
             StringBuilder sql = new StringBuilder("{call ");
             if (returnType != null) {
                 sql.append("? := ");
@@ -100,8 +99,7 @@ public class SQLCall {
             }
             sql.append(")}");
 
-            CallableStatement stmt = c.prepareCall(sql.toString());
-            try {
+            try (CallableStatement stmt = c.prepareCall(sql.toString())) {
                 for (int i = 0; i < names.size(); i++) {
                     if (types.get(i) != null) {
                         stmt.registerOutParameter(i + 1, types.get(i));
@@ -115,11 +113,8 @@ public class SQLCall {
                         output.put(names.get(i), stmt.getObject(i + 1));
                     }
                 }
-            } finally {
-                stmt.close();
             }
         } finally {
-            c.close();
             w.submitMicroTiming("SQL", "CALL: " + fun);
         }
 

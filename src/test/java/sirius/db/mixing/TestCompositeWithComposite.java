@@ -8,8 +8,6 @@
 
 package sirius.db.mixing;
 
-import sirius.mixing.Composite;
-
 public class TestCompositeWithComposite extends Composite {
 
     private final TestComposite composite = new TestComposite();

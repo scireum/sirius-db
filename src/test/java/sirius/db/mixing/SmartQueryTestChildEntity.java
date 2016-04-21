@@ -8,10 +8,7 @@
 
 package sirius.db.mixing;
 
-import sirius.mixing.Column;
-import sirius.mixing.Entity;
-import sirius.mixing.EntityRef;
-import sirius.mixing.annotations.Length;
+import sirius.db.mixing.annotations.Length;
 
 /**
  * Testentity for SmartQuerySpec

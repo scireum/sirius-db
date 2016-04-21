@@ -11,7 +11,6 @@ package sirius.db.mixing
 import sirius.db.jdbc.SQLQuery
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import sirius.mixing.OMA
 import spock.lang.Stepwise
 
 import java.util.function.Function

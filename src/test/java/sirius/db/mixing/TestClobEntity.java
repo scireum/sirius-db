@@ -8,8 +8,7 @@
 
 package sirius.db.mixing;
 
-import sirius.mixing.Entity;
-import sirius.mixing.annotations.Lob;
+import sirius.db.mixing.annotations.Lob;
 
 public class TestClobEntity extends Entity {
 

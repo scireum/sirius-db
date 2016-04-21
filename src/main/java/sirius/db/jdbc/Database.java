@@ -178,9 +178,7 @@ public class Database {
 
     public void tryCommit() throws SQLException {
         List<Transaction> transactions = TransactionManager.getTransactionStack(name);
-        if (transactions == null || transactions.isEmpty()) {
-            return;
-        } else {
+        if (transactions != null && !transactions.isEmpty()) {
             Transaction txn = transactions.get(transactions.size() - 1);
             transactions.remove(transactions.size() - 1);
             txn.tryCommit();
@@ -305,7 +303,7 @@ public class Database {
                     valueList.add(entry.getValue());
                 }
             }
-            String sql = "INSERT INTO " + table + " (" + fields.toString() + ") VALUES(" + values + ")";
+            String sql = "INSERT INTO " + table + " (" + fields + ") VALUES(" + values + ")";
             try (PreparedStatement stmt = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 int index = 1;
                 for (Object o : valueList) {

@@ -80,7 +80,7 @@ class StatementCompiler {
         for (Object param : params) {
             if (param instanceof Collection<?>) {
                 for (Object obj : (Collection<?>) param) {
-                    if ((obj != null) && (obj instanceof TemporalAccessor)) {
+                    if ((obj instanceof TemporalAccessor)) {
                         parameters.add(Tuple.create(++index,
                                                     Date.from(Value.of(obj)
                                                                    .asLocalDateTime(null)
@@ -92,7 +92,7 @@ class StatementCompiler {
                     Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
                 }
             } else {
-                if ((param != null) && (param instanceof TemporalAccessor)) {
+                if ((param instanceof TemporalAccessor)) {
                     parameters.add(Tuple.create(++index,
                                                 Date.from(Value.of(param)
                                                                .asLocalDateTime(null)
@@ -148,7 +148,7 @@ class StatementCompiler {
         if (searchString == null) {
             return null;
         }
-        if ("".equals(searchString)) {
+        if (Strings.isEmpty(searchString)) {
             return "%";
         }
         if ((!searchString.contains("%")) && (searchString.contains("*"))) {
@@ -203,7 +203,7 @@ class StatementCompiler {
                                               .set("path", accessPath)
                                               .set("value", paramValue)
                                               .set("query", originalSQL)
-                                              .format());
+                                              .format(), e);
                 }
             }
             // A parameter was found, if its value is not null or if it is a non

@@ -11,10 +11,7 @@ package sirius.db.mixing
 import sirius.db.jdbc.Database
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import sirius.mixing.OMA
-import sirius.mixing.Schema
-import sirius.mixing.SmartQuery
-import sirius.mixing.constraints.FieldOperator
+import sirius.db.mixing.constraints.FieldOperator
 import spock.lang.Stepwise
 
 import java.util.function.Function

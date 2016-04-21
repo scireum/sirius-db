@@ -10,7 +10,6 @@ package sirius.db.mixing
 
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import sirius.mixing.OMA
 import spock.lang.Stepwise
 
 @Stepwise

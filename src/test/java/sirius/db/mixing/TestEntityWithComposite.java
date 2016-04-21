@@ -8,8 +8,6 @@
 
 package sirius.db.mixing;
 
-import sirius.mixing.Entity;
-
 public class TestEntityWithComposite extends Entity {
 
     private final TestComposite composite = new TestComposite();

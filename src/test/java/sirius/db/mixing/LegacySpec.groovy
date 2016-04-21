@@ -10,8 +10,6 @@ package sirius.db.mixing
 
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import sirius.mixing.Column
-import sirius.mixing.OMA
 
 class LegacySpec extends BaseSpecification {
 

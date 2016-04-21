@@ -53,8 +53,12 @@ public class Databases {
         public void gather(MetricsCollector collector) {
             // Only report statistics if we have at least one database connection...
             if (!datasources.isEmpty()) {
-                collector.differentialMetric("jdbc-use", "db-uses", "JDBC Uses", numUses.getCount(), null);
-                collector.differentialMetric("jdbc-queries", "db-queries", "JDBC Queries", numQueries.getCount(), null);
+                collector.differentialMetric("jdbc-use", "db-uses", "JDBC Uses", numUses.getCount(), "/min");
+                collector.differentialMetric("jdbc-queries",
+                                             "db-queries",
+                                             "JDBC Queries",
+                                             numQueries.getCount(),
+                                             "/min");
                 collector.metric("db-query-duration", "JDBC Query Duration", queryDuration.getAndClearAverage(), "ms");
             }
         }

@@ -8,8 +8,7 @@
 
 package sirius.db.mixing;
 
-import sirius.mixing.Composite;
-import sirius.mixing.annotations.Length;
+import sirius.db.mixing.annotations.Length;
 
 public class TestComposite extends Composite {
 
