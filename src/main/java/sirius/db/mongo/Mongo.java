@@ -8,14 +8,22 @@
 
 package sirius.db.mongo;
 
+import com.google.common.collect.Maps;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
+import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
+import sirius.kernel.commons.Watch;
+import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.ConfigValue;
+import sirius.kernel.di.std.Parts;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 
 import java.net.UnknownHostException;
+import java.util.Map;
 
 /**
  * Provides a thin layer above Mongo DB with fluent APIs for CRUD operations.
@@ -33,6 +41,20 @@ public class Mongo {
     @ConfigValue("mongo.db")
     private String dbName;
 
+    protected volatile boolean tracing;
+    protected volatile int traceLimit;
+    protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
+    protected Average callDuration = new Average();
+
+    /**
+     * Determines if access to Mongo DB is configured by checking if a host is given.
+     *
+     * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
+     */
+    public boolean isConfigured() {
+        return Strings.isFilled(dbHost);
+    }
+
     /**
      * Provides direct access to the Mongo DB for non-trivial operations.
      *
@@ -42,11 +64,33 @@ public class Mongo {
         try {
             if (mongoClient == null) {
                 mongoClient = new MongoClient(dbHost);
+                createIndices(mongoClient.getDB(dbName));
             }
 
             return mongoClient.getDB(dbName);
         } catch (UnknownHostException e) {
             throw Exceptions.handle(e);
+        }
+    }
+
+    @Parts(IndexDescription.class)
+    private PartCollection<IndexDescription> indexDescriptions;
+
+    private void createIndices(DB db) {
+        for (IndexDescription idx : indexDescriptions) {
+            Watch w = Watch.start();
+            try {
+                LOG.INFO("Creating indices in Mongo DB: %s", idx.getClass().getName());
+                idx.createIndices(db);
+                LOG.INFO("Completed indices for: %s (%s)", idx.getClass().getName(), w.duration());
+            } catch (Throwable t) {
+                Exceptions.handle()
+                          .to(LOG)
+                          .error(t)
+                          .withSystemErrorMessage("Error while creating indices for '%s': %s (%s)",
+                                                  idx.getClass().getName())
+                          .handle();
+            }
         }
     }
 

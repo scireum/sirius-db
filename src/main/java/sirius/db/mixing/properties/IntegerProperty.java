@@ -8,19 +8,19 @@
 
 package sirius.db.mixing.properties;
 
-import sirius.kernel.commons.Value;
-import sirius.kernel.di.std.Register;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents an {@link Integer} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class IntegerProperty extends Property {
 
@@ -44,7 +44,7 @@ public class IntegerProperty extends Property {
         }
     }
 
-    public IntegerProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    IntegerProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 

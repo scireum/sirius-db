@@ -56,7 +56,7 @@ public class FieldOperator extends Constraint {
         return new FieldOperator(field);
     }
 
-    public FieldOperator equal(Object value) {
+    public FieldOperator eq(Object value) {
         this.value = value;
         this.op = Operator.EQ;
         return this;

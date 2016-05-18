@@ -17,6 +17,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.annotations.Trim;
 import sirius.db.mixing.schema.TableColumn;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -27,7 +28,7 @@ import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents an {@link String} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class StringProperty extends Property {
 
@@ -54,7 +55,7 @@ public class StringProperty extends Property {
         }
     }
 
-    public StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.trim = field.isAnnotationPresent(Trim.class);
         this.lob = field.isAnnotationPresent(Lob.class);
@@ -63,7 +64,14 @@ public class StringProperty extends Property {
     @Override
     protected Object transformToColumn(Object object) {
         if (!lob && object != null && ((String) object).length() > length) {
-            //TODO throw truncation errro!
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withNLSKey("StringProperty.dataTruncation")
+                            .set("value", Strings.limit(object, 30))
+                            .set("field", getLabel())
+                            .set("length", ((String) object).length())
+                            .set("maxLength", length)
+                            .handle();
         }
         return object;
     }

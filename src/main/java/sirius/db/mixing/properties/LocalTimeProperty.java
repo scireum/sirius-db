@@ -8,13 +8,13 @@
 
 package sirius.db.mixing.properties;
 
+import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
-import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.PropertyFactory;
 
 import java.lang.reflect.Field;
 import java.sql.Time;
@@ -26,7 +26,7 @@ import java.time.ZoneId;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents an {@link LocalTime} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class LocalTimeProperty extends Property {
 
@@ -50,7 +50,7 @@ public class LocalTimeProperty extends Property {
         }
     }
 
-    public LocalTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    LocalTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 

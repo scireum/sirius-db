@@ -14,7 +14,7 @@
  * java.util.function.Consumer)}.
  * <p>
  * One to many communication is supported by implementing {@link sirius.db.redis.Subscriber} and invoking {@link
- * sirius.db.redis.Redis#pusblish(java.lang.String, java.lang.String)}.
+ * sirius.db.redis.Redis#publish(java.lang.String, java.lang.String)}.
  * <p>
  * Setup is done via the system configuration most probably by just providing a value for <tt>redis.host</tt>.
  */

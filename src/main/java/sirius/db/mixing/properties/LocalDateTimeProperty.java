@@ -19,12 +19,13 @@ import sirius.db.mixing.PropertyFactory;
 import java.lang.reflect.Field;
 import java.sql.Types;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents an {@link LocalDateTime} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class LocalDateTimeProperty extends Property {
 
@@ -48,7 +49,7 @@ public class LocalDateTimeProperty extends Property {
         }
     }
 
-    public LocalDateTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    LocalDateTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 

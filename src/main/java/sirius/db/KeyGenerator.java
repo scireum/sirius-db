@@ -8,14 +8,17 @@
 
 package sirius.db;
 
+import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
+import sirius.kernel.di.std.Register;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Used generate IDs or keys in distributed environments where numeric sequences aren't suitable.
  */
+@Register(classes = KeyGenerator.class)
 public class KeyGenerator {
 
     private String seed = Hashing.sha512().hashLong(System.nanoTime()).toString();
@@ -43,7 +46,7 @@ public class KeyGenerator {
         ThreadLocalRandom.current().nextBytes(input);
         return Hashing.sha256()
                       .newHasher()
-                      .putString(seed)
+                      .putString(seed, Charsets.UTF_8)
                       .putBytes(input)
                       .putLong(System.nanoTime())
                       .hash()

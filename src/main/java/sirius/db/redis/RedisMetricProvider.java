@@ -26,7 +26,6 @@ public class RedisMetricProvider implements MetricProvider {
     @Override
     public void gather(MetricsCollector collector) {
         if (redis.isConfigured()) {
-
             collector.differentialMetric("redis-calls",
                                          "redis-calls",
                                          "Redis Calls",

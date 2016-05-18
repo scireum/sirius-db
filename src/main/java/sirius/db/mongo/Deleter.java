@@ -8,33 +8,17 @@
 
 package sirius.db.mongo;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.WriteResult;
+import sirius.kernel.commons.Watch;
+import sirius.kernel.health.Microtiming;
 
 /**
  * Fluent builder to build a delete statement.
  */
-public class Deleter {
-
-    private Mongo mongo;
-
-    private BasicDBObject filterObject = new BasicDBObject();
+public class Deleter extends QueryBuilder<Deleter> {
 
     protected Deleter(Mongo mongo) {
-        this.mongo = mongo;
-    }
-
-    /**
-     * Adds a condition which determines which documents should be deleted.
-     *
-     * @param field the name of the field to filter on
-     * @param value the value to filter on
-     * @return the builder itself for fluent method calls
-     */
-    public Deleter where(String field, Object value) {
-        filterObject.put(field, value);
-
-        return this;
+        super(mongo);
     }
 
     /**
@@ -44,6 +28,15 @@ public class Deleter {
      * @return the result of the delete operation
      */
     public WriteResult from(String collection) {
-        return mongo.db().getCollection(collection).remove(filterObject);
+        Watch w = Watch.start();
+        try {
+            return mongo.db().getCollection(collection).remove(filterObject);
+        } finally {
+            mongo.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming("mongo", "DELETE - " + collection + ": " + filterObject);
+            }
+            traceIfRequired(collection, w);
+        }
     }
 }

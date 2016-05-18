@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
@@ -37,9 +36,6 @@ import java.util.Map;
  * <p>
  * Use {@link #createQuery(String)} to create an SQL query with built in connection management.
  * Use {@link #getConnection()} to obtain a regular JDBC connection (which has to be handled with some caution).
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 public class Database {
 
@@ -196,11 +192,9 @@ public class Database {
         }
     }
 
-    public void rollback() throws SQLException {
+    public void rollback() {
         List<Transaction> transactions = TransactionManager.getTransactionStack(name);
-        if (transactions == null || transactions.isEmpty()) {
-            throw new SQLException("Cannot rollback a transaction: No transaction active!");
-        } else {
+        if (transactions != null && !transactions.isEmpty()) {
             // Rollback this and all joined (copied) transactions
             HandledException ex = null;
             int lastIndex = transactions.size() - 1;
@@ -211,7 +205,7 @@ public class Database {
                     if (!txn.isCopy()) {
                         break;
                     }
-                } catch (SQLException e) {
+                } catch (Throwable e) {
                     ex = Exceptions.handle()
                                    .to(Databases.LOG)
                                    .error(e)
@@ -226,21 +220,49 @@ public class Database {
         }
     }
 
-    public void transaction(Runnable r) throws SQLException {
-        join();
+    public void transaction(Runnable r) {
         try {
+            join();
             r.run();
-        } finally {
             tryCommit();
+        } catch (Throwable t) {
+            try {
+                rollback();
+            } catch (Throwable e) {
+                Exceptions.handle()
+                          .to(Databases.LOG)
+                          .error(e)
+                          .withSystemErrorMessage("Error while rolling back a transaction: %s (%s)")
+                          .handle();
+            }
+            throw Exceptions.handle()
+                            .to(Databases.LOG)
+                            .error(t)
+                            .withSystemErrorMessage("Error while executing a transaction: %s (%s)")
+                            .handle();
         }
     }
 
     public void separateTransaction(Runnable r) throws SQLException {
-        begin();
         try {
+            begin();
             r.run();
-        } finally {
             tryCommit();
+        } catch (Throwable t) {
+            try {
+                rollback();
+            } catch (Throwable e) {
+                Exceptions.handle()
+                          .to(Databases.LOG)
+                          .error(e)
+                          .withSystemErrorMessage("Error while rolling back a transaction: %s (%s)")
+                          .handle();
+            }
+            throw Exceptions.handle()
+                            .to(Databases.LOG)
+                            .error(t)
+                            .withSystemErrorMessage("Error while executing a transaction: %s (%s)")
+                            .handle();
         }
     }
 
@@ -320,15 +342,7 @@ public class Database {
                     }
                 }
                 stmt.executeUpdate();
-                try (ResultSet rs = stmt.getGeneratedKeys()) {
-                    Row row = new Row();
-                    if (rs.next()) {
-                        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-                            row.fields.put(rs.getMetaData().getColumnLabel(col), rs.getObject(col));
-                        }
-                    }
-                    return row;
-                }
+                return SQLQuery.fetchGeneratedKeys(stmt);
             }
         }
     }

@@ -69,12 +69,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     public SmartQuery<E> eq(Column field, Object value) {
-        this.containts.add(FieldOperator.on(field).equal(value));
+        this.containts.add(FieldOperator.on(field).eq(value));
         return this;
     }
 
     public SmartQuery<E> eqIgnoreNull(Column field, Object value) {
-        this.containts.add(FieldOperator.on(field).equal(value).ignoreNull());
+        this.containts.add(FieldOperator.on(field).eq(value).ignoreNull());
         return this;
     }
 
@@ -98,18 +98,17 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         Compiler compiler = compileCOUNT();
         try {
             try (Connection c = db.getConnection()) {
-                PreparedStatement stmt = compiler.prepareStatement(c);
-                if (stmt == null) {
-                    return 0;
-                }
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        return rs.getLong(1);
-                    } else {
+                try (PreparedStatement stmt = compiler.prepareStatement(c)) {
+                    if (stmt == null) {
                         return 0;
                     }
-                } finally {
-                    stmt.close();
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            return rs.getLong(1);
+                        } else {
+                            return 0;
+                        }
+                    }
                 }
             } finally {
                 if (Microtiming.isEnabled()) {
@@ -154,30 +153,29 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         try {
             Watch w = Watch.start();
             try (Connection c = db.getConnection()) {
-                PreparedStatement stmt = compiler.prepareStatement(c);
-                if (stmt == null) {
-                    return;
-                }
-                Limit limit = getLimit();
-                boolean nativeLimit = db.hasCapability(Capability.LIMIT);
-                tuneStatement(stmt, limit, nativeLimit);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    TaskContext tc = TaskContext.get();
-                    Set<String> columns = readColumns(rs);
-                    while (rs.next() && tc.isActive()) {
-                        if (nativeLimit || limit.nextRow()) {
-                            Entity e = descriptor.readFrom(null, columns, rs);
-                            compiler.executeJoinFetches(e, columns, rs);
-                            if (!handler.apply((E) e)) {
+                try (PreparedStatement stmt = compiler.prepareStatement(c)) {
+                    if (stmt == null) {
+                        return;
+                    }
+                    Limit limit = getLimit();
+                    boolean nativeLimit = db.hasCapability(Capability.LIMIT);
+                    tuneStatement(stmt, limit, nativeLimit);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        TaskContext tc = TaskContext.get();
+                        Set<String> columns = readColumns(rs);
+                        while (rs.next() && tc.isActive()) {
+                            if (nativeLimit || limit.nextRow()) {
+                                Entity e = descriptor.readFrom(null, columns, rs);
+                                compiler.executeJoinFetches(e, columns, rs);
+                                if (!handler.apply((E) e)) {
+                                    break;
+                                }
+                            }
+                            if (!nativeLimit && !limit.shouldContinue()) {
                                 break;
                             }
                         }
-                        if (!nativeLimit && !limit.shouldContinue()) {
-                            break;
-                        }
                     }
-                } finally {
-                    stmt.close();
                 }
             } finally {
                 if (Microtiming.isEnabled()) {
@@ -307,9 +305,15 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 for (JoinFetch subFetch : jf.subFetches.values()) {
                     executeJoinFetch(subFetch, child, columns, rs);
                 }
-            } catch (Exception e) {
-                //TODO error reporting
-                Exceptions.handle(e);
+            } catch (Throwable e) {
+                throw Exceptions.handle()
+                                .to(OMA.LOG)
+                                .error(e)
+                                .withSystemErrorMessage(
+                                        "Error while trying to read join fetched values for %s (%s): %s (%s)",
+                                        jf.property,
+                                        columns)
+                                .handle();
             }
         }
 

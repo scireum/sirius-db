@@ -20,7 +20,7 @@ import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents a {@link Boolean} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class BooleanProperty extends Property {
 
@@ -44,7 +44,7 @@ public class BooleanProperty extends Property {
         }
     }
 
-    public BooleanProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    BooleanProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.nullable = false;
     }

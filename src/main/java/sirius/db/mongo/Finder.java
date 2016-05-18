@@ -12,6 +12,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Watch;
+import sirius.kernel.health.Microtiming;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -20,14 +22,13 @@ import java.util.function.Function;
 /**
  * Fluent builder to build a find statement.
  */
-public class Finder {
+public class Finder extends QueryBuilder<Finder> {
 
-    private Mongo mongo;
-    private BasicDBObject filterObject = new BasicDBObject();
     private BasicDBObject fields;
+    private BasicDBObject orderBy;
 
     protected Finder(Mongo mongo) {
-        this.mongo = mongo;
+        super(mongo);
     }
 
     /**
@@ -46,14 +47,31 @@ public class Finder {
     }
 
     /**
-     * Adds a condition which determines which documents should be found.
+     * Adds a sort constraint to order by the given field ascending.
      *
-     * @param key   the name of the field to filter on
-     * @param value the value to filter on
+     * @param field the field to order by.
      * @return the builder itself for fluent method calls
      */
-    public Finder where(String key, Object value) {
-        filterObject.put(key, value);
+    public Finder orderByAsc(String field) {
+        if (orderBy == null) {
+            orderBy = new BasicDBObject();
+        }
+        orderBy.put(field, 1);
+
+        return this;
+    }
+
+    /**
+     * Adds a sort constraint to order by the given field descending.
+     *
+     * @param field the field to order by.
+     * @return the builder itself for fluent method calls
+     */
+    public Finder orderByDesc(String field) {
+        if (orderBy == null) {
+            orderBy = new BasicDBObject();
+        }
+        orderBy.put(field, -1);
 
         return this;
     }
@@ -65,11 +83,20 @@ public class Finder {
      * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
      */
     public Optional<Document> singleIn(String collection) {
-        DBObject obj = mongo.db().getCollection(collection).findOne(filterObject, fields);
-        if (obj == null) {
-            return Optional.empty();
-        } else {
-            return Optional.of(new Document(obj));
+        Watch w = Watch.start();
+        try {
+            DBObject obj = mongo.db().getCollection(collection).findOne(filterObject, fields);
+            if (obj == null) {
+                return Optional.empty();
+            } else {
+                return Optional.of(new Document(obj));
+            }
+        } finally {
+            mongo.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming("mongo", "FIND ONE - " + collection + ": " + filterObject);
+            }
+            traceIfRequired(collection, w);
         }
     }
 
@@ -81,7 +108,13 @@ public class Finder {
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
     public void eachIn(String collection, Function<Document, Boolean> processor) {
+        Watch w = Watch.start();
         DBCursor cur = mongo.db().getCollection(collection).find(filterObject, fields);
+        if (orderBy != null) {
+            cur.sort(orderBy);
+        }
+        handleTracingAndReporting(collection, w, cur);
+
         TaskContext ctx = TaskContext.get();
         while (cur.hasNext() && ctx.isActive()) {
             boolean keepGoing = processor.apply(new Document(cur.next()));
@@ -89,6 +122,15 @@ public class Finder {
                 break;
             }
         }
+    }
+
+    private void handleTracingAndReporting(String collection, Watch w, DBCursor cur) {
+        cur.hasNext();
+        mongo.callDuration.addValue(w.elapsedMillis());
+        if (Microtiming.isEnabled()) {
+            w.submitMicroTiming("mongo", "FIND ALL - " + collection + ": " + filterObject);
+        }
+        traceIfRequired(collection, w);
     }
 
     /**

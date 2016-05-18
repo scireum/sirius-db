@@ -13,10 +13,16 @@ import sirius.db.mixing.Constraint;
 import java.util.List;
 
 /**
- * Created by aha on 29.04.15.
+ * Represents and AND operation as {@link Constraint}.
  */
 public class And extends CombinedConstraint {
 
+    /**
+     * Combines the given constraints using an AND operator.
+     *
+     * @param inner the list of constraints which all have to be fullfilled.
+     * @return a constraint representing all the given constraints combined using AND
+     */
     public static Constraint of(List<Constraint> inner) {
         if (inner.size() == 1) {
             return inner.get(0);
@@ -25,6 +31,12 @@ public class And extends CombinedConstraint {
         return new And(inner);
     }
 
+    /**
+     * Combines the given constraints using an AND operator.
+     *
+     * @param inner the array of constraints which all have to be fullfilled.
+     * @return a constraint representing all the given constraints combined using AND
+     */
     public static Constraint of(Constraint... inner) {
         if (inner.length == 1) {
             return inner[0];

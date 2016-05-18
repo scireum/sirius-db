@@ -8,25 +8,27 @@
 
 package sirius.db.mongo;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.WriteResult;
+import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.Microtiming;
 
 /**
  * Fluent builder to build an update statement.
  */
-public class Updater {
+public class Updater extends QueryBuilder<Updater> {
 
-    private Mongo mongo;
-    private BasicDBObject filterObject = new BasicDBObject();
     private BasicDBObject setObject;
     private BasicDBObject incObject;
     private BasicDBObject addToSetObject;
     private BasicDBObject pullAllObject;
+    private BasicDBObject pullObject;
     private boolean many = false;
 
     protected Updater(Mongo mongo) {
-        this.mongo = mongo;
+        super(mongo);
     }
 
     /**
@@ -42,19 +44,6 @@ public class Updater {
     }
 
     /**
-     * Adds a condition which determines which documents should be updated.
-     *
-     * @param field the name of the field to filter on
-     * @param value the value to filter on
-     * @return the builder itself for fluent method calls
-     */
-    public Updater where(String field, Object value) {
-        filterObject.put(field, value);
-
-        return this;
-    }
-
-    /**
      * Sets a field to a new value.
      *
      * @param field the field to update
@@ -65,7 +54,7 @@ public class Updater {
         if (setObject == null) {
             setObject = new BasicDBObject();
         }
-        setObject.put(field, value);
+        setObject.put(field, transformValue(value));
 
         return this;
     }
@@ -97,7 +86,28 @@ public class Updater {
         if (addToSetObject == null) {
             addToSetObject = new BasicDBObject();
         }
-        addToSetObject.put(field, value);
+        addToSetObject.put(field, transformValue(value));
+
+        return this;
+    }
+
+    /**
+     * Removes all occurences of the given values from the list in the given field.
+     *
+     * @param field  the field containing the list
+     * @param values the values to remove
+     * @return the builder itself for fluent method calls
+     */
+    public Updater pullAll(String field, Object... values) {
+        if (pullAllObject == null) {
+            pullAllObject = new BasicDBObject();
+        }
+        BasicDBList valuesToRemove = new BasicDBList();
+        for (Object val : values) {
+            valuesToRemove.add(transformValue(val));
+        }
+
+        pullAllObject.put(field, valuesToRemove);
 
         return this;
     }
@@ -109,11 +119,11 @@ public class Updater {
      * @param value the value to remove
      * @return the builder itself for fluent method calls
      */
-    public Updater pullAll(String field, Object value) {
-        if (pullAllObject == null) {
-            pullAllObject = new BasicDBObject();
+    public Updater pull(String field, Object value) {
+        if (pullObject == null) {
+            pullObject = new BasicDBObject();
         }
-        pullAllObject.put(field, value);
+        pullObject.put(field, transformValue(value));
 
         return this;
     }
@@ -138,6 +148,9 @@ public class Updater {
         if (pullAllObject != null) {
             updateObject.put("$pullAll", pullAllObject);
         }
+        if (pullObject != null) {
+            updateObject.put("$pull", pullObject);
+        }
 
         if (updateObject.isEmpty()) {
             throw Exceptions.handle()
@@ -145,10 +158,20 @@ public class Updater {
                             .withSystemErrorMessage("Cannot execute an empty update on %s", collection)
                             .handle();
         }
-        if (many) {
-            return mongo.db().getCollection(collection).updateMulti(filterObject, updateObject);
-        } else {
-            return mongo.db().getCollection(collection).update(filterObject, updateObject);
+
+        Watch w = Watch.start();
+        try {
+            if (many) {
+                return mongo.db().getCollection(collection).updateMulti(filterObject, updateObject);
+            } else {
+                return mongo.db().getCollection(collection).update(filterObject, updateObject);
+            }
+        } finally {
+            mongo.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming("mongo", "UPDATE - " + collection + ": " + filterObject);
+            }
+            traceIfRequired(collection, w);
         }
     }
 }

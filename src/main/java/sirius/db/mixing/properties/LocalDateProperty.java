@@ -8,13 +8,13 @@
 
 package sirius.db.mixing.properties;
 
+import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
-import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.PropertyFactory;
 
 import java.lang.reflect.Field;
 import java.sql.Date;
@@ -23,7 +23,7 @@ import java.time.LocalDate;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents an {@link LocalDate} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class LocalDateProperty extends Property {
 
@@ -47,7 +47,7 @@ public class LocalDateProperty extends Property {
         }
     }
 
-    public LocalDateProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    LocalDateProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 

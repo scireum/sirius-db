@@ -115,7 +115,7 @@ class SmartQuerySpec extends BaseSpecification {
     def "queryFirst returns null for an empty result"() {
         given:
         SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
-                .where(FieldOperator.on(SmartQueryTestEntity.VALUE).equal("xxx"));
+                .where(FieldOperator.on(SmartQueryTestEntity.VALUE).eq("xxx"));
         when:
         def result = qry.queryFirst();
         then:
@@ -125,7 +125,7 @@ class SmartQuerySpec extends BaseSpecification {
     def "first returns an empty optional for an empty result"() {
         given:
         SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
-                .where(FieldOperator.on(SmartQueryTestEntity.VALUE).equal("xxx"));
+                .where(FieldOperator.on(SmartQueryTestEntity.VALUE).eq("xxx"));
         when:
         def result = qry.first();
         then:

@@ -8,16 +8,16 @@
 
 package sirius.db.mixing.properties;
 
+import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.OMA;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
-import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.OMA;
-import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.schema.TableColumn;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -25,7 +25,7 @@ import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents an {@link Amount} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class AmountProperty extends Property {
 
@@ -49,7 +49,7 @@ public class AmountProperty extends Property {
         }
     }
 
-    public AmountProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    AmountProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 

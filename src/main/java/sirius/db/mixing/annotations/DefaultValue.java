@@ -14,7 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 15.04.15.
+ * Defines a default value which is added to the <tt>CREATE TABLE</tt> statement when generating the schema.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

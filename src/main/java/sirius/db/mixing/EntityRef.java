@@ -14,7 +14,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Created by aha on 30.04.15.
+ * Represents a reference from one entity to another.
+ * <p>
+ * Instead of directly keeping the entity in a Java field, it is wrapped in an <tt>EntityRef</tt>. This leads to clean
+ * semantics for lazy loading as both the ID and (if fetched) the value are stored in this wrapper.
  */
 public class EntityRef<E extends Entity> {
 

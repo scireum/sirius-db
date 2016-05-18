@@ -66,7 +66,7 @@ public class Row {
     /**
      * Returns a sub list which was stored for a given key.
      * <p>
-     * It is assumed that the object associated with the given key is a <code>List&lt;Row&gt;</code>.
+     * It is assumed that the object associated with the given key is a {@code List&lt;Row&gt;}.
      *
      * @param key the name of the field to retrieve
      * @return the list associated with the given key

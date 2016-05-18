@@ -39,12 +39,23 @@ public class OMA {
     @Part
     private Schema schema;
 
+    private Boolean ready;
+
     public Database getDatabase() {
         return schema.getDatabase();
     }
 
     public Future getReadyFuture() {
         return schema.getReadyFuture();
+    }
+
+    public boolean isReady() {
+        if (ready == null) {
+            ready = Boolean.FALSE;
+            getReadyFuture().onSuccess((o) -> ready = Boolean.TRUE);
+        }
+
+        return ready.booleanValue();
     }
 
     public <E extends Entity> void update(E entity) {
@@ -121,10 +132,6 @@ public class OMA {
         List<Object> data = Lists.newArrayList();
         sb.append(" SET ");
         for (Property p : ed.getProperties()) {
-            if (!ed.isFetched(entity, p)) {
-                //TODO throw exception
-                // Really? aha 24.03.16...
-            }
             if (ed.isChanged(entity, p)) {
                 if (!data.isEmpty()) {
                     sb.append(", ");
@@ -229,7 +236,7 @@ public class OMA {
                 }
             }
             ed.afterDelete(entity);
-        } catch (HandledException e) {
+        } catch (OptimisticLockException e) {
             throw e;
         } catch (Throwable e) {
             throw Exceptions.handle()

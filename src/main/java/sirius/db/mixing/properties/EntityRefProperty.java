@@ -8,8 +8,14 @@
 
 package sirius.db.mixing.properties;
 
+import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.CascadeDeleteTaskQueue;
+import sirius.db.mixing.Entity;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.EntityRef;
+import sirius.db.mixing.OMA;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.Schema;
 import sirius.db.mixing.constraints.FieldOperator;
 import sirius.db.mixing.schema.ForeignKey;
@@ -18,12 +24,6 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
-import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.CascadeDeleteTaskQueue;
-import sirius.db.mixing.Entity;
-import sirius.db.mixing.EntityRef;
-import sirius.db.mixing.OMA;
-import sirius.db.mixing.PropertyFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Created by aha on 15.04.15.
+ * Represents a reference to another {@link Entity} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class EntityRefProperty extends Property {
 
@@ -66,7 +66,7 @@ public class EntityRefProperty extends Property {
     private Class<? extends Entity> referencedType;
     private EntityDescriptor referencedDescriptor;
 
-    public EntityRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    EntityRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
@@ -100,6 +100,11 @@ public class EntityRefProperty extends Property {
         }
     }
 
+    /**
+     * Returns the entity class of the referenced type.
+     *
+     * @return the class of the referenced entity
+     */
     public Class<? extends Entity> getReferencedType() {
         if (referencedType == null) {
             if (entityRef == null) {
@@ -110,6 +115,11 @@ public class EntityRefProperty extends Property {
         return referencedType;
     }
 
+    /**
+     * Returns the {@link EntityDescriptor} of the referenced entity.
+     *
+     * @return the referenced entity drescriptor
+     */
     public EntityDescriptor getReferencedDescriptor() {
         if (referencedDescriptor == null) {
             if (entityRef == null) {
@@ -254,6 +264,13 @@ public class EntityRefProperty extends Property {
                             .handle();
         }
     }
+
+    /**
+     * Updates the field ({@link EntityRef} within the given parent to point to the given child.
+     *
+     * @param parent the parent containing the reference to the child
+     * @param child  the referenced child entity
+     */
 
     @SuppressWarnings("unchecked")
     public void setReferencedEntity(Entity parent, Entity child) {

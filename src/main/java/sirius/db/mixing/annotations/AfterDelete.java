@@ -14,7 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 15.04.15.
+ * Used to mark methods in {@link sirius.db.mixing.Mixable}s which will be called once an entity was deleted.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

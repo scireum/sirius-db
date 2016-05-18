@@ -286,6 +286,7 @@ public class Redis implements Lifecycle {
             return Arrays.asList(query(() -> "info", Jedis::info).split("\n"))
                          .stream()
                          .map(l -> Strings.split(l, ":"))
+                         .filter(t -> t.getFirst() != null && t.getSecond() != null)
                          .collect(Collectors.toMap(Tuple::getFirst, Tuple::getSecond));
         } catch (Exception e) {
             Exceptions.handle(LOG, e);

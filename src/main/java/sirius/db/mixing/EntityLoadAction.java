@@ -18,7 +18,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 
 /**
- * Created by aha on 12.03.15.
+ * Used to add all {@link Entity} classes to the {@link sirius.kernel.di.GlobalContext} so that the {@link Schema} will
+ * find them.
  */
 public class EntityLoadAction implements ClassLoadAction {
 

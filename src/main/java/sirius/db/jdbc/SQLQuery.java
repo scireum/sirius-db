@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -123,35 +124,35 @@ public class SQLQuery {
         try (Connection c = ds.getConnection()) {
             StatementCompiler compiler = new StatementCompiler(c, false);
             compiler.buildParameterizedStatement(sql, params);
-            if (compiler.getStmt() == null) {
-                return;
-            }
-            if (limit == null) {
-                limit = Limit.UNLIMITED;
-            }
-            if (limit.getTotalItems() > 0) {
-                compiler.getStmt().setMaxRows(limit.getTotalItems());
-            }
-            if (ds.hasCapability(Capability.STREAMING)) {
-                compiler.getStmt().setFetchSize(Integer.MIN_VALUE);
-            } else {
-                compiler.getStmt().setFetchSize(1000);
-            }
-            try (ResultSet rs = compiler.getStmt().executeQuery()) {
-                TaskContext tc = TaskContext.get();
-                while (rs.next() && tc.isActive()) {
-                    Row row = loadIntoRow(rs);
-                    if (limit.nextRow()) {
-                        if (!handler.apply(row)) {
+            try (PreparedStatement stmt = compiler.getStmt()) {
+                if (stmt == null) {
+                    return;
+                }
+                if (limit == null) {
+                    limit = Limit.UNLIMITED;
+                }
+                if (limit.getTotalItems() > 0) {
+                    stmt.setMaxRows(limit.getTotalItems());
+                }
+                if (ds.hasCapability(Capability.STREAMING)) {
+                    stmt.setFetchSize(Integer.MIN_VALUE);
+                } else {
+                    stmt.setFetchSize(1000);
+                }
+                try (ResultSet rs = stmt.executeQuery()) {
+                    TaskContext tc = TaskContext.get();
+                    while (rs.next() && tc.isActive()) {
+                        Row row = loadIntoRow(rs);
+                        if (limit.nextRow()) {
+                            if (!handler.apply(row)) {
+                                break;
+                            }
+                        }
+                        if (!limit.shouldContinue()) {
                             break;
                         }
                     }
-                    if (!limit.shouldContinue()) {
-                        break;
-                    }
                 }
-            } finally {
-                compiler.getStmt().close();
             }
         } finally {
             w.submitMicroTiming("SQL-QUERY", sql);
@@ -252,13 +253,11 @@ public class SQLQuery {
         try (Connection c = ds.getConnection()) {
             StatementCompiler compiler = new StatementCompiler(c, false);
             compiler.buildParameterizedStatement(sql, params);
-            if (compiler.getStmt() == null) {
-                return 0;
-            }
-            try {
-                return compiler.getStmt().executeUpdate();
-            } finally {
-                compiler.getStmt().close();
+            try (PreparedStatement stmt = compiler.getStmt()) {
+                if (stmt == null) {
+                    return 0;
+                }
+                return stmt.executeUpdate();
             }
         } finally {
             w.submitMicroTiming("SQL", sql);
@@ -279,25 +278,34 @@ public class SQLQuery {
         try (Connection c = ds.getConnection()) {
             StatementCompiler compiler = new StatementCompiler(c, true);
             compiler.buildParameterizedStatement(sql, params);
-            if (compiler.getStmt() == null) {
-                return new Row();
-            }
-            try {
-                compiler.getStmt().executeUpdate();
-                try (ResultSet rs = compiler.getStmt().getGeneratedKeys()) {
-                    Row row = new Row();
-                    if (rs.next()) {
-                        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-                            row.fields.put(rs.getMetaData().getColumnLabel(col), rs.getObject(col));
-                        }
-                    }
-                    return row;
+            try (PreparedStatement stmt = compiler.getStmt()) {
+                if (stmt == null) {
+                    return new Row();
                 }
-            } finally {
-                compiler.getStmt().close();
+                stmt.executeUpdate();
+                return fetchGeneratedKeys(stmt);
             }
         } finally {
             w.submitMicroTiming("SQL-QUERY", sql);
+        }
+    }
+
+    /**
+     * Returns all generated keys wrapped as row
+     *
+     * @param stmt the statement which was used to perform an update or insert
+     * @return a row containing all generated keys
+     * @throws SQLException in case of an error thrown by the database or driver
+     */
+    protected static Row fetchGeneratedKeys(PreparedStatement stmt) throws SQLException {
+        try (ResultSet rs = stmt.getGeneratedKeys()) {
+            Row row = new Row();
+            if (rs.next()) {
+                for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+                    row.fields.put(rs.getMetaData().getColumnLabel(col), rs.getObject(col));
+                }
+            }
+            return row;
         }
     }
 
