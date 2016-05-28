@@ -60,6 +60,23 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
+     * Sets a field to the given list of values.
+     *
+     * @param key    the name of the field to set
+     * @param values the values to set the field to
+     * @return the builder itself for fluent method calls
+     */
+    public Updater setList(String key, Object... values) {
+        BasicDBList list = new BasicDBList();
+        for (Object value : values) {
+            list.add(QueryBuilder.transformValue(value));
+        }
+        setObject.put(key, list);
+
+        return this;
+    }
+
+    /**
      * Increments the given field by the given value.
      *
      * @param field the field to increment
