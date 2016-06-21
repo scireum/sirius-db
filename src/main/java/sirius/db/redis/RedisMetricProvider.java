@@ -41,11 +41,11 @@ public class RedisMetricProvider implements MetricProvider {
                              "MB");
             collector.differentialMetric("redis-messages",
                                          "redis-messages",
-                                         "Redis Calls",
+                                         "Redis PubSub Messages",
                                          redis.messageDuration.getCount(),
                                          "/min");
             collector.metric("redis-message-duration",
-                             "Redis Message Duration",
+                             "Redis PubSub Message Duration",
                              redis.messageDuration.getAndClearAverage(),
                              "ms");
         }

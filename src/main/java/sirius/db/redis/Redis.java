@@ -31,8 +31,11 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.health.Microtiming;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -292,5 +295,186 @@ public class Redis implements Lifecycle {
             Exceptions.handle(LOG, e);
             return Collections.emptyMap();
         }
+    }
+
+    /**
+     * Data object for storing information of a redis lock
+     */
+    public static class LockInfo {
+        public String key;
+        public String name;
+        public String value;
+        public LocalDateTime since;
+        public Long ttl;
+    }
+
+    private static final String PREFIX_LOCK = "lock_";
+    private static final String SUFFIX_DATE = "_date";
+
+    /**
+     * Returns a list of all currently held locks.
+     * <p>
+     * This is mainly inteded to be used for monitoring and maintenance (e.g. {@link RedisCommand})
+     *
+     * @return a list of all currently known locks
+     */
+    public List<LockInfo> getLockList() {
+        List<LockInfo> result = Lists.newArrayList();
+        exec(() -> "Get List of Locks", redis -> {
+            for (String key : redis.keys(PREFIX_LOCK + "*")) {
+                if (key.endsWith(SUFFIX_DATE)) {
+                    continue;
+                }
+                String owner = redis.get(key);
+                String since = redis.get(key + SUFFIX_DATE);
+                Long ttl = redis.ttl(key);
+
+                LockInfo info = new LockInfo();
+                info.key = key;
+                info.name = key.substring(PREFIX_LOCK.length());
+                info.value = owner;
+                if (Strings.isFilled(since)) {
+                    info.since = LocalDateTime.parse(since);
+                }
+                if (ttl != null && ttl > -1) {
+                    info.ttl = ttl;
+                }
+                result.add(info);
+            }
+        });
+
+        return result;
+    }
+
+    /**
+     * Tries to acquire the given lock in the given timeslot.
+     * <p>
+     * The system will try to acquire the given lock. If the lock is currently in use, it will retry
+     * in 1 second intervals until either the lock is acquired or the <tt>acquireTimeout</tt> is over.
+     * <p>
+     * A sane value for the timeout might be in the range of 5-50s, highly depending on the algorithm
+     * being protected by the lock. If the value is <tt>null</tt>, no retries will be performed.
+     * <p>
+     * The <tt>lockTimeout</tt> controls the max. age of the lock. After the given period, the lock
+     * will be released, even if unlock wasn't called. This is to prevent a cluster from locking itself
+     * out due to a single node crash. However, it is very important to chose a sane value here.
+     *
+     * @param lock           the name of the lock to acquire
+     * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
+     * @param lockTimeout    the max duration for which the lock will be kept before auto-releasing it
+     * @return <tt>true</tt> if the lock was acquired, <tt>false</tt> otherwise
+     */
+    public boolean tryLock(@Nonnull String lock, @Nullable Duration acquireTimeout, @Nonnull Duration lockTimeout) {
+        try {
+            long timeout = acquireTimeout == null ? 0 : Instant.now().plus(acquireTimeout).toEpochMilli();
+            int waitInMillis = 500;
+            do {
+                boolean locked = query(() -> "Try to Lock: " + lock, redis -> {
+                    String key = PREFIX_LOCK + lock;
+                    String response =
+                            redis.set(key, CallContext.getNodeName(), "NX", "EX", (int) lockTimeout.getSeconds());
+                    if ("OK".equals(response)) {
+                        redis.set(key + SUFFIX_DATE,
+                                  LocalDateTime.now().toString(),
+                                  "NX",
+                                  "EX",
+                                  (int) lockTimeout.getSeconds());
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                if (locked) {
+                    return true;
+                }
+
+                Wait.millis(waitInMillis);
+                waitInMillis += 1000;
+            } while (System.currentTimeMillis() < timeout);
+            return false;
+        } catch (Throwable e) {
+            Exceptions.handle(LOG, e);
+            return false;
+        }
+    }
+
+    /**
+     * Boilerplate method to perform the given task while holding the given lock.
+     * <p>
+     * See {@link #tryLock(String, Duration, Duration)} for details on acquiring a lock.
+     * <p>
+     * If the lock cannot be acquired, nothing will happen (neighter the task will be execute nor an exception will be
+     * thrown).
+     *
+     * @param lock           the name of the lock to acquire
+     * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
+     * @param lockTimeout    the max duration for which the lock will be kept before auto-releasing it
+     * @param lockedTask     the task to execute while holding the given lock. The task will not be executed if the
+     *                       lock cannot be acquired within the given period
+     */
+    public void tryLocked(@Nonnull String lock,
+                          @Nullable Duration acquireTimeout,
+                          @Nonnull Duration lockTimeout,
+                          @Nonnull Runnable lockedTask) {
+        if (tryLock(lock, acquireTimeout, lockTimeout)) {
+            try {
+                lockedTask.run();
+            } finally {
+                unlock(lock);
+            }
+        }
+    }
+
+    /**
+     * Determines if the given lock is currently locked by this or another node.
+     *
+     * @param lock the lock to check
+     * @return <tt>true</tt> if the lock is currently active, <tt>false</tt> otherwise
+     */
+    public boolean isLocked(@Nonnull String lock) {
+        return query(() -> "Check If Locked: " + lock, redis -> {
+            String key = PREFIX_LOCK + lock;
+            return redis.exists(key);
+        });
+    }
+
+    /**
+     * Releases the lock.
+     *
+     * @param lock the lock to release
+     */
+    public void unlock(String lock) {
+        unlock(lock, false);
+    }
+
+    /**
+     * Releases the given lock.
+     *
+     * @param lock  the lock to release
+     * @param force if <tt>true</tt>, the lock will even be released if it is held by another node. This is a very
+     *              dangerous operation and should only be used by maintenance and management tools like {@link
+     *              RedisCommand}.
+     */
+    public void unlock(String lock, boolean force) {
+        exec(() -> "Unlock: " + lock, redis -> {
+            String key = PREFIX_LOCK + lock;
+            String lockOwner = redis.get(key);
+            if (force || Strings.areEqual(lockOwner, CallContext.getNodeName())) {
+                redis.del(key);
+                redis.del(key + SUFFIX_DATE);
+            } else {
+                if (lockOwner == null) {
+                    LOG.WARN("Not going to unlock '%s' for '%s' as it seems to be expired already",
+                             lock,
+                             CallContext.getNodeName());
+                } else {
+                    LOG.WARN("Not going to unlock '%s' for '%s' as it is currently held by '%s'",
+                             lock,
+                             CallContext.getNodeName(),
+                             lockOwner);
+                }
+            }
+        });
     }
 }
