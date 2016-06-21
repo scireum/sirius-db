@@ -349,7 +349,7 @@ public abstract class Property {
      * @param entity the entity to write to
      * @return the value which is currently stored in the field
      */
-    protected Object getValue(Entity entity) {
+    public Object getValue(Entity entity) {
         Object target = accessPath.apply(entity);
         return getValueFromField(target);
     }
