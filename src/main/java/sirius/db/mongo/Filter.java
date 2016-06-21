@@ -74,6 +74,22 @@ public class Filter {
     }
 
     /**
+     * Builds a filter which represents a regex filter for the given field and expression.
+     *
+     * @param key        the name of the field to check
+     * @param expression the regular expression to apply
+     * @param options    the options to apply like "i" to match case insensitive
+     * @return a filter representing the given operation
+     */
+    public static Filter regex(String key, Object expression, String options) {
+        Filter filter = new Filter();
+        filter.key = key;
+        filter.object = new BasicDBObject("$regex", expression).append("$options", options);
+
+        return filter;
+    }
+
+    /**
      * Builds a filter which represents <tt>field != value</tt>
      *
      * @param key   the name of the field to check
