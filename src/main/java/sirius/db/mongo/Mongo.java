@@ -63,8 +63,12 @@ public class Mongo {
     public DB db() {
         try {
             if (mongoClient == null) {
-                mongoClient = new MongoClient(dbHost);
-                createIndices(mongoClient.getDB(dbName));
+                synchronized (this) {
+                    if (mongoClient == null) {
+                        mongoClient = new MongoClient(dbHost);
+                        createIndices(mongoClient.getDB(dbName));
+                    }
+                }
             }
 
             return mongoClient.getDB(dbName);
