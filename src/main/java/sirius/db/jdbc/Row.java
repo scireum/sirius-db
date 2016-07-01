@@ -19,12 +19,11 @@ import java.util.Map;
 
 /**
  * A small wrapper class to represent a result row.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 public class Row {
-    protected Map<String, Object> fields = Maps.newLinkedHashMap();
+
+    protected Map<String, Object> fields = Maps.newTreeMap();
+    protected List<String> fieldNames;
 
     /**
      * Returns all stored fields as map.
@@ -34,6 +33,10 @@ public class Row {
     @Nonnull
     public Map<String, Object> getFields() {
         return fields;
+    }
+
+    public List<String> getFieldNames() {
+        return fieldNames == null ? Collections.emptyList() : fieldNames;
     }
 
     /**

@@ -13,6 +13,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.Database;
+import sirius.db.jdbc.SQLQuery;
 import sirius.db.mixing.constraints.FieldOperator;
 import sirius.db.mixing.properties.EntityRefProperty;
 import sirius.kernel.async.TaskContext;
@@ -41,7 +42,8 @@ import java.util.function.Function;
  */
 public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     protected final EntityDescriptor descriptor;
-    protected List<Column> fields;
+    protected List<Column> fields = Collections.emptyList();
+    protected boolean distinct;
     protected List<Tuple<Column, Boolean>> orderBys = Lists.newArrayList();
     protected List<Constraint> containts = Lists.newArrayList();
     protected Database db;
@@ -85,6 +87,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
     public SmartQuery<E> orderDesc(Column field) {
         orderBys.add(Tuple.create(field, false));
+        return this;
+    }
+
+    public SmartQuery<E> distinctFields(Column... fields) {
+        this.fields = Arrays.asList(fields);
+        this.distinct = true;
         return this;
     }
 
@@ -144,6 +152,26 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         return result;
+    }
+
+    public SQLQuery asSQLQuery() {
+        Compiler compiler = compileSELECT();
+        return new SQLQuery(db, compiler.getQuery()) {
+            @Override
+            protected PreparedStatement createPreparedStatement(Connection c) throws SQLException {
+                return compiler.prepareStatement(c);
+            }
+        };
+    }
+
+    public SmartQuery<E> copy() {
+        SmartQuery<E> copy = new SmartQuery<>(type, db);
+        copy.distinct = distinct;
+        copy.fields.addAll(fields);
+        copy.orderBys.addAll(orderBys);
+        copy.containts.addAll(containts);
+
+        return copy;
     }
 
     @SuppressWarnings("unchecked")
@@ -363,35 +391,53 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
-        if (fields == null || fields.isEmpty()) {
+        if (fields.isEmpty()) {
             c.getSELECTBuilder().append(" e.*");
         } else {
-            Monoflop mf = Monoflop.create();
-            for (Column field : fields) {
-                if (mf.successiveCall()) {
-                    c.getSELECTBuilder().append(", ");
-                }
-                String alias = c.determineAlias(field.getParent()).getFirst();
-                if ("e".equals(alias)) {
-                    c.getSELECTBuilder().append(field);
-                } else {
-                    c.getSELECTBuilder().append(alias);
-                    c.getSELECTBuilder().append(".");
-                    c.getSELECTBuilder().append(field.getName());
-                    c.getSELECTBuilder().append(" AS ");
-                    c.getSELECTBuilder().append(alias);
-                    c.getSELECTBuilder().append("_");
-                    c.getSELECTBuilder().append(field.getName());
-                    c.createJoinFetch(field);
-                }
+            if (distinct) {
+                c.getSELECTBuilder().append("DISTINCT ");
             }
+            appendFieldList(c, true);
         }
         return c;
     }
 
+    private void appendFieldList(Compiler c, boolean applyAliases) {
+        Monoflop mf = Monoflop.create();
+        for (Column field : fields) {
+            if (mf.successiveCall()) {
+                c.getSELECTBuilder().append(", ");
+            }
+            String alias = c.determineAlias(field.getParent()).getFirst();
+            if ("e".equals(alias)) {
+                c.getSELECTBuilder().append(field);
+            } else {
+                c.getSELECTBuilder().append(alias);
+                c.getSELECTBuilder().append(".");
+                c.getSELECTBuilder().append(field.getName());
+                if (applyAliases) {
+                    c.getSELECTBuilder().append(" AS ");
+                    c.getSELECTBuilder().append(alias);
+                    c.getSELECTBuilder().append("_");
+                    c.getSELECTBuilder().append(field.getName());
+                }
+                c.createJoinFetch(field);
+            }
+        }
+    }
+
     private Compiler selectCount() {
         Compiler c = new Compiler(descriptor);
-        c.getSELECTBuilder().append("SELECT COUNT(*)");
+        if (!fields.isEmpty()) {
+            c.getSELECTBuilder().append("SELECT COUNT(");
+            if (distinct) {
+                c.getSELECTBuilder().append("DISTINCT");
+            }
+            appendFieldList(c, false);
+            c.getSELECTBuilder().append(")");
+        } else {
+            c.getSELECTBuilder().append("SELECT COUNT(*)");
+        }
         return c;
     }
 

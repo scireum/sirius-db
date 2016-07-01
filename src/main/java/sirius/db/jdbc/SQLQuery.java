@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,6 +50,7 @@ public class SQLQuery {
 
     private final Database ds;
     private final String sql;
+    private List<String> fieldNames;
     private Context params = Context.create();
 
     /*
@@ -121,10 +123,9 @@ public class SQLQuery {
      */
     public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
         Watch w = Watch.start();
+        fieldNames = null;
         try (Connection c = ds.getConnection()) {
-            StatementCompiler compiler = new StatementCompiler(c, false);
-            compiler.buildParameterizedStatement(sql, params);
-            try (PreparedStatement stmt = compiler.getStmt()) {
+            try (PreparedStatement stmt = createPreparedStatement(c)) {
                 if (stmt == null) {
                     return;
                 }
@@ -157,6 +158,12 @@ public class SQLQuery {
         } finally {
             w.submitMicroTiming("SQL-QUERY", sql);
         }
+    }
+
+    protected PreparedStatement createPreparedStatement(Connection c) throws SQLException {
+        StatementCompiler compiler = new StatementCompiler(c, false);
+        compiler.buildParameterizedStatement(sql, params);
+        return compiler.getStmt();
     }
 
     /**
@@ -209,16 +216,33 @@ public class SQLQuery {
     /*
      * Converts the current row of the given result set into a Row object
      */
-    private Row loadIntoRow(ResultSet rs) throws SQLException {
+    protected Row loadIntoRow(ResultSet rs) throws SQLException {
         Row row = new Row();
+        List<String> fetchedFieldNames = null;
+        if (fieldNames == null) {
+            fetchedFieldNames = Lists.newArrayListWithCapacity(rs.getMetaData().getColumnCount());
+        }
         for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+            String fieldName = null;
+            if (fieldNames != null) {
+                fieldName = fieldNames.get(col - 1);
+            } else {
+                fieldName = rs.getMetaData().getColumnLabel(col).toUpperCase();
+                fetchedFieldNames.add(fieldName);
+            }
             Object obj = rs.getObject(col);
             if (obj instanceof Blob) {
-                writeBlobToParameter(rs, col, (Blob) obj);
+                writeBlobToParameter(fieldName, rs, col, (Blob) obj);
             } else {
-                row.fields.put(rs.getMetaData().getColumnLabel(col).toUpperCase(), obj);
+                row.fields.put(fieldName, obj);
             }
         }
+
+        if (fieldNames == null) {
+            fieldNames = Collections.unmodifiableList(fetchedFieldNames);
+        }
+        row.fieldNames = fieldNames;
+
         return row;
     }
 
@@ -226,8 +250,8 @@ public class SQLQuery {
      * If a Blob is inside a result set, we expect an OutputStream as parameter with the same name which we write
      * the data to.
      */
-    private void writeBlobToParameter(ResultSet rs, int col, Blob blob) throws SQLException {
-        OutputStream out = (OutputStream) params.get(rs.getMetaData().getColumnLabel(col));
+    protected void writeBlobToParameter(String name, ResultSet rs, int col, Blob blob) throws SQLException {
+        OutputStream out = (OutputStream) params.get(name);
         if (out != null) {
             try {
                 try (InputStream in = blob.getBinaryStream()) {
@@ -251,9 +275,7 @@ public class SQLQuery {
         Watch w = Watch.start();
 
         try (Connection c = ds.getConnection()) {
-            StatementCompiler compiler = new StatementCompiler(c, false);
-            compiler.buildParameterizedStatement(sql, params);
-            try (PreparedStatement stmt = compiler.getStmt()) {
+            try (PreparedStatement stmt = createPreparedStatement(c)) {
                 if (stmt == null) {
                     return 0;
                 }

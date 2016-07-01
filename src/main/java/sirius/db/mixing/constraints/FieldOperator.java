@@ -17,7 +17,6 @@ import sirius.kernel.commons.Amount;
 
 import java.sql.Date;
 import java.sql.Time;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -68,7 +67,7 @@ public class FieldOperator extends Constraint {
         return this;
     }
 
-    public FieldOperator lessOrQual(Object value) {
+    public FieldOperator lessOrEqual(Object value) {
         this.value = value;
         this.op = Operator.LT_EQ;
         return this;
@@ -80,7 +79,7 @@ public class FieldOperator extends Constraint {
         return this;
     }
 
-    public FieldOperator greaterOrQual(Object value) {
+    public FieldOperator greaterOrEqual(Object value) {
         this.value = value;
         this.op = Operator.GT_EQ;
         return this;
@@ -127,7 +126,7 @@ public class FieldOperator extends Constraint {
             return value;
         }
         if (value instanceof LocalDateTime) {
-            return new Timestamp(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            return ((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         }
         if (value instanceof LocalDate) {
             return new Date(((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());

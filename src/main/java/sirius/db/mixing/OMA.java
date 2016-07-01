@@ -131,6 +131,7 @@ public class OMA {
         sb.append(ed.getTableName());
         List<Object> data = Lists.newArrayList();
         sb.append(" SET ");
+        boolean fieldUpdated = false;
         for (Property p : ed.getProperties()) {
             if (ed.isChanged(entity, p)) {
                 if (!data.isEmpty()) {
@@ -139,7 +140,12 @@ public class OMA {
                 sb.append(p.getColumnName());
                 sb.append(" = ? ");
                 data.add(p.getValueForColumn(entity));
+                fieldUpdated = true;
             }
+        }
+
+        if (!fieldUpdated) {
+            return;
         }
 
         if (ed.isVersioned()) {

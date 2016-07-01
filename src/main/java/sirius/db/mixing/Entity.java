@@ -11,11 +11,12 @@ package sirius.db.mixing;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.Row;
 import sirius.db.mixing.annotations.Mixin;
+import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.constraints.FieldOperator;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
-import sirius.db.mixing.annotations.Transient;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -205,6 +206,11 @@ public abstract class Entity extends Mixable {
         return getClass().getSimpleName().toUpperCase();
     }
 
+    /**
+     * Returns the version number of the fetched entity, used for optimistic locking.
+     *
+     * @return the version number fetched from the database.
+     */
     public int getVersion() {
         return version;
     }
@@ -214,14 +220,16 @@ public abstract class Entity extends Mixable {
         for (Column withinField : within) {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
         }
-        Entity other = qry.queryFirst();
-        if (other != null && !other.equals(this)) {
+        if (!isNew()) {
+            qry.where(FieldOperator.on(ID).notEqual(getId()));
+        }
+        if (qry.exists()) {
             throw Exceptions.createHandled()
                             .withNLSKey("Property.fieldNotUnique")
                             .set("field", getDescriptor().getProperty(field).getLabel())
                             .set("value", NLS.toUserString(value))
                             .handle();
-        }
+       }
     }
 
     @Override
