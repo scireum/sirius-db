@@ -8,20 +8,19 @@
 
 package sirius.db.mixing.properties;
 
-import sirius.kernel.commons.Value;
-import sirius.kernel.di.std.Register;
-import sirius.kernel.nls.NLS;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.Register;
+import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.sql.Types;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.function.Consumer;
 
 /**
@@ -68,11 +67,13 @@ public class LocalDateTimeProperty extends Property {
         if (object == null) {
             return null;
         }
-        return Instant.ofEpochMilli((long) object).atOffset(ZoneOffset.UTC).toLocalDateTime();
+        return Instant.ofEpochMilli((long) object).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
     @Override
     protected Object transformToColumn(Object object) {
-        return object == null ? null : ((LocalDateTime) object).atOffset(ZoneOffset.UTC).toInstant().toEpochMilli();
+        return object == null ?
+               null :
+               ((LocalDateTime) object).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 }
