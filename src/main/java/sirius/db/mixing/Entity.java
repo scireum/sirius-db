@@ -51,9 +51,9 @@ public abstract class Entity extends Mixable {
      * <p>
      * This field is marked as transient as this column is automatically managed by the framework.
      */
+    public static final Column ID = Column.named("id");
     @Transient
     protected long id = -1;
-    public static final Column ID = Column.named("id");
 
     /**
      * Contains the current version number read from the database. If optimistic locking is enabled for this
@@ -62,9 +62,9 @@ public abstract class Entity extends Mixable {
      * <p>
      * This field is marked as transient as this column is automatically managed by the framework.
      */
+    public static final Column VERSION = Column.named("version");
     @Transient
     protected int version = 0;
-    public static final Column VERSION = Column.named("version");
 
     @Transient
     protected Map<Property, Object> persistedData = Maps.newHashMap();

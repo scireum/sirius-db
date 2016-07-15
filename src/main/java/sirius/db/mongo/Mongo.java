@@ -33,7 +33,7 @@ public class Mongo {
 
     public static final Log LOG = Log.get("mongo");
 
-    private MongoClient mongoClient;
+    private volatile MongoClient mongoClient;
 
     @ConfigValue("mongo.host")
     private String dbHost;

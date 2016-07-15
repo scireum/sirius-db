@@ -472,7 +472,6 @@ public abstract class Property {
      * @param entity the entity which was written to the database
      */
     protected void onAfterSave(Entity entity) {
-
     }
 
     /**
@@ -481,7 +480,6 @@ public abstract class Property {
      * @param entity the entity to be deleted
      */
     protected void onBeforeDelete(Entity entity) {
-
     }
 
     /**
@@ -490,7 +488,6 @@ public abstract class Property {
      * @param entity the entity which was deleted
      */
     protected void onAfterDelete(Entity entity) {
-
     }
 
     /**

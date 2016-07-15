@@ -12,7 +12,6 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 

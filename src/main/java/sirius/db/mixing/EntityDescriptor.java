@@ -273,7 +273,6 @@ public class EntityDescriptor {
      * @param entity the entity to modify
      */
     protected void beforeSaveChecks(Entity entity) {
-
     }
 
     /**
@@ -283,7 +282,6 @@ public class EntityDescriptor {
      * @param entity the entity of modify
      */
     protected void onBeforeSave(Entity entity) {
-
     }
 
     /**
@@ -313,7 +311,6 @@ public class EntityDescriptor {
      * @param entity the entity which was saved
      */
     protected void onAfterSave(Entity entity) {
-
     }
 
     /**
@@ -359,7 +356,6 @@ public class EntityDescriptor {
      * @param entity the entity which is about to be deleted
      */
     protected void onBeforeDelete(Entity entity) {
-
     }
 
     /**
@@ -383,7 +379,6 @@ public class EntityDescriptor {
      * @param entity the deleted entity
      */
     protected void onAfterDelete(Entity entity) {
-
     }
 
     /**

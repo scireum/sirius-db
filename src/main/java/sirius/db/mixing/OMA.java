@@ -73,6 +73,9 @@ public class OMA {
      */
     public boolean isReady() {
         if (ready == null) {
+            if (schema == null) {
+                return false;
+            }
             ready = Boolean.FALSE;
             getReadyFuture().onSuccess((o) -> ready = Boolean.TRUE);
         }
@@ -180,18 +183,18 @@ public class OMA {
 
     private <E extends Entity> void doUPDATE(E entity, boolean force, EntityDescriptor ed)
             throws SQLException, OptimisticLockException {
-        StringBuilder sb = new StringBuilder("UPDATE ");
-        sb.append(ed.getTableName());
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(ed.getTableName());
         List<Object> data = Lists.newArrayList();
-        sb.append(" SET ");
+        sql.append(" SET ");
         boolean fieldUpdated = false;
         for (Property p : ed.getProperties()) {
             if (ed.isChanged(entity, p)) {
                 if (!data.isEmpty()) {
-                    sb.append(", ");
+                    sql.append(", ");
                 }
-                sb.append(p.getColumnName());
-                sb.append(" = ? ");
+                sql.append(p.getColumnName());
+                sql.append(" = ? ");
                 data.add(p.getValueForColumn(entity));
                 fieldUpdated = true;
             }
@@ -203,18 +206,26 @@ public class OMA {
 
         if (ed.isVersioned()) {
             if (!data.isEmpty()) {
-                sb.append(",");
+                sql.append(",");
             }
-            sb.append("version = ? ");
+            sql.append("version = ? ");
             data.add(ed.getVersion(entity) + 1);
         }
 
-        sb.append(" WHERE id = ?");
+        sql.append(" WHERE id = ?");
         if (ed.isVersioned() && !force) {
-            sb.append(" AND version = ?");
+            sql.append(" AND version = ?");
         }
+        executeUPDATE(entity, force, ed, sql.toString(), data);
+    }
+
+    private <E extends Entity> void executeUPDATE(E entity,
+                                                  boolean force,
+                                                  EntityDescriptor ed,
+                                                  String sql,
+                                                  List<Object> data) throws SQLException, OptimisticLockException {
         try (Connection c = getDatabase().getConnection()) {
-            try (PreparedStatement stmt = c.prepareStatement(sb.toString())) {
+            try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 int index = 1;
                 for (Object o : data) {
                     stmt.setObject(index++, o);

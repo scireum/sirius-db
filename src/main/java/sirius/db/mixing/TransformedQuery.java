@@ -19,6 +19,8 @@ import java.util.function.Function;
  * <p>
  * This can be used to generate complex SQL queries which still use to O/R mapper to return entity objects
  * read from a query result.
+ *
+ * @param <E> the generic type of entities being queried
  */
 public class TransformedQuery<E extends Entity> extends BaseQuery<E> {
 

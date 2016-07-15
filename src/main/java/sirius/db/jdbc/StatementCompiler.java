@@ -77,7 +77,7 @@ class StatementCompiler {
         for (Object param : params) {
             if (param instanceof Collection<?>) {
                 for (Object obj : (Collection<?>) param) {
-                    if ((obj instanceof TemporalAccessor)) {
+                    if (obj instanceof TemporalAccessor) {
                         parameters.add(Tuple.create(++index,
                                                     Date.from(Value.of(obj)
                                                                    .asLocalDateTime(null)
@@ -89,7 +89,7 @@ class StatementCompiler {
                     Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
                 }
             } else {
-                if ((param instanceof TemporalAccessor)) {
+                if (param instanceof TemporalAccessor) {
                     parameters.add(Tuple.create(++index,
                                                 Date.from(Value.of(param)
                                                                .asLocalDateTime(null)
@@ -176,13 +176,7 @@ class StatementCompiler {
         int index = getNextRelevantIndex(sql);
         boolean directSubstitution = (index > 0) && (sql.charAt(index) == '$');
         while (index >= 0) {
-            int endIndex = sql.indexOf("}", index);
-            if (endIndex < 0) {
-                throw new SQLException(NLS.fmtr("StatementCompiler.errorUnbalancedCurlyBracket")
-                                          .set("index", index)
-                                          .set("query", originalSQL)
-                                          .format());
-            }
+            int endIndex = findClosingCurlyBracket(originalSQL, sql, index);
             String parameterName = sql.substring(index + 2, endIndex);
             String accessPath = null;
             if (parameterName.contains(".")) {
@@ -232,6 +226,17 @@ class StatementCompiler {
             sb.append(sqlBuilder.toString());
             params.addAll(tempParams);
         }
+    }
+
+    private int findClosingCurlyBracket(String originalSQL, String sql, int index) throws SQLException {
+        int endIndex = sql.indexOf("}", index);
+        if (endIndex < 0) {
+            throw new SQLException(NLS.fmtr("StatementCompiler.errorUnbalancedCurlyBracket")
+                                      .set("index", index)
+                                      .set("query", originalSQL)
+                                      .format());
+        }
+        return endIndex;
     }
 
     /*

@@ -301,10 +301,31 @@ public class Redis implements Lifecycle {
      * Data object for storing information of a redis lock
      */
     public static class LockInfo {
+        /**
+         * The full name of the lock, as found in redis
+         */
         public String key;
+
+        /**
+         * The name of the lock, without any reids prefixes
+         */
         public String name;
+
+        /**
+         * The current value of the lock which can be used to determine who holds the lock
+         */
         public String value;
+
+        /**
+         * The timestamp when the lock was last acquired
+         */
         public LocalDateTime since;
+
+        /**
+         * The maximal time to live of the lock.
+         * <p>
+         * The lock will be auto released after a certain amount of seconds in case of a server crash
+         */
         public Long ttl;
     }
 

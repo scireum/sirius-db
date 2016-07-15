@@ -193,10 +193,10 @@ public class Schema implements Initializable {
 
             if (getDatabase().hasCapability(Capability.LOWER_CASE_TABLE_NAMES)) {
                 if (!Strings.areEqual(ed.getTableName(), ed.getTableName().toLowerCase())) {
-                    OMA.LOG.WARN(
-                            "Warning %s uses %s as table name which is not all lowercase. This might lead to trouble with the type of DBMS you are using!",
-                            ed.getType().getName(),
-                            ed.getTableName());
+                    OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
+                                 + " This might lead to trouble with the type of DBMS you are using!",
+                                 ed.getType().getName(),
+                                 ed.getTableName());
                 }
             }
         }
@@ -237,6 +237,12 @@ public class Schema implements Initializable {
         return Collections.unmodifiableList(requiredSchemaChanges);
     }
 
+    /**
+     * Executes the schema change action with the given id.
+     *
+     * @param id the id of the action to execute
+     * @return the action itself to fetch an error message in case of database problems
+     */
     @Nullable
     public SchemaUpdateAction executeSchemaUpdateAction(String id) {
         for (SchemaUpdateAction a : getSchemaUpdateActions()) {

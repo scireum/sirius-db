@@ -50,6 +50,10 @@ public class SchemaTool {
 
     /**
      * Reads the DB-schema for the given connection.
+     *
+     * @param db the database to read the schema from
+     * @return the determined schema
+     * @throws SQLException in case of a database error
      */
     public List<Table> getSchema(Database db) throws SQLException {
         List<Table> tables = Lists.newArrayList();

@@ -19,6 +19,8 @@ import java.util.Optional;
  * <p>
  * Instead of directly keeping the entity in a Java field, it is wrapped in an <tt>EntityRef</tt>. This leads to clean
  * semantics for lazy loading as both the ID and (if fetched) the value are stored in this wrapper.
+ *
+ * @param <E> the generic type of the referenced entity
  */
 public class EntityRef<E extends Entity> {
 

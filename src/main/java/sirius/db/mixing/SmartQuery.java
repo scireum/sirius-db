@@ -39,6 +39,8 @@ import java.util.function.Function;
 
 /**
  * Provides a query DSL which is used to query {@link Entity} instances from the database.
+ *
+ * @param <E> the generic type of entities being queried
  */
 public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     protected final EntityDescriptor descriptor;

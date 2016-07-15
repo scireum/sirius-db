@@ -20,6 +20,8 @@ import java.util.function.Function;
 
 /**
  * Base class for queries within mixing.
+ *
+ * @param <E> the generic type of the entity being queried
  */
 abstract class BaseQuery<E extends Entity> {
     /*
