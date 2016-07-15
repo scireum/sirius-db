@@ -10,6 +10,7 @@ package sirius.db.mixing.schema;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import sirius.db.jdbc.Database;
 import sirius.db.mixing.OMA;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
@@ -50,18 +51,20 @@ public class SchemaTool {
     /**
      * Reads the DB-schema for the given connection.
      */
-    public List<Table> getSchema(Connection c) throws SQLException {
+    public List<Table> getSchema(Database db) throws SQLException {
         List<Table> tables = Lists.newArrayList();
-        ResultSet rs = c.getMetaData().getTables(c.getSchema(), null, null, null);
-        while (rs.next()) {
-            if ("TABLE".equalsIgnoreCase(rs.getString(4))) {
-                Table table = new Table();
-                table.setName(rs.getString("TABLE_NAME"));
-                fillTable(c, table);
-                tables.add(dialect.completeTableInfos(table));
+        try (Connection c = db.getConnection()) {
+            try (ResultSet rs = c.getMetaData().getTables(c.getSchema(), null, null, null)) {
+                while (rs.next()) {
+                    if ("TABLE".equalsIgnoreCase(rs.getString(4))) {
+                        Table table = new Table();
+                        table.setName(rs.getString("TABLE_NAME"));
+                        fillTable(c, table);
+                        tables.add(dialect.completeTableInfos(table));
+                    }
+                }
             }
         }
-        rs.close();
         return tables;
     }
 
@@ -147,16 +150,16 @@ public class SchemaTool {
      * <p>
      * Compares the expected target schema to the database connected via the given connection.
      *
-     * @param connection   the connection used to determine the existing schema
+     * @param db           the database used to determine the existing schema
      * @param targetSchema the target schema defined by {@link sirius.db.mixing.Schema}
      * @param dropTables   determines if unknown tables should be dropped or not
      * @return a list of change actions to that the existing schema matches the expected one
      * @throws SQLException in case of a database error
      */
-    public List<SchemaUpdateAction> migrateSchemaTo(Connection connection, List<Table> targetSchema, boolean dropTables)
+    public List<SchemaUpdateAction> migrateSchemaTo(Database db, List<Table> targetSchema, boolean dropTables)
             throws SQLException {
         List<SchemaUpdateAction> result = Lists.newArrayList();
-        List<Table> currentSchema = getSchema(connection);
+        List<Table> currentSchema = getSchema(db);
 
         List<Table> sortedTarget = sort(new ArrayList<>(targetSchema));
 

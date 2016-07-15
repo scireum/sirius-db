@@ -29,7 +29,6 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nullable;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -222,9 +221,7 @@ public class Schema implements Initializable {
             }
             SchemaTool tool = new SchemaTool(dialect);
             Database database = getDatabase();
-            try (Connection c = database.getConnection()) {
-                requiredSchemaChanges = tool.migrateSchemaTo(c, target, true);
-            }
+            requiredSchemaChanges = tool.migrateSchemaTo(database, target, true);
         } catch (SQLException e) {
             Exceptions.handle(OMA.LOG, e);
         }
