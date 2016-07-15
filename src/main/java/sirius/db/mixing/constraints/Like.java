@@ -9,15 +9,18 @@
 package sirius.db.mixing.constraints;
 
 import com.google.common.collect.Lists;
-import sirius.kernel.commons.Strings;
 import sirius.db.mixing.Column;
 import sirius.db.mixing.Constraint;
 import sirius.db.mixing.SmartQuery;
+import sirius.kernel.commons.Strings;
 
 import java.util.List;
 
 /**
- * Created by aha on 29.04.15.
+ * Represents a LIKE constraint.
+ * <p>
+ * This can be used to generate queries like {@code x LIKE 'a%'}. Using the helper methods this can also be used to
+ * search for occurrences of serveral words in several fields, this can be used as a general table search.
  */
 public class Like extends Constraint {
 
@@ -30,10 +33,16 @@ public class Like extends Constraint {
         this.field = field;
     }
 
-    public static Like on(Column field) {
-        return new Like(field);
-    }
-
+    /**
+     * Generates a constraint which ensures that each word in the query occurs at least in one of the given fields.
+     * <p>
+     * Splits the given query at each whitespace and generates a constraint which ensures that each of these words
+     * occures in it least on of the given fields.
+     *
+     * @param query  the query to parse
+     * @param fields the fields to search in
+     * @return a constraint representing the given query in the given fields
+     */
     public static Constraint allWordsInAnyField(String query, Column... fields) {
         List<Constraint> wordConstraints = Lists.newArrayList();
         for (String word : query.split("\\s")) {
@@ -46,11 +55,37 @@ public class Like extends Constraint {
         return And.of(wordConstraints);
     }
 
+    /**
+     * Creates a like constraint for the given field.
+     *
+     * @param field the field to search in
+     * @return a like constraint applied to the given field
+     */
+    public static Like on(Column field) {
+        return new Like(field);
+    }
+
+    /**
+     * Specifies a value to match in the given field.
+     * <p>
+     * Note that "*" will be repalced by "%" as this is the wildcard used by SQL.
+     *
+     * @param value the text to search for
+     * @return the constraint itself
+     */
     public Like matches(String value) {
         this.value = value;
         return this;
     }
 
+    /**
+     * Sepcifies a value which needs to occur anywhere in the target field.
+     * <p>
+     * This is roughly the same as calling {@code matches("*"+value+"*")}.
+     *
+     * @param value the value to search for
+     * @return the constaint itself
+     */
     public Like contains(String value) {
         if (Strings.isFilled(value)) {
             if (!value.startsWith("*")) {
@@ -64,11 +99,21 @@ public class Like extends Constraint {
         return this;
     }
 
+    /**
+     * Specifies that upper- and lowercase should not be distinguished.
+     *
+     * @return the constraint itself
+     */
     public Like ignoreCase() {
         this.ignoreCase = true;
         return this;
     }
 
+    /**
+     * Permits to skip this constraint if the given filter value is empty.
+     *
+     * @return the constraint itself
+     */
     public Like ignoreEmpty() {
         this.ignoreEmpty = true;
         return this;

@@ -13,7 +13,7 @@ import sirius.db.mixing.annotations.Mixin;
 
 @Mixin(TestMixin.class)
 public class TestMixinMixin extends Mixable {
-    @Length(length = 1)
+    @Length(1)
     private String initial;
 
     public String getInitial() {

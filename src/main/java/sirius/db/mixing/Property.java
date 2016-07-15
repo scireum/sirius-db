@@ -11,6 +11,7 @@ package sirius.db.mixing;
 import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.annotations.Numeric;
 import sirius.db.mixing.annotations.Unique;
 import sirius.db.mixing.schema.Table;
 import sirius.db.mixing.schema.TableColumn;
@@ -35,9 +36,6 @@ import java.util.stream.Collectors;
  * <p>
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/05
  */
 public abstract class Property {
 
@@ -162,9 +160,12 @@ public abstract class Property {
     protected void determineLengths() {
         Length len = field.getAnnotation(Length.class);
         if (len != null) {
-            this.length = len.length();
-            this.scale = len.scale();
-            this.precision = len.precision();
+            this.length = len.value();
+        }
+        Numeric num = field.getAnnotation(Numeric.class);
+        if (num != null) {
+            this.scale = num.scale();
+            this.precision = num.precision();
         }
     }
 

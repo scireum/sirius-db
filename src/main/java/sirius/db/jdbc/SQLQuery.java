@@ -42,9 +42,6 @@ import java.util.function.Function;
  * <p>
  * Optional blocks can be surrounded with angular braces: SELECT * FROM x WHERE test = 1[ AND test2=${val}]
  * The surrounded block will only be added to the query, if the parameter within has a non-null value.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 public class SQLQuery {
 

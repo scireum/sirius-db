@@ -18,9 +18,6 @@ import javax.annotation.Nullable;
  * discovered and applied by {@link EntityDescriptor}. They can be used to fine-tune properties.
  * <p>
  * This is mostly useful for customer customizations ({@link sirius.kernel.Sirius#getActiveConfigurations()}.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/05
  */
 public interface PropertyModifier {
 

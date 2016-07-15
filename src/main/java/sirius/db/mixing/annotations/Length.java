@@ -14,14 +14,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 15.04.15.
+ * Specifies the column length, most probably of string (CHAR) columns.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Length {
-    int length() default 0;
 
-    int precision() default 0;
-
-    int scale() default 0;
+    /**
+     * The maximal length of the column.
+     *
+     * @return the maximal length of the column
+     */
+    int value();
 }

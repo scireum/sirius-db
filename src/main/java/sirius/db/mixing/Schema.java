@@ -35,6 +35,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Keeps track of all entities and their {@link EntityDescriptor}.
+ * <p>
+ * This does also generate/update the database schema.
+ */
 @Register(classes = {Schema.class, Initializable.class})
 public class Schema implements Initializable {
 
@@ -42,6 +47,12 @@ public class Schema implements Initializable {
     private Map<String, EntityDescriptor> descriptorsByName = Maps.newHashMap();
     private Future readyFuture = new Future();
 
+    /**
+     * Returns the descriptor of the given entity class.
+     *
+     * @param aClass the entity class
+     * @return the descriptor of the given entity class
+     */
     public EntityDescriptor getDescriptor(Class<? extends Entity> aClass) {
         EntityDescriptor ed = descriptorsByType.get(aClass);
         if (ed == null) {
@@ -54,6 +65,12 @@ public class Schema implements Initializable {
         return ed;
     }
 
+    /**
+     * Returns the descriptor for the given entity type.
+     *
+     * @param aTypeName a {@link EntityDescriptor#getTableName()} of an entity
+     * @return the descriptor for the given type name
+     */
     public EntityDescriptor getDescriptor(String aTypeName) {
         EntityDescriptor ed = descriptorsByName.get(aTypeName);
         if (ed == null) {
@@ -110,6 +127,11 @@ public class Schema implements Initializable {
         }
     }
 
+    /**
+     * Provides a {@link Future} which is fullfilled when then schema is fully initialized
+     *
+     * @return the future which is fullfilled if the framework is ready
+     */
     public Future getReadyFuture() {
         return readyFuture;
     }
@@ -187,6 +209,11 @@ public class Schema implements Initializable {
         }
     }
 
+    /**
+     * (Re-)Computes the changes required on the database schema to match the expectations of the software.
+     * <p>
+     * All non critical changes (new tables, new columns) are performed at system startup to prevent errors.
+     */
     public void computeRequiredSchemaChanges() {
         try {
             List<Table> target = Lists.newArrayList();
@@ -203,6 +230,12 @@ public class Schema implements Initializable {
         }
     }
 
+    /**
+     * Lists the update actions which need to be performed on the current database to match the expectation of the
+     * software.
+     *
+     * @return the list of required schema changes.
+     */
     public List<SchemaUpdateAction> getSchemaUpdateActions() {
         return Collections.unmodifiableList(requiredSchemaChanges);
     }

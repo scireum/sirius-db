@@ -20,9 +20,6 @@ import java.util.function.Function;
 
 /**
  * Base class for queries within mixing.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/05
  */
 abstract class BaseQuery<E extends Entity> {
     /*

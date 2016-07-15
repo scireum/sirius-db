@@ -9,8 +9,22 @@
 package sirius.db.mixing;
 
 /**
- * Created by aha on 29.11.14.
+ * Signals that a concurrent modification occured on an entity wearing a {@link sirius.db.mixing.annotations.Versioned}
+ * annotation.
+ * <p>
+ * In contrast to <tt>pessimistic locking</tt>, <tt>optimistic locking</tt> does not acquire any locks or perform
+ * other measures to quarantee mutual exclusion. Rather it keepts track of the entity version it last read from
+ * the database and upon a modification, it expects the entity version in the database to remain the same.
+ * <p>
+ * Once a modification is performed, the version is then incremented. If the expected version does not match
+ * the actual version, the operation is aborted and an {@link OptimisticLockException} is thrown.
+ * <p>
+ * This yields is a highly performant and highly scaleble system as long as concurrent modifications are rare. The
+ * downsice of this approach is, that modification have to be retried once an error is detected. However most of the
+ * time this overhead is quite bearable.
  */
 public class OptimisticLockException extends Exception {
+
     private static final long serialVersionUID = -834083199170415643L;
+
 }

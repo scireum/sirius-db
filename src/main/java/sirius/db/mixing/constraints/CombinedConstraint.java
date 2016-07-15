@@ -9,24 +9,34 @@
 package sirius.db.mixing.constraints;
 
 import com.google.common.collect.Lists;
-import sirius.kernel.commons.Monoflop;
 import sirius.db.mixing.Constraint;
 import sirius.db.mixing.SmartQuery;
+import sirius.kernel.commons.Monoflop;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by aha on 29.04.15.
+ * Combines a list of constraints into a single constraint using a logical operator.
  */
-public abstract class CombinedConstraint extends Constraint {
+abstract class CombinedConstraint extends Constraint {
 
     protected List<Constraint> inner = Lists.newArrayList();
 
+    /**
+     * Creates a new combination for the given list of constraints.
+     *
+     * @param inner the constraints to combine
+     */
     protected CombinedConstraint(List<Constraint> inner) {
         this.inner = inner;
     }
 
+    /**
+     * Creates a new combination for the given array of constraints.
+     *
+     * @param inner the constraints to combine
+     */
     protected CombinedConstraint(Constraint... inner) {
         this.inner = Arrays.asList(inner);
     }
@@ -56,5 +66,10 @@ public abstract class CombinedConstraint extends Constraint {
         }
     }
 
+    /**
+     * Returns the logical operator used to combine the constraints.
+     *
+     * @return the logical operator used to combine the constraints.
+     */
     protected abstract String getCombiner();
 }

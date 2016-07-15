@@ -8,16 +8,16 @@
 
 package sirius.db.mixing;
 
+import sirius.db.mixing.annotations.Mixin;
 import sirius.kernel.Sirius;
 import sirius.kernel.di.ClassLoadAction;
 import sirius.kernel.di.MutableGlobalContext;
 import sirius.kernel.di.std.Framework;
-import sirius.db.mixing.annotations.Mixin;
 
 import java.lang.annotation.Annotation;
 
 /**
- * Created by aha on 12.03.15.
+ * Loads all {@link Mixin}s so that they don't hvae to wear a {@link sirius.kernel.di.std.Register} annotation.
  */
 public class MixinLoadAction implements ClassLoadAction {
 

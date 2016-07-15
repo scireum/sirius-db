@@ -13,7 +13,7 @@ import sirius.db.mixing.annotations.Mixin;
 
 @Mixin(TestEntityWithMixin.class)
 public class TestMixin extends Mixable {
-    @Length(length = 50)
+    @Length(50)
     private String middleName;
 
     public String getMiddleName() {

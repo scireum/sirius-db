@@ -12,13 +12,13 @@ import sirius.db.mixing.annotations.Length;
 
 public class TestComposite extends Composite {
 
-    @Length(length = 100)
+    @Length(100)
     private String street;
 
-    @Length(length = 10)
+    @Length(10)
     private String zip;
 
-    @Length(length = 100)
+    @Length(100)
     private String city;
 
     public String getStreet() {

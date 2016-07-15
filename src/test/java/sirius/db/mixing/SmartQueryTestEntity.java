@@ -15,7 +15,7 @@ import sirius.db.mixing.annotations.Length;
  */
 public class SmartQueryTestEntity extends Entity {
 
-    @Length(length = 50)
+    @Length(50)
     private String value;
     public static final Column VALUE = Column.named("value");
 

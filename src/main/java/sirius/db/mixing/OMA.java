@@ -31,6 +31,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * The <tt>Object Model Access</tt> provides an entity object based persistence framework.
+ * <p>
+ * This is the central class to {@link #find(Class, Object)}, {@link #select(Class)}, {@link #update(Entity)} and
+ * {@link
+ * #delete(Entity)} entitties.
+ */
 @Register(classes = OMA.class)
 public class OMA {
 
@@ -41,14 +48,29 @@ public class OMA {
 
     private Boolean ready;
 
+    /**
+     * Provides the underlying database instance used to perform the actual statements.
+     *
+     * @return the database used by the framework
+     */
     public Database getDatabase() {
         return schema.getDatabase();
     }
 
+    /**
+     * Provides a {@link Future} which is fullfilled once the framework is ready.
+     *
+     * @return a future which can be used to delay startup actions until the framework is fully functional.
+     */
     public Future getReadyFuture() {
         return schema.getReadyFuture();
     }
 
+    /**
+     * Determines if the framework is ready yet.
+     *
+     * @return <tt>true</tt> if the framework is ready, <tt>false</tt> otherwise.
+     */
     public boolean isReady() {
         if (ready == null) {
             ready = Boolean.FALSE;
@@ -58,6 +80,20 @@ public class OMA {
         return ready.booleanValue();
     }
 
+    /**
+     * Writes the contents of the given entity to the database.
+     * <p>
+     * If the entity is not persisted yet, we perform an insert. If the entity does exist, we only
+     * update those fields, which were changed since they were last read from the database.
+     * <p>
+     * While this provides the best performance and circumvents update conflicts, it does not guarantee strong
+     * consistency as the fields in the database might have partially changes. If this behaviour is unwanted, the
+     * entity should be marked with {@link sirius.db.mixing.annotations.Versioned} which will turn on <tt>Optimistic
+     * Locking</tt> and prevent these conditions.
+     *
+     * @param entity the entity to write to the database
+     * @param <E>    the generic type of the entity
+     */
     public <E extends Entity> void update(E entity) {
         try {
             doUpdate(entity, false);
@@ -66,10 +102,27 @@ public class OMA {
         }
     }
 
+    /**
+     * Tries to perform an {@link #update(Entity)} of the given entity.
+     * <p>
+     * If the entity is {@link sirius.db.mixing.annotations.Versioned} and the entity was modified already
+     * elsewhere, an {@link OptimisticLockException} will be thrown, which can be used to trigger a retry.
+     *
+     * @param entity the entity to update
+     * @param <E>    the generic type of the entity
+     * @throws OptimisticLockException in case of a concurrent modification
+     */
     public <E extends Entity> void tryUpdate(E entity) throws OptimisticLockException {
         doUpdate(entity, false);
     }
 
+    /**
+     * Performs an {@link #update(Entity)} of the entity, without checking for concurrent modifications.
+     * <p>Concurrent modifications by other users will simply be ignored and overridden.
+     *
+     * @param entity the entity to update
+     * @param <E>    the generic type of the entity
+     */
     public <E extends Entity> void override(E entity) {
         try {
             doUpdate(entity, true);
@@ -192,23 +245,49 @@ public class OMA {
         }
     }
 
+    /**
+     * Deletes the given entity from the database.
+     * <p>
+     * If the entity is {@link sirius.db.mixing.annotations.Versioned} and concurrently modified elsewhere,
+     * an exception is thrown.
+     *
+     * @param entity the entity to delete
+     * @param <E>    the generic entity type
+     */
+    public <E extends Entity> void delete(E entity) {
+        try {
+            doDelete(entity, false);
+        } catch (OptimisticLockException e) {
+            throw Exceptions.handle(e);
+        }
+    }
+
+    /**
+     * Tries to delete the entity from the database.
+     * <p>
+     * If the entity is {@link sirius.db.mixing.annotations.Versioned} and concurrently modified elsewhere,
+     * an {@link OptimisticLockException} is thrown.
+     *
+     * @param entity the entity to delete
+     * @param <E>    the generic entity type
+     * @throws OptimisticLockException if the entity was concurrently modified
+     */
     public <E extends Entity> void tryDelete(E entity) throws OptimisticLockException {
         doDelete(entity, false);
     }
 
+    /**
+     * Deletes the given entity from the database even if it is {@link sirius.db.mixing.annotations.Versioned} and was
+     * concurrently modified.
+     *
+     * @param entity the entity to delete
+     * @param <E>    the generic entity type
+     */
     public <E extends Entity> void forceDelete(E entity) {
         try {
             doDelete(entity, true);
         } catch (OptimisticLockException e) {
             // Should really not happen....
-            throw Exceptions.handle(e);
-        }
-    }
-
-    public <E extends Entity> void delete(E entity) {
-        try {
-            doDelete(entity, false);
-        } catch (OptimisticLockException e) {
             throw Exceptions.handle(e);
         }
     }
@@ -256,18 +335,52 @@ public class OMA {
         }
     }
 
+    /**
+     * Creates a {@link SmartQuery} for the given entity type.
+     *
+     * @param type the type of entities to select
+     * @param <E>  the generic type of entities to select
+     * @return a query for entities of the given type
+     */
     public <E extends Entity> SmartQuery<E> select(Class<E> type) {
         return new SmartQuery<>(type, getDatabase());
     }
 
+    /**
+     * Transforms a plain {@link SQLQuery} to directly return entities of the given type.
+     *
+     * @param type the type of entites to read from the query result
+     * @param qry  the query to transform
+     * @param <E>  the generic type of entities to read from the query result
+     * @return a transformed query which returns entities instead of result rows.
+     */
     public <E extends Entity> TransformedQuery<E> transform(Class<E> type, SQLQuery qry) {
         return new TransformedQuery<>(type, null, qry);
     }
 
+    /**
+     * Same as {@link #transform(Class, SQLQuery)} but with support for aliased columns.
+     * <p>
+     * If the columns to read from the result set are aliased, this method can be used to specify the alias to use.
+     *
+     * @param type  the type of entites to read from the query result
+     * @param alias the alias which is appended to all column names to readl
+     * @param qry   the query to transform
+     * @param <E>   the generic type of entities to read from the query result
+     * @return a transformed query which returns entities instead of result rows.
+     */
     public <E extends Entity> TransformedQuery<E> transform(Class<E> type, String alias, SQLQuery qry) {
         return new TransformedQuery<>(type, alias, qry);
     }
 
+    /**
+     * Performs a database lookup to select the entity of the given type with the given id.
+     *
+     * @param type the type of entity to select
+     * @param id   the id (which can be either a long, Long or String) to select
+     * @param <E>  the generic type of the entity to select
+     * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given id exists
+     */
     @SuppressWarnings("unchecked")
     public <E extends Entity> Optional<E> find(Class<E> type, Object id) {
         try {
@@ -299,6 +412,17 @@ public class OMA {
         }
     }
 
+    /**
+     * Tries to {@link #find(Class, Object)} the entity with the given id.
+     * <p>
+     * If no entity is found, an exception is thrown.
+     *
+     * @param type the type of entity to select
+     * @param id   the id (which can be either a long, Long or String) to select
+     * @param <E>  the generic type of the entity to select
+     * @return the entity with the given id
+     * @throws HandledException if no entity with the given ID was present
+     */
     public <E extends Entity> E findOrFail(Class<E> type, Object id) {
         Optional<E> result = find(type, id);
         if (result.isPresent()) {
@@ -311,6 +435,12 @@ public class OMA {
         }
     }
 
+    /**
+     * Tries to resolve the {@link Entity#getUniqueName()} into an entity.
+     *
+     * @param name the name of the entity to resolve
+     * @return the resolved entity wrapped as <tt>Optional</tt> or an empty optional if no such entity exists
+     */
     public Optional<? extends Entity> resolve(String name) {
         if (Strings.isEmpty(name)) {
             return Optional.empty();
@@ -319,6 +449,13 @@ public class OMA {
         return find(schema.getDescriptor(typeAndId.getFirst()).getType(), typeAndId.getSecond());
     }
 
+    /**
+     * Tries to {@link #resolve(String)} the given name into an entity.
+     *
+     * @param name the name of the entity to resolve
+     * @return the resolved entity
+     * @throws HandledException if the given name cannot be resolved into an entity
+     */
     public Entity resolveOrFail(String name) {
         Optional<? extends Entity> result = resolve(name);
         if (result.isPresent()) {
@@ -328,6 +465,16 @@ public class OMA {
         }
     }
 
+    /**
+     * Tries to fetch a fresh (updated) instance of the given entity from the database.
+     * <p>
+     * If the entity does no longer exist, the given instance is returned.
+     *
+     * @param entity the entity to refresh
+     * @param <E>    the generic type of the entity
+     * @return a new instance of the given entity with the most current data from the database or the original entity,
+     * if the entity does no longer exist in the database.
+     */
     @SuppressWarnings("unchecked")
     public <E extends Entity> E tryRefresh(E entity) {
         if (entity != null) {
@@ -339,6 +486,16 @@ public class OMA {
         return entity;
     }
 
+    /**
+     * Tries to fetch a fresh (updated) instance of the given entity from the database.
+     * <p>
+     * If the entity does no longer exist, an exception will be thrown.
+     *
+     * @param entity the entity to refresh
+     * @param <E>    the generic type of the entity
+     * @return a new instance of the given entity with the most current data from the database.
+     * @throws HandledException if the entity no longer exists in the database.
+     */
     @SuppressWarnings("unchecked")
     public <E extends Entity> E refreshOrFail(E entity) {
         if (entity == null) {

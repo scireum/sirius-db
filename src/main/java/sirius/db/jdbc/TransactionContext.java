@@ -18,14 +18,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by aha on 27.04.15.
+ * Manages {@link Transaction}s as sub context within {@link CallContext}.
+ * <p>
+ * Can be used to manage transactions accross method boundaries.
+ *
+ * @see Database#begin()
+ * @see Database#join()
  */
-public class TransactionManager implements SubContext {
+public class TransactionContext implements SubContext {
 
     private Map<String, List<Transaction>> txns = Maps.newConcurrentMap();
 
     protected static List<Transaction> getTransactionStack(String database) {
-        TransactionManager manager = CallContext.getCurrent().get(TransactionManager.class);
+        TransactionContext manager = CallContext.getCurrent().get(TransactionContext.class);
         List<Transaction> result = manager.txns.get(database);
         if (result == null) {
             result = Lists.newArrayList();

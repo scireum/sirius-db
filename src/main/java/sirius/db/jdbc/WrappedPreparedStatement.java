@@ -37,9 +37,6 @@ import java.util.Calendar;
 
 /**
  * Wrapper for {@link PreparedStatement} to add microtiming.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 class WrappedPreparedStatement implements PreparedStatement {
     private PreparedStatement delegate;

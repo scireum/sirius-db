@@ -22,9 +22,6 @@ import java.util.Map;
 /**
  * Represents a flexible way of executing parameterized SQL calls without
  * thinking too much about resource management.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 public class SQLCall {
 

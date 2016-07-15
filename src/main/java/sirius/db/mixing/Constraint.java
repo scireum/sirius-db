@@ -12,9 +12,6 @@ package sirius.db.mixing;
  * Represents a constraint which can be added to the WHERE part of a SQL query.
  * <p>
  * Used by {@link SmartQuery} to generate filters for a query.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/05
  */
 public abstract class Constraint {
 

@@ -34,9 +34,6 @@ import java.util.concurrent.Executor;
 /**
  * Used to make connection pooling more robust. (Doesn't call close() twice,
  * etc.).
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 class WrappedConnection implements Connection {
 

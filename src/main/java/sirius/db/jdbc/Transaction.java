@@ -30,7 +30,7 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
- * Created by aha on 27.04.15.
+ * Represents a database transaction managed by {@link Database#begin()}, {@link Database#join()} etc.
  */
 public class Transaction implements Connection {
     private WrappedConnection delegate;
@@ -38,7 +38,7 @@ public class Transaction implements Connection {
     private boolean closed;
     private Watch watch = Watch.start();
 
-    public Transaction(WrappedConnection delegate) throws SQLException {
+    protected Transaction(WrappedConnection delegate) throws SQLException {
         this.delegate = delegate;
         this.delegate.setAutoCommit(false);
     }
@@ -72,7 +72,7 @@ public class Transaction implements Connection {
         // Transactions close on commit or rollback
     }
 
-    public void tryCommit() throws SQLException {
+    protected void tryCommit() throws SQLException {
         if (copy) {
             return;
         }

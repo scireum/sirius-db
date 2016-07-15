@@ -13,10 +13,16 @@ import sirius.db.mixing.Constraint;
 import java.util.List;
 
 /**
- * Created by aha on 29.04.15.
+ * Represents an OR operation as {@link Constraint}.
  */
 public class Or extends CombinedConstraint {
 
+    /**
+     * Combines the given constraints using an OR operator.
+     *
+     * @param inner the list of constraints which all have to be fullfilled.
+     * @return a constraint representing all the given constraints combined using OR
+     */
     public static Constraint of(List<Constraint> inner) {
         if (inner.size() == 1) {
             return inner.get(0);
@@ -24,6 +30,12 @@ public class Or extends CombinedConstraint {
         return new Or(inner);
     }
 
+    /**
+     * Combines the given constraints using an OR operator.
+     *
+     * @param inner the array of constraints which all have to be fullfilled.
+     * @return a constraint representing all the given constraints combined using OR
+     */
     public static Constraint of(Constraint... inner) {
         if (inner.length == 1) {
             return inner[0];

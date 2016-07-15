@@ -20,10 +20,6 @@ import java.time.Duration;
 
 /**
  * Wrapper for {@link Statement} to add microtiming.
- * <p>
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 class WrappedStatement implements Statement {
     private Statement stmt;

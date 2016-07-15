@@ -10,16 +10,22 @@ package sirius.db.mixing;
 
 import com.google.common.collect.Maps;
 import sirius.db.mixing.annotations.Mixin;
+import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.di.morphium.Adaptable;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
-import sirius.db.mixing.annotations.Transient;
 
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * Created by aha on 20.04.15.
+ * A mixable can be extended by {@link Mixin}s.
+ * <p>
+ * As both, {@link Entity} and {@link Composite} can be extended by mixins, the common functionality is kept in this
+ * superclass.
+ * <p>
+ * This mainly utilizes the {@link Adaptable} framework to morph an entity or composite into a mixin of the
+ * desired type.
  */
 public class Mixable implements Adaptable {
 
@@ -72,5 +78,4 @@ public class Mixable implements Adaptable {
 
     @Part
     protected static OMA oma;
-
 }

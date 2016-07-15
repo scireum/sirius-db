@@ -14,7 +14,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 15.04.15.
+ * Determines the nullability of a column.
+ * <p>
+ * By default all columns are <tt>NON-NULL</tt>.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

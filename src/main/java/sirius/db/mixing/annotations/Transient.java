@@ -14,7 +14,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 15.04.15.
+ * Fields marked with this annotation are not transformed into a property.
+ * <p>
+ * Can be placed on local caches or other fields which must not be persisted.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

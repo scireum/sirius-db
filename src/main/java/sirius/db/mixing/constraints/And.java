@@ -13,7 +13,7 @@ import sirius.db.mixing.Constraint;
 import java.util.List;
 
 /**
- * Represents and AND operation as {@link Constraint}.
+ * Represents an AND operation as {@link Constraint}.
  */
 public class And extends CombinedConstraint {
 

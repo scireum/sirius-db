@@ -12,10 +12,10 @@ import sirius.db.mixing.annotations.Length;
 
 public class LegacyEntity extends Entity {
 
-    @Length(length = 50)
+    @Length(50)
     private String firstname;
 
-    @Length(length = 50)
+    @Length(50)
     private String lastname;
 
     private final TestComposite composite = new TestComposite();

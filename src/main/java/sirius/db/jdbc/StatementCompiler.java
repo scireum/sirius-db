@@ -30,9 +30,6 @@ import java.util.Map;
 
 /**
  * Provides methods to compile statements with embedded parameters and optional blocks.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 class StatementCompiler {
 

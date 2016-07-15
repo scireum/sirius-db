@@ -140,7 +140,7 @@ public class Database {
 
     @Nullable
     protected Transaction getTransaction() throws SQLException {
-        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
         if (transactions.isEmpty()) {
             return null;
         } else {
@@ -151,17 +151,28 @@ public class Database {
     protected Transaction startTransaction() throws SQLException {
         Databases.LOG.FINE("BEGIN " + name);
         Transaction txn = new Transaction(new WrappedConnection(createConnection(), this));
-        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
         transactions.add(txn);
         return txn;
     }
 
+    /**
+     * Starts a new transaction which can either be committed ({@link #commit()}) or rolled back ({@link #rollback()}.
+     *
+     * @throws SQLException in case of an database error
+     */
     public void begin() throws SQLException {
         startTransaction();
     }
 
+    /**
+     * Joins an already running transaction or starts a new one if non is present.
+     *
+     * @return the joined or started transaction
+     * @throws SQLException in case of an database error
+     */
     public Transaction join() throws SQLException {
-        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
         if (transactions.isEmpty()) {
             begin();
             return transactions.get(0);
@@ -172,8 +183,13 @@ public class Database {
         }
     }
 
+    /**
+     * Tries to commit a transaction. If none is present, nothing will happen.
+     *
+     * @throws SQLException in case of an database error
+     */
     public void tryCommit() throws SQLException {
-        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
         if (transactions != null && !transactions.isEmpty()) {
             Transaction txn = transactions.get(transactions.size() - 1);
             transactions.remove(transactions.size() - 1);
@@ -181,8 +197,13 @@ public class Database {
         }
     }
 
+    /**
+     * Commits the current transaction. Fails if none is present.
+     *
+     * @throws SQLException in case of an database error
+     */
     public void commit() throws SQLException {
-        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
         if (transactions == null || transactions.isEmpty()) {
             throw new SQLException("Cannot commit a transaction: No transaction active!");
         } else {
@@ -192,8 +213,11 @@ public class Database {
         }
     }
 
+    /**
+     * Cancels (rolls back) the current transaction.
+     */
     public void rollback() {
-        List<Transaction> transactions = TransactionManager.getTransactionStack(name);
+        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
         if (transactions != null && !transactions.isEmpty()) {
             // Rollback this and all joined (copied) transactions
             HandledException ex = null;
@@ -220,6 +244,11 @@ public class Database {
         }
     }
 
+    /**
+     * Performs the given task in the current transaction. If none is present, a new one will be started.
+     *
+     * @param r the code to execute within a transaction
+     */
     public void transaction(Runnable r) {
         try {
             join();
@@ -243,6 +272,12 @@ public class Database {
         }
     }
 
+    /**
+     * Performs the given code in its own transaction.
+     *
+     * @param r the code to execute
+     * @throws SQLException in case of an database error
+     */
     public void separateTransaction(Runnable r) throws SQLException {
         try {
             begin();
@@ -426,6 +461,12 @@ public class Database {
         return ds.getNumActive();
     }
 
+    /**
+     * Determines if the current driver has the requested capability.
+     *
+     * @param cap the capability to determine
+     * @return <tt>true</tt> if the capability is supported / present, <tt>false</tt> otherwise
+     */
     public boolean hasCapability(Capability cap) {
         if (capabilities == null) {
             if ("com.mysql.jdbc.Driver".equalsIgnoreCase(driver)) {

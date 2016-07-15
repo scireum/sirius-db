@@ -17,9 +17,6 @@ import java.util.function.Function;
  * As properties can be contained within composites or mixins (or a combination thereof) we may need to
  * fetch the composite or use {@link Mixable#as(Class)} to fetch the mixin in order to access the field. The types
  * and number of calls are defined by an <tt>AccessPath</tt>.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/05
  */
 public class AccessPath {
 

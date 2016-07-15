@@ -23,10 +23,13 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 
 /**
- * Created by aha on 27.04.15.
+ * Represents a relational operator applied on a field.
  */
 public class FieldOperator extends Constraint {
 
+    /**
+     * Enumerates all supported operators.
+     */
     public enum Operator {
         LT("<"), LT_EQ("<="), EQ("="), GT_EQ(">="), GT(">"), NE("<>");
 
@@ -51,46 +54,93 @@ public class FieldOperator extends Constraint {
         this.field = field;
     }
 
+    /**
+     * Creates a new constraint on the given field.
+     *
+     * @param field the field to filter on
+     * @return the constraint applied on the given field
+     */
     public static FieldOperator on(Column field) {
         return new FieldOperator(field);
     }
 
+    /**
+     * Generates an equals constraint like {@code field = value}.
+     *
+     * @param value the value to compare against
+     * @return the constraint itself
+     */
     public FieldOperator eq(Object value) {
         this.value = value;
         this.op = Operator.EQ;
         return this;
     }
 
+    /**
+     * Generates an equals constraint like {@code field &lt; value}.
+     *
+     * @param value the value to compare against
+     * @return the constraint itself
+     */
     public FieldOperator lessThan(Object value) {
         this.value = value;
         this.op = Operator.LT;
         return this;
     }
 
+    /**
+     * Generates an equals constraint like {@code field &lt;= value}.
+     *
+     * @param value the value to compare against
+     * @return the constraint itself
+     */
     public FieldOperator lessOrEqual(Object value) {
         this.value = value;
         this.op = Operator.LT_EQ;
         return this;
     }
 
+    /**
+     * Generates an equals constraint like {@code field &gt; value}.
+     *
+     * @param value the value to compare against
+     * @return the constraint itself
+     */
     public FieldOperator greaterThan(Object value) {
         this.value = value;
         this.op = Operator.GT;
         return this;
     }
 
+    /**
+     * Generates an equals constraint like {@code field &gt;= value}.
+     *
+     * @param value the value to compare against
+     * @return the constraint itself
+     */
     public FieldOperator greaterOrEqual(Object value) {
         this.value = value;
         this.op = Operator.GT_EQ;
         return this;
     }
 
+    /**
+     * Generates an equals constraint like {@code field &lt;&gt; value}.
+     *
+     * @param value the value to compare against
+     * @return the constraint itself
+     */
     public FieldOperator notEqual(Object value) {
         this.value = value;
         this.op = Operator.NE;
         return this;
     }
 
+    /**
+     * Permits to skip this constraint if the filter value is <tt>null</tt>.
+     *
+     * @return the constraint itself
+     */
     public FieldOperator ignoreNull() {
         this.ignoreNull = true;
         return this;

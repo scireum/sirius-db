@@ -29,9 +29,6 @@ import java.util.stream.Collectors;
  * <p>
  * Configuration is done via the system configuration. To declare a database provide an extension in
  * <tt>jdbc.database</tt>. For examples see "component-db.conf".
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2013/11
  */
 @Register(classes = Databases.class)
 public class Databases {

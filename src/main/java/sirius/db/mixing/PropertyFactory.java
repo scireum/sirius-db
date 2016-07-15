@@ -19,9 +19,6 @@ import java.util.function.Consumer;
  * <tt>PropertyFactory</tt> is queried. The first to return <tt>true</tt> as result of
  * {@link #accepts(java.lang.reflect.Field)} will be used to compute the property for a field by calling
  * {@link #create(EntityDescriptor, AccessPath, Field, Consumer)}.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/05
  */
 public interface PropertyFactory {
 

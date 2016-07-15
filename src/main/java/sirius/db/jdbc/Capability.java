@@ -15,9 +15,6 @@ import java.util.EnumSet;
  * <p>
  * The capabilities of the connected db can be determined by calling {@link Database#hasCapability(Capability)}.
  * The capabilities are determined by checking the driver name.
- *
- * @author Andreas Haufler (aha@scireum.de)
- * @since 2015/04
  */
 public enum Capability {
     /**

@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Created by aha on 29.11.14.
+ * Provides a query DSL which is used to query {@link Entity} instances from the database.
  */
 public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     protected final EntityDescriptor descriptor;
@@ -48,6 +48,15 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     protected List<Constraint> containts = Lists.newArrayList();
     protected Database db;
 
+    /**
+     * Creates a new query instance.
+     * <p>
+     * <p>
+     * Use {@link OMA#select(Class)} to create a new query.
+     *
+     * @param type the entity type to select
+     * @param db   the database to operate on
+     */
     protected SmartQuery(Class<E> type, Database db) {
         super(type);
         this.db = db;
@@ -64,43 +73,96 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         return (SmartQuery<E>) super.limit(limit);
     }
 
+    /**
+     * Applies the given contraints to the query.
+     *
+     * @param constraints the constraints which have to be fullfilled
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> where(Constraint... constraints) {
         Collections.addAll(this.containts, constraints);
 
         return this;
     }
 
+    /**
+     * Adds an {@link FieldOperator#eq(Object)} constraint for the given field and value.
+     *
+     * @param field the field to check
+     * @param value the value to filter on
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> eq(Column field, Object value) {
         this.containts.add(FieldOperator.on(field).eq(value));
         return this;
     }
 
+    /**
+     * Adds an {@link FieldOperator#eq(Object)} constraint for the given field and value, if the value is non-null.
+     * <p>
+     * If the given value is <tt>null</tt>, the constraint is skipped.
+     *
+     * @param field the field to check
+     * @param value the value to filter on
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> eqIgnoreNull(Column field, Object value) {
         this.containts.add(FieldOperator.on(field).eq(value).ignoreNull());
         return this;
     }
 
+    /**
+     * Adds an ascending order on the given field.
+     *
+     * @param field the field to order by
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> orderAsc(Column field) {
         orderBys.add(Tuple.create(field, true));
         return this;
     }
 
+    /**
+     * Adds a descending order on the given field.
+     *
+     * @param field the field to order by
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> orderDesc(Column field) {
         orderBys.add(Tuple.create(field, false));
         return this;
     }
 
+    /**
+     * Specifies the fields to select, which also have to be <tt>DISTINCT</tt>.
+     *
+     * @param fields the fields to select and to apply a <tt>DISTINCT</tt> filter on.
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> distinctFields(Column... fields) {
         this.fields = Arrays.asList(fields);
         this.distinct = true;
         return this;
     }
 
+    /**
+     * Specifies which fields to select.
+     * <p>
+     * If no fields are given, <tt>*</tt> is selected
+     *
+     * @param fields the list of fields to select
+     * @return the query itself for fluent method calls
+     */
     public SmartQuery<E> fields(Column... fields) {
         this.fields = Arrays.asList(fields);
         return this;
     }
 
+    /**
+     * Executes the query and counts the number of results.
+     *
+     * @return the number of matched rows
+     */
     public long count() {
         Watch w = Watch.start();
         Compiler compiler = compileCOUNT();
@@ -134,6 +196,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
     }
 
+    /**
+     * Determines if the query would have at least one matching row.
+     *
+     * @return <tt>true</tt> if at least one row matches the query, <tt>false</tt> otherwise.
+     */
     public boolean exists() {
         return count() > 0;
     }
@@ -141,6 +208,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     @Part
     private static OMA oma;
 
+    /**
+     * Deletes all entities matching this query.
+     * <p>
+     * Note that this will not generate a <tt>DELETE</tt> statement but rather select the results and invoke
+     * {@link OMA#delete(Entity)} on each entity to ensure that framework checks are triggered.
+     */
     public void delete() {
         iterateAll(oma::delete);
     }
@@ -154,6 +227,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         return result;
     }
 
+    /**
+     * Converts this query into a plain {@link SQLQuery} which will return rows instead of entities.
+     *
+     * @return the query converted into a plain SQL query.
+     */
     public SQLQuery asSQLQuery() {
         Compiler compiler = compileSELECT();
         return new SQLQuery(db, compiler.getQuery()) {
@@ -164,6 +242,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         };
     }
 
+    /**
+     * Creates a full copy of the query which can be modified without modifying this query.
+     *
+     * @return a copy of this query
+     */
     public SmartQuery<E> copy() {
         SmartQuery<E> copy = new SmartQuery<>(type, db);
         copy.distinct = distinct;
@@ -232,6 +315,9 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
     }
 
+    /**
+     * Represents the compiler which is used to generate SQL statements based on a {@link SmartQuery}.
+     */
     public static class Compiler {
 
         private static class JoinFetch {
@@ -248,14 +334,30 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         protected Map<String, Tuple<String, EntityDescriptor>> joinTable = Maps.newTreeMap();
         private JoinFetch rootFetch = new JoinFetch();
 
+        /**
+         * Creates a new compiler for the given entity descriptor.
+         *
+         * @param ed the entity descriptor which is used to determine which table to select and how to JOIN other
+         *           entities.
+         */
         public Compiler(@Nullable EntityDescriptor ed) {
             this.ed = ed;
         }
 
+        /**
+         * Provides access to the string builder which generates the SELECT part of the query.
+         *
+         * @return the string builder representing the SELECT part of the query
+         */
         public StringBuilder getSELECTBuilder() {
             return preJoinQuery;
         }
 
+        /**
+         * Provides access to the string builder which generates the WHERE part of the query.
+         *
+         * @return the string builder representing the WHERE part of the query.
+         */
         public StringBuilder getWHEREBuilder() {
             return postJoinQuery;
         }
@@ -291,6 +393,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             return result;
         }
 
+        /**
+         * Translates a column name into an effective name by applying aliases and rewrites.
+         *
+         * @param column the column to translate
+         * @return the translated name which is used in the database
+         */
         public String translateColumnName(Column column) {
             String alias = determineAlias(column.getParent()).getFirst();
             return alias + "." + ed.rewriteColumnName(column.getName());
@@ -345,6 +453,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             }
         }
 
+        /**
+         * Adds a query parameter.
+         *
+         * @param parameter the parameter to add
+         */
         public void addParameter(Object parameter) {
             parameters.add(parameter);
         }

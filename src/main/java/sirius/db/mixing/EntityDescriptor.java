@@ -52,7 +52,7 @@ import java.util.function.Consumer;
  * For each subclass of {@link Entity} a <tt>descriptor</tt> is created by the {@link Schema}. This descriptor
  * is in charge of reading and writing from and to the database as well as ensuring consistency of the data.
  * <p>
- * The descriptor is automatically creates and its properties are discovered by checking all fields, composites
+ * The descriptor is automatically created and its properties are discovered by checking all fields, composites
  * and mixins.
  */
 public class EntityDescriptor {
@@ -189,10 +189,28 @@ public class EntityDescriptor {
         }
     }
 
+    /**
+     * Returns all properties known by this descriptor.
+     * <p>
+     * These are either properties declared by the type (class) of the entity and its superclasses or once defined
+     * by {@link Composite}s and {@link Mixin}s.
+     *
+     * @return a list of all properties of the entity
+     */
     public Collection<Property> getProperties() {
         return properties.values();
     }
 
+    /**
+     * Determines if a value was fetched in the given entity for the given property.
+     * <p>
+     * As queries might select only certain fields, not all properties are filled for an entity.
+     *
+     * @param entity   the entity to check
+     * @param property the property to check for
+     * @param <E>      the generic type of the entity
+     * @return <tt>true</tt> if a value was fetched from the database, <tt>false</tt> otherwise
+     */
     public <E extends Entity> boolean isFetched(E entity, Property property) {
         if (entity.isNew()) {
             return false;
@@ -200,18 +218,44 @@ public class EntityDescriptor {
         return entity.persistedData.containsKey(property);
     }
 
+    /**
+     * Determines if the value for the property was changed since it was last fetched from the database.
+     *
+     * @param entity   the entity to check
+     * @param property the property to check for
+     * @param <E>      the generic type of the entity
+     * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
+     */
     public <E extends Entity> boolean isChanged(E entity, Property property) {
         return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
     }
 
+    /**
+     * Determines the version (used for optimistic locking) of the given entity.
+     *
+     * @param entity the entity to read the version from
+     * @param <E>    the generic type of the entity
+     * @return the version stored in the database
+     */
     public <E extends Entity> int getVersion(E entity) {
         return entity.getVersion();
     }
 
+    /**
+     * Updates the version (used for optimistic locking) of the given entity.
+     *
+     * @param entity  the entity to update
+     * @param version the new versin to set
+     */
     public void setVersion(Entity entity, int version) {
         entity.version = version;
     }
 
+    /**
+     * Executes all <tt>beforedSaveHandlers</tt> known to the descriptor.
+     *
+     * @param entity the entity to perform the handlers on
+     */
     protected final void beforeSave(Entity entity) {
         beforeSaveChecks(entity);
         for (Consumer<Entity> c : beforeSaveHandlers) {
@@ -223,14 +267,30 @@ public class EntityDescriptor {
         onBeforeSave(entity);
     }
 
+    /**
+     * Executes actions on the given entity before the save checks are executed.
+     *
+     * @param entity the entity to modify
+     */
     protected void beforeSaveChecks(Entity entity) {
 
     }
 
+    /**
+     * Executes actions on the given entity after the save checks were executed, but before it is persisted to the
+     * database.
+     *
+     * @param entity the entity of modify
+     */
     protected void onBeforeSave(Entity entity) {
 
     }
 
+    /**
+     * Executes all <tt>afterSaveHandlers</tt> once an entity was saved to the database.
+     *
+     * @param entity the entity which was saved
+     */
     protected void afterSave(Entity entity) {
         for (Consumer<Entity> c : afterSaveHandlers) {
             c.accept(entity);
@@ -247,10 +307,20 @@ public class EntityDescriptor {
         }
     }
 
+    /**
+     * Executed one all <tt>afterSaveHandlers</tt> were executed.
+     *
+     * @param entity the entity which was saved
+     */
     protected void onAfterSave(Entity entity) {
 
     }
 
+    /**
+     * Invokes all <tt>beforeDeleteHandlers</tt> and then all <tt>cascadeDeleteHandlers</tt> for the given entity.
+     *
+     * @param entity the entity which is about to be deleted
+     */
     protected void beforeDelete(Entity entity) {
         for (Property property : properties.values()) {
             property.onBeforeDelete(entity);
@@ -264,18 +334,39 @@ public class EntityDescriptor {
         }
     }
 
+    /**
+     * Adds a cascade handler for entities managed by this descriptor.
+     *
+     * @param handler the handler to add
+     */
     public void addCascadeDeleteHandler(Consumer<Entity> handler) {
         cascadeDeleteHandlers.add(handler);
     }
 
+    /**
+     * Adds a before delete handler for entities managed by this descriptor.
+     *
+     * @param handler the handler to add
+     */
     public void addBeforeDeleteHandler(Consumer<Entity> handler) {
         beforeDeleteHandlers.add(handler);
     }
 
+    /**
+     * Invoked once all properties were notified about the deletion, but before the <tt>beforeDeleteHandlers</tt> and
+     * <tt>cascadeDeleteHandlers</tt> ran.
+     *
+     * @param entity the entity which is about to be deleted
+     */
     protected void onBeforeDelete(Entity entity) {
 
     }
 
+    /**
+     * Invokes all <tt>afterDeleteHandlers</tt>.
+     *
+     * @param entity the entity which was deleted
+     */
     protected void afterDelete(Entity entity) {
         for (Property property : properties.values()) {
             property.onAfterDelete(entity);
@@ -286,10 +377,20 @@ public class EntityDescriptor {
         onAfterDelete(entity);
     }
 
+    /**
+     * Invoked once an entity was deleted and all <tt>afterDeleteHandlers</tt> were executed.
+     *
+     * @param entity the deleted entity
+     */
     protected void onAfterDelete(Entity entity) {
 
     }
 
+    /**
+     * Creates a schema description based on the properties of this descriptor.
+     *
+     * @return a table which represents the expected schema based on the properties of this descriptor
+     */
     protected Table createTable() {
         Table table = new Table();
         table.setName(tableName);
@@ -333,6 +434,9 @@ public class EntityDescriptor {
         return table;
     }
 
+    /**
+     * Loads all properties from the fields being present in the target type.
+     */
     protected void initialize() {
         addFields(this, AccessPath.IDENTITY, type, p -> {
             if (properties.containsKey(p.getName())) {
@@ -354,9 +458,15 @@ public class EntityDescriptor {
     @Parts(PropertyFactory.class)
     protected static PartCollection<PropertyFactory> factories;
 
+    /*
+     * Contains all known property modifies, which can re-write existing properties to fix certain needs
+     */
     @Parts(PropertyModifier.class)
     protected static PartCollection<PropertyModifier> modifiers;
 
+    /*
+     * Contains all mixins known to the system
+     */
     private static MultiMap<Class<? extends Mixable>, Class<?>> mixins;
 
     @SuppressWarnings("unchecked")
@@ -506,7 +616,15 @@ public class EntityDescriptor {
         return p;
     }
 
-    public Entity readFrom(String alias, Row row) throws Exception {
+    /**
+     * Creates an entity from the given result row.
+     *
+     * @param alias the field alias used to generate unique column names
+     * @param row   the result row to read from
+     * @return an entity containing the values of the given result row
+     * @throws Exception in case of either a type error (class cannot be instantiated) or a database error
+     */
+    protected Entity readFrom(String alias, Row row) throws Exception {
         Entity entity = type.newInstance();
         entity.fetchRow = row;
         readIdAndVersion(alias, row, entity);
@@ -533,7 +651,16 @@ public class EntityDescriptor {
         }
     }
 
-    protected Entity readFrom(String alias, Set<String> columns, ResultSet rs) throws Exception {
+    /**
+     * Creates a new entity from the given result set.
+     *
+     * @param alias   the alias which was used to generate unique column names
+     * @param columns the columns to fetch
+     * @param rs      the result set pointing to the result row to read
+     * @return a new entity containing the values of the given result set
+     * @throws Exception in case of either a type error (class cannot be instantiated) or a database error
+     */
+    public Entity readFrom(String alias, Set<String> columns, ResultSet rs) throws Exception {
         Entity entity = type.newInstance();
         readIdAndVersion(alias, columns, rs, entity);
         for (Property p : getProperties()) {
@@ -567,6 +694,13 @@ public class EntityDescriptor {
         return (alias == null) ? "id" : alias + "_id";
     }
 
+    /**
+     * Applies legacy renaming rules to determine the effective column name based on the colum name generated by the
+     * property.
+     *
+     * @param basicColumnName the generic column name generated by the property
+     * @return the (optionally) reqritten column name to match legacy schemas
+     */
     public String rewriteColumnName(String basicColumnName) {
         if (columnAliases != null && columnAliases.containsKey(basicColumnName)) {
             return columnAliases.get(basicColumnName);
@@ -599,10 +733,21 @@ public class EntityDescriptor {
         return Objects.hash(type);
     }
 
+    /**
+     * Returns the entity class managed by this descriptor.
+     *
+     * @return the entity class
+     */
     public Class<? extends Entity> getType() {
         return type;
     }
 
+    /**
+     * Returns the property for the given column.
+     *
+     * @param column the name of the property given as column
+     * @return the property which belongs to the given column
+     */
     public Property getProperty(Column column) {
         if (column.getParent() != null) {
             throw new IllegalArgumentException(Strings.apply("Cannot fetch joined property: %s", column));
@@ -610,6 +755,12 @@ public class EntityDescriptor {
         return getProperty(column.getName());
     }
 
+    /**
+     * Returns the property for the given name.
+     *
+     * @param property the name of the property
+     * @return the property with the given name
+     */
     public Property getProperty(String property) {
         Property prop = properties.get(property.replace('.', '_'));
         if (prop == null) {
@@ -624,6 +775,11 @@ public class EntityDescriptor {
         return prop;
     }
 
+    /**
+     * Each descriptor keeps a single instance of the entity as reference to determine default values etc.
+     *
+     * @return the default instance
+     */
     public Entity getReferenceInstance() {
         return referenceInstance;
     }

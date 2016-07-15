@@ -25,6 +25,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Defines the dialect used to sync the schema against a MySQL database.
+ */
 @Register(name = "mysql")
 public class MySQLDatabaseDialect implements DatabaseDialect {
 

@@ -14,7 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 15.04.15.
+ * Marks a CHAR column as CLOB / TEXT which can store very large amounts of data.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

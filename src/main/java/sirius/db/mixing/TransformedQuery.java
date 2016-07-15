@@ -15,7 +15,10 @@ import java.sql.SQLException;
 import java.util.function.Function;
 
 /**
- * Created by aha on 26.04.15.
+ * A transformed query converts a plain {@link SQLQuery} into one that returns entities rather than rows.
+ * <p>
+ * This can be used to generate complex SQL queries which still use to O/R mapper to return entity objects
+ * read from a query result.
  */
 public class TransformedQuery<E extends Entity> extends BaseQuery<E> {
 

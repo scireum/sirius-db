@@ -12,10 +12,10 @@ import sirius.db.mixing.annotations.Length;
 
 public class TestEntityWithMixin extends Entity {
 
-    @Length(length = 50)
+    @Length(50)
     private String firstname;
 
-    @Length(length = 50)
+    @Length(50)
     private String lastname;
 
     private int age;
@@ -43,5 +43,4 @@ public class TestEntityWithMixin extends Entity {
     public void setAge(int age) {
         this.age = age;
     }
-
 }

@@ -25,6 +25,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Defines the dialect used to sync the schema against a HSQL database which is used in tests.
+ */
 @Register(name = "hsqldb")
 public class HSQLDBDatabaseDialect implements DatabaseDialect {
 

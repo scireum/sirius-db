@@ -9,8 +9,8 @@
 package sirius.db.mixing.schema;
 
 import sirius.db.jdbc.Database;
-import sirius.kernel.async.TaskContext;
 import sirius.db.mixing.OMA;
+import sirius.kernel.async.TaskContext;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -20,8 +20,6 @@ import java.util.UUID;
 /**
  * Represents an action which needs to be perfomed onto a schema to make it
  * match another schema.
- *
- * @author aha
  */
 public class SchemaUpdateAction {
 
@@ -32,6 +30,11 @@ public class SchemaUpdateAction {
     private String error;
     private volatile boolean executed;
 
+    /**
+     * Contains a short description of what the change will cause.
+     *
+     * @return a short description of the change
+     */
     public String getReason() {
         return reason;
     }
@@ -40,6 +43,11 @@ public class SchemaUpdateAction {
         this.reason = reason;
     }
 
+    /**
+     * A list of SQL statements which have to be executed to perform the required change.
+     *
+     * @return a list of SQL statement which make up the change
+     */
     public List<String> getSql() {
         return sql;
     }
@@ -52,6 +60,11 @@ public class SchemaUpdateAction {
         this.sql = sql;
     }
 
+    /**
+     * Determines if dataloss is possible when executing this change.
+     *
+     * @return <tt>true</tt> if dataloss is possible (a column or table is dropped), <tt>false</tt> otherwise
+     */
     public boolean isDataLossPossible() {
         return dataLossPossible;
     }
@@ -60,14 +73,29 @@ public class SchemaUpdateAction {
         this.dataLossPossible = dataLossPossible;
     }
 
+    /**
+     * Returns an unique ID which identifies this change
+     *
+     * @return a unique ID for this change
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Returns the last error reported by the database.
+     *
+     * @return an error message, if the change was already executed and failed, <tt>null</tt> otherwise
+     */
     public String getError() {
         return error;
     }
 
+    /**
+     * Executes the change against the given database.
+     *
+     * @param db the datbase to change
+     */
     public void execute(Database db) {
         error = null;
         for (String statement : getSql()) {
@@ -83,10 +111,20 @@ public class SchemaUpdateAction {
         executed = !isFailed();
     }
 
+    /**
+     * Determines if the change was successfully executed.
+     *
+     * @return <tt>false</tt> if the last execution of this change failed, <tt>false</tt> otherwise
+     */
     public boolean isFailed() {
         return error != null;
     }
 
+    /**
+     * Determines if the change was already executed.
+     *
+     * @return <tt>true</tt> if the change was executed, <tt>false</tt> otherwise
+     */
     public boolean isExecuted() {
         return executed;
     }

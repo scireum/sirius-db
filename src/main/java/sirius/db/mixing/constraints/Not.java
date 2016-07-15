@@ -12,7 +12,7 @@ import sirius.db.mixing.Constraint;
 import sirius.db.mixing.SmartQuery;
 
 /**
- * Created by aha on 29.04.15.
+ * Inverts the given constraint.
  */
 public class Not extends Constraint {
 
@@ -22,6 +22,16 @@ public class Not extends Constraint {
         this.inner = inner;
     }
 
+    /**
+     * Creates an inverse constraint of the given one.
+     * <p>
+     * If multiple constraints are given, the are combined with AND so that they all have to be <tt>false</tt>  for
+     * this
+     * constraint to be come <tt>true</tt>.
+     *
+     * @param inner the constraints to invert
+     * @return a constraint which represents the inverse of the given constraint
+     */
     public static Not of(Constraint... inner) {
         if (inner.length == 1) {
             return new Not(inner[0]);

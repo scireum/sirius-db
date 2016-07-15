@@ -10,12 +10,12 @@ package sirius.db.mixing.schema;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import sirius.db.mixing.OMA;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
-import sirius.db.mixing.OMA;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -38,6 +38,11 @@ public class SchemaTool {
 
     private final DatabaseDialect dialect;
 
+    /**
+     * Creates a new instance for the given dialect.
+     *
+     * @param dialect the dialect to use when generatic schema change actions.
+     */
     public SchemaTool(DatabaseDialect dialect) {
         this.dialect = dialect;
     }
@@ -46,7 +51,7 @@ public class SchemaTool {
      * Reads the DB-schema for the given connection.
      */
     public List<Table> getSchema(Connection c) throws SQLException {
-        List<Table> tables = new ArrayList<Table>();
+        List<Table> tables = Lists.newArrayList();
         ResultSet rs = c.getMetaData().getTables(c.getSchema(), null, null, null);
         while (rs.next()) {
             if ("TABLE".equalsIgnoreCase(rs.getString(4))) {
@@ -74,7 +79,7 @@ public class SchemaTool {
         while (rs.next()) {
             String indexName = rs.getString("FK_NAME");
             if (indexName != null) {
-                ForeignKey fk = table.getFK(indexName);
+                ForeignKey fk = table.getForeignKey(indexName);
                 if (fk == null) {
                     fk = new ForeignKey();
                     fk.setName(indexName);
@@ -137,10 +142,21 @@ public class SchemaTool {
         rs.close();
     }
 
-    public List<SchemaUpdateAction> migrateSchemaTo(Connection c, List<Table> targetSchema, boolean dropTables)
+    /**
+     * Generates a list of schema change actions.
+     * <p>
+     * Compares the expected target schema to the database connected via the given connection.
+     *
+     * @param connection   the connection used to determine the existing schema
+     * @param targetSchema the target schema defined by {@link sirius.db.mixing.Schema}
+     * @param dropTables   determines if unknown tables should be dropped or not
+     * @return a list of change actions to that the existing schema matches the expected one
+     * @throws SQLException in case of a database error
+     */
+    public List<SchemaUpdateAction> migrateSchemaTo(Connection connection, List<Table> targetSchema, boolean dropTables)
             throws SQLException {
         List<SchemaUpdateAction> result = Lists.newArrayList();
-        List<Table> currentSchema = getSchema(c);
+        List<Table> currentSchema = getSchema(connection);
 
         List<Table> sortedTarget = sort(new ArrayList<>(targetSchema));
 
@@ -152,7 +168,9 @@ public class SchemaTool {
         return result;
     }
 
-    public void dropUnusedTables(List<SchemaUpdateAction> result, List<Table> currentSchema, List<Table> targetSchema) {
+    private void dropUnusedTables(List<SchemaUpdateAction> result,
+                                  List<Table> currentSchema,
+                                  List<Table> targetSchema) {
         for (Table table : currentSchema) {
             if (findInList(targetSchema, table) == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
@@ -164,9 +182,9 @@ public class SchemaTool {
         }
     }
 
-    public void syncRequiredTables(List<SchemaUpdateAction> result,
-                                   List<Table> currentSchema,
-                                   List<Table> sortedTarget) {
+    private void syncRequiredTables(List<SchemaUpdateAction> result,
+                                    List<Table> currentSchema,
+                                    List<Table> sortedTarget) {
         for (Table targetTable : sortedTarget) {
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
@@ -418,6 +436,12 @@ public class SchemaTool {
         return list.get(index);
     }
 
+    /**
+     * Generates a type name for the given int constant for a JDBC type defined in {@link java.sql.Types}.
+     *
+     * @param jdbcType the type to convert
+     * @return the string representation of the given type
+     */
     public static String getJdbcTypeName(int jdbcType) {
         // Use reflection to populate a map of int values to names
         if (map == null) {

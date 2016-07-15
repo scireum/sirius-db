@@ -15,16 +15,16 @@ import sirius.db.mixing.annotations.Length;
  */
 public class SmartQueryTestChildEntity extends Entity {
 
-    @Length(length = 50)
+    @Length(50)
     private String name;
     public static final Column NAME = Column.named("name");
 
-    private final EntityRef<SmartQueryTestParentEntity> parent = EntityRef.on(SmartQueryTestParentEntity.class,
-                                                                              EntityRef.OnDelete.CASCADE);
+    private final EntityRef<SmartQueryTestParentEntity> parent =
+            EntityRef.on(SmartQueryTestParentEntity.class, EntityRef.OnDelete.CASCADE);
     public static final Column PARENT = Column.named("parent");
 
-    private final EntityRef<SmartQueryTestParentEntity> otherParent = EntityRef.on(SmartQueryTestParentEntity.class,
-                                                                                   EntityRef.OnDelete.CASCADE);
+    private final EntityRef<SmartQueryTestParentEntity> otherParent =
+            EntityRef.on(SmartQueryTestParentEntity.class, EntityRef.OnDelete.CASCADE);
     public static final Column OTHER_PARENT = Column.named("otherParent");
 
     public String getName() {

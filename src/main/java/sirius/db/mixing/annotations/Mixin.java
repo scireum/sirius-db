@@ -14,10 +14,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by aha on 05.04.15.
+ * Marks a class as mixin for another taret class (which is either an {@link sirius.db.mixing.Entity} or a {@link
+ * sirius.db.mixing.Composite}).
+ * <p>
+ * A mixin can add properties to an entity or composite, which are not defined in the original class. This can be used
+ * to defined customer extensions without modifying the standard classes.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Mixin {
+    /**
+     * The target class which will inherit all properties defined by this mixing.
+     *
+     * @return the target class to extend
+     */
     Class<?> value();
 }
