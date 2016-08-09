@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
@@ -47,7 +48,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     protected List<Column> fields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Column, Boolean>> orderBys = Lists.newArrayList();
-    protected List<Constraint> containts = Lists.newArrayList();
+    protected List<Constraint> constaints = Lists.newArrayList();
     protected Database db;
 
     /**
@@ -82,7 +83,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> where(Constraint... constraints) {
-        Collections.addAll(this.containts, constraints);
+        Collections.addAll(this.constaints, constraints);
 
         return this;
     }
@@ -95,7 +96,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> eq(Column field, Object value) {
-        this.containts.add(FieldOperator.on(field).eq(value));
+        this.constaints.add(FieldOperator.on(field).eq(value));
         return this;
     }
 
@@ -109,7 +110,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> eqIgnoreNull(Column field, Object value) {
-        this.containts.add(FieldOperator.on(field).eq(value).ignoreNull());
+        this.constaints.add(FieldOperator.on(field).eq(value).ignoreNull());
         return this;
     }
 
@@ -254,7 +255,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         copy.distinct = distinct;
         copy.fields.addAll(fields);
         copy.orderBys.addAll(orderBys);
-        copy.containts.addAll(containts);
+        copy.constaints.addAll(constaints);
 
         return copy;
     }
@@ -334,6 +335,8 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         protected StringBuilder postJoinQuery = new StringBuilder();
         protected List<Object> parameters = Lists.newArrayList();
         protected Map<String, Tuple<String, EntityDescriptor>> joinTable = Maps.newTreeMap();
+        protected AtomicInteger aliasCounter = new AtomicInteger(1);
+        protected String defaultAlias = "e";
         private JoinFetch rootFetch = new JoinFetch();
 
         /**
@@ -364,9 +367,41 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             return postJoinQuery;
         }
 
+        /**
+         * Generates an unique table alias.
+         *
+         * @return a table alias which is unique within this query
+         */
+        public String generateTableAlias() {
+            return "t" + aliasCounter.getAndIncrement();
+        }
+
+        /**
+         * Returns the currently active default alias.
+         * <p>
+         * The default alias is the one, on which all field relate which do not require a join. If can be changed for
+         * inner queries like EXISTS.
+         *
+         * @return the currently active default alias
+         */
+        public String getDefaultAlias() {
+            return defaultAlias;
+        }
+
+        /**
+         * Changes the currently active default alias.
+         * <p>
+         * Care should be taken to change the alias back once building a sub query is finised.
+         *
+         * @param defaultAlias the new default alias
+         */
+        public void setDefaultAlias(String defaultAlias) {
+            this.defaultAlias = defaultAlias;
+        }
+
         private Tuple<String, EntityDescriptor> determineAlias(Column parent) {
             if (parent == null || ed == null) {
-                return Tuple.create("e", ed);
+                return Tuple.create(defaultAlias, ed);
             }
             String path = parent.toString();
             Tuple<String, EntityDescriptor> result = joinTable.get(path);
@@ -379,7 +414,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             if (joins == null) {
                 joins = new StringBuilder();
             }
-            String tableAlias = "t" + joinTable.size();
+            String tableAlias = generateTableAlias();
             joins.append(" LEFT JOIN ")
                  .append(other.getTableName())
                  .append(" ")
@@ -507,7 +542,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
         if (fields.isEmpty()) {
-            c.getSELECTBuilder().append(" e.*");
+            c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
         } else {
             if (distinct) {
                 c.getSELECTBuilder().append("DISTINCT ");
@@ -524,7 +559,9 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 c.getSELECTBuilder().append(", ");
             }
             String alias = c.determineAlias(field.getParent()).getFirst();
-            if ("e".equals(alias)) {
+            if (c.defaultAlias.equals(alias)) {
+                c.getSELECTBuilder().append(alias);
+                c.getSELECTBuilder().append(".");
                 c.getSELECTBuilder().append(field);
             } else {
                 c.getSELECTBuilder().append(alias);
@@ -562,7 +599,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
     private void where(Compiler compiler) {
         boolean hasConstraints = false;
-        for (Constraint c : containts) {
+        for (Constraint c : constaints) {
             if (c.addsConstraint()) {
                 hasConstraints = true;
                 break;
@@ -573,7 +610,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
         compiler.getWHEREBuilder().append(" WHERE ");
         Monoflop mf = Monoflop.create();
-        for (Constraint c : containts) {
+        for (Constraint c : constaints) {
             if (c.addsConstraint()) {
                 if (mf.successiveCall()) {
                     compiler.getWHEREBuilder().append(" AND ");

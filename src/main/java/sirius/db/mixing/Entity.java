@@ -207,6 +207,20 @@ public abstract class Entity extends Mixable {
     }
 
     /**
+     * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
+     * case.
+     *
+     * @param type the type for which the type name is requested
+     * @return the type name of this entity type
+     * @see #getUniqueName()
+     * @see OMA#resolve(String)
+     * @see Schema#getDescriptor(String)
+     */
+    public static String getTypeName(Class<? extends Entity> type) {
+        return type.getSimpleName().toLowerCase();
+    }
+
+    /**
      * Returns the version number of the fetched entity, used for optimistic locking.
      *
      * @return the version number fetched from the database.
@@ -229,7 +243,7 @@ public abstract class Entity extends Mixable {
                             .set("field", getDescriptor().getProperty(field).getLabel())
                             .set("value", NLS.toUserString(value))
                             .handle();
-       }
+        }
     }
 
     @Override

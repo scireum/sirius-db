@@ -135,12 +135,11 @@ public class StringProperty extends Property {
             column.setType(Types.CLOB);
         } else {
             if (column.getLength() <= 0) {
-                OMA.LOG.WARN(
-                        "Error in property '%s' ('%s' of '%s'): A string property needs a length!"
-                        + " (Use @Length to specify one). Defaulting to 255.",
-                        getName(),
-                        field.getName(),
-                        field.getDeclaringClass().getName());
+                OMA.LOG.WARN("Error in property '%s' ('%s' of '%s'): A string property needs a length!"
+                             + " (Use @Length to specify one). Defaulting to 255.",
+                             getName(),
+                             field.getName(),
+                             field.getDeclaringClass().getName());
                 column.setLength(255);
             }
         }

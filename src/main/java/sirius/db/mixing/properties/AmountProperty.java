@@ -93,12 +93,11 @@ public class AmountProperty extends Property {
                          field.getDeclaringClass().getName());
         }
         if (column.getPrecision() <= 0) {
-            OMA.LOG.WARN(
-                    "Error in property '%s' ('%s' of '%s'): An 'Amount' property needs a precision!"
-                    + " Use @Numeric to specify one. Defaulting to 15.",
-                    getName(),
-                    field.getName(),
-                    field.getDeclaringClass().getName());
+            OMA.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property needs a precision!"
+                         + " Use @Numeric to specify one. Defaulting to 15.",
+                         getName(),
+                         field.getName(),
+                         field.getDeclaringClass().getName());
             column.setPrecision(15);
         }
         if (column.getScale() > column.getPrecision()) {

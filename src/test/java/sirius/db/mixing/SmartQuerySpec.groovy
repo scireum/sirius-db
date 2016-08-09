@@ -9,11 +9,13 @@
 package sirius.db.mixing
 
 import sirius.db.jdbc.Database
+import sirius.db.mixing.constraints.Exists
+import sirius.db.mixing.constraints.FieldOperator
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import sirius.db.mixing.constraints.FieldOperator
 import spock.lang.Stepwise
 
+import java.time.Duration
 import java.util.function.Function
 import java.util.stream.Collectors
 
@@ -24,6 +26,7 @@ class SmartQuerySpec extends BaseSpecification {
     static OMA oma;
 
     def setupSpec() {
+        oma.getReadyFuture().await(Duration.ofSeconds(60));
         fillSmartQueryTestEntity();
         fillSmartQueryTestChildAndParentEntity();
     }
@@ -185,12 +188,39 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                 .fields(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
-                        SmartQueryTestChildEntity.OTHER_PARENT.join(SmartQueryTestParentEntity.NAME))
+                SmartQueryTestChildEntity.OTHER_PARENT.join(SmartQueryTestParentEntity.NAME))
                 .orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME));
         when:
         def result = qry.queryList();
         then:
         result.stream().map({ x -> x.getParent().getValue().getName() + x.getOtherParent().getValue().getName() } as Function).collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
+    }
+
+    def "exists works when referencing a child entity"() {
+        given:
+        SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestParentEntity.class).where(Exists.matchingIn(SmartQueryTestParentEntity.ID, SmartQueryTestChildEntity.class, SmartQueryTestChildEntity.PARENT));
+        when:
+        def result = qry.queryList();
+        then:
+        result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 1", "Parent 2"]
+    }
+
+    def "exists works when referencing a child entity with constraints"() {
+        given:
+        SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestParentEntity.class).where(Exists.matchingIn(SmartQueryTestParentEntity.ID, SmartQueryTestChildEntity.class, SmartQueryTestChildEntity.PARENT).where(FieldOperator.on(SmartQueryTestChildEntity.NAME).eq("Child 1")));
+        when:
+        def result = qry.queryList();
+        then:
+        result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 1"]
+    }
+
+    def "exists works when inverted"() {
+        given:
+        SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestParentEntity.class).where(Exists.notMatchingIn(SmartQueryTestParentEntity.ID, SmartQueryTestChildEntity.class, SmartQueryTestChildEntity.PARENT).where(FieldOperator.on(SmartQueryTestChildEntity.NAME).eq("Child 1")));
+        when:
+        def result = qry.queryList();
+        then:
+        result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 2"]
     }
 
 }

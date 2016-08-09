@@ -26,5 +26,4 @@ package sirius.db.mixing;
 public class OptimisticLockException extends Exception {
 
     private static final long serialVersionUID = -834083199170415643L;
-
 }

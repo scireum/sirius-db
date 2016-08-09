@@ -462,7 +462,7 @@ public abstract class Property {
         }
 
         List<Column> withinColumns =
-                Arrays.asList(unique.within()).stream().map(Column::named).collect(Collectors.toList());
+                Arrays.stream(unique.within()).map(Column::named).collect(Collectors.toList());
         entity.assertUnique(nameAsColumn, propertyValue, withinColumns.toArray(new Column[withinColumns.size()]));
     }
 

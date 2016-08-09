@@ -32,18 +32,22 @@ public class EntityRef<E extends Entity> {
          * Also delete the entity which references the entity being deleted.
          */
         CASCADE,
+
         /**
          * Set the entity reference to <tt>null</tt> once an entity is deleted.
          */
         SET_NULL,
+
         /**
          * Reject the delete.
          */
         REJECT,
+
         /**
          * Same as <tt>CASCADE</tt>, but the constraint is only enfored by the framework not the database.
          */
         SOFT_CASCADE,
+
         /**
          * Eventually the same as <tt>SOFT_CASCADE</tt>. The referencing entity will be deleted, but not instantly.
          */
