@@ -11,6 +11,7 @@ package sirius.db.mongo;
 import com.google.common.collect.Maps;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -23,7 +24,10 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Provides a thin layer above Mongo DB with fluent APIs for CRUD operations.
@@ -37,6 +41,9 @@ public class Mongo {
 
     @ConfigValue("mongo.host")
     private String dbHost;
+
+    @ConfigValue("mongo.hosts")
+    private List<String> dbHosts;
 
     @ConfigValue("mongo.db")
     private String dbName;
@@ -52,7 +59,7 @@ public class Mongo {
      * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
      */
     public boolean isConfigured() {
-        return Strings.isFilled(dbHost);
+        return Strings.isFilled(dbHost) || !dbHosts.isEmpty();
     }
 
     /**
@@ -65,7 +72,18 @@ public class Mongo {
             if (mongoClient == null) {
                 synchronized (this) {
                     if (mongoClient == null) {
-                        mongoClient = new MongoClient(dbHost);
+                        if (dbHosts.isEmpty()) {
+                            mongoClient = new MongoClient(dbHost);
+                        } else {
+                            mongoClient = new MongoClient(dbHosts.stream().map(host -> {
+                                try {
+                                    return new ServerAddress(host);
+                                } catch (UnknownHostException e) {
+                                    Exceptions.handle(LOG, e);
+                                    return null;
+                                }
+                            }).filter(Objects::nonNull).collect(Collectors.toList()));
+                        }
                         createIndices(mongoClient.getDB(dbName));
                     }
                 }
