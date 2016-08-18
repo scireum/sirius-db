@@ -109,9 +109,10 @@ public class Redis implements Lifecycle {
                           .error(e)
                           .withSystemErrorMessage("Failed to subscribe to a topic: %s (%s)")
                           .handle();
+                Wait.seconds(1);
             }
-            LOG.INFO("Terminated subscription for: %s", subscriber.getTopic());
         }
+        LOG.INFO("Terminated subscription for: %s", subscriber.getTopic());
     }
 
     @Override
