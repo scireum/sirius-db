@@ -15,6 +15,7 @@ import sirius.db.mixing.Entity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Schema;
 import sirius.db.mixing.SmartQuery;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 
 import java.util.List;
@@ -101,9 +102,9 @@ public class Exists extends Constraint {
                 .append(" WHERE ")
                 .append(compiler.translateColumnName(outerColumn))
                 .append(" = ");
-        String oldAlias = compiler.getDefaultAlias();
+        Tuple<String, EntityDescriptor> oldAlias = compiler.getDefaultAlias();
         try {
-            compiler.setDefaultAlias(newAlias);
+            compiler.setDefaultAlias(newAlias, ed);
             compiler.getWHEREBuilder().append(compiler.translateColumnName(innerColumn));
             for (Constraint c : constraints) {
                 if (c.addsConstraint()) {
@@ -112,7 +113,7 @@ public class Exists extends Constraint {
                 }
             }
         } finally {
-            compiler.setDefaultAlias(oldAlias);
+            compiler.setDefaultAlias(oldAlias.getFirst(), oldAlias.getSecond());
         }
         compiler.getWHEREBuilder().append(")");
     }

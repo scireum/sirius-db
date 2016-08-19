@@ -223,4 +223,23 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 2"]
     }
 
+    def "exists honores legacy renaming of columns"() {
+        given:
+        TestEntity te = new TestEntity();
+        te.setFirstname("LegacyTest");
+        te.setLastname("Test1");
+        oma.update(te);
+        LegacyEntity le = new LegacyEntity();
+        le.setFirstname("LegacyTest");
+        le.setLastname("Test2");
+        le.getComposite().setStreet("Street");
+        le.getComposite().setCity("Test-City");
+        le.getComposite().setZip("1245");
+        oma.update(le);
+        when:
+        SmartQuery<TestEntity> qry = oma.select(TestEntity.class).where(Exists.matchingIn(Column.named("firstname"), LegacyEntity.class, Column.named("firstname")).where(FieldOperator.on(Column.named("lastname")).eq("Test2")));
+        then:
+        qry.count() == 1
+    }
+
 }

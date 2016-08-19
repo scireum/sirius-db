@@ -377,26 +377,29 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         /**
-         * Returns the currently active default alias.
+         * Returns the currently active default alias along with the corresponding <tt>EntityDescritpor</tt>
          * <p>
-         * The default alias is the one, on which all field relate which do not require a join. If can be changed for
+         * The default alias is the one, on which all field relate which do not require a join. It can be changed for
          * inner queries like EXISTS.
          *
-         * @return the currently active default alias
+         * @return the currently active default alias and entity descriptor as tuple
          */
-        public String getDefaultAlias() {
-            return defaultAlias;
+        public Tuple<String, EntityDescriptor> getDefaultAlias() {
+            return Tuple.create(defaultAlias, ed);
         }
 
         /**
-         * Changes the currently active default alias.
+         * Changes the currently active default alias and entity descriptor.
          * <p>
          * Care should be taken to change the alias back once building a sub query is finised.
          *
-         * @param defaultAlias the new default alias
+         * @param defaultAlias         the new default alias
+         * @param newDefaultDescriptor the new default entity descriptor matching the table referenced by the given
+         *                             alias
          */
-        public void setDefaultAlias(String defaultAlias) {
+        public void setDefaultAlias(String defaultAlias, EntityDescriptor newDefaultDescriptor) {
             this.defaultAlias = defaultAlias;
+            this.ed = newDefaultDescriptor;
         }
 
         private Tuple<String, EntityDescriptor> determineAlias(Column parent) {
@@ -437,8 +440,9 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
          * @return the translated name which is used in the database
          */
         public String translateColumnName(Column column) {
-            String alias = determineAlias(column.getParent()).getFirst();
-            return alias + "." + ed.rewriteColumnName(column.getName());
+            Tuple<String, EntityDescriptor> aliasAndDescriptor = determineAlias(column.getParent());
+            return aliasAndDescriptor.getFirst() + "." + aliasAndDescriptor.getSecond()
+                                                                           .rewriteColumnName(column.getName());
         }
 
         private void createJoinFetch(Column field) {
