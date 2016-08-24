@@ -32,8 +32,23 @@ public class Row {
      * @return the underlying map, containing all fields and values. Modifying this map will modify the row
      */
     @Nonnull
-    public Collection<Tuple<String, Object>> getFields() {
+    public Collection<Tuple<String, Object>> getFieldsList() {
         return fields.values();
+    }
+
+    /**
+     * Returns the underlying row as map.
+     *
+     * @deprecated use {@link #getFieldsList()} which honors the field names in terms of upper- and lowercase.
+     */
+    @Nonnull
+    @Deprecated
+    public Map<String, Object> getFields() {
+        Map<String, Object> result = Maps.newTreeMap();
+        for (Map.Entry<String, Tuple<String, Object>> field : fields.entrySet()) {
+            result.put(field.getKey(), field.getValue().getSecond());
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     /**
