@@ -226,14 +226,14 @@ public class SQLQuery {
             if (fieldNames != null) {
                 fieldName = fieldNames.get(col - 1);
             } else {
-                fieldName = rs.getMetaData().getColumnLabel(col).toUpperCase();
+                fieldName = rs.getMetaData().getColumnLabel(col);
                 fetchedFieldNames.add(fieldName);
             }
             Object obj = rs.getObject(col);
             if (obj instanceof Blob) {
                 writeBlobToParameter(fieldName, rs, col, (Blob) obj);
             } else {
-                row.fields.put(fieldName, obj);
+                row.fields.put(fieldName.toUpperCase(), obj);
             }
         }
 
