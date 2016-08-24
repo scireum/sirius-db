@@ -132,10 +132,12 @@ public class SQLQuery {
                 if (limit.getTotalItems() > 0) {
                     stmt.setMaxRows(limit.getTotalItems());
                 }
-                if (ds.hasCapability(Capability.STREAMING)) {
-                    stmt.setFetchSize(Integer.MIN_VALUE);
-                } else {
-                    stmt.setFetchSize(1000);
+                if (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0) {
+                    if (ds.hasCapability(Capability.STREAMING)) {
+                        stmt.setFetchSize(Integer.MIN_VALUE);
+                    } else {
+                        stmt.setFetchSize(1000);
+                    }
                 }
                 try (ResultSet rs = stmt.executeQuery()) {
                     TaskContext tc = TaskContext.get();

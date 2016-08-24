@@ -311,10 +311,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         if (!nativeLimit && limit.getTotalItems() > 0) {
             stmt.setMaxRows(limit.getTotalItems());
         }
-        if (db.hasCapability(Capability.STREAMING) && (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0)) {
-            stmt.setFetchSize(Integer.MIN_VALUE);
-        } else {
-            stmt.setFetchSize(1000);
+        if (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0) {
+            if (db.hasCapability(Capability.STREAMING)) {
+                stmt.setFetchSize(Integer.MIN_VALUE);
+            } else {
+                stmt.setFetchSize(1000);
+            }
         }
     }
 
