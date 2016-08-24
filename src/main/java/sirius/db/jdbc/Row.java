@@ -10,9 +10,11 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Maps;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +24,7 @@ import java.util.Map;
  */
 public class Row {
 
-    protected Map<String, Object> fields = Maps.newTreeMap();
-    protected List<String> fieldNames;
+    protected Map<String, Tuple<String, Object>> fields = Maps.newTreeMap();
 
     /**
      * Returns all stored fields as map.
@@ -31,12 +32,8 @@ public class Row {
      * @return the underlying map, containing all fields and values. Modifying this map will modify the row
      */
     @Nonnull
-    public Map<String, Object> getFields() {
-        return fields;
-    }
-
-    public List<String> getFieldNames() {
-        return fieldNames == null ? Collections.emptyList() : fieldNames;
+    public Collection<Tuple<String, Object>> getFields() {
+        return fields.values();
     }
 
     /**
@@ -63,7 +60,7 @@ public class Row {
         if (!fields.containsKey(upperCaseKey)) {
             throw new IllegalArgumentException(Strings.apply("Unknown column: %s in %s", upperCaseKey, this));
         }
-        return Value.of(fields.get(upperCaseKey));
+        return Value.of(fields.get(upperCaseKey).getSecond());
     }
 
     /**
@@ -90,7 +87,7 @@ public class Row {
      * @param value the value to be stored
      */
     public void setValue(@Nonnull String key, Object value) {
-        fields.put(key.toUpperCase(), value);
+        fields.put(key.toUpperCase(), Tuple.create(key, value));
     }
 
     @Override

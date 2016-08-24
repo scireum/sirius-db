@@ -13,6 +13,7 @@ import com.google.common.io.ByteStreams;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Limit;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 
@@ -233,14 +234,13 @@ public class SQLQuery {
             if (obj instanceof Blob) {
                 writeBlobToParameter(fieldName, rs, col, (Blob) obj);
             } else {
-                row.fields.put(fieldName.toUpperCase(), obj);
+                row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
             }
         }
 
         if (fieldNames == null) {
             fieldNames = Collections.unmodifiableList(fetchedFieldNames);
         }
-        row.fieldNames = fieldNames;
 
         return row;
     }
@@ -323,7 +323,8 @@ public class SQLQuery {
             Row row = new Row();
             if (rs.next()) {
                 for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-                    row.fields.put(rs.getMetaData().getColumnLabel(col), rs.getObject(col));
+                    row.fields.put(rs.getMetaData().getColumnLabel(col).toUpperCase(),
+                                   Tuple.create(rs.getMetaData().getColumnLabel(col), rs.getObject(col)));
                 }
             }
             return row;
