@@ -1,4 +1,4 @@
-# sirius-web
+# sirius-db
 
 Provides a modern and highly flexible ORM for relational databases. Also contains a thin layer above JDBC to
 effectifely and safely query relational databases. It also provides a simple wrapper for executing Redis
