@@ -62,7 +62,7 @@ public class Column {
     }
 
     /**
-     * Creates a new <tt>Column></tt> for a mixin class.
+     * Creates a new <tt>Column</tt> for a mixin class.
      *
      * @param mixinType the class which defines the mixin
      * @return a column representing the mixin

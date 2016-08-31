@@ -370,6 +370,7 @@ public abstract class Property {
     /**
      * Parses the given value and applies it to the given entity if possible.
      *
+     * @param e     the entity to receive the parsed value
      * @param value the value to parse and apply
      */
     public void parseValue(Entity e, Value value) {
@@ -461,8 +462,7 @@ public abstract class Property {
             return;
         }
 
-        List<Column> withinColumns =
-                Arrays.stream(unique.within()).map(Column::named).collect(Collectors.toList());
+        List<Column> withinColumns = Arrays.stream(unique.within()).map(Column::named).collect(Collectors.toList());
         entity.assertUnique(nameAsColumn, propertyValue, withinColumns.toArray(new Column[withinColumns.size()]));
     }
 

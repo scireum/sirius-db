@@ -9,11 +9,17 @@
         <version>3.1</version>
     </parent>
     <artifactId>sirius-db</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <name>SIRIUS DB</name>
-    <description>Todo</description>
+    <description>
+        Provides a modern and highly flexible ORM for relational databases. Also contains a thin layer above JDBC to
+        effectifely and safely query relational databases. It also provides a simple wrapper for executing Redis
+        queries (while monitoring the call and system health and utilizing the system configuration). Finally a
+        thin but smart wrapper for MongoDB is provided which helps to access MongoDB databases while monitoring the
+        call duration and system health.
+    </description>
     <url>http://www.sirius-lib.net</url>
 
     <dependencies>

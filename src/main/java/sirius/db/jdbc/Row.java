@@ -39,6 +39,7 @@ public class Row {
     /**
      * Returns the underlying row as map.
      *
+     * @return a map containing all fields and values represented by this row
      * @deprecated use {@link #getFieldsList()} which honors the field names in terms of upper- and lowercase.
      */
     @Nonnull
