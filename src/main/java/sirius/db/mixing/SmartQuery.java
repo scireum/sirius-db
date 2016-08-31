@@ -54,7 +54,6 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     /**
      * Creates a new query instance.
      * <p>
-     * <p>
      * Use {@link OMA#select(Class)} to create a new query.
      *
      * @param type the entity type to select
