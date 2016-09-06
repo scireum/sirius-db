@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Row {
 
-    protected Map<String, Tuple<String, Object>> fields = Maps.newTreeMap();
+    protected Map<String, Tuple<String, Object>> fields = Maps.newLinkedHashMap();
 
     /**
      * Returns all stored fields as map.
