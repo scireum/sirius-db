@@ -41,6 +41,12 @@ public class TransactionContext implements SubContext {
     }
 
     @Override
+    public SubContext fork() {
+        // Transactions are not shared accross threads...
+        return new TransactionContext();
+    }
+
+    @Override
     public void detach() {
         for (Map.Entry<String, List<Transaction>> entry : txns.entrySet()) {
             if (!entry.getValue().isEmpty()) {
