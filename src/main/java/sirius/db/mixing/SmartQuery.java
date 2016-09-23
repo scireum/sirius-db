@@ -428,7 +428,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                  .append(".id = ")
                  .append(parentAlias.getFirst())
                  .append(".")
-                 .append(parent.getName());
+                 .append(parentAlias.getSecond().rewriteColumnName(parent.getName()));
             result = Tuple.create(tableAlias, other);
             joinTable.put(path, result);
             return result;
