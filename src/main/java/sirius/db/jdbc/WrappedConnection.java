@@ -44,6 +44,7 @@ class WrappedConnection implements Connection {
     WrappedConnection(Connection c, Database ds) {
         this.delegate = c;
         this.ds = ds;
+        Databases.numUses.inc();
     }
 
     @Override
