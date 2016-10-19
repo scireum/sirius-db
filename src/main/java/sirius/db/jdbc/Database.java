@@ -357,7 +357,7 @@ public class Database {
                     }
                     fields.append(entry.getKey());
                     values.append("?");
-                    valueList.add(entry.getValue());
+                    valueList.add(Databases.convertValue(entry.getValue()));
                 }
             }
             String sql = "INSERT INTO " + table + " (" + fields + ") VALUES(" + values + ")";

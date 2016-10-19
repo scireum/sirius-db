@@ -8,19 +8,10 @@
 
 package sirius.db.mixing.constraints;
 
+import sirius.db.jdbc.Databases;
 import sirius.db.mixing.Column;
 import sirius.db.mixing.Constraint;
-import sirius.db.mixing.Entity;
-import sirius.db.mixing.EntityRef;
 import sirius.db.mixing.SmartQuery;
-import sirius.kernel.commons.Amount;
-
-import java.sql.Date;
-import java.sql.Time;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 
 /**
  * Represents a relational operator applied on a field.
@@ -167,39 +158,9 @@ public class FieldOperator extends Constraint {
                 }
             }
             compiler.getWHEREBuilder().append(compiler.translateColumnName(field)).append(op).append(" ?");
-            compiler.addParameter(convertValue(value));
+            compiler.addParameter(Databases.convertValue(value));
         }
     }
 
-    private Object convertValue(Object value) {
-        if (value == null) {
-            return value;
-        }
-        if (value instanceof LocalDateTime) {
-            return ((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        }
-        if (value instanceof LocalDate) {
-            return new Date(((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
-        }
-        if (value instanceof LocalTime) {
-            return new Time(((LocalTime) value).atDate(LocalDate.of(1970, 01, 01))
-                                               .atZone(ZoneId.systemDefault())
-                                               .toInstant()
-                                               .toEpochMilli());
-        }
-        if (value instanceof Amount) {
-            return ((Amount) value).getAmount();
-        }
-        if (value.getClass().isEnum()) {
-            return ((Enum<?>) value).name();
-        }
-        if (value instanceof EntityRef) {
-            return ((EntityRef<?>) value).getId();
-        }
-        if (value instanceof Entity) {
-            return ((Entity) value).getId();
-        }
 
-        return value;
-    }
 }
