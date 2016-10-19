@@ -291,7 +291,8 @@ public class SchemaTool {
                 action.setSql(dialect.generateAddKey(targetTable, targetKey));
                 result.add(action);
             } else {
-                if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())) {
+                if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
+                    || targetKey.isUnique() != otherKey.isUnique()) {
                     SchemaUpdateAction action = new SchemaUpdateAction();
                     action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
                                         .set("key", targetKey.getName())

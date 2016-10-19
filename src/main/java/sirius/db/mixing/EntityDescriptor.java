@@ -17,9 +17,11 @@ import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
 import sirius.db.mixing.annotations.BeforeSave;
+import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.schema.Key;
 import sirius.db.mixing.schema.Table;
 import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.Sirius;
@@ -409,6 +411,16 @@ public class EntityDescriptor {
 
         for (Property p : properties.values()) {
             p.contributeToTable(table);
+        }
+
+        for(Index index : getType().getAnnotationsByType(Index.class)) {
+            Key key = new Key();
+            key.setName(index.name());
+            for(int i = 0; i < index.columns().length ; i++) {
+                key.addColumn(i, index.columns()[i]);
+            }
+            key.setUnique(index.unique());
+            table.getKeys().add(key);
         }
 
         if (legacyInfo != null && legacyInfo.hasPath("rename")) {
