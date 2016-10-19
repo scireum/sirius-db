@@ -84,7 +84,7 @@ public abstract class QueryBuilder<S> {
             }
         }
 
-        // That's the best ques anyway
+        // That's the best guess anyway
         return Values.of(stackTrace).at(5).asString("<unknown>");
     }
 
