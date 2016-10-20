@@ -11,10 +11,16 @@ package sirius.db.mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 
+import java.time.Duration
+
 class LegacySpec extends BaseSpecification {
 
     @Part
     private static OMA oma;
+
+    def setupSpec() {
+        oma.getReadyFuture().await(Duration.ofSeconds(60));
+    }
 
     def "check if aliasing for columns work"() {
         given:

@@ -13,6 +13,7 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
 
+import java.time.Duration
 import java.util.function.Function
 import java.util.stream.Collectors
 
@@ -23,6 +24,8 @@ class TransformedQuerySpec extends BaseSpecification {
     static OMA oma;
 
     def setupSpec() {
+        oma.getReadyFuture().await(Duration.ofSeconds(60));
+
         TransformedQueryTestEntity e = new TransformedQueryTestEntity();
         e.setValue("Test");
         oma.update(e);
