@@ -413,10 +413,10 @@ public class EntityDescriptor {
             p.contributeToTable(table);
         }
 
-        for(Index index : getType().getAnnotationsByType(Index.class)) {
+        for (Index index : getType().getAnnotationsByType(Index.class)) {
             Key key = new Key();
             key.setName(index.name());
-            for(int i = 0; i < index.columns().length ; i++) {
+            for (int i = 0; i < index.columns().length; i++) {
                 key.addColumn(i, index.columns()[i]);
             }
             key.setUnique(index.unique());
