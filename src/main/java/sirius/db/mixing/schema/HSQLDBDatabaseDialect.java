@@ -241,10 +241,17 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
 
     @Override
     public String generateAddKey(Table table, Key key) {
-        return MessageFormat.format("ALTER TABLE {0} ADD INDEX {1} ({2})",
-                                    table.getName(),
-                                    key.getName(),
-                                    listToString(key.getColumns()));
+        if (key.isUnique()) {
+            return MessageFormat.format("ALTER TABLE {0} ADD CONSTRAINT {1} UNIQUE ({2})",
+                                        table.getName(),
+                                        key.getName(),
+                                        listToString(key.getColumns()));
+        } else {
+            return MessageFormat.format("ALTER TABLE {0} ADD INDEX {1} ({2})",
+                                        table.getName(),
+                                        key.getName(),
+                                        listToString(key.getColumns()));
+        }
     }
 
     @Override
@@ -319,15 +326,17 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
                                            getDefaultValueAsString(col)));
         }
         for (Key key : table.getKeys()) {
-            sb.append(MessageFormat.format(",\n   KEY {0} ({1})", key.getName(), listToString(key.getColumns())));
+            if (key.isUnique()) {
+                sb.append(MessageFormat.format(",\n   CONSTRAINT {0} UNIQUE ({1})",
+                                               key.getName(),
+                                               listToString(key.getColumns())));
+            } else {
+                sb.append(MessageFormat.format(",\n   KEY {0} ({1})", key.getName(), listToString(key.getColumns())));
+            }
         }
-        for (ForeignKey key : table.getForeignKeys()) {
-            sb.append(MessageFormat.format(",\n   CONSTRAINT {0} FOREIGN KEY ({1}) REFERENCES {2} ({3})",
-                                           key.getName(),
-                                           listToString(key.getColumns()),
-                                           key.getForeignTable(),
-                                           listToString(key.getForeignColumns())));
-        }
+
+        // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
+        // cannot be created. Therefore only the PK is generated....
         if (!hasIdentityColumn) {
             sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})", listToString(table.getPrimaryKey())));
         }

@@ -242,10 +242,17 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
 
     @Override
     public String generateAddKey(Table table, Key key) {
-        return MessageFormat.format("ALTER TABLE `{0}` ADD INDEX `{1}` ({2})",
-                                    table.getName(),
-                                    key.getName(),
-                                    listToString(key.getColumns()));
+        if (key.isUnique()) {
+            return MessageFormat.format("ALTER TABLE `{0}` ADD CONSTRAINT `{1}` UNIQUE ({2})",
+                                        table.getName(),
+                                        key.getName(),
+                                        listToString(key.getColumns()));
+        } else {
+            return MessageFormat.format("ALTER TABLE `{0}` ADD INDEX `{1}` ({2})",
+                                        table.getName(),
+                                        key.getName(),
+                                        listToString(key.getColumns()));
+        }
     }
 
     @Override
@@ -310,11 +317,16 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
                                            getDefaultValueAsString(col)));
         }
         for (Key key : table.getKeys()) {
-            sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(), listToString(key.getColumns())));
+            if (key.isUnique()) {
+                sb.append(MessageFormat.format("   CONSTRAINT `{0}` UNIQUE ({1}),\n",
+                                               key.getName(),
+                                               listToString(key.getColumns())));
+            } else {
+                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(), listToString(key.getColumns())));
+            }
         }
-        // AHA 02.11.11 - We rely on the sync tool, to generate the constraints
-        // in the next run. Otherwise table with cross-references cannot be
-        // created. Therefore only the PK is generated....
+        // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
+        // cannot be created. Therefore only the PK is generated....
         sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB", listToString(table.getPrimaryKey())));
         return sb.toString();
     }

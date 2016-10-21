@@ -13,27 +13,26 @@ import sirius.kernel.di.std.Part
 
 import java.time.Duration
 
-class StringPropertySpec extends BaseSpecification {
+class LongPropertySpec extends BaseSpecification {
 
     @Part
     private static OMA oma;
 
-    @Part
-    private static Schema schema;
+    def setupSpec() {
+        oma.getReadyFuture().await(Duration.ofSeconds(60));
+    }
 
-    def "reading and writing clobs works"() {
+    def "reading and writing long works"() {
         given:
-        schema.getReadyFuture().await(Duration.ofSeconds(45));
-        and:
-        TestClobEntity test = new TestClobEntity();
+        LongEntity test = new LongEntity();
         when:
-        test.setLargeValue("This is a test");
+        test.setLongValue(Long.MAX_VALUE);
         and:
         oma.update(test);
         and:
         test = oma.refreshOrFail(test);
         then:
-        test.getLargeValue() == "This is a test"
+        test.getLongValue() == Long.MAX_VALUE
     }
 
 }

@@ -12,11 +12,17 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
 
+import java.time.Duration
+
 @Stepwise
 class OMASpec extends BaseSpecification {
 
     @Part
     static OMA oma;
+
+    def setupSpec() {
+        oma.getReadyFuture().await(Duration.ofSeconds(60));
+    }
 
     def "write a test entity and read it back"() {
         given:

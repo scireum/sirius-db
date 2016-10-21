@@ -19,10 +19,7 @@ import sirius.kernel.nls.NLS;
 import java.lang.reflect.Field;
 import java.sql.Time;
 import java.sql.Types;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.function.Consumer;
 
 /**
@@ -69,16 +66,11 @@ public class LocalTimeProperty extends Property {
         if (object == null) {
             return null;
         }
-        return Instant.ofEpochMilli(((Time) object).getTime()).atZone(ZoneId.systemDefault()).toLocalTime();
+        return ((Time) object).toLocalTime();
     }
 
     @Override
     protected Object transformToColumn(Object object) {
-        return object == null ?
-               null :
-               new Time(((LocalTime) object).atDate(LocalDate.of(1970, 01, 01))
-                                            .atZone(ZoneId.systemDefault())
-                                            .toInstant()
-                                            .toEpochMilli());
+        return object == null ? null : Time.valueOf((LocalTime) object);
     }
 }

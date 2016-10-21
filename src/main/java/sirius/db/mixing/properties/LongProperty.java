@@ -63,6 +63,6 @@ public class LongProperty extends Property {
 
     @Override
     protected int getSQLType() {
-        return Types.INTEGER;
+        return Types.BIGINT;
     }
 }

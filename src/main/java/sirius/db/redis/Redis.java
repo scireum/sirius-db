@@ -371,7 +371,7 @@ public class Redis implements Lifecycle {
      * Tries to acquire the given lock in the given timeslot.
      * <p>
      * The system will try to acquire the given lock. If the lock is currently in use, it will retry
-     * in 1 second intervals until either the lock is acquired or the <tt>acquireTimeout</tt> is over.
+     * in regular intervals until either the lock is acquired or the <tt>acquireTimeout</tt> is over.
      * <p>
      * A sane value for the timeout might be in the range of 5-50s, highly depending on the algorithm
      * being protected by the lock. If the value is <tt>null</tt>, no retries will be performed.
@@ -411,7 +411,7 @@ public class Redis implements Lifecycle {
                 }
 
                 Wait.millis(waitInMillis);
-                waitInMillis += 1000;
+                waitInMillis = Math.min(1500, waitInMillis + 500);
             } while (System.currentTimeMillis() < timeout);
             return false;
         } catch (Throwable e) {

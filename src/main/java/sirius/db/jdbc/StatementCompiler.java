@@ -13,7 +13,6 @@ import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Reflection;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
-import sirius.kernel.commons.Value;
 import sirius.kernel.nls.NLS;
 
 import java.sql.Connection;
@@ -21,10 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.ZoneId;
-import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -77,27 +73,11 @@ class StatementCompiler {
         for (Object param : params) {
             if (param instanceof Collection<?>) {
                 for (Object obj : (Collection<?>) param) {
-                    if (obj instanceof TemporalAccessor) {
-                        parameters.add(Tuple.create(++index,
-                                                    Date.from(Value.of(obj)
-                                                                   .asLocalDateTime(null)
-                                                                   .atZone(ZoneId.systemDefault())
-                                                                   .toInstant())));
-                    } else {
-                        parameters.add(Tuple.create(++index, obj));
-                    }
+                    parameters.add(Tuple.create(++index, Databases.convertValue(obj)));
                     Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
                 }
             } else {
-                if (param instanceof TemporalAccessor) {
-                    parameters.add(Tuple.create(++index,
-                                                Date.from(Value.of(param)
-                                                               .asLocalDateTime(null)
-                                                               .atZone(ZoneId.systemDefault())
-                                                               .toInstant())));
-                } else {
-                    parameters.add(Tuple.create(++index, param));
-                }
+                parameters.add(Tuple.create(++index, Databases.convertValue(param)));
                 Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(param));
             }
         }

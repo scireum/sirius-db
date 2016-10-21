@@ -9,6 +9,10 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Maps;
+import sirius.db.mixing.Entity;
+import sirius.db.mixing.EntityRef;
+import sirius.kernel.commons.Amount;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Average;
@@ -17,6 +21,13 @@ import sirius.kernel.health.Log;
 import sirius.kernel.health.metrics.MetricProvider;
 import sirius.kernel.health.metrics.MetricsCollector;
 
+import javax.annotation.Nullable;
+import java.sql.Date;
+import java.sql.Time;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,7 +45,12 @@ import java.util.stream.Collectors;
 public class Databases {
 
     protected static final Log LOG = Log.get("db");
+    protected static final Log SLOW_QUERIES_LOG = Log.get("db-slow-queries");
     private static final Map<String, Database> datasources = Maps.newConcurrentMap();
+
+    @ConfigValue("jdbc.logQueryThreshold")
+    private static Duration longQueryThreshold;
+    private static long longQueryThresholdMillis = -1;
 
     protected static Counter numUses = new Counter();
     protected static Counter numQueries = new Counter();
@@ -51,6 +67,11 @@ public class Databases {
             // Only report statistics if we have at least one database connection...
             if (!datasources.isEmpty()) {
                 collector.differentialMetric("jdbc-use", "db-uses", "JDBC Uses", numUses.getCount(), "/min");
+                int highestUtilization = 0;
+                for (Database db : datasources.values()) {
+                    highestUtilization = Math.max(highestUtilization, db.getNumActive() * 100 / db.getSize());
+                }
+                collector.metric("db-pool-utilization", "JDBC Pool Utilization (max)", highestUtilization, "%");
                 collector.differentialMetric("jdbc-queries",
                                              "db-queries",
                                              "JDBC Queries",
@@ -100,5 +121,111 @@ public class Databases {
      */
     public boolean hasDatabase(String name) {
         return Extensions.getExtension("jdbc.database", name) != null;
+    }
+
+    /**
+     * Converts the threshold into a long containing milliseconds for performance reasons.
+     *
+     * @return the threshold for long queries in milliseconds
+     */
+    protected static long getLongQueryThresholdMillis() {
+        if (longQueryThresholdMillis < 0) {
+            longQueryThresholdMillis = longQueryThreshold.toMillis();
+        }
+
+        return longQueryThresholdMillis;
+    }
+
+    private static final long SECOND_SHIFT = 1;
+    private static final long MINUTE_SHIFT = SECOND_SHIFT * 100;
+    private static final long HOUR_SHIFT = MINUTE_SHIFT * 100;
+    private static final long DAY_SHIFT = HOUR_SHIFT * 100;
+    private static final long MONTH_SHIFT = DAY_SHIFT * 100;
+    private static final long YEAR_SHIFT = MONTH_SHIFT * 100;
+
+    /**
+     * Encodes a <tt>LocalDateTime</tt> as a long.
+     * <p>
+     * Basically the generated long consists of year_month_day_hour_minute_second to support sorting and ordering.
+     * Also we do not use timestamps as MySQL does autoupdate these unexpectedly and also because we do not need the
+     * millisecond resolution (it can even lead to errors).
+     *
+     * @param date the date to encode
+     * @return the date encoded as a sortable long or -1 if the given value was <tt>null</tt>
+     */
+    public static long encodeLocalDateTime(@Nullable LocalDateTime date) {
+        if (date == null) {
+            return -1;
+        }
+        return date.getSecond() * SECOND_SHIFT
+               + date.getMinute() * MINUTE_SHIFT
+               + date.getHour() * HOUR_SHIFT
+               + date.getDayOfMonth() * DAY_SHIFT
+               + date.getMonthValue() * MONTH_SHIFT
+               + date.getYear() * YEAR_SHIFT;
+    }
+
+    /**
+     * Decodes a long back into a <tt>LocalDateTime</tt>.
+     * <p>
+     * This is the inverse of {@link #encodeLocalDateTime(LocalDateTime)}.
+     *
+     * @param date the number to decode
+     * @return the decoded date and time or <tt>null</tt> if the given number was negative
+     */
+    @Nullable
+    public static LocalDateTime decodeLocalDateTime(long date) {
+        if (date < 0) {
+            return null;
+        }
+
+        int year = (int) (date / YEAR_SHIFT);
+        date = date % YEAR_SHIFT;
+
+        int month = (int) (date / MONTH_SHIFT);
+        date = date % MONTH_SHIFT;
+
+        int day = (int) (date / DAY_SHIFT);
+        date = date % DAY_SHIFT;
+
+        int hour = (int) (date / HOUR_SHIFT);
+        date = date % HOUR_SHIFT;
+
+        int minute = (int) (date / MINUTE_SHIFT);
+        date = date % MINUTE_SHIFT;
+
+        int second = (int) (date / SECOND_SHIFT);
+
+        return LocalDateTime.of(year, month, day, hour, minute, second);
+    }
+
+
+    public static Object convertValue(Object value) {
+        if (value == null) {
+            return value;
+        }
+        if (value instanceof LocalDateTime) {
+            return encodeLocalDateTime((LocalDateTime) value);
+        }
+        if (value instanceof LocalDate) {
+            return Date.valueOf((LocalDate) value);
+        }
+        if (value instanceof LocalTime) {
+            return Time.valueOf((LocalTime) value);
+        }
+        if (value instanceof Amount) {
+            return ((Amount) value).getAmount();
+        }
+        if (value.getClass().isEnum()) {
+            return ((Enum<?>) value).name();
+        }
+        if (value instanceof EntityRef) {
+            return ((EntityRef<?>) value).getId();
+        }
+        if (value instanceof Entity) {
+            return ((Entity) value).getId();
+        }
+
+        return value;
     }
 }
