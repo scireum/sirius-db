@@ -161,6 +161,4 @@ public class FieldOperator extends Constraint {
             compiler.addParameter(Databases.convertValue(value));
         }
     }
-
-
 }
