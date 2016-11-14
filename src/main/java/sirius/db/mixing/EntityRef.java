@@ -120,6 +120,22 @@ public class EntityRef<E extends Entity> {
     }
 
     /**
+     * Returns the <tt>Unique Object Name</tt> for the referenced entity.
+     *
+     * @return the unique object name of the referenced entity or <tt>null</tt> if the reference is empty.
+     * @see Entity#getUniqueName()
+     * @see OMA#resolve(String)
+     * @see Schema#getDescriptor(String)
+     */
+    public String getUniqueObjectName() {
+        if (id == null) {
+            return null;
+        }
+
+        return Entity.getNameForType(type) + "-" + id;
+    }
+
+    /**
      * Returns the effective entity object which is referenced.
      * <p>
      * Note, this might cause a database lookup if the entity is not prefetched.

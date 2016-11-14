@@ -56,10 +56,11 @@ public abstract class QueryBuilder<S> {
     @SuppressWarnings("unchecked")
     public S where(Filter filter) {
         if (filterObject.containsField(filter.key)) {
-            throw new IllegalArgumentException(Strings.apply(
-                    "A constraint for %s was already specified. Please use Filter.and to combine multiple constraints on one field. Filter: %s",
-                    filter.key,
-                    filterObject.toString()));
+            throw new IllegalArgumentException(Strings.apply("A constraint for %s was already specified. "
+                                                             + "Please use Filter.and to combine multiple constraints "
+                                                             + "on one field. Filter: %s",
+                                                             filter.key,
+                                                             filterObject.toString()));
         }
         filterObject.put(filter.key, filter.object);
         return (S) this;

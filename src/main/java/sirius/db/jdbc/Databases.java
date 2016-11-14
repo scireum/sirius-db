@@ -17,6 +17,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.health.metrics.MetricProvider;
 import sirius.kernel.health.metrics.MetricsCollector;
@@ -24,10 +25,13 @@ import sirius.kernel.health.metrics.MetricsCollector;
 import javax.annotation.Nullable;
 import java.sql.Date;
 import java.sql.Time;
+import java.time.DateTimeException;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -170,15 +174,15 @@ public class Databases {
      * <p>
      * This is the inverse of {@link #encodeLocalDateTime(LocalDateTime)}.
      *
-     * @param date the number to decode
+     * @param timestamp the number to decode
      * @return the decoded date and time or <tt>null</tt> if the given number was negative
      */
     @Nullable
-    public static LocalDateTime decodeLocalDateTime(long date) {
-        if (date < 0) {
+    public static LocalDateTime decodeLocalDateTime(long timestamp) {
+        if (timestamp < 0) {
             return null;
         }
-
+        long date = timestamp;
         int year = (int) (date / YEAR_SHIFT);
         date = date % YEAR_SHIFT;
 
@@ -196,10 +200,20 @@ public class Databases {
 
         int second = (int) (date / SECOND_SHIFT);
 
-        return LocalDateTime.of(year, month, day, hour, minute, second);
+        try {
+            return LocalDateTime.of(year, month, day, hour, minute, second);
+        } catch (DateTimeException e) {
+            Exceptions.ignore(e);
+            return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        }
     }
 
-
+    /**
+     * Transforms the given value into its database representation.
+     *
+     * @param value the value to transform
+     * @return the database level representation of the given value
+     */
     public static Object convertValue(Object value) {
         if (value == null) {
             return value;

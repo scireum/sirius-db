@@ -197,13 +197,27 @@ public abstract class Entity extends Mixable {
      * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
      * case.
      *
+     * @param type the entity class to generate the type name for.
+     * @return the type name of the given type
+     * @see #getUniqueName()
+     * @see OMA#resolve(String)
+     * @see Schema#getDescriptor(String)
+     */
+    public static <E extends Entity> String getNameForType(Class<E> type) {
+        return type.getSimpleName().toUpperCase();
+    }
+
+    /**
+     * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
+     * case.
+     *
      * @return the type name of this entity type
      * @see #getUniqueName()
      * @see OMA#resolve(String)
      * @see Schema#getDescriptor(String)
      */
     public String getTypeName() {
-        return getClass().getSimpleName().toUpperCase();
+        return getNameForType(getClass());
     }
 
     /**

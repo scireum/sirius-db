@@ -565,7 +565,9 @@ public class EntityDescriptor {
             }
         }
 
-        if (clazz.getSuperclass() != null && !Object.class.equals(clazz.getSuperclass())) {
+        if (clazz.getSuperclass() != null
+            && !Mixable.class.equals(clazz.getSuperclass())
+            && !Object.class.equals(clazz.getSuperclass())) {
             addFields(descriptor, accessPath, rootClass, clazz.getSuperclass(), propertyConsumer);
         }
     }

@@ -63,11 +63,17 @@ public class LocalDateTimeProperty extends Property {
 
     @Override
     protected Object transformFromColumn(Object object) {
+        if (object == null) {
+            return null;
+        }
         return Databases.decodeLocalDateTime((long) object);
     }
 
     @Override
     protected Object transformToColumn(Object object) {
+        if (object == null) {
+            return null;
+        }
         return Databases.encodeLocalDateTime((LocalDateTime) object);
     }
 }
