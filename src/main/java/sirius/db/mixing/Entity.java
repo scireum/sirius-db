@@ -197,7 +197,8 @@ public abstract class Entity extends Mixable {
      * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
      * case.
      *
-     * @param type the entity class to generate the type name for.
+     * @param type the entity class to generate the type name for
+     * @param <E>  the generic type of the given class
      * @return the type name of the given type
      * @see #getUniqueName()
      * @see OMA#resolve(String)
