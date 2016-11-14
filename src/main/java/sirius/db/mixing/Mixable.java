@@ -11,8 +11,8 @@ package sirius.db.mixing;
 import com.google.common.collect.Maps;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.Transient;
-import sirius.kernel.di.morphium.Adaptable;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.di.transformers.Composable;
 import sirius.kernel.health.Exceptions;
 
 import java.util.Map;
@@ -24,25 +24,28 @@ import java.util.Optional;
  * As both, {@link Entity} and {@link Composite} can be extended by mixins, the common functionality is kept in this
  * superclass.
  * <p>
- * This mainly utilizes the {@link Adaptable} framework to morph an entity or composite into a mixin of the
+ * This mainly utilizes the {@link Composable} framework to transform an entity or composite into a mixin of the
  * desired type.
  */
-public class Mixable implements Adaptable {
+public class Mixable extends Composable {
 
     @Transient
     private Map<Class<?>, Object> mixins;
+
+    @Part
+    protected static OMA oma;
 
     @Override
     public boolean is(Class<?> type) {
         if (type.isAnnotationPresent(Mixin.class)) {
             return type.getAnnotation(Mixin.class).value().isAssignableFrom(this.getClass());
         }
-        return Adaptable.super.is(type);
+        return super.is(type);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public synchronized <A> Optional<A> tryAs(Class<A> adapterType) {
+    public <A> Optional<A> tryAs(Class<A> adapterType) {
         if (mixins != null && mixins.containsKey(adapterType)) {
             return Optional.of((A) mixins.get(adapterType));
         }
@@ -73,9 +76,6 @@ public class Mixable implements Adaptable {
                                 .handle();
             }
         }
-        return Adaptable.super.tryAs(adapterType);
+        return super.tryAs(adapterType);
     }
-
-    @Part
-    protected static OMA oma;
 }

@@ -9,7 +9,7 @@
         <version>3.1</version>
     </parent>
     <artifactId>sirius-db</artifactId>
-    <version>1.4</version>
+    <version>1.4.2</version>
     <packaging>jar</packaging>
 
     <name>SIRIUS DB</name>
@@ -26,12 +26,12 @@
         <dependency>
             <groupId>com.scireum</groupId>
             <artifactId>sirius-kernel</artifactId>
-            <version>3.0</version>
+            <version>3.2</version>
         </dependency>
         <dependency>
             <groupId>com.scireum</groupId>
             <artifactId>sirius-kernel</artifactId>
-            <version>[3.0,)</version>
+            <version>[3.2,)</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
