@@ -563,18 +563,18 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             if (mf.successiveCall()) {
                 c.getSELECTBuilder().append(", ");
             }
-            String alias = c.determineAlias(field.getParent()).getFirst();
-            if (c.defaultAlias.equals(alias)) {
-                c.getSELECTBuilder().append(alias);
-                c.getSELECTBuilder().append(".");
-                c.getSELECTBuilder().append(field);
-            } else {
-                c.getSELECTBuilder().append(alias);
-                c.getSELECTBuilder().append(".");
+            Tuple<String, EntityDescriptor> joinInfo = c.determineAlias(field.getParent());
+            c.getSELECTBuilder().append(joinInfo.getFirst());
+            c.getSELECTBuilder().append(".");
+            if (Entity.ID.equals(field) || Entity.VERSION.equals(field)) {
                 c.getSELECTBuilder().append(field.getName());
+            } else {
+                c.getSELECTBuilder().append(joinInfo.getSecond().getProperty(field.getName()).getColumnName());
+            }
+            if (!c.defaultAlias.equals(joinInfo.getFirst())) {
                 if (applyAliases) {
                     c.getSELECTBuilder().append(" AS ");
-                    c.getSELECTBuilder().append(alias);
+                    c.getSELECTBuilder().append(joinInfo.getFirst());
                     c.getSELECTBuilder().append("_");
                     c.getSELECTBuilder().append(field.getName());
                 }
