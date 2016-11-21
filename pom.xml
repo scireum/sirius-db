@@ -9,13 +9,13 @@
         <version>3.1</version>
     </parent>
     <artifactId>sirius-db</artifactId>
-    <version>1.4.2</version>
+    <version>1.5</version>
     <packaging>jar</packaging>
 
     <name>SIRIUS DB</name>
     <description>
         Provides a modern and highly flexible ORM for relational databases. Also contains a thin layer above JDBC to
-        effectifely and safely query relational databases. It also provides a simple wrapper for executing Redis
+        effectively and safely query relational databases. It also provides a simple wrapper for executing Redis
         queries (while monitoring the call and system health and utilizing the system configuration). Finally a
         thin but smart wrapper for MongoDB is provided which helps to access MongoDB databases while monitoring the
         call duration and system health.
