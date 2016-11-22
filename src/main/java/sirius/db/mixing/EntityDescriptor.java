@@ -402,7 +402,7 @@ public class EntityDescriptor {
 
         if (isVersioned()) {
             TableColumn versionColumn = new TableColumn();
-            versionColumn.setAutoIncrement(true);
+            versionColumn.setAutoIncrement(false);
             versionColumn.setName(Entity.VERSION.getName());
             versionColumn.setType(Types.BIGINT);
             versionColumn.setLength(20);
