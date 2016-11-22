@@ -18,6 +18,7 @@ import sirius.kernel.commons.Watch;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
 
@@ -108,6 +109,9 @@ public abstract class QueryBuilder<S> {
         }
         if (value instanceof LocalDateTime) {
             return Date.from(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant());
+        }
+        if (value instanceof LocalTime) {
+            return Date.from(((LocalTime) value).atDate(LocalDate.now(ZoneId.systemDefault())).atZone(ZoneId.systemDefault()).toInstant());
         }
         if (value instanceof Instant) {
             return Date.from((Instant) value);
