@@ -171,6 +171,9 @@ public class OMA {
         for (Property p : ed.getProperties()) {
             insertData.set(p.getColumnName(), p.getValueForColumn(entity));
         }
+        if (ed.isVersioned()) {
+            insertData.put("version", entity.getVersion());
+        }
         Row keys = getDatabase().insertRow(ed.getTableName(), insertData);
         if (keys.hasValue("id")) {
             // Normally the name of the generated column is reported
