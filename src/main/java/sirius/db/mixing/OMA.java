@@ -101,7 +101,7 @@ public class OMA {
         try {
             doUpdate(entity, false);
         } catch (OptimisticLockException e) {
-            Exceptions.handle(e);
+            throw Exceptions.handle(e);
         }
     }
 
@@ -212,7 +212,6 @@ public class OMA {
                 sql.append(",");
             }
             sql.append("version = ? ");
-            data.add(ed.getVersion(entity) + 1);
         }
 
         sql.append(" WHERE id = ?");
