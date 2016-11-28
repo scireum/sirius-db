@@ -11,7 +11,6 @@ package sirius.db.mixing.schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.Database;
-import sirius.db.mixing.OMA;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -25,12 +24,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 /**
  * Helper class for manipulating and inspecting db metadata.
@@ -165,9 +162,7 @@ public class SchemaTool {
         List<SchemaUpdateAction> result = Lists.newArrayList();
         List<Table> currentSchema = getSchema(db);
 
-        List<Table> sortedTarget = sort(new ArrayList<>(targetSchema));
-
-        syncRequiredTables(result, currentSchema, sortedTarget);
+        syncRequiredTables(result, currentSchema, targetSchema);
         if (dropTables) {
             dropUnusedTables(result, currentSchema, targetSchema);
         }
@@ -204,44 +199,12 @@ public class SchemaTool {
                 syncTables(targetTable, other, result);
             }
         }
-    }
 
-    /*
-     * Sorts the order of tables, so that a table is handled before it is
-     * referenced via a foreign key.
-     */
-    private List<Table> sort(List<Table> tables) {
-        List<Table> sortedResult = new ArrayList<>();
-        Set<String> handled = new TreeSet<>();
-
-        while (!tables.isEmpty()) {
-            Iterator<Table> iter = tables.iterator();
-            boolean removedAtLeastOneTable = false;
-            while (iter.hasNext()) {
-                Table t = iter.next();
-                if (!hasOpenReferences(t, handled)) {
-                    sortedResult.add(t);
-                    handled.add(t.getName());
-                    iter.remove();
-                    removedAtLeastOneTable = true;
-                }
-            }
-            if (!removedAtLeastOneTable) {
-                Exceptions.handle()
-                          .to(OMA.LOG)
-                          .withSystemErrorMessage("Cannot sort tables by FK-dependencies! "
-                                                  + "Aborting - Schema update will most probably fail! "
-                                                  + "Remaining set: %s",
-                                                  tables.stream().map(Table::getName).collect(Collectors.toList()))
-                          .handle();
-
-                // Add remaining tables unsorted...
-                sortedResult.addAll(tables);
-                return sortedResult;
-            }
+        for (Table targetTable : sortedTarget) {
+            Table other = findInList(currentSchema, targetTable);
+            syncForeignKeys(targetTable, other, result);
         }
 
-        return sortedResult;
     }
 
     private boolean hasOpenReferences(Table t, Set<String> handled) {
@@ -267,7 +230,6 @@ public class SchemaTool {
 
     private void syncTables(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         syncColumns(targetTable, other, result);
-        syncForeignKeys(targetTable, other, result);
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
             SchemaUpdateAction action = new SchemaUpdateAction();
@@ -325,7 +287,7 @@ public class SchemaTool {
 
     private void syncForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
-            ForeignKey otherKey = findInList(other.getForeignKeys(), targetKey);
+            ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.fkDoesNotExist")
@@ -351,16 +313,18 @@ public class SchemaTool {
             }
         }
         // Drop unused keys...
-        for (ForeignKey key : other.getForeignKeys()) {
-            if (findInList(targetTable.getForeignKeys(), key) == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("SchemaTool.fkUnused")
-                                    .set("key", key.getName())
-                                    .set("table", other.getName())
-                                    .format());
-                action.setDataLossPossible(true);
-                action.setSql(dialect.generateDropForeignKey(other, key));
-                result.add(action);
+        if (other != null) {
+            for (ForeignKey key : other.getForeignKeys()) {
+                if (findInList(targetTable.getForeignKeys(), key) == null) {
+                    SchemaUpdateAction action = new SchemaUpdateAction();
+                    action.setReason(NLS.fmtr("SchemaTool.fkUnused")
+                                        .set("key", key.getName())
+                                        .set("table", other.getName())
+                                        .format());
+                    action.setDataLossPossible(true);
+                    action.setSql(dialect.generateDropForeignKey(other, key));
+                    result.add(action);
+                }
             }
         }
     }
