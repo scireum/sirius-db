@@ -204,7 +204,6 @@ public class SchemaTool {
             Table other = findInList(currentSchema, targetTable);
             syncForeignKeys(targetTable, other, result);
         }
-
     }
 
     private boolean hasOpenReferences(Table t, Set<String> handled) {
@@ -229,6 +228,8 @@ public class SchemaTool {
     }
 
     private void syncTables(Table targetTable, Table other, List<SchemaUpdateAction> result) {
+        dropKeys(targetTable, other, result);
+        dropForeignKeys(targetTable, other, result);
         syncColumns(targetTable, other, result);
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
@@ -237,6 +238,40 @@ public class SchemaTool {
             action.setDataLossPossible(true);
             action.setSql(dialect.generateAlterPrimaryKey(targetTable));
             result.add(action);
+        }
+    }
+
+    private void dropKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
+        for (Key key : other.getKeys()) {
+            ForeignKey fk = new ForeignKey();
+            fk.setName(key.getName());
+            if (findInList(targetTable.getKeys(), key) == null
+                && findInList(targetTable.getForeignKeys(), fk) == null
+                && dialect.shouldDropKey(targetTable, other, key)) {
+                SchemaUpdateAction action = new SchemaUpdateAction();
+                action.setReason(NLS.fmtr("SchemaTool.indexUnused")
+                                    .set("key", key.getName())
+                                    .set("table", other.getName())
+                                    .format());
+                action.setDataLossPossible(true);
+                action.setSql(dialect.generateDropKey(other, key));
+                result.add(action);
+            }
+        }
+    }
+
+    private void dropForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
+        for (ForeignKey key : other.getForeignKeys()) {
+            if (findInList(targetTable.getForeignKeys(), key) == null) {
+                SchemaUpdateAction action = new SchemaUpdateAction();
+                action.setReason(NLS.fmtr("SchemaTool.fkUnused")
+                                    .set("key", key.getName())
+                                    .set("table", other.getName())
+                                    .format());
+                action.setDataLossPossible(true);
+                action.setSql(dialect.generateDropForeignKey(other, key));
+                result.add(action);
+            }
         }
     }
 
@@ -266,23 +301,6 @@ public class SchemaTool {
                 }
             }
         }
-        // Drop unused keys...
-        for (Key key : other.getKeys()) {
-            ForeignKey fk = new ForeignKey();
-            fk.setName(key.getName());
-            if (findInList(targetTable.getKeys(), key) == null
-                && findInList(targetTable.getForeignKeys(), fk) == null
-                && dialect.shouldDropKey(targetTable, other, key)) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("SchemaTool.indexUnused")
-                                    .set("key", key.getName())
-                                    .set("table", other.getName())
-                                    .format());
-                action.setDataLossPossible(true);
-                action.setSql(dialect.generateDropKey(other, key));
-                result.add(action);
-            }
-        }
     }
 
     private void syncForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
@@ -308,21 +326,6 @@ public class SchemaTool {
                                         .format());
                     action.setDataLossPossible(true);
                     action.setSql(dialect.generateAlterForeignKey(targetTable, otherKey, targetKey));
-                    result.add(action);
-                }
-            }
-        }
-        // Drop unused keys...
-        if (other != null) {
-            for (ForeignKey key : other.getForeignKeys()) {
-                if (findInList(targetTable.getForeignKeys(), key) == null) {
-                    SchemaUpdateAction action = new SchemaUpdateAction();
-                    action.setReason(NLS.fmtr("SchemaTool.fkUnused")
-                                        .set("key", key.getName())
-                                        .set("table", other.getName())
-                                        .format());
-                    action.setDataLossPossible(true);
-                    action.setSql(dialect.generateDropForeignKey(other, key));
                     result.add(action);
                 }
             }
