@@ -186,8 +186,8 @@ public class SchemaTool {
 
     private void syncRequiredTables(List<SchemaUpdateAction> result,
                                     List<Table> currentSchema,
-                                    List<Table> sortedTarget) {
-        for (Table targetTable : sortedTarget) {
+                                    List<Table> targetSchema) {
+        for (Table targetTable : targetSchema) {
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
@@ -200,7 +200,7 @@ public class SchemaTool {
             }
         }
 
-        for (Table targetTable : sortedTarget) {
+        for (Table targetTable : targetSchema) {
             Table other = findInList(currentSchema, targetTable);
             syncForeignKeys(targetTable, other, result);
         }
