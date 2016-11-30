@@ -12,6 +12,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.Ordinal;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -23,6 +24,8 @@ import java.util.function.Consumer;
  * Represents an {@link Enum} field within a {@link sirius.db.mixing.Mixable}.
  */
 public class EnumProperty extends Property {
+
+    private boolean ordinal;
 
     /**
      * Factory for generating properties based on their field type
@@ -46,6 +49,7 @@ public class EnumProperty extends Property {
 
     EnumProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+        this.ordinal = field.isAnnotationPresent(Ordinal.class);
     }
 
     @SuppressWarnings({"unchecked", "raw", "rawtypes"})
@@ -56,7 +60,7 @@ public class EnumProperty extends Property {
 
     @Override
     protected int getSQLType() {
-        return Types.CHAR;
+        return ordinal ? Types.INTEGER : Types.CHAR;
     }
 
     @SuppressWarnings("unchecked")
@@ -73,6 +77,12 @@ public class EnumProperty extends Property {
         if (object == null) {
             return null;
         }
+        if (ordinal) {
+            Object[] values = field.getType().getEnumConstants();
+            int index = Value.of(object).asInt(0);
+            index = Math.min(index, values.length - 1);
+            return values[index];
+        }
         return Value.of(object).asEnum((Class<Enum>) field.getType());
     }
 
@@ -81,6 +91,6 @@ public class EnumProperty extends Property {
         if (object == null) {
             return null;
         }
-        return ((Enum<?>) object).name();
+        return ordinal ? ((Enum<?>) object).ordinal() : ((Enum<?>) object).name();
     }
 }
