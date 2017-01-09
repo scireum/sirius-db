@@ -31,13 +31,7 @@ public class TransactionContext implements SubContext {
 
     protected static List<Transaction> getTransactionStack(String database) {
         TransactionContext manager = CallContext.getCurrent().get(TransactionContext.class);
-        List<Transaction> result = manager.txns.get(database);
-        if (result == null) {
-            result = Lists.newArrayList();
-            manager.txns.put(database, result);
-        }
-
-        return result;
+        return manager.txns.computeIfAbsent(database, k -> Lists.newArrayList());
     }
 
     @Override

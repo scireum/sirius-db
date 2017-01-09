@@ -111,7 +111,9 @@ public abstract class QueryBuilder<S> {
             return Date.from(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant());
         }
         if (value instanceof LocalTime) {
-            return Date.from(((LocalTime) value).atDate(LocalDate.now(ZoneId.systemDefault())).atZone(ZoneId.systemDefault()).toInstant());
+            return Date.from(((LocalTime) value).atDate(LocalDate.now(ZoneId.systemDefault()))
+                                                .atZone(ZoneId.systemDefault())
+                                                .toInstant());
         }
         if (value instanceof Instant) {
             return Date.from((Instant) value);

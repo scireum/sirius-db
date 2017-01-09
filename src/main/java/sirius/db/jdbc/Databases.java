@@ -98,11 +98,7 @@ public class Databases {
         Database ds = datasources.get(name);
         if (ds == null) {
             synchronized (datasources) {
-                ds = datasources.get(name);
-                if (ds == null) {
-                    ds = new Database(name);
-                    datasources.put(name, ds);
-                }
+                ds = datasources.computeIfAbsent(name, k -> new Database(name));
             }
         }
         return ds;
