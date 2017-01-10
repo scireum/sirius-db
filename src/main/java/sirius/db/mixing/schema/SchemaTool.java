@@ -107,6 +107,7 @@ public class SchemaTool {
                 if (key == null) {
                     key = new Key();
                     key.setName(indexName);
+                    key.setUnique(!rs.getBoolean("NON_UNIQUE"));
                     table.getKeys().add(key);
                 }
                 key.addColumn(rs.getInt("ORDINAL_POSITION"), rs.getString("COLUMN_NAME"));
@@ -138,8 +139,8 @@ public class SchemaTool {
             column.setNullable(DatabaseMetaData.columnNullable == rs.getInt("NULLABLE"));
             column.setType(rs.getInt("DATA_TYPE"));
             column.setLength(rs.getInt("COLUMN_SIZE"));
-            column.setPrecision(rs.getInt("DECIMAL_DIGITS"));
-            column.setScale(rs.getInt("COLUMN_SIZE"));
+            column.setPrecision(rs.getInt("COLUMN_SIZE"));
+            column.setScale(rs.getInt("DECIMAL_DIGITS"));
             column.setDefaultValue(rs.getString("COLUMN_DEF"));
             table.getColumns().add(column);
         }
