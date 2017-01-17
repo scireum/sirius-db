@@ -15,6 +15,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.transformers.Composable;
 import sirius.kernel.health.Exceptions;
 
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.Optional;
 
@@ -55,14 +56,17 @@ public class Mixable extends Composable {
                     mixins = Maps.newHashMap();
                 }
                 try {
-                    A result = adapterType.newInstance();
+                    A result = makeNewInstance(adapterType);
                     mixins.put(adapterType, result);
                     return Optional.of(result);
                 } catch (Throwable e) {
                     throw Exceptions.handle()
                                     .to(OMA.LOG)
                                     .error(e)
-                                    .withSystemErrorMessage("Cannot create mixin '%s' for type '%s': %s (%s)",
+                                    .withSystemErrorMessage("Cannot create mixin '%s' for type '%s': %s (%s)"
+                                                            + " - Note that a Mixin must either have a default"
+                                                            + " constructor or one which takes the owner entity as"
+                                                            + " first and only parameter.",
                                                             adapterType.getName(),
                                                             this.getClass().getName())
                                     .handle();
@@ -77,5 +81,15 @@ public class Mixable extends Composable {
             }
         }
         return super.tryAs(adapterType);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <A> A makeNewInstance(Class<A> type) throws Exception {
+        Constructor<?> constructor = type.getDeclaredConstructors()[0];
+        if (constructor.getParameterCount() == 1) {
+            return (A) constructor.newInstance(this);
+        } else {
+            return (A) constructor.newInstance();
+        }
     }
 }
