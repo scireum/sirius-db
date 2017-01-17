@@ -458,7 +458,8 @@ public class OMA {
         if (Strings.isEmpty(name)) {
             return Optional.empty();
         }
-        Tuple<String, String> typeAndId = Strings.split(name, "-");
+
+        Tuple<String, String> typeAndId = Schema.splitUniqueName(name);
         return find(schema.getDescriptor(typeAndId.getFirst()).getType(), typeAndId.getSecond());
     }
 
