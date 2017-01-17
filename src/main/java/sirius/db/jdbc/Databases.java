@@ -58,6 +58,7 @@ public class Databases {
 
     protected static Counter numUses = new Counter();
     protected static Counter numQueries = new Counter();
+    protected static Counter numSlowQueries = new Counter();
     protected static Average queryDuration = new Average();
 
     /**
@@ -80,6 +81,11 @@ public class Databases {
                                              "db-queries",
                                              "JDBC Queries",
                                              numQueries.getCount(),
+                                             "/min");
+                collector.differentialMetric("jdbc-slow-queries",
+                                             "db-slow-queries",
+                                             "Slow JDBC Queries",
+                                             numSlowQueries.getCount(),
                                              "/min");
                 collector.metric("db-query-duration", "JDBC Query Duration", queryDuration.getAndClearAverage(), "ms");
             }
