@@ -165,7 +165,13 @@ public class FieldOperator extends Constraint {
                     compiler.getWHEREBuilder().append(columnName).append(" IS NULL");
                     return;
                 } else if (op == Operator.NE) {
-                    if (!orNull) {
+                    if (orNull) {
+                        // x IS NOT NULL OR x IS NULL === true
+                        // This constraint is pointless but as we might be in an OR, we still need to
+                        // output a constraint that is always true. As there is no boolean literal in
+                        // SQL, we use this brilliant expression:
+                        compiler.getWHEREBuilder().append("1=1");
+                    } else {
                         compiler.getWHEREBuilder().append(columnName).append(" IS NOT NULL");
                     }
                     return;
