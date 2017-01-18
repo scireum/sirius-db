@@ -40,6 +40,7 @@ public class FieldOperator extends Constraint {
     private Object value;
     private Operator op;
     private boolean ignoreNull;
+    private boolean orNull;
 
     private FieldOperator(Column field) {
         this.field = field;
@@ -137,6 +138,16 @@ public class FieldOperator extends Constraint {
         return this;
     }
 
+    /**
+     * Also evaluates to true, of the field being addressed is <tt>null</tt>.
+     *
+     * @return the constraint itself
+     */
+    public FieldOperator orNull() {
+        this.orNull = true;
+        return this;
+    }
+
     @Override
     public boolean addsConstraint() {
         return !ignoreNull || value != null;
@@ -148,16 +159,30 @@ public class FieldOperator extends Constraint {
             throw new IllegalStateException("operator not set");
         }
         if (addsConstraint()) {
+            String columnName = compiler.translateColumnName(field);
             if (value == null) {
                 if (op == Operator.EQ) {
-                    compiler.getWHEREBuilder().append(compiler.translateColumnName(field)).append(" IS NULL");
+                    compiler.getWHEREBuilder().append(columnName).append(" IS NULL");
                     return;
                 } else if (op == Operator.NE) {
-                    compiler.getWHEREBuilder().append(compiler.translateColumnName(field)).append(" IS NOT NULL");
+                    if (!orNull) {
+                        compiler.getWHEREBuilder().append(columnName).append(" IS NOT NULL");
+                    }
                     return;
                 }
             }
-            compiler.getWHEREBuilder().append(compiler.translateColumnName(field)).append(op).append(" ?");
+
+            if (orNull) {
+                compiler.getWHEREBuilder()
+                        .append("(")
+                        .append(columnName)
+                        .append(op)
+                        .append(" ? OR ")
+                        .append(columnName)
+                        .append(" IS NULL)");
+            } else {
+                compiler.getWHEREBuilder().append(columnName).append(op).append(" ?");
+            }
             compiler.addParameter(Databases.convertValue(value));
         }
     }
