@@ -139,7 +139,7 @@ public class FieldOperator extends Constraint {
     }
 
     /**
-     * Also evaluates to true, of the field being addressed is <tt>null</tt>.
+     * Also makes the constraint evaluate to <tt>true</tt>, if the field being addressed is <tt>null</tt>.
      *
      * @return the constraint itself
      */
