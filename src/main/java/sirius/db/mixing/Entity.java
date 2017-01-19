@@ -190,22 +190,7 @@ public abstract class Entity extends Mixable {
         if (isNew()) {
             return "";
         }
-        return getTypeName() + "-" + getId();
-    }
-
-    /**
-     * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
-     * case.
-     *
-     * @param type the entity class to generate the type name for
-     * @param <E>  the generic type of the given class
-     * @return the type name of the given type
-     * @see #getUniqueName()
-     * @see OMA#resolve(String)
-     * @see Schema#getDescriptor(String)
-     */
-    public static <E extends Entity> String getNameForType(Class<E> type) {
-        return type.getSimpleName().toUpperCase();
+        return Schema.getUniqueName(getTypeName(), getId());
     }
 
     /**
@@ -218,21 +203,7 @@ public abstract class Entity extends Mixable {
      * @see Schema#getDescriptor(String)
      */
     public String getTypeName() {
-        return getNameForType(getClass());
-    }
-
-    /**
-     * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
-     * case.
-     *
-     * @param type the type for which the type name is requested
-     * @return the type name of this entity type
-     * @see #getUniqueName()
-     * @see OMA#resolve(String)
-     * @see Schema#getDescriptor(String)
-     */
-    public static String getTypeName(Class<? extends Entity> type) {
-        return type.getSimpleName().toLowerCase();
+        return Schema.getNameForType(getClass());
     }
 
     /**

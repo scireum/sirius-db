@@ -21,6 +21,7 @@ import sirius.kernel.async.Future;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.std.ConfigValue;
@@ -28,8 +29,10 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +83,15 @@ public class Schema implements Initializable {
         }
 
         return ed;
+    }
+
+    /**
+     * Returns all known descriptors.
+     *
+     * @return an unmodifyable list of all known descriptors
+     */
+    public Collection<EntityDescriptor> getDesciptors() {
+        return descriptorsByType.values();
     }
 
     @Part
@@ -253,5 +265,78 @@ public class Schema implements Initializable {
         }
 
         return null;
+    }
+
+    /**
+     * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
+     * case.
+     *
+     * @param type the entity class to generate the type name for
+     * @param <E>  the generic type of the given class
+     * @return the type name of the given type
+     * @see OMA#resolve(String)
+     */
+    @Nonnull
+    public static <E extends Entity> String getNameForType(@Nonnull Class<E> type) {
+        return type.getSimpleName().toUpperCase();
+    }
+
+    /**
+     * Computes the unique name of an entity based on its descriptor type and id.
+     *
+     * @param typeName the name of the entity type
+     * @param id       the id of the entity
+     * @return a unique name consisting of the typeName and id
+     * @see #getNameForType(Class)
+     */
+    @Nonnull
+    public static String getUniqueName(@Nonnull String typeName, long id) {
+        return typeName + "-" + id;
+    }
+
+    /**
+     * Computes the unique name of an entity based on its type and id.
+     *
+     * @param type the entity class to generate the type name for
+     * @param id   the id of the entity
+     * @return a unique name consisting of the typeName and id
+     * @see #getNameForType(Class)
+     */
+    @Nonnull
+    public static String getUniqueName(@Nonnull Class<? extends Entity> type, long id) {
+        return getNameForType(type) + "-" + id;
+    }
+
+    /**
+     * Splits a unique name into the descriptor type and id.
+     *
+     * @param uniqueName the unique name of an entity.
+     * @return the type and id of the entity as tuple
+     * @see #getUniqueName(String, long)
+     */
+    @Nonnull
+    public static Tuple<String, String> splitUniqueName(@Nullable String uniqueName) {
+        return Strings.split(uniqueName, "-");
+    }
+
+    /**
+     * Splits a unique name into the type and numeric id.
+     *
+     * @param uniqueName the unique name of an entity.
+     * @return the type and id of the entity as tuple
+     * @throws sirius.kernel.health.HandledException if an invalid unique name was given
+     * @see #getUniqueName(String, long)
+     */
+    @Nonnull
+    public static Tuple<String, Long> parseUniqueName(@Nullable String uniqueName) {
+        try {
+            Tuple<String, String> typeAndId = splitUniqueName(uniqueName);
+            long id = Long.parseLong(typeAndId.getSecond());
+            return Tuple.create(typeAndId.getFirst(), id);
+        } catch (NumberFormatException e) {
+            throw Exceptions.createHandled()
+                            .withSystemErrorMessage("Invalid entity id in unique object name: %s", uniqueName)
+                            .handle();
+        }
     }
 }

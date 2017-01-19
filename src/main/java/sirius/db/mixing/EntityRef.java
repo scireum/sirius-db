@@ -132,7 +132,7 @@ public class EntityRef<E extends Entity> {
             return null;
         }
 
-        return Entity.getNameForType(type) + "-" + id;
+        return Schema.getUniqueName(type, id);
     }
 
     /**

@@ -566,7 +566,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             Tuple<String, EntityDescriptor> joinInfo = c.determineAlias(field.getParent());
             c.getSELECTBuilder().append(joinInfo.getFirst());
             c.getSELECTBuilder().append(".");
-            if (Entity.ID.equals(field) || Entity.VERSION.equals(field)) {
+            if (Entity.ID.getName().equals(field.getName()) || Entity.VERSION.getName().equals(field.getName())) {
                 c.getSELECTBuilder().append(field.getName());
             } else {
                 c.getSELECTBuilder().append(joinInfo.getSecond().getProperty(field.getName()).getColumnName());

@@ -10,6 +10,7 @@ package sirius.db.mixing;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 import sirius.db.jdbc.Row;
@@ -83,6 +84,16 @@ public class EntityDescriptor {
      * Contains all properties (defined via fields, composites or mixins)
      */
     protected Map<String, Property> properties = Maps.newTreeMap();
+
+    /**
+     * Contains a set of all composites contained within this entity.
+     */
+    protected Set<Class<? extends Composite>> composites = Sets.newHashSet();
+
+    /**
+     * Contains a set of all mixins available for this entity.
+     */
+    protected Set<Class<? extends Mixable>> mixins = Sets.newHashSet();
 
     /**
      * A list of all additional handlers to be executed once an entity was deleted
@@ -161,7 +172,7 @@ public class EntityDescriptor {
      * @return a translated plural which can be shown to the end user
      */
     public String getPluralLabel() {
-        return NLS.get(getType().getName() + ".plural");
+        return NLS.get(getType().getSimpleName() + ".plural");
     }
 
     /**
@@ -474,11 +485,11 @@ public class EntityDescriptor {
     /*
      * Contains all mixins known to the system
      */
-    private static MultiMap<Class<? extends Mixable>, Class<?>> mixins;
+    private static MultiMap<Class<? extends Mixable>, Class<?>> allMixins;
 
     @SuppressWarnings("unchecked")
     private static Collection<Class<?>> getMixins(Class<? extends Mixable> forClass) {
-        if (mixins == null) {
+        if (allMixins == null) {
             MultiMap<Class<? extends Mixable>, Class<?>> mixinMap = MultiMap.create();
             for (Class<?> mixinClass : Injector.context().getParts(Mixin.class, Class.class)) {
                 Class<?> target = mixinClass.getAnnotation(Mixin.class).value();
@@ -490,10 +501,10 @@ public class EntityDescriptor {
                                  target.getName());
                 }
             }
-            mixins = mixinMap;
+            allMixins = mixinMap;
         }
 
-        return mixins.get(forClass);
+        return allMixins.get(forClass);
     }
 
     /*
@@ -562,6 +573,7 @@ public class EntityDescriptor {
         if (Mixable.class.isAssignableFrom(clazz)) {
             for (Class<?> mixin : getMixins((Class<? extends Mixable>) clazz)) {
                 addFields(descriptor, expandAccessPath(mixin, accessPath), rootClass, mixin, propertyConsumer);
+                descriptor.mixins.add((Class<? extends Mixable>) mixin);
             }
         }
 
@@ -791,5 +803,36 @@ public class EntityDescriptor {
      */
     public Entity getReferenceInstance() {
         return referenceInstance;
+    }
+
+    /**
+     * Used to add a class to the list of contained composites within the described entity.
+     * <p>
+     * This is used by {@link sirius.db.mixing.properties.CompositePropertyFactory} to notify the descriptor that a
+     * composite is present.
+     *
+     * @param composite the type of composite which is present within this entity
+     */
+    public void addComposite(Class<? extends Composite> composite) {
+        composites.add(composite);
+    }
+
+    /**
+     * Determines if a composite of the given type is present within this entity.
+     *
+     * @param composite the composite type to check for
+     * @return <tt>true</tt> if one or more composites of the given type are present, <tt>false</tt> otherwise
+     */
+    public boolean hasComposite(Class<? extends Composite> composite) {
+        return composites.contains(composite);
+    }
+
+    /**
+     * Returns all mixins known for the describes entity.
+     *
+     * @return a collection containing all mixin classes affecting the described entity
+     */
+    public Collection<Class<? extends Mixable>> getMixins() {
+        return mixins;
     }
 }
