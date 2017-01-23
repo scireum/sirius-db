@@ -49,7 +49,7 @@ public class CompositePropertyFactory implements PropertyFactory {
         field.setAccessible(true);
         accessPath = expandAccessPath(accessPath, field);
         EntityDescriptor.addFields(descriptor, accessPath, field.getType(), propertyConsumer);
-        descriptor.addComposite((Class<? extends Composite>)field.getType());
+        descriptor.addComposite((Class<? extends Composite>) field.getType());
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {
