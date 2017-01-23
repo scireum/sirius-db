@@ -96,4 +96,18 @@ public class Document {
     public void put(String key, Object value) {
         obj.put(key, value);
     }
+
+    @Override
+    public String toString() {
+        return obj == null ? "null" : obj.toString();
+    }
+
+    /**
+     * Retruns the underlying Mongo DB Obect.
+     *
+     * @return the underlying object
+     */
+    public DBObject getUnderlyingObject() {
+        return obj;
+    }
 }
