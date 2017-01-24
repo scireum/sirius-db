@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -346,6 +347,36 @@ public class OMA {
                                                     entity.getId())
                             .handle();
         }
+    }
+
+    /**
+     * Determines if the given entity has validation warnings.
+     *
+     * @param entity the entity to check
+     * @return <tt>true</tt> if there are validation warnings, <tt>false</tt> otherwise
+     */
+    public boolean hasValidationWarnings(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+
+        EntityDescriptor ed = entity.getDescriptor();
+        return ed.hasValidationWarnings(entity);
+    }
+
+    /**
+     * Executes all validation handlers on the given entity.
+     *
+     * @param entity the entity to validate
+     * @return a list of all validation warnings
+     */
+    public List<String> validate(Entity entity) {
+        if (entity == null) {
+            return Collections.emptyList();
+        }
+
+        EntityDescriptor ed = entity.getDescriptor();
+        return ed.validate(entity);
     }
 
     /**

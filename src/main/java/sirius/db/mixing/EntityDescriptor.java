@@ -20,6 +20,7 @@ import sirius.db.mixing.annotations.BeforeDelete;
 import sirius.db.mixing.annotations.BeforeSave;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Mixin;
+import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.schema.Key;
@@ -29,6 +30,7 @@ import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Parts;
@@ -47,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -119,6 +122,11 @@ public class EntityDescriptor {
      * A list of all additional handlers to be executed once an entity is was saved
      */
     protected List<Consumer<Entity>> afterSaveHandlers = Lists.newArrayList();
+
+    /**
+     * A list of all handlers to be executed once an entity is validated
+     */
+    protected List<BiConsumer<Entity, Consumer<String>>> validateHandlers = Lists.newArrayList();
 
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
@@ -319,6 +327,39 @@ public class EntityDescriptor {
     }
 
     /**
+     * Executes all validation handlers on the given entity.
+     *
+     * @param entity the entity to validate
+     * @return a list of all validation warnings
+     */
+    protected List<String> validate(Entity entity) {
+        List<String> warnings = Lists.newArrayList();
+        for (BiConsumer<Entity, Consumer<String>> validator : validateHandlers) {
+            validator.accept(entity, warnings::add);
+        }
+
+        return warnings;
+    }
+
+    /**
+     * Determines if the given entity has validation warnings.
+     *
+     * @param entity the entity to check
+     * @return <tt>true</tt> if there are validation warnings, <tt>false</tt> otherwise
+     */
+    protected boolean hasValidationWarnings(Entity entity) {
+        for (BiConsumer<Entity, Consumer<String>> validator : validateHandlers) {
+            ValueHolder<Boolean> hasWarnings = ValueHolder.of(false);
+            validator.accept(entity, warning -> hasWarnings.accept(true));
+            if (hasWarnings.get()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Executed one all <tt>afterSaveHandlers</tt> were executed.
      *
      * @param entity the entity which was saved
@@ -360,6 +401,15 @@ public class EntityDescriptor {
      */
     public void addBeforeDeleteHandler(Consumer<Entity> handler) {
         beforeDeleteHandlers.add(handler);
+    }
+
+    /**
+     * Adds a validation handler
+     *
+     * @param handler the handler to add
+     */
+    public void addValidationHandler(BiConsumer<Entity, Consumer<String>> handler) {
+        validateHandlers.add(handler);
     }
 
     /**
@@ -567,6 +617,28 @@ public class EntityDescriptor {
                 descriptor.afterDeleteHandlers.add(e -> {
                     invokeHandler(accessPath, m, e);
                 });
+            } else if (m.isAnnotationPresent(OnValidate.class)) {
+                if (!Modifier.isProtected(m.getModifiers())) {
+                    OMA.LOG.WARN("OnValidate handler %s.%s is not declared protected!",
+                                 m.getDeclaringClass().getName(),
+                                 m.getName());
+                }
+                if (m.getParameterCount() == 1 && m.getParameterTypes()[0] == Consumer.class) {
+                    // When declared within an entity, we only have Consumer<String> as parameter
+                    descriptor.validateHandlers.add((e, c) -> {
+                        invokeHandler(accessPath, m, e, c);
+                    });
+                } else if (m.getParameterCount() == 2 && m.getParameterTypes()[1] == Consumer.class) {
+                    // When declared within a mixin, we have the entity itself as first parameter
+                    // and the consumer as second...
+                    descriptor.validateHandlers.add((e, c) -> {
+                        invokeHandler(accessPath, m, e, e, c);
+                    });
+                } else {
+                    OMA.LOG.WARN("OnValidate handler %s.%s doesn have Consumer<String> as parameter!",
+                                 m.getDeclaringClass().getName(),
+                                 m.getName());
+                }
             }
         }
 
@@ -584,13 +656,13 @@ public class EntityDescriptor {
         }
     }
 
-    private static void invokeHandler(AccessPath accessPath, Method m, Entity e) {
+    private static void invokeHandler(AccessPath accessPath, Method m, Entity e, Object... params) {
         try {
             m.setAccessible(true);
             if (m.getParameterCount() == 0) {
                 m.invoke(accessPath.apply(e));
             } else {
-                m.invoke(accessPath.apply(e), e);
+                m.invoke(accessPath.apply(e), params.length == 0 ? new Object[]{e} : params);
             }
         } catch (IllegalAccessException ex) {
             throw Exceptions.handle(OMA.LOG, ex);
