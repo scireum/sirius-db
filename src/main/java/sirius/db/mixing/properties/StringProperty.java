@@ -104,7 +104,7 @@ public class StringProperty extends Property {
     }
 
     @Override
-    protected Object transformValue(Value value) {
+    public Object transformValue(Value value) {
         return value.isEmptyString() ? null : value.asString();
     }
 

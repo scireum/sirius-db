@@ -54,7 +54,7 @@ public class EnumProperty extends Property {
 
     @SuppressWarnings({"unchecked", "raw", "rawtypes"})
     @Override
-    protected Object transformValue(Value value) {
+    public Object transformValue(Value value) {
         return value.asEnum((Class<Enum>) field.getType());
     }
 

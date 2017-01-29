@@ -52,7 +52,7 @@ public class LocalDateTimeProperty extends Property {
     }
 
     @Override
-    protected Object transformValue(Value value) {
+    public Object transformValue(Value value) {
         return NLS.parseUserString(LocalDateTime.class, value.asString());
     }
 

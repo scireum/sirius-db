@@ -378,12 +378,13 @@ public abstract class Property {
     }
 
     /**
-     * Converts the given value into the target type of this property
+     * Converts the given value, which most probably contains user input as string into the target type of this
+     * property.
      *
      * @param value the value to convert
      * @return the converted value
      */
-    protected abstract Object transformValue(Value value);
+    public abstract Object transformValue(Value value);
 
     /**
      * Creates an exception which represents an illegal value for this property
