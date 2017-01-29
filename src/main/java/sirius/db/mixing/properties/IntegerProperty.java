@@ -49,7 +49,7 @@ public class IntegerProperty extends Property {
     }
 
     @Override
-    protected Object transformValue(Value value) {
+    public Object transformValue(Value value) {
         if (!value.isFilled()) {
             return null;
         } else {

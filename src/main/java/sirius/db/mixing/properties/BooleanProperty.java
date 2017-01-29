@@ -50,7 +50,7 @@ public class BooleanProperty extends Property {
     }
 
     @Override
-    protected Object transformValue(Value value) {
+    public Object transformValue(Value value) {
         return value.asBoolean(false);
     }
 

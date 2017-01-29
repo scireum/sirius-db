@@ -20,6 +20,7 @@ import sirius.db.mixing.annotations.BeforeDelete;
 import sirius.db.mixing.annotations.BeforeSave;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Mixin;
+import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.schema.Key;
@@ -29,12 +30,15 @@ import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.Parts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -47,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -119,6 +124,11 @@ public class EntityDescriptor {
      * A list of all additional handlers to be executed once an entity is was saved
      */
     protected List<Consumer<Entity>> afterSaveHandlers = Lists.newArrayList();
+
+    /**
+     * A list of all handlers to be executed once an entity is validated
+     */
+    protected List<BiConsumer<Entity, Consumer<String>>> validateHandlers = Lists.newArrayList();
 
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
@@ -319,6 +329,39 @@ public class EntityDescriptor {
     }
 
     /**
+     * Executes all validation handlers on the given entity.
+     *
+     * @param entity the entity to validate
+     * @return a list of all validation warnings
+     */
+    protected List<String> validate(Entity entity) {
+        List<String> warnings = Lists.newArrayList();
+        for (BiConsumer<Entity, Consumer<String>> validator : validateHandlers) {
+            validator.accept(entity, warnings::add);
+        }
+
+        return warnings;
+    }
+
+    /**
+     * Determines if the given entity has validation warnings.
+     *
+     * @param entity the entity to check
+     * @return <tt>true</tt> if there are validation warnings, <tt>false</tt> otherwise
+     */
+    protected boolean hasValidationWarnings(Entity entity) {
+        for (BiConsumer<Entity, Consumer<String>> validator : validateHandlers) {
+            ValueHolder<Boolean> hasWarnings = ValueHolder.of(false);
+            validator.accept(entity, warning -> hasWarnings.accept(true));
+            if (hasWarnings.get()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Executed one all <tt>afterSaveHandlers</tt> were executed.
      *
      * @param entity the entity which was saved
@@ -360,6 +403,15 @@ public class EntityDescriptor {
      */
     public void addBeforeDeleteHandler(Consumer<Entity> handler) {
         beforeDeleteHandlers.add(handler);
+    }
+
+    /**
+     * Adds a validation handler
+     *
+     * @param handler the handler to add
+     */
+    public void addValidationHandler(BiConsumer<Entity, Consumer<String>> handler) {
+        validateHandlers.add(handler);
     }
 
     /**
@@ -531,43 +583,7 @@ public class EntityDescriptor {
             addField(descriptor, accessPath, rootClass, clazz, field, propertyConsumer);
         }
         for (Method m : clazz.getDeclaredMethods()) {
-            if (m.isAnnotationPresent(BeforeSave.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("BeforeSave handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.beforeSaveHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(AfterSave.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("AfterSave handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.afterSaveHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(BeforeDelete.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("BeforeDelete handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.beforeDeleteHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(AfterDelete.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("AfterDelete handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.afterDeleteHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            }
+            processMethod(descriptor, accessPath, m);
         }
 
         if (Mixable.class.isAssignableFrom(clazz)) {
@@ -584,13 +600,63 @@ public class EntityDescriptor {
         }
     }
 
-    private static void invokeHandler(AccessPath accessPath, Method m, Entity e) {
+    private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
+        if (method.isAnnotationPresent(BeforeSave.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.beforeSaveHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(AfterSave.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.afterSaveHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(BeforeDelete.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.beforeDeleteHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(AfterDelete.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.afterDeleteHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(OnValidate.class)) {
+            warnOnWrongVisibility(method);
+            if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
+                // When declared within an entity, we only have Consumer<String> as parameter
+                descriptor.validateHandlers.add((e, c) -> {
+                    invokeHandler(accessPath, method, e, c);
+                });
+            } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
+                // When declared within a mixin, we have the entity itself as first parameter
+                // and the consumer as second...
+                descriptor.validateHandlers.add((e, c) -> {
+                    invokeHandler(accessPath, method, e, e, c);
+                });
+            } else {
+                OMA.LOG.WARN("OnValidate handler %s.%s doesn have Consumer<String> as parameter!",
+                             method.getDeclaringClass().getName(),
+                             method.getName());
+            }
+        }
+    }
+
+    private static void warnOnWrongVisibility(Method method) {
+        if (!Modifier.isProtected(method.getModifiers())) {
+            OMA.LOG.WARN("Handler %s.%s is not declared protected!",
+                         method.getDeclaringClass().getName(),
+                         method.getName());
+        }
+    }
+
+    private static void invokeHandler(AccessPath accessPath, Method m, Entity e, Object... params) {
         try {
             m.setAccessible(true);
             if (m.getParameterCount() == 0) {
                 m.invoke(accessPath.apply(e));
             } else {
-                m.invoke(accessPath.apply(e), e);
+                m.invoke(accessPath.apply(e), params.length == 0 ? new Object[]{e} : params);
             }
         } catch (IllegalAccessException ex) {
             throw Exceptions.handle(OMA.LOG, ex);
@@ -778,10 +844,14 @@ public class EntityDescriptor {
 
     /**
      * Returns the property for the given name.
+     * <p>
+     * If the property does not exits, an error will be thrown.
+     * </p>
      *
      * @param property the name of the property
      * @return the property with the given name
      */
+    @Nonnull
     public Property getProperty(String property) {
         Property prop = properties.get(property.replace('.', '_'));
         if (prop == null) {
@@ -794,6 +864,20 @@ public class EntityDescriptor {
         }
 
         return prop;
+    }
+
+    /**
+     * Returns the property for the given name.
+     * <p>
+     * If the property does not exist, <tt>null</tt> is returned.
+     * </p>
+     *
+     * @param property the name of the property or <tt>null</tt> if no property with the given name exists.
+     * @return the property with the given name
+     */
+    @Nullable
+    public Property findProperty(String property) {
+        return properties.get(property.replace('.', '_'));
     }
 
     /**

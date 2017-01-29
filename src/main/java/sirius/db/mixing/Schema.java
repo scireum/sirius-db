@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Keeps track of all entities and their {@link EntityDescriptor}.
@@ -72,17 +73,28 @@ public class Schema implements Initializable {
      *
      * @param aTypeName a {@link EntityDescriptor#getTableName()} of an entity
      * @return the descriptor for the given type name
+     * @throws sirius.kernel.health.HandledException if no matching descriptor exists
      */
     public EntityDescriptor getDescriptor(String aTypeName) {
-        EntityDescriptor ed = descriptorsByName.get(aTypeName);
-        if (ed == null) {
+        Optional<EntityDescriptor> ed = findDescriptor(aTypeName);
+        if (!ed.isPresent()) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .withSystemErrorMessage("The name '%s' is not a known entity!", aTypeName)
                             .handle();
         }
 
-        return ed;
+        return ed.get();
+    }
+
+    /**
+     * Returns the descriptor for the given entity type.
+     *
+     * @param aTypeName a {@link EntityDescriptor#getTableName()} of an entity
+     * @return the descriptor for the given type name as optional
+     */
+    public Optional<EntityDescriptor> findDescriptor(String aTypeName) {
+        return Optional.ofNullable(descriptorsByName.get(aTypeName));
     }
 
     /**

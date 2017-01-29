@@ -239,7 +239,7 @@ public class EntityRefProperty extends Property {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformValue(Value value) {
+    public Object transformValue(Value value) {
         if (value.isEmptyString()) {
             return null;
         }
