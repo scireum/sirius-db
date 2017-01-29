@@ -37,6 +37,8 @@ import sirius.kernel.di.std.Parts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -581,65 +583,7 @@ public class EntityDescriptor {
             addField(descriptor, accessPath, rootClass, clazz, field, propertyConsumer);
         }
         for (Method m : clazz.getDeclaredMethods()) {
-            if (m.isAnnotationPresent(BeforeSave.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("BeforeSave handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.beforeSaveHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(AfterSave.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("AfterSave handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.afterSaveHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(BeforeDelete.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("BeforeDelete handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.beforeDeleteHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(AfterDelete.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("AfterDelete handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                descriptor.afterDeleteHandlers.add(e -> {
-                    invokeHandler(accessPath, m, e);
-                });
-            } else if (m.isAnnotationPresent(OnValidate.class)) {
-                if (!Modifier.isProtected(m.getModifiers())) {
-                    OMA.LOG.WARN("OnValidate handler %s.%s is not declared protected!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-                if (m.getParameterCount() == 1 && m.getParameterTypes()[0] == Consumer.class) {
-                    // When declared within an entity, we only have Consumer<String> as parameter
-                    descriptor.validateHandlers.add((e, c) -> {
-                        invokeHandler(accessPath, m, e, c);
-                    });
-                } else if (m.getParameterCount() == 2 && m.getParameterTypes()[1] == Consumer.class) {
-                    // When declared within a mixin, we have the entity itself as first parameter
-                    // and the consumer as second...
-                    descriptor.validateHandlers.add((e, c) -> {
-                        invokeHandler(accessPath, m, e, e, c);
-                    });
-                } else {
-                    OMA.LOG.WARN("OnValidate handler %s.%s doesn have Consumer<String> as parameter!",
-                                 m.getDeclaringClass().getName(),
-                                 m.getName());
-                }
-            }
+            processMethod(descriptor, accessPath, m);
         }
 
         if (Mixable.class.isAssignableFrom(clazz)) {
@@ -653,6 +597,56 @@ public class EntityDescriptor {
             && !Mixable.class.equals(clazz.getSuperclass())
             && !Object.class.equals(clazz.getSuperclass())) {
             addFields(descriptor, accessPath, rootClass, clazz.getSuperclass(), propertyConsumer);
+        }
+    }
+
+    private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
+        if (method.isAnnotationPresent(BeforeSave.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.beforeSaveHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(AfterSave.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.afterSaveHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(BeforeDelete.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.beforeDeleteHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(AfterDelete.class)) {
+            warnOnWrongVisibility(method);
+            descriptor.afterDeleteHandlers.add(e -> {
+                invokeHandler(accessPath, method, e);
+            });
+        } else if (method.isAnnotationPresent(OnValidate.class)) {
+            warnOnWrongVisibility(method);
+            if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
+                // When declared within an entity, we only have Consumer<String> as parameter
+                descriptor.validateHandlers.add((e, c) -> {
+                    invokeHandler(accessPath, method, e, c);
+                });
+            } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
+                // When declared within a mixin, we have the entity itself as first parameter
+                // and the consumer as second...
+                descriptor.validateHandlers.add((e, c) -> {
+                    invokeHandler(accessPath, method, e, e, c);
+                });
+            } else {
+                OMA.LOG.WARN("OnValidate handler %s.%s doesn have Consumer<String> as parameter!",
+                             method.getDeclaringClass().getName(),
+                             method.getName());
+            }
+        }
+    }
+
+    private static void warnOnWrongVisibility(Method method) {
+        if (!Modifier.isProtected(method.getModifiers())) {
+            OMA.LOG.WARN("Handler %s.%s is not declared protected!",
+                         method.getDeclaringClass().getName(),
+                         method.getName());
         }
     }
 
@@ -850,10 +844,14 @@ public class EntityDescriptor {
 
     /**
      * Returns the property for the given name.
+     * <p>
+     * If the property does not exits, an error will be thrown.
+     * </p>
      *
      * @param property the name of the property
      * @return the property with the given name
      */
+    @Nonnull
     public Property getProperty(String property) {
         Property prop = properties.get(property.replace('.', '_'));
         if (prop == null) {
@@ -866,6 +864,20 @@ public class EntityDescriptor {
         }
 
         return prop;
+    }
+
+    /**
+     * Returns the property for the given name.
+     * <p>
+     * If the property does not exist, <tt>null</tt> is returned.
+     * </p>
+     *
+     * @param property the name of the property or <tt>null</tt> if no property with the given name exists.
+     * @return the property with the given name
+     */
+    @Nullable
+    public Property findProperty(String property) {
+        return properties.get(property.replace('.', '_'));
     }
 
     /**

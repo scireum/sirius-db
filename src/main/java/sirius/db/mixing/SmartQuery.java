@@ -65,6 +65,15 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         this.descriptor = getDescriptor();
     }
 
+    /**
+     * Returns the <tt>EntityDescriptor</tt> for the type of entities addressed by this query.
+     *
+     * @return the underlying entity descriptor of this query.
+     */
+    public EntityDescriptor getEntityDescriptor() {
+        return descriptor;
+    }
+
     @Override
     public SmartQuery<E> skip(int skip) {
         return (SmartQuery<E>) super.skip(skip);
@@ -442,8 +451,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
          */
         public String translateColumnName(Column column) {
             Tuple<String, EntityDescriptor> aliasAndDescriptor = determineAlias(column.getParent());
-            return aliasAndDescriptor.getFirst() + "." + aliasAndDescriptor.getSecond()
-                                                                           .rewriteColumnName(column.getName());
+            EntityDescriptor effectiveDescriptor = aliasAndDescriptor.getSecond();
+            if (effectiveDescriptor != null) {
+                return aliasAndDescriptor.getFirst() + "." + effectiveDescriptor.rewriteColumnName(column.getName());
+            } else {
+                return aliasAndDescriptor.getFirst() + "." + column.getName();
+            }
         }
 
         private void createJoinFetch(Column field) {
