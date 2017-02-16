@@ -595,13 +595,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     private String fetchEffectiveColumnName(Column field, Tuple<String, EntityDescriptor> joinInfo) {
-        String columnName = null;
         if (Entity.ID.getName().equals(field.getName()) || Entity.VERSION.getName().equals(field.getName())) {
-            columnName = field.getName();
+            return field.getName();
         } else {
-            columnName = joinInfo.getSecond().getProperty(field.getName()).getColumnName();
+            return joinInfo.getSecond().getProperty(field.getName()).getColumnName();
         }
-        return columnName;
     }
 
     private Compiler selectCount() {
