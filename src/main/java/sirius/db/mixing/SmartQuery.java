@@ -579,21 +579,29 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             Tuple<String, EntityDescriptor> joinInfo = c.determineAlias(field.getParent());
             c.getSELECTBuilder().append(joinInfo.getFirst());
             c.getSELECTBuilder().append(".");
-            if (Entity.ID.getName().equals(field.getName()) || Entity.VERSION.getName().equals(field.getName())) {
-                c.getSELECTBuilder().append(field.getName());
-            } else {
-                c.getSELECTBuilder().append(joinInfo.getSecond().getProperty(field.getName()).getColumnName());
-            }
+            String columnName = fetchEffectiveColumnName(field, joinInfo);
+            c.getSELECTBuilder().append(columnName);
+
             if (!c.defaultAlias.equals(joinInfo.getFirst())) {
                 if (applyAliases) {
                     c.getSELECTBuilder().append(" AS ");
                     c.getSELECTBuilder().append(joinInfo.getFirst());
                     c.getSELECTBuilder().append("_");
-                    c.getSELECTBuilder().append(field.getName());
+                    c.getSELECTBuilder().append(columnName);
                 }
                 c.createJoinFetch(field);
             }
         }
+    }
+
+    private String fetchEffectiveColumnName(Column field, Tuple<String, EntityDescriptor> joinInfo) {
+        String columnName = null;
+        if (Entity.ID.getName().equals(field.getName()) || Entity.VERSION.getName().equals(field.getName())) {
+            columnName = field.getName();
+        } else {
+            columnName = joinInfo.getSecond().getProperty(field.getName()).getColumnName();
+        }
+        return columnName;
     }
 
     private Compiler selectCount() {
