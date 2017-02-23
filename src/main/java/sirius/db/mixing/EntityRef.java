@@ -9,6 +9,7 @@
 package sirius.db.mixing;
 
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -216,6 +217,23 @@ public class EntityRef<E extends Entity> {
      */
     public boolean is(Long otherId) {
         return otherId == null ? isEmpty() : id != null && Objects.equals(otherId, id);
+    }
+
+    /**
+     * Determines if the referenced entity has the given id.
+     * <p>
+     * This is a boilerplate method for handling ids represented as strings.
+     *
+     * @param otherId the id to check for
+     * @return <tt>true</tt> if the referenced entity has the given id, <tt>false</tt> otherwise.
+     */
+    public boolean is(String otherId) {
+        try {
+            return is(Long.parseLong(otherId));
+        } catch (NumberFormatException e) {
+            Exceptions.ignore(e);
+            return false;
+        }
     }
 
     /**
