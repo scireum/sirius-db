@@ -78,10 +78,11 @@ public class StringProperty extends Property {
 
     @Override
     protected void setValueToField(Object value, Object target) {
-        if (value instanceof Clob) {
+        Object effectiveValue = value;
+        if (effectiveValue instanceof Clob) {
             try {
-                value = ((Clob) value).getSubString(1, (int) ((Clob) value).length());
-            } catch (Throwable e) {
+                effectiveValue = ((Clob) value).getSubString(1, (int) ((Clob) value).length());
+            } catch (Exception e) {
                 throw Exceptions.handle()
                                 .to(OMA.LOG)
                                 .error(e)
@@ -93,14 +94,14 @@ public class StringProperty extends Property {
             }
         }
         if (trim) {
-            if (value != null) {
-                value = ((String) value).trim();
+            if (effectiveValue != null) {
+                effectiveValue = ((String) effectiveValue).trim();
             }
-            if ("".equals(value)) {
-                value = null;
+            if ("".equals(effectiveValue)) {
+                effectiveValue = null;
             }
         }
-        super.setValueToField(value, target);
+        super.setValueToField(effectiveValue, target);
     }
 
     @Override

@@ -8,6 +8,7 @@
 
 package sirius.db.mixing;
 
+import sirius.db.jdbc.Row;
 import sirius.db.jdbc.SQLQuery;
 import sirius.kernel.health.Exceptions;
 
@@ -33,26 +34,29 @@ public class TransformedQuery<E extends Entity> extends BaseQuery<E> {
         this.qry = qry;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void iterate(Function<E, Boolean> handler) {
         try {
             EntityDescriptor ed = getDescriptor();
             qry.iterate(row -> {
-                try {
-                    return handler.apply((E) ed.readFrom(alias, row));
-                } catch (Throwable e) {
-                    throw Exceptions.handle()
-                                    .to(OMA.LOG)
-                                    .error(e)
-                                    .withSystemErrorMessage(
-                                            "Cannot transform a row into an entity of type '%s' for query '%s'",
-                                            type.getName(),
-                                            qry.toString())
-                                    .handle();
-                }
+                return invokeHandlerForRow(handler, ed, row);
             }, getLimit());
         } catch (SQLException e) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Cannot transform a row into an entity of type '%s' for query '%s'",
+                                                    type.getName(),
+                                                    qry.toString())
+                            .handle();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Boolean invokeHandlerForRow(Function<E, Boolean> handler, EntityDescriptor ed, Row row) {
+        try {
+            return handler.apply((E) ed.readFrom(alias, row));
+        } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)

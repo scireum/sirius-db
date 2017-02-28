@@ -118,6 +118,9 @@ public abstract class Property {
      */
     protected boolean nullable;
 
+    @Part
+    protected static OMA oma;
+
     /**
      * Creates a new property for the given descriptor, access path and field.
      * <p>
@@ -444,9 +447,6 @@ public abstract class Property {
             throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
         }
     }
-
-    @Part
-    protected static OMA oma;
 
     /**
      * Checks the uniqueness of the given value and entity if an {@link Unique} annotation is present

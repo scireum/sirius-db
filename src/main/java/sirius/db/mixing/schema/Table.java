@@ -18,10 +18,10 @@ import java.util.List;
  */
 public class Table {
     private String name;
-    private List<String> primaryKey = new ArrayList<String>();
-    private List<TableColumn> columns = new ArrayList<TableColumn>();
-    private List<Key> keys = new ArrayList<Key>();
-    private List<ForeignKey> foreignKeys = new ArrayList<ForeignKey>();
+    private List<String> primaryKey = new ArrayList<>();
+    private List<TableColumn> columns = new ArrayList<>();
+    private List<Key> keys = new ArrayList<>();
+    private List<ForeignKey> foreignKeys = new ArrayList<>();
 
     /**
      * Returns the columns which make up the primary key

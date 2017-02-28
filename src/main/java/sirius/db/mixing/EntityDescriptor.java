@@ -133,6 +133,24 @@ public class EntityDescriptor {
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
 
+    /*
+     * Contains all known property factories. These are used to transform fields defined by entity classes to
+     * properties
+     */
+    @Parts(PropertyFactory.class)
+    protected static PartCollection<PropertyFactory> factories;
+
+    /*
+     * Contains all known property modifies, which can re-write existing properties to fix certain needs
+     */
+    @Parts(PropertyModifier.class)
+    protected static PartCollection<PropertyModifier> modifiers;
+
+    /*
+     * Contains all mixins known to the system
+     */
+    private static MultiMap<Class<? extends Mixable>, Class<?>> allMixins;
+
     /**
      * Creates a new entity for the given reference instance.
      *
@@ -296,6 +314,7 @@ public class EntityDescriptor {
      * @param entity the entity to modify
      */
     protected void beforeSaveChecks(Entity entity) {
+        // Can be overwritten by subclasses
     }
 
     /**
@@ -305,6 +324,7 @@ public class EntityDescriptor {
      * @param entity the entity of modify
      */
     protected void onBeforeSave(Entity entity) {
+        // Can be overwritten by subclasses
     }
 
     /**
@@ -367,6 +387,7 @@ public class EntityDescriptor {
      * @param entity the entity which was saved
      */
     protected void onAfterSave(Entity entity) {
+        // Can be overwritten by subclasses
     }
 
     /**
@@ -421,6 +442,7 @@ public class EntityDescriptor {
      * @param entity the entity which is about to be deleted
      */
     protected void onBeforeDelete(Entity entity) {
+        // Can be overwritten by subclasses
     }
 
     /**
@@ -444,6 +466,7 @@ public class EntityDescriptor {
      * @param entity the deleted entity
      */
     protected void onAfterDelete(Entity entity) {
+        // Can be overwritten by subclasses
     }
 
     /**
@@ -455,6 +478,52 @@ public class EntityDescriptor {
         Table table = new Table();
         table.setName(tableName);
 
+        collectColumns(table);
+        collectKeys(table);
+
+        applyColumnRenamings(table);
+
+        return table;
+    }
+
+    private void applyColumnRenamings(Table table) {
+        if (legacyInfo != null && legacyInfo.hasPath("rename")) {
+            Config renamedColumns = legacyInfo.getConfig("rename");
+            for (TableColumn col : table.getColumns()) {
+                applyAlias(col);
+                applyRenaming(renamedColumns, col);
+            }
+        }
+    }
+
+    private void applyRenaming(Config renamedColumns, TableColumn col) {
+        if (renamedColumns != null && renamedColumns.hasPath(col.getName())) {
+            col.setOldName(renamedColumns.getString(col.getName()));
+        }
+    }
+
+    private void applyAlias(TableColumn col) {
+        if (columnAliases != null) {
+            String alias = columnAliases.get(col.getName());
+            if (Strings.isFilled(alias)) {
+                col.setName(alias);
+            }
+        }
+    }
+
+    private void collectKeys(Table table) {
+        for (Index index : getType().getAnnotationsByType(Index.class)) {
+            Key key = new Key();
+            key.setName(index.name());
+            for (int i = 0; i < index.columns().length; i++) {
+                key.addColumn(i, index.columns()[i]);
+            }
+            key.setUnique(index.unique());
+            table.getKeys().add(key);
+        }
+    }
+
+    private void collectColumns(Table table) {
         TableColumn idColumn = new TableColumn();
         idColumn.setAutoIncrement(true);
         idColumn.setName(Entity.ID.getName());
@@ -475,33 +544,6 @@ public class EntityDescriptor {
         for (Property p : properties.values()) {
             p.contributeToTable(table);
         }
-
-        for (Index index : getType().getAnnotationsByType(Index.class)) {
-            Key key = new Key();
-            key.setName(index.name());
-            for (int i = 0; i < index.columns().length; i++) {
-                key.addColumn(i, index.columns()[i]);
-            }
-            key.setUnique(index.unique());
-            table.getKeys().add(key);
-        }
-
-        if (legacyInfo != null && legacyInfo.hasPath("rename")) {
-            Config renamedColumns = legacyInfo.getConfig("rename");
-            for (TableColumn col : table.getColumns()) {
-                if (columnAliases != null) {
-                    String alias = columnAliases.get(col.getName());
-                    if (Strings.isFilled(alias)) {
-                        col.setName(alias);
-                    }
-                }
-                if (renamedColumns != null && renamedColumns.hasPath(col.getName())) {
-                    col.setOldName(renamedColumns.getString(col.getName()));
-                }
-            }
-        }
-
-        return table;
     }
 
     /**
@@ -520,24 +562,6 @@ public class EntityDescriptor {
             }
         });
     }
-
-    /*
-     * Contains all known property factories. These are used to transform fields defined by entity classes to
-     * properties
-     */
-    @Parts(PropertyFactory.class)
-    protected static PartCollection<PropertyFactory> factories;
-
-    /*
-     * Contains all known property modifies, which can re-write existing properties to fix certain needs
-     */
-    @Parts(PropertyModifier.class)
-    protected static PartCollection<PropertyModifier> modifiers;
-
-    /*
-     * Contains all mixins known to the system
-     */
-    private static MultiMap<Class<? extends Mixable>, Class<?>> allMixins;
 
     @SuppressWarnings("unchecked")
     private static Collection<Class<?>> getMixins(Class<? extends Mixable> forClass) {
@@ -603,37 +627,25 @@ public class EntityDescriptor {
     private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
         if (method.isAnnotationPresent(BeforeSave.class)) {
             warnOnWrongVisibility(method);
-            descriptor.beforeSaveHandlers.add(e -> {
-                invokeHandler(accessPath, method, e);
-            });
+            descriptor.beforeSaveHandlers.add(e -> invokeHandler(accessPath, method, e));
         } else if (method.isAnnotationPresent(AfterSave.class)) {
             warnOnWrongVisibility(method);
-            descriptor.afterSaveHandlers.add(e -> {
-                invokeHandler(accessPath, method, e);
-            });
+            descriptor.afterSaveHandlers.add(e -> invokeHandler(accessPath, method, e));
         } else if (method.isAnnotationPresent(BeforeDelete.class)) {
             warnOnWrongVisibility(method);
-            descriptor.beforeDeleteHandlers.add(e -> {
-                invokeHandler(accessPath, method, e);
-            });
+            descriptor.beforeDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
         } else if (method.isAnnotationPresent(AfterDelete.class)) {
             warnOnWrongVisibility(method);
-            descriptor.afterDeleteHandlers.add(e -> {
-                invokeHandler(accessPath, method, e);
-            });
+            descriptor.afterDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
         } else if (method.isAnnotationPresent(OnValidate.class)) {
             warnOnWrongVisibility(method);
             if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
                 // When declared within an entity, we only have Consumer<String> as parameter
-                descriptor.validateHandlers.add((e, c) -> {
-                    invokeHandler(accessPath, method, e, c);
-                });
+                descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, c));
             } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
                 // When declared within a mixin, we have the entity itself as first parameter
                 // and the consumer as second...
-                descriptor.validateHandlers.add((e, c) -> {
-                    invokeHandler(accessPath, method, e, e, c);
-                });
+                descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, e, c));
             } else {
                 OMA.LOG.WARN("OnValidate handler %s.%s doesn have Consumer<String> as parameter!",
                              method.getDeclaringClass().getName(),
@@ -661,6 +673,7 @@ public class EntityDescriptor {
         } catch (IllegalAccessException ex) {
             throw Exceptions.handle(OMA.LOG, ex);
         } catch (InvocationTargetException ex) {
+            Exceptions.ignore(ex);
             throw Exceptions.handle(OMA.LOG, ex.getTargetException());
         }
     }
@@ -690,17 +703,24 @@ public class EntityDescriptor {
     }
 
     private static Property modifyProperty(Property p) {
+        Property effectiveProperty = p;
         for (PropertyModifier modifier : modifiers) {
-            if (modifier.targetType() == null || modifier.targetType()
-                                                         .isAssignableFrom(p.getField().getDeclaringClass())) {
-                if (Strings.isEmpty(modifier.targetFieldName()) || Strings.areEqual(p.getField().getName(),
-                                                                                    modifier.targetFieldName())) {
-                    p = modifier.modify(p);
-                }
+            if (modifierApplies(effectiveProperty, modifier)) {
+                effectiveProperty = modifier.modify(effectiveProperty);
             }
         }
 
         return p;
+    }
+
+    private static boolean modifierApplies(Property p, PropertyModifier modifier) {
+        if (modifier.targetType() != null && !modifier.targetType()
+                                                      .isAssignableFrom(p.getField().getDeclaringClass())) {
+            return false;
+        }
+
+        return Strings.isEmpty(modifier.targetFieldName()) || Strings.areEqual(p.getField().getName(),
+                                                                               modifier.targetFieldName());
     }
 
     /**
@@ -709,7 +729,6 @@ public class EntityDescriptor {
      * @param alias the field alias used to generate unique column names
      * @param row   the result row to read from
      * @return an entity containing the values of the given result row
-     * @throws Exception in case of either a type error (class cannot be instantiated) or a database error
      */
     protected Entity readFrom(String alias, Row row) throws Exception {
         Entity entity = type.newInstance();
