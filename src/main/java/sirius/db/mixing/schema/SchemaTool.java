@@ -34,7 +34,13 @@ import java.util.TreeSet;
  */
 public class SchemaTool {
 
+    private static final String COLUMN_KEY_SEQ = "KEY_SEQ";
+    private static final String COLUMN_COLUMN_NAME = "COLUMN_NAME";
+    private static final String KEY_TABLE = "table";
+    private static final String KEY_COLUMN = "column";
     private final DatabaseDialect dialect;
+
+    private static Map<Integer, String> map;
 
     /**
      * Creates a new instance for the given dialect.
@@ -57,16 +63,22 @@ public class SchemaTool {
         try (Connection c = db.getConnection()) {
             try (ResultSet rs = c.getMetaData().getTables(c.getSchema(), null, null, null)) {
                 while (rs.next()) {
-                    if ("TABLE".equalsIgnoreCase(rs.getString(4))) {
-                        Table table = new Table();
-                        table.setName(rs.getString("TABLE_NAME"));
-                        fillTable(c, table);
-                        tables.add(dialect.completeTableInfos(table));
-                    }
+                    readTableRow(tables, c, rs);
                 }
             }
         }
         return tables;
+    }
+
+    protected void readTableRow(List<Table> tables, Connection c, ResultSet rs) throws SQLException {
+        if (!"TABLE".equalsIgnoreCase(rs.getString(4))) {
+            return;
+        }
+
+        Table table = new Table();
+        table.setName(rs.getString("TABLE_NAME"));
+        fillTable(c, table);
+        tables.add(dialect.completeTableInfos(table));
     }
 
     private void fillTable(Connection c, Table table) throws SQLException {
@@ -90,8 +102,8 @@ public class SchemaTool {
                     fk.setForeignTable(rs.getString("PKTABLE_NAME"));
                     table.getForeignKeys().add(fk);
                 }
-                fk.addColumn(rs.getInt("KEY_SEQ"), rs.getString("FKCOLUMN_NAME"));
-                fk.addForeignColumn(rs.getInt("KEY_SEQ"), rs.getString("PKCOLUMN_NAME"));
+                fk.addColumn(rs.getInt(COLUMN_KEY_SEQ), rs.getString("FKCOLUMN_NAME"));
+                fk.addForeignColumn(rs.getInt(COLUMN_KEY_SEQ), rs.getString("PKCOLUMN_NAME"));
             }
         }
         rs.close();
@@ -110,7 +122,7 @@ public class SchemaTool {
                     key.setUnique(!rs.getBoolean("NON_UNIQUE"));
                     table.getKeys().add(key);
                 }
-                key.addColumn(rs.getInt("ORDINAL_POSITION"), rs.getString("COLUMN_NAME"));
+                key.addColumn(rs.getInt("ORDINAL_POSITION"), rs.getString(COLUMN_COLUMN_NAME));
             }
         }
         rs.close();
@@ -119,9 +131,9 @@ public class SchemaTool {
     private void fillPK(Connection c, Table table) throws SQLException {
         // PKs
         ResultSet rs = c.getMetaData().getPrimaryKeys(c.getSchema(), null, table.getName());
-        List<ComparableTuple<Integer, String>> keyFields = new ArrayList<ComparableTuple<Integer, String>>();
+        List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
         while (rs.next()) {
-            keyFields.add(ComparableTuple.create(rs.getInt("KEY_SEQ"), rs.getString("COLUMN_NAME")));
+            keyFields.add(ComparableTuple.create(rs.getInt(COLUMN_KEY_SEQ), rs.getString(COLUMN_COLUMN_NAME)));
         }
         Collections.sort(keyFields);
         for (Tuple<Integer, String> key : keyFields) {
@@ -135,7 +147,7 @@ public class SchemaTool {
         ResultSet rs = c.getMetaData().getColumns(c.getSchema(), null, table.getName(), null);
         while (rs.next()) {
             TableColumn column = new TableColumn();
-            column.setName(rs.getString("COLUMN_NAME"));
+            column.setName(rs.getString(COLUMN_COLUMN_NAME));
             column.setNullable(DatabaseMetaData.columnNullable == rs.getInt("NULLABLE"));
             column.setType(rs.getInt("DATA_TYPE"));
             column.setLength(rs.getInt("COLUMN_SIZE"));
@@ -177,7 +189,7 @@ public class SchemaTool {
         for (Table table : currentSchema) {
             if (findInList(targetSchema, table) == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("SchemaTool.tableUnused").set("table", table.getName()).format());
+                action.setReason(NLS.fmtr("SchemaTool.tableUnused").set(KEY_TABLE, table.getName()).format());
                 action.setDataLossPossible(true);
                 action.setSql(dialect.generateDropTable(table));
                 result.add(action);
@@ -192,7 +204,9 @@ public class SchemaTool {
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist").set("table", targetTable.getName()).format());
+                action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
+                                    .set(KEY_TABLE, targetTable.getName())
+                                    .format());
                 action.setDataLossPossible(false);
                 action.setSql(dialect.generateCreateTable(targetTable));
                 result.add(action);
@@ -205,15 +219,6 @@ public class SchemaTool {
             Table other = findInList(currentSchema, targetTable);
             syncForeignKeys(targetTable, other, result);
         }
-    }
-
-    private boolean hasOpenReferences(Table t, Set<String> handled) {
-        for (ForeignKey fk : t.getForeignKeys()) {
-            if (!fk.getForeignTable().equals(t.getName()) && !handled.contains(fk.getForeignTable())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean keyListEqual(List<String> left, List<String> right) {
@@ -235,7 +240,7 @@ public class SchemaTool {
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
             SchemaUpdateAction action = new SchemaUpdateAction();
-            action.setReason(NLS.fmtr("SchemaTool.pkChanged").set("table", targetTable.getName()).format());
+            action.setReason(NLS.fmtr("SchemaTool.pkChanged").set(KEY_TABLE, targetTable.getName()).format());
             action.setDataLossPossible(true);
             action.setSql(dialect.generateAlterPrimaryKey(targetTable));
             result.add(action);
@@ -252,7 +257,7 @@ public class SchemaTool {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.indexUnused")
                                     .set("key", key.getName())
-                                    .set("table", other.getName())
+                                    .set(KEY_TABLE, other.getName())
                                     .format());
                 action.setDataLossPossible(true);
                 action.setSql(dialect.generateDropKey(other, key));
@@ -267,7 +272,7 @@ public class SchemaTool {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.fkUnused")
                                     .set("key", key.getName())
-                                    .set("table", other.getName())
+                                    .set(KEY_TABLE, other.getName())
                                     .format());
                 action.setDataLossPossible(true);
                 action.setSql(dialect.generateDropForeignKey(other, key));
@@ -283,7 +288,7 @@ public class SchemaTool {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
                                     .set("key", targetKey.getName())
-                                    .set("table", targetTable.getName())
+                                    .set(KEY_TABLE, targetTable.getName())
                                     .format());
                 action.setDataLossPossible(false);
                 action.setSql(dialect.generateAddKey(targetTable, targetKey));
@@ -294,7 +299,7 @@ public class SchemaTool {
                     SchemaUpdateAction action = new SchemaUpdateAction();
                     action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
                                         .set("key", targetKey.getName())
-                                        .set("table", targetTable.getName())
+                                        .set(KEY_TABLE, targetTable.getName())
                                         .format());
                     action.setDataLossPossible(true);
                     action.setSql(dialect.generateAlterKey(targetTable, otherKey, targetKey));
@@ -311,7 +316,7 @@ public class SchemaTool {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.fkDoesNotExist")
                                     .set("key", targetKey.getName())
-                                    .set("table", targetTable.getName())
+                                    .set(KEY_TABLE, targetTable.getName())
                                     .format());
                 action.setDataLossPossible(false);
                 action.setSql(dialect.generateAddForeignKey(targetTable, targetKey));
@@ -323,7 +328,7 @@ public class SchemaTool {
                     SchemaUpdateAction action = new SchemaUpdateAction();
                     action.setReason(NLS.fmtr("SchemaTool.fkNeedsChange")
                                         .set("key", targetKey.getName())
-                                        .set("table", targetTable.getName())
+                                        .set(KEY_TABLE, targetTable.getName())
                                         .format());
                     action.setDataLossPossible(true);
                     action.setSql(dialect.generateAlterForeignKey(targetTable, otherKey, targetKey));
@@ -334,7 +339,7 @@ public class SchemaTool {
     }
 
     private void syncColumns(Table targetTable, Table other, List<SchemaUpdateAction> result) {
-        Set<String> usedColumns = new TreeSet<String>();
+        Set<String> usedColumns = new TreeSet<>();
         for (TableColumn targetCol : targetTable.getColumns()) {
             // Try to find column by name
             TableColumn otherCol = findColumn(other, targetCol.getName());
@@ -344,48 +349,25 @@ public class SchemaTool {
                 otherCol = findColumn(other, targetCol.getOldName());
             }
             if (otherCol == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
-                action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
-                                    .set("column", targetCol.getName())
-                                    .set("table", targetTable.getName())
-                                    .format());
-                action.setDataLossPossible(false);
-                action.setSql(dialect.generateAddColumn(targetTable, targetCol));
-                result.add(action);
+                handleNewColumn(targetTable, result, targetCol);
             } else {
-                usedColumns.add(otherCol.getName());
-                String reason = dialect.areColumnsEqual(targetCol, otherCol);
-                // Check for renaming...
-                if (reason == null
-                    && !Strings.areEqual(targetCol.getName(), otherCol.getName())
-                    && dialect.isColumnCaseSensitive()) {
-                    reason = NLS.fmtr("SchemaTool.columnNeedsRename")
-                                .set("column", otherCol.getName())
-                                .set("newName", targetCol.getName())
-                                .set("table", targetTable.getName())
-                                .format();
-                } else if (reason != null) {
-                    reason = NLS.fmtr("SchemaTool.columnNeedsChange")
-                                .set("column", otherCol.getName())
-                                .set("table", targetTable.getName())
-                                .set("reason", reason)
-                                .format();
-                }
-                if (reason != null) {
-                    SchemaUpdateAction action = new SchemaUpdateAction();
-                    action.setReason(reason);
-                    action.setDataLossPossible(true);
-                    action.setSql(dialect.generateAlterColumnTo(targetTable, targetCol.getOldName(), targetCol));
-                    result.add(action);
-                }
+                handleUpdateColumn(targetTable, result, usedColumns, targetCol, otherCol);
             }
         }
+
+        handleUnusedColumns(targetTable, other, result, usedColumns);
+    }
+
+    private void handleUnusedColumns(Table targetTable,
+                                     Table other,
+                                     List<SchemaUpdateAction> result,
+                                     Set<String> usedColumns) {
         for (TableColumn col : other.getColumns()) {
             if (!usedColumns.contains(col.getName())) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
                 action.setReason(NLS.fmtr("SchemaTool.columnUnused")
-                                    .set("column", col.getName())
-                                    .set("table", other.getName())
+                                    .set(KEY_COLUMN, col.getName())
+                                    .set(KEY_TABLE, other.getName())
                                     .format());
                 action.setDataLossPossible(true);
                 action.setSql(dialect.generateDropColumn(targetTable, col));
@@ -394,10 +376,53 @@ public class SchemaTool {
         }
     }
 
+    private void handleUpdateColumn(Table targetTable,
+                                    List<SchemaUpdateAction> result,
+                                    Set<String> usedColumns,
+                                    TableColumn targetCol,
+                                    TableColumn otherCol) {
+        usedColumns.add(otherCol.getName());
+        String reason = dialect.areColumnsEqual(targetCol, otherCol);
+        // Check for renaming...
+        if (reason == null
+            && !Strings.areEqual(targetCol.getName(), otherCol.getName())
+            && dialect.isColumnCaseSensitive()) {
+            reason = NLS.fmtr("SchemaTool.columnNeedsRename")
+                        .set(KEY_COLUMN, otherCol.getName())
+                        .set("newName", targetCol.getName())
+                        .set(KEY_TABLE, targetTable.getName())
+                        .format();
+        } else if (reason != null) {
+            reason = NLS.fmtr("SchemaTool.columnNeedsChange")
+                        .set(KEY_COLUMN, otherCol.getName())
+                        .set(KEY_TABLE, targetTable.getName())
+                        .set("reason", reason)
+                        .format();
+        }
+        if (reason != null) {
+            SchemaUpdateAction action = new SchemaUpdateAction();
+            action.setReason(reason);
+            action.setDataLossPossible(true);
+            action.setSql(dialect.generateAlterColumnTo(targetTable, targetCol.getOldName(), targetCol));
+            result.add(action);
+        }
+    }
+
+    private void handleNewColumn(Table targetTable, List<SchemaUpdateAction> result, TableColumn targetCol) {
+        SchemaUpdateAction action = new SchemaUpdateAction();
+        action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
+                            .set(KEY_COLUMN, targetCol.getName())
+                            .set(KEY_TABLE, targetTable.getName())
+                            .format());
+        action.setDataLossPossible(false);
+        action.setSql(dialect.generateAddColumn(targetTable, targetCol));
+        result.add(action);
+    }
+
     private TableColumn findColumn(Table other, String name) {
-        name = dialect.translateColumnName(name);
+        String effectiveName = dialect.translateColumnName(name);
         for (TableColumn col : other.getColumns()) {
-            if (Strings.areEqual(col.getName(), name)) {
+            if (Strings.areEqual(col.getName(), effectiveName)) {
                 return col;
             }
         }
@@ -440,6 +465,4 @@ public class SchemaTool {
         // Return the JDBC type name
         return map.get(jdbcType);
     }
-
-    private static Map<Integer, String> map;
 }

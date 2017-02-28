@@ -62,6 +62,12 @@ public class EntityRefProperty extends Property {
         }
     }
 
+    @Part
+    private static Schema schema;
+
+    @Part
+    private static CascadeDeleteTaskQueue cascadeQueue;
+
     private EntityRef<? extends Entity> entityRef;
     private Class<? extends Entity> referencedType;
     private EntityDescriptor referencedDescriptor;
@@ -74,12 +80,6 @@ public class EntityRefProperty extends Property {
     protected int getSQLType() {
         return Types.BIGINT;
     }
-
-    @Part
-    private static Schema schema;
-
-    @Part
-    private static CascadeDeleteTaskQueue cascadeQueue;
 
     @Override
     public void contributeToTable(Table table) {
@@ -192,37 +192,40 @@ public class EntityRefProperty extends Property {
     }
 
     protected void createBackgroundCascadeHandler() {
-        cascadeQueue.addReferenceToCheck(() -> {
-            try {
-                oma.select(this.descriptor.getType())
-                   .where(FieldOperator.on(nameAsColumn).notEqual(null))
-                   .iterateAll(e -> {
-                       if (!oma.select(getReferencedType()).eq(Entity.ID, getValue(e)).exists()) {
-                           try {
-                               oma.delete(e);
-                           } catch (Throwable ex) {
-                               Exceptions.handle()
-                                         .to(OMA.LOG)
-                                         .error(ex)
-                                         .withSystemErrorMessage(
-                                                 "Failed to cascade delete for '%s' (%s) via '%s': %s (%s)",
-                                                 e,
-                                                 descriptor.getType().getName(),
-                                                 getName())
-                                         .handle();
-                           }
-                       }
-                   });
-            } catch (Throwable ex) {
-                Exceptions.handle()
-                          .to(OMA.LOG)
-                          .error(ex)
-                          .withSystemErrorMessage("Failed to check for cascading deletes of '%s' via '%s': %s (%s)",
-                                                  descriptor.getType().getName(),
-                                                  getName())
-                          .handle();
-            }
-        });
+        cascadeQueue.addReferenceToCheck(this::cascadeDeletesInBackground);
+    }
+
+    private void cascadeDeletesInBackground() {
+        try {
+            oma.select(this.descriptor.getType()).where(FieldOperator.on(nameAsColumn).notEqual(null)).iterateAll(e -> {
+                if (!oma.select(getReferencedType()).eq(Entity.ID, getValue(e)).exists()) {
+                    cascadeDelete(e);
+                }
+            });
+        } catch (Exception ex) {
+            Exceptions.handle()
+                      .to(OMA.LOG)
+                      .error(ex)
+                      .withSystemErrorMessage("Failed to check for cascading deletes of '%s' via '%s': %s (%s)",
+                                              descriptor.getType().getName(),
+                                              getName())
+                      .handle();
+        }
+    }
+
+    private void cascadeDelete(Entity e) {
+        try {
+            oma.delete(e);
+        } catch (Exception ex) {
+            Exceptions.handle()
+                      .to(OMA.LOG)
+                      .error(ex)
+                      .withSystemErrorMessage("Failed to cascade delete for '%s' (%s) via '%s': %s (%s)",
+                                              e,
+                                              descriptor.getType().getName(),
+                                              getName())
+                      .handle();
+        }
     }
 
     private EntityRef<?> getEntityRef() {
@@ -250,9 +253,10 @@ public class EntityRefProperty extends Property {
         return e.get();
     }
 
-    protected EntityRef<?> getEntityRef(Object entity) {
+    @SuppressWarnings("unchecked")
+    protected EntityRef<Entity> getEntityRef(Object entity) {
         try {
-            return (EntityRef<?>) super.getValueFromField(entity);
+            return (EntityRef<Entity>) super.getValueFromField(entity);
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
@@ -271,10 +275,8 @@ public class EntityRefProperty extends Property {
      * @param parent the parent containing the reference to the child
      * @param child  the referenced child entity
      */
-
-    @SuppressWarnings("unchecked")
     public void setReferencedEntity(Entity parent, Entity child) {
-        ((EntityRef<Entity>) getEntityRef(accessPath.apply(parent))).setValue(child);
+        getEntityRef(accessPath.apply(parent)).setValue(child);
     }
 
     @SuppressWarnings("unchecked")

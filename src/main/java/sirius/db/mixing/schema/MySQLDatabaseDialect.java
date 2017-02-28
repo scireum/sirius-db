@@ -13,12 +13,6 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
-import java.math.BigDecimal;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -28,54 +22,76 @@ import java.util.List;
 /**
  * Defines the dialect used to sync the schema against a MySQL database.
  */
-@Register(name = "mysql")
-public class MySQLDatabaseDialect implements DatabaseDialect {
+@Register(name = "mysql", classes = DatabaseDialect.class)
+public class MySQLDatabaseDialect extends BasicDatabaseDialect {
+
+    private static final String KEY_TARGET = "target";
+    private static final String KEY_CURRENT = "current";
+    private static final String NOT_NULL = "NOT NULL";
+    private static final String AUTO_INCREMENT = "AUTO_INCREMENT";
 
     @Override
     public String areColumnsEqual(TableColumn target, TableColumn current) {
-        if (!areTypesEqual(target.getType(), current.getType())) {
-            return NLS.fmtr("MySQLDatabaseDialect.differentTypes")
-                      .set("target", SchemaTool.getJdbcTypeName(target.getType()))
-                      .set("current", SchemaTool.getJdbcTypeName(current.getType()))
+        String reason = checkColumnSettings(target, current);
+        if (reason != null) {
+            return reason;
+        }
+
+        if (target.isNullable() != current.isNullable() && target.getType() != Types.TIMESTAMP
+            || target.getDefaultValue() != null) {
+            return NLS.get("MySQLDatabaseDialect.differentNull");
+        }
+
+        if (areDefaultsDifferent(target, current)) {
+            return NLS.fmtr("MySQLDatabaseDialect.differentDefault")
+                      .set(KEY_TARGET, target.getDefaultValue())
+                      .set(KEY_CURRENT, current.getDefaultValue())
                       .format();
         }
-        if (target.isNullable() != current.isNullable()) {
-            if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
-                return NLS.get("MySQLDatabaseDialect.differentNull");
-            }
+
+        return null;
+    }
+
+    protected boolean areDefaultsDifferent(TableColumn target, TableColumn current) {
+        if (equalValue(target.getDefaultValue(), current.getDefaultValue())) {
+            return false;
         }
-        if (!equalValue(target.getDefaultValue(), current.getDefaultValue())) {
-            // TIMESTAMP values cannot be null -> we gracefully ignore this
-            // here, sice the alter statement would be ignored anyway.
-            if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
-                return NLS.fmtr("MySQLDatabaseDialect.differentDefault")
-                          .set("target", target.getDefaultValue())
-                          .set("current", current.getDefaultValue())
-                          .format();
-            }
+
+        // TIMESTAMP values cannot be null -> we gracefully ignore this
+        // here, sice the alter statement would be ignored anyway.
+        return target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null;
+    }
+
+    protected String checkColumnSettings(TableColumn target, TableColumn current) {
+        if (!areTypesEqual(target.getType(), current.getType())) {
+            return NLS.fmtr("MySQLDatabaseDialect.differentTypes")
+                      .set(KEY_TARGET, SchemaTool.getJdbcTypeName(target.getType()))
+                      .set(KEY_CURRENT, SchemaTool.getJdbcTypeName(current.getType()))
+                      .format();
         }
-        if (areTypesEqual(Types.CHAR, target.getType())) {
-            if (!Strings.areEqual(target.getLength(), current.getLength())) {
-                return NLS.fmtr("MySQLDatabaseDialect.differentLength")
-                          .set("target", target.getLength())
-                          .set("current", current.getLength())
-                          .format();
-            }
+
+        if (areTypesEqual(Types.CHAR, target.getType()) && !Strings.areEqual(target.getLength(), current.getLength())) {
+            return NLS.fmtr("MySQLDatabaseDialect.differentLength")
+                      .set(KEY_TARGET, target.getLength())
+                      .set(KEY_CURRENT, current.getLength())
+                      .format();
         }
+
         if (areTypesEqual(Types.DECIMAL, target.getType())) {
             if (!Strings.areEqual(target.getPrecision(), current.getPrecision())) {
                 return NLS.fmtr("MySQLDatabaseDialect.differentPrecision")
-                          .set("target", target.getPrecision())
-                          .set("current", current.getPrecision())
+                          .set(KEY_TARGET, target.getPrecision())
+                          .set(KEY_CURRENT, current.getPrecision())
                           .format();
             }
             if (!Strings.areEqual(target.getScale(), current.getScale())) {
                 return NLS.fmtr("MySQLDatabaseDialect.differentScale")
-                          .set("target", target.getScale())
-                          .set("current", current.getScale())
+                          .set(KEY_TARGET, target.getScale())
+                          .set(KEY_CURRENT, current.getScale())
                           .format();
             }
         }
+
         return null;
     }
 
@@ -104,14 +120,8 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     @Override
     public Table completeTableInfos(Table table) {
         for (TableColumn col : table.getColumns()) {
-            if (Types.CHAR == col.getType()
-                || Types.VARCHAR == col.getType()
-                || Types.CLOB == col.getType()
-                || Types.DATE == col.getType()
-                || Types.TIMESTAMP == col.getType()
-                || Types.LONGVARCHAR == col.getType()
-                || Types.TIME == col.getType()) {
-                col.setDefaultValue(col.getDefaultValue() == null ? null : "'" + col.getDefaultValue() + "'");
+            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col)) {
+                col.setDefaultValue("'" + col.getDefaultValue() + "'");
             }
         }
         // The PK is also identified as INDEX...
@@ -122,14 +132,25 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         return table;
     }
 
+    protected boolean hasEscapedDefaultValue(TableColumn col) {
+        if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType()) {
+            return true;
+        }
+
+        return Types.DATE == col.getType()
+               || Types.TIMESTAMP == col.getType()
+               || Types.LONGVARCHAR == col.getType()
+               || Types.TIME == col.getType();
+    }
+
     @Override
     public String generateAddColumn(Table table, TableColumn col) {
         return MessageFormat.format("ALTER TABLE `{0}` ADD COLUMN `{1}` {2} {3} {4} {5}",
                                     table.getName(),
                                     col.getName(),
                                     getTypeName(col.getType(), col.getLength(), col.getPrecision(), col.getScale()),
-                                    col.isNullable() ? "" : "NOT NULL",
-                                    col.isAutoIncrement() ? "AUTO_INCREMENT" : "",
+                                    col.isNullable() ? "" : NOT_NULL,
+                                    col.isAutoIncrement() ? AUTO_INCREMENT : "",
                                     getDefaultValueAsString(col));
     }
 
@@ -144,11 +165,20 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         if (type == other) {
             return true;
         }
-        return in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT)
-               || in(type, other, Types.VARCHAR, Types.CHAR)
-               || in(type, other, Types.LONGVARCHAR, Types.CLOB)
-               || in(type, other, Types.LONGVARBINARY, Types.BLOB, Types.VARBINARY)
-               || in(type, other, Types.NUMERIC, Types.DECIMAL);
+        if (in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT)) {
+            return true;
+        }
+        if (in(type, other, Types.VARCHAR, Types.CHAR)) {
+            return true;
+        }
+        if (in(type, other, Types.LONGVARCHAR, Types.CLOB)) {
+            return true;
+        }
+        if (in(type, other, Types.LONGVARBINARY, Types.BLOB, Types.VARBINARY)) {
+            return true;
+        }
+
+        return in(type, other, Types.NUMERIC, Types.DECIMAL);
     }
 
     private boolean in(int type, int other, int... types) {
@@ -156,32 +186,12 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     }
 
     private String getTypeName(int type, int length, int precision, int scale) {
+        return convertNumericTypes(type, length, precision, scale);
+    }
+
+    private String convertNumericTypes(int type, int length, int precision, int scale) {
         if (Types.BIGINT == type) {
             return "BIGINT(20)";
-        }
-        if (Types.BLOB == type) {
-            return "LONGBLOB";
-        }
-        if (Types.VARBINARY == type) {
-            return "LONGBLOB";
-        }
-        if (Types.LONGVARBINARY == type) {
-            return "LONGBLOB";
-        }
-        if (Types.BOOLEAN == type) {
-            return "TINYINT(1)";
-        }
-        if (Types.BIT == type) {
-            return "TINYINT(1)";
-        }
-        if (Types.CHAR == type) {
-            return "VARCHAR(" + length + ")";
-        }
-        if (Types.CLOB == type) {
-            return "LONGTEXT";
-        }
-        if (Types.DATE == type) {
-            return "DATE";
         }
         if (Types.DOUBLE == type) {
             return "DOUBLE";
@@ -198,21 +208,52 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
         if (Types.INTEGER == type) {
             return "INTEGER";
         }
+        if (Types.BOOLEAN == type) {
+            return "TINYINT(1)";
+        }
+        if (Types.BIT == type) {
+            return "TINYINT(1)";
+        }
+        if (Types.TINYINT == type) {
+            return "TINYINT";
+        }
+        return convertCharTypes(type, length);
+    }
+
+    private String convertCharTypes(int type, int length) {
+        if (Types.CHAR == type) {
+            return "VARCHAR(" + length + ")";
+        }
+        if (Types.VARCHAR == type) {
+            return "VARCHAR(" + length + ")";
+        }
+        if (Types.CLOB == type) {
+            return "LONGTEXT";
+        }
+        return convertTemporalTypes(type);
+    }
+
+    private String convertTemporalTypes(int type) {
+        if (Types.DATE == type) {
+            return "DATE";
+        }
         if (Types.TIME == type) {
             return "TIME";
         }
         if (Types.TIMESTAMP == type) {
             return "TIMESTAMP";
         }
-        if (Types.TINYINT == type) {
-            return "TINYINT";
+
+        return convertBinaryTypes(type);
+    }
+
+    private String convertBinaryTypes(int type) {
+        if (Types.BLOB == type || Types.VARBINARY == type || Types.LONGVARBINARY == type) {
+            return "LONGBLOB";
         }
-        if (Types.VARCHAR == type) {
-            return "VARCHAR(" + length + ")";
-        }
-        throw new IllegalArgumentException(NLS.fmtr("MySQLDatabaseDialect.unknownType")
-                                              .set("type", SchemaTool.getJdbcTypeName(type))
-                                              .format());
+
+        throw new IllegalArgumentException(Strings.apply("The type %s cannot be used as JDBC type!",
+                                                         SchemaTool.getJdbcTypeName(type)));
     }
 
     private String listToString(List<String> columns) {
@@ -257,23 +298,24 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
 
     @Override
     public List<String> generateAlterColumnTo(Table table, String oldName, TableColumn toColumn) {
-        if (oldName == null) {
-            oldName = toColumn.getName();
+        String name = oldName;
+        if (name == null) {
+            name = toColumn.getName();
         }
         return Collections.singletonList(MessageFormat.format(
                 "ALTER TABLE `{0}` CHANGE COLUMN `{1}` `{2}` {3} {4} {5} {6}",
                 table.getName(),
-                oldName,
+                name,
                 toColumn.getName(),
                 getTypeName(toColumn.getType(), toColumn.getLength(), toColumn.getPrecision(), toColumn.getScale()),
-                toColumn.isNullable() ? "" : "NOT NULL",
-                toColumn.isAutoIncrement() ? "AUTO_INCREMENT" : "",
+                toColumn.isNullable() ? "" : NOT_NULL,
+                toColumn.isAutoIncrement() ? AUTO_INCREMENT : "",
                 getDefaultValueAsString(toColumn)));
     }
 
     @Override
     public List<String> generateAlterForeignKey(Table table, ForeignKey from, ForeignKey to) {
-        List<String> actions = new ArrayList<String>();
+        List<String> actions = new ArrayList<>();
         if (from != null) {
             actions.add(generateDropForeignKey(table, from));
         }
@@ -283,7 +325,7 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
 
     @Override
     public List<String> generateAlterKey(Table table, Key from, Key to) {
-        List<String> actions = new ArrayList<String>();
+        List<String> actions = new ArrayList<>();
         if (from != null) {
             actions.add(generateDropKey(table, from));
         }
@@ -312,8 +354,8 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
                                                        col.getLength(),
                                                        col.getPrecision(),
                                                        col.getScale()),
-                                           col.isNullable() ? "" : "NOT NULL",
-                                           col.isAutoIncrement() ? "AUTO_INCREMENT" : "",
+                                           col.isNullable() ? "" : NOT_NULL,
+                                           col.isAutoIncrement() ? AUTO_INCREMENT : "",
                                            getDefaultValueAsString(col)));
         }
         for (Key key : table.getKeys()) {
@@ -349,62 +391,6 @@ public class MySQLDatabaseDialect implements DatabaseDialect {
     @Override
     public String generateDropTable(Table table) {
         return MessageFormat.format("DROP TABLE `{0}` ", table.getName());
-    }
-
-    @Override
-    public int getJDBCType(Class<?> clazz) {
-        if (String.class.equals(clazz)) {
-            return Types.VARCHAR;
-        }
-        if (Integer.class.equals(clazz)) {
-            return Types.INTEGER;
-        }
-        if (Long.class.equals(clazz)) {
-            return Types.BIGINT;
-        }
-        if (Double.class.equals(clazz)) {
-            return Types.DOUBLE;
-        }
-        if (BigDecimal.class.equals(clazz)) {
-            return Types.DECIMAL;
-        }
-        if (Float.class.equals(clazz)) {
-            return Types.FLOAT;
-        }
-        if (Boolean.class.equals(clazz)) {
-            return Types.TINYINT;
-        }
-        if (int.class.equals(clazz)) {
-            return Types.INTEGER;
-        }
-        if (long.class.equals(clazz)) {
-            return Types.BIGINT;
-        }
-        if (double.class.equals(clazz)) {
-            return Types.DOUBLE;
-        }
-        if (float.class.equals(clazz)) {
-            return Types.FLOAT;
-        }
-        if (boolean.class.equals(clazz)) {
-            return Types.TINYINT;
-        }
-        if (Date.class.equals(clazz)) {
-            return Types.DATE;
-        }
-        if (Time.class.equals(clazz)) {
-            return Types.TIME;
-        }
-        if (Timestamp.class.equals(clazz)) {
-            return Types.TIMESTAMP;
-        }
-        if (Clob.class.equals(clazz)) {
-            return Types.CLOB;
-        }
-        if (Blob.class.equals(clazz)) {
-            return Types.BLOB;
-        }
-        throw new IllegalArgumentException(NLS.fmtr("MySQLDatabaseDialect.invalidType").set("type", clazz).format());
     }
 
     @Override

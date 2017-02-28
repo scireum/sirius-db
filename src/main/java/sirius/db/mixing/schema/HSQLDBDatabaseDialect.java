@@ -11,14 +11,7 @@ package sirius.db.mixing.schema;
 import com.google.common.primitives.Ints;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.nls.NLS;
 
-import java.math.BigDecimal;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -28,60 +21,54 @@ import java.util.List;
 /**
  * Defines the dialect used to sync the schema against a HSQL database which is used in tests.
  */
-@Register(name = "hsqldb")
-public class HSQLDBDatabaseDialect implements DatabaseDialect {
+@Register(name = "hsqldb", classes = DatabaseDialect.class)
+public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
+
+    private static final String NOT_NULL = "NOT NULL";
+    private static final String IDENTITY = "IDENTITY";
+    private static final String MSG_COLUMNS_DIFFER = "The column definitions differ";
 
     @Override
     public String areColumnsEqual(TableColumn target, TableColumn current) {
+        if (checkColumnSettings(target, current)) {
+            return MSG_COLUMNS_DIFFER;
+        }
+
+        if (target.isNullable() != current.isNullable() && target.getType() != Types.TIMESTAMP
+            || target.getDefaultValue() != null) {
+            return MSG_COLUMNS_DIFFER;
+        }
+
+        if (checkDefaultValue(target, current)) {
+            return MSG_COLUMNS_DIFFER;
+        }
+
+        return null;
+    }
+
+    protected boolean checkColumnSettings(TableColumn target, TableColumn current) {
         if (!areTypesEqual(target.getType(), current.getType())) {
-            return NLS.fmtr("scireum.db.schema.mysql.differentTypes")
-                      .set("target", SchemaTool.getJdbcTypeName(target.getType()))
-                      .set("current", SchemaTool.getJdbcTypeName(current.getType()))
-                      .format();
+            return true;
         }
-        if (target.isNullable() != current.isNullable()) {
-            if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
-                return NLS.get("scireum.db.schema.mysql.differentNull");
-            }
+
+        if (areTypesEqual(Types.CHAR, target.getType()) && !Strings.areEqual(target.getLength(), current.getLength())) {
+            return true;
         }
-        if (!equalValue(target.getDefaultValue(), current.getDefaultValue())) {
-            // Handle default values for auto-increment columns...
-            if (!(target.isAutoIncrement()
-                  && Strings.isEmpty(target.getDefaultValue())
-                  && "AUTOINCREMENT: start 1 increment 1".equalsIgnoreCase(current.getDefaultValue()))) {
-                // TIMESTAMP values cannot be null -> we gracefully ignore this
-                // here, since the alter statement would be ignored anyway.
-                if (target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null) {
-                    return NLS.fmtr("scireum.db.schema.mysql.differentDefault")
-                              .set("target", target.getDefaultValue())
-                              .set("current", current.getDefaultValue())
-                              .format();
-                }
-            }
-        }
-        if (areTypesEqual(Types.CHAR, target.getType())) {
-            if (!Strings.areEqual(target.getLength(), current.getLength())) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentLength")
-                          .set("target", target.getLength())
-                          .set("current", current.getLength())
-                          .format();
-            }
-        }
+
         if (areTypesEqual(Types.DECIMAL, target.getType())) {
             if (!Strings.areEqual(target.getPrecision(), current.getPrecision())) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentPrecision")
-                          .set("target", target.getPrecision())
-                          .set("current", current.getPrecision())
-                          .format();
+                return true;
             }
             if (!Strings.areEqual(target.getScale(), current.getScale())) {
-                return NLS.fmtr("scireum.db.schema.mysql.differentScale")
-                          .set("target", target.getScale())
-                          .set("current", current.getScale())
-                          .format();
+                return true;
             }
         }
-        return null;
+
+        return false;
+    }
+
+    protected boolean checkDefaultValue(TableColumn target, TableColumn current) {
+        return equalValue(target.getDefaultValue(), current.getDefaultValue());
     }
 
     private boolean equalValue(String left, String right) {
@@ -103,14 +90,8 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
     @Override
     public Table completeTableInfos(Table table) {
         for (TableColumn col : table.getColumns()) {
-            if (Types.CHAR == col.getType()
-                || Types.VARCHAR == col.getType()
-                || Types.CLOB == col.getType()
-                || Types.DATE == col.getType()
-                || Types.TIMESTAMP == col.getType()
-                || Types.LONGVARCHAR == col.getType()
-                || Types.TIME == col.getType()) {
-                col.setDefaultValue(col.getDefaultValue() == null ? null : "'" + col.getDefaultValue() + "'");
+            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col)) {
+                col.setDefaultValue("'" + col.getDefaultValue() + "'");
             }
         }
         // The PK is also identified as INDEX...
@@ -121,14 +102,25 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
         return table;
     }
 
+    protected boolean hasEscapedDefaultValue(TableColumn col) {
+        if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType()) {
+            return true;
+        }
+
+        return Types.DATE == col.getType()
+               || Types.TIMESTAMP == col.getType()
+               || Types.LONGVARCHAR == col.getType()
+               || Types.TIME == col.getType();
+    }
+
     @Override
     public String generateAddColumn(Table table, TableColumn col) {
         return MessageFormat.format("ALTER TABLE {0} ADD COLUMN {1} {2} {3} {4} {5}",
                                     table.getName(),
                                     col.getName(),
                                     getTypeName(col.getType(), col.getLength(), col.getPrecision(), col.getScale()),
-                                    col.isNullable() ? "" : "NOT NULL",
-                                    col.isAutoIncrement() ? "IDENTITY" : "",
+                                    col.isNullable() ? "" : NOT_NULL,
+                                    col.isAutoIncrement() ? IDENTITY : "",
                                     getDefaultValueAsString(col));
     }
 
@@ -160,32 +152,15 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
     }
 
     private String getTypeName(int type, int length, int precision, int scale) {
+        return convertNumericType(type, length, precision, scale);
+    }
+
+    private String convertNumericType(int type, int length, int precision, int scale) {
         if (Types.BIGINT == type) {
             return "BIGINT";
         }
-        if (Types.BLOB == type) {
-            return "BLOB";
-        }
-        if (Types.VARBINARY == type) {
-            return "BLOB";
-        }
-        if (Types.LONGVARBINARY == type) {
-            return "BLOB";
-        }
-        if (Types.BOOLEAN == type) {
+        if (Types.BOOLEAN == type || Types.BIT == type) {
             return "SMALLINT";
-        }
-        if (Types.BIT == type) {
-            return "SMALLINT";
-        }
-        if (Types.CHAR == type) {
-            return "VARCHAR(" + length + ")";
-        }
-        if (Types.CLOB == type) {
-            return "CLOB";
-        }
-        if (Types.DATE == type) {
-            return "DATE";
         }
         if (Types.DOUBLE == type) {
             return "DOUBLE";
@@ -199,6 +174,28 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
         if (Types.INTEGER == type) {
             return "INTEGER";
         }
+
+        return convertCharacterType(type, length);
+    }
+
+    private String convertCharacterType(int type, int length) {
+        if (Types.VARCHAR == type) {
+            return "VARCHAR(" + length + ")";
+        }
+        if (Types.CHAR == type) {
+            return "VARCHAR(" + length + ")";
+        }
+        if (Types.CLOB == type) {
+            return "CLOB";
+        }
+
+        return convertTemporalType(type);
+    }
+
+    private String convertTemporalType(int type) {
+        if (Types.DATE == type) {
+            return "DATE";
+        }
         if (Types.TIME == type) {
             return "TIME";
         }
@@ -208,12 +205,23 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
         if (Types.TINYINT == type) {
             return "SMALLINT";
         }
-        if (Types.VARCHAR == type) {
-            return "VARCHAR(" + length + ")";
+
+        return convertBinaryType(type);
+    }
+
+    private String convertBinaryType(int type) {
+        if (Types.BLOB == type) {
+            return "BLOB";
         }
-        throw new IllegalArgumentException(NLS.fmtr("scireum.db.schema.mysql.unknownType")
-                                              .set("type", SchemaTool.getJdbcTypeName(type))
-                                              .format());
+        if (Types.VARBINARY == type) {
+            return "BLOB";
+        }
+        if (Types.LONGVARBINARY == type) {
+            return "BLOB";
+        }
+
+        throw new IllegalArgumentException(Strings.apply("The type %s cannot be used as JDBC type!",
+                                                         SchemaTool.getJdbcTypeName(type)));
     }
 
     private String listToString(List<String> columns) {
@@ -256,25 +264,26 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
 
     @Override
     public List<String> generateAlterColumnTo(Table table, String oldName, TableColumn toColumn) {
-        if (oldName == null) {
-            oldName = toColumn.getName();
+        String name = oldName;
+        if (name == null) {
+            name = toColumn.getName();
         }
         return Collections.singletonList(MessageFormat.format("ALTER TABLE {0} CHANGE COLUMN {1} {2} {3} {4} {5} {6}",
                                                               table.getName(),
-                                                              oldName,
+                                                              name,
                                                               toColumn.getName(),
                                                               getTypeName(toColumn.getType(),
                                                                           toColumn.getLength(),
                                                                           toColumn.getPrecision(),
                                                                           toColumn.getScale()),
-                                                              toColumn.isNullable() ? "" : "NOT NULL",
-                                                              toColumn.isAutoIncrement() ? "IDENTITY" : "",
+                                                              toColumn.isNullable() ? "" : NOT_NULL,
+                                                              toColumn.isAutoIncrement() ? IDENTITY : "",
                                                               getDefaultValueAsString(toColumn)));
     }
 
     @Override
     public List<String> generateAlterForeignKey(Table table, ForeignKey from, ForeignKey to) {
-        List<String> actions = new ArrayList<String>();
+        List<String> actions = new ArrayList<>();
         if (from != null) {
             actions.add(generateDropForeignKey(table, from));
         }
@@ -284,7 +293,7 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
 
     @Override
     public List<String> generateAlterKey(Table table, Key from, Key to) {
-        List<String> actions = new ArrayList<String>();
+        List<String> actions = new ArrayList<>();
         if (from != null) {
             actions.add(generateDropKey(table, from));
         }
@@ -321,8 +330,8 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
                                                        col.getLength(),
                                                        col.getPrecision(),
                                                        col.getScale()),
-                                           col.isNullable() ? "" : "NOT NULL",
-                                           col.isAutoIncrement() ? "IDENTITY" : "",
+                                           col.isNullable() ? "" : NOT_NULL,
+                                           col.isAutoIncrement() ? IDENTITY : "",
                                            getDefaultValueAsString(col)));
         }
         for (Key key : table.getKeys()) {
@@ -330,8 +339,6 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
                 sb.append(MessageFormat.format(",\n   CONSTRAINT {0} UNIQUE ({1})",
                                                key.getName(),
                                                listToString(key.getColumns())));
-            } else {
-                sb.append(MessageFormat.format(",\n   KEY {0} ({1})", key.getName(), listToString(key.getColumns())));
             }
         }
 
@@ -362,62 +369,6 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
     @Override
     public String generateDropTable(Table table) {
         return MessageFormat.format("DROP TABLE {0} ", table.getName());
-    }
-
-    @Override
-    public int getJDBCType(Class<?> clazz) {
-        if (String.class.equals(clazz)) {
-            return Types.VARCHAR;
-        }
-        if (Integer.class.equals(clazz)) {
-            return Types.INTEGER;
-        }
-        if (Long.class.equals(clazz)) {
-            return Types.BIGINT;
-        }
-        if (Double.class.equals(clazz)) {
-            return Types.DOUBLE;
-        }
-        if (BigDecimal.class.equals(clazz)) {
-            return Types.DECIMAL;
-        }
-        if (Float.class.equals(clazz)) {
-            return Types.FLOAT;
-        }
-        if (Boolean.class.equals(clazz)) {
-            return Types.TINYINT;
-        }
-        if (int.class.equals(clazz)) {
-            return Types.INTEGER;
-        }
-        if (long.class.equals(clazz)) {
-            return Types.BIGINT;
-        }
-        if (double.class.equals(clazz)) {
-            return Types.DOUBLE;
-        }
-        if (float.class.equals(clazz)) {
-            return Types.FLOAT;
-        }
-        if (boolean.class.equals(clazz)) {
-            return Types.TINYINT;
-        }
-        if (Date.class.equals(clazz)) {
-            return Types.DATE;
-        }
-        if (Time.class.equals(clazz)) {
-            return Types.TIME;
-        }
-        if (Timestamp.class.equals(clazz)) {
-            return Types.TIMESTAMP;
-        }
-        if (Clob.class.equals(clazz)) {
-            return Types.CLOB;
-        }
-        if (Blob.class.equals(clazz)) {
-            return Types.BLOB;
-        }
-        throw new IllegalArgumentException(NLS.fmtr("scireum.db.schema.mysql.invalidType").set("type", clazz).format());
     }
 
     @Override

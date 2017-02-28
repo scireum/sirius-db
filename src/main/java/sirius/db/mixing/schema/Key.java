@@ -49,7 +49,7 @@ public class Key {
      * @return the columns of the key
      */
     public List<String> getColumns() {
-        List<String> columns = new ArrayList<String>();
+        List<String> columns = new ArrayList<>();
         for (ComparableTuple<Integer, String> field : keyFields) {
             columns.add(field.getSecond());
         }

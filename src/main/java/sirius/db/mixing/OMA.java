@@ -43,6 +43,8 @@ import java.util.Set;
 public class OMA {
 
     public static final Log LOG = Log.get("oma");
+    private static final String SQL_WHERE_ID = " WHERE id = ?";
+    private static final String SQL_AND_VERSION = " AND version = ?";
 
     @Part
     private Schema schema;
@@ -78,7 +80,7 @@ public class OMA {
                 return false;
             }
             ready = Boolean.FALSE;
-            getReadyFuture().onSuccess((o) -> ready = Boolean.TRUE);
+            getReadyFuture().onSuccess(o -> ready = Boolean.TRUE);
         }
 
         return ready.booleanValue();
@@ -147,15 +149,15 @@ public class OMA {
             ed.beforeSave(entity);
 
             if (entity.isNew()) {
-                doINSERT(entity, ed);
+                executeINSERT(entity, ed);
             } else {
-                doUPDATE(entity, force, ed);
+                executeUPDATE(entity, force, ed);
             }
 
             ed.afterSave(entity);
         } catch (OptimisticLockException e) {
             throw e;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw Exceptions.handle()
                             .to(LOG)
                             .error(e)
@@ -167,7 +169,7 @@ public class OMA {
         }
     }
 
-    private <E extends Entity> void doINSERT(E entity, EntityDescriptor ed) throws SQLException {
+    private <E extends Entity> void executeINSERT(E entity, EntityDescriptor ed) throws SQLException {
         Context insertData = Context.create();
         for (Property p : ed.getProperties()) {
             insertData.set(p.getColumnName(), p.getValueForColumn(entity));
@@ -185,7 +187,7 @@ public class OMA {
         }
     }
 
-    private <E extends Entity> void doUPDATE(E entity, boolean force, EntityDescriptor ed)
+    private <E extends Entity> void executeUPDATE(E entity, boolean force, EntityDescriptor ed)
             throws SQLException, OptimisticLockException {
         StringBuilder sql = new StringBuilder("UPDATE ");
         sql.append(ed.getTableName());
@@ -215,9 +217,9 @@ public class OMA {
             sql.append("version = ? ");
         }
 
-        sql.append(" WHERE id = ?");
+        sql.append(SQL_WHERE_ID);
         if (ed.isVersioned() && !force) {
-            sql.append(" AND version = ?");
+            sql.append(SQL_AND_VERSION);
         }
         executeUPDATE(entity, force, ed, sql.toString(), data);
     }
@@ -241,21 +243,28 @@ public class OMA {
                     stmt.setInt(index++, ed.getVersion(entity));
                 }
                 int updatedRows = stmt.executeUpdate();
-                if (!force && updatedRows == 0) {
-                    if (find(entity.getClass(), entity.getId()).isPresent()) {
-                        throw new OptimisticLockException();
-                    } else {
-                        throw Exceptions.handle()
-                                        .to(LOG)
-                                        .withSystemErrorMessage(
-                                                "The entity %s (%s) cannot be updated as it does not exist in the database!",
-                                                entity,
-                                                entity.getId())
-                                        .handle();
-                    }
-                }
+                enforceUpdate(entity, force, updatedRows);
+
                 ed.setVersion(entity, ed.getVersion(entity) + 1);
             }
+        }
+    }
+
+    private <E extends Entity> void enforceUpdate(E entity, boolean force, int updatedRows)
+            throws OptimisticLockException {
+        if (force || updatedRows > 0) {
+            return;
+        }
+        if (find(entity.getClass(), entity.getId()).isPresent()) {
+            throw new OptimisticLockException();
+        } else {
+            throw Exceptions.handle()
+                            .to(LOG)
+                            .withSystemErrorMessage(
+                                    "The entity %s (%s) cannot be updated as it does not exist in the database!",
+                                    entity,
+                                    entity.getId())
+                            .handle();
         }
     }
 
@@ -316,28 +325,15 @@ public class OMA {
             ed.beforeDelete(entity);
             StringBuilder sb = new StringBuilder("DELETE FROM ");
             sb.append(ed.getTableName());
-            sb.append(" WHERE id = ?");
+            sb.append(SQL_WHERE_ID);
             if (ed.isVersioned() && !force) {
-                sb.append(" AND version = ?");
+                sb.append(SQL_AND_VERSION);
             }
-            try (Connection c = getDatabase().getConnection()) {
-                try (PreparedStatement stmt = c.prepareStatement(sb.toString())) {
-                    stmt.setLong(1, entity.getId());
-                    if (ed.isVersioned() && !force) {
-                        stmt.setInt(2, ed.getVersion(entity));
-                    }
-                    int updatedRows = stmt.executeUpdate();
-                    if (updatedRows == 0) {
-                        if (find(entity.getClass(), entity.getId()).isPresent()) {
-                            throw new OptimisticLockException();
-                        }
-                    }
-                }
-            }
+            execDelete(entity, force, ed, sb.toString());
             ed.afterDelete(entity);
         } catch (OptimisticLockException e) {
             throw e;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw Exceptions.handle()
                             .to(LOG)
                             .error(e)
@@ -346,6 +342,22 @@ public class OMA {
                                                     entity.getClass().getSimpleName(),
                                                     entity.getId())
                             .handle();
+        }
+    }
+
+    private <E extends Entity> void execDelete(E entity, boolean force, EntityDescriptor ed, String sql)
+            throws SQLException, OptimisticLockException {
+        try (Connection c = getDatabase().getConnection()) {
+            try (PreparedStatement stmt = c.prepareStatement(sql)) {
+                stmt.setLong(1, entity.getId());
+                if (ed.isVersioned() && !force) {
+                    stmt.setInt(2, ed.getVersion(entity));
+                }
+                int updatedRows = stmt.executeUpdate();
+                if (updatedRows == 0 && find(entity.getClass(), entity.getId()).isPresent()) {
+                    throw new OptimisticLockException();
+                }
+            }
         }
     }
 
@@ -425,34 +437,38 @@ public class OMA {
      * @param <E>  the generic type of the entity to select
      * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given id exists
      */
-    @SuppressWarnings("unchecked")
     public <E extends Entity> Optional<E> find(Class<E> type, Object id) {
         try {
             EntityDescriptor ed = schema.getDescriptor(type);
             try (Connection c = getDatabase().getConnection()) {
-                try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getTableName() + " WHERE id = ?",
-                                                                 ResultSet.TYPE_FORWARD_ONLY,
-                                                                 ResultSet.CONCUR_READ_ONLY)) {
-                    stmt.setLong(1, Value.of(id).asLong(-1));
-                    try (ResultSet rs = stmt.executeQuery()) {
-                        if (rs.next()) {
-                            Set<String> columns = SmartQuery.readColumns(rs);
-                            Entity entity = ed.readFrom(null, columns, rs);
-                            return Optional.of((E) entity);
-                        } else {
-                            return Optional.empty();
-                        }
-                    }
-                }
+                return execFind(id, ed, c);
             }
         } catch (HandledException e) {
             throw e;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw Exceptions.handle()
                             .to(LOG)
                             .error(e)
                             .withSystemErrorMessage("Unable to FIND  %s (%s): %s (%s)", type.getSimpleName(), id)
                             .handle();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <E extends Entity> Optional<E> execFind(Object id, EntityDescriptor ed, Connection c) throws Exception {
+        try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getTableName() + SQL_WHERE_ID,
+                                                         ResultSet.TYPE_FORWARD_ONLY,
+                                                         ResultSet.CONCUR_READ_ONLY)) {
+            stmt.setLong(1, Value.of(id).asLong(-1));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Set<String> columns = SmartQuery.readColumns(rs);
+                    Entity entity = ed.readFrom(null, columns, rs);
+                    return Optional.of((E) entity);
+                } else {
+                    return Optional.empty();
+                }
+            }
         }
     }
 
@@ -485,13 +501,14 @@ public class OMA {
      * @param name the name of the entity to resolve
      * @return the resolved entity wrapped as <tt>Optional</tt> or an empty optional if no such entity exists
      */
-    public Optional<? extends Entity> resolve(String name) {
+    @SuppressWarnings("unchecked")
+    public <E extends Entity> Optional<E> resolve(String name) {
         if (Strings.isEmpty(name)) {
             return Optional.empty();
         }
 
         Tuple<String, String> typeAndId = Schema.splitUniqueName(name);
-        return find(schema.getDescriptor(typeAndId.getFirst()).getType(), typeAndId.getSecond());
+        return find((Class<E>) schema.getDescriptor(typeAndId.getFirst()).getType(), typeAndId.getSecond());
     }
 
     /**

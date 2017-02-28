@@ -47,16 +47,16 @@ public class CompositePropertyFactory implements PropertyFactory {
         }
 
         field.setAccessible(true);
-        accessPath = expandAccessPath(accessPath, field);
-        EntityDescriptor.addFields(descriptor, accessPath, field.getType(), propertyConsumer);
+        AccessPath expandedAccessPath = expandAccessPath(accessPath, field);
+        EntityDescriptor.addFields(descriptor, expandedAccessPath, field.getType(), propertyConsumer);
         descriptor.addComposite((Class<? extends Composite>) field.getType());
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {
-        accessPath = accessPath.append(field.getName() + Column.SUBFIELD_SEPARATOR, obj -> {
+        return accessPath.append(field.getName() + Column.SUBFIELD_SEPARATOR, obj -> {
             try {
                 return field.get(obj);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 throw Exceptions.handle()
                                 .to(OMA.LOG)
                                 .error(e)
@@ -66,6 +66,5 @@ public class CompositePropertyFactory implements PropertyFactory {
                                 .handle();
             }
         });
-        return accessPath;
     }
 }

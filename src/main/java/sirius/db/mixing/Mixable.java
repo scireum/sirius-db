@@ -59,7 +59,7 @@ public class Mixable extends Composable {
                     A result = makeNewInstance(adapterType);
                     mixins.put(adapterType, result);
                     return Optional.of(result);
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     throw Exceptions.handle()
                                     .to(OMA.LOG)
                                     .error(e)
