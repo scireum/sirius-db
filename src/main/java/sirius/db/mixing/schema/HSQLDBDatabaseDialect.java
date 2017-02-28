@@ -330,8 +330,6 @@ public class HSQLDBDatabaseDialect implements DatabaseDialect {
                 sb.append(MessageFormat.format(",\n   CONSTRAINT {0} UNIQUE ({1})",
                                                key.getName(),
                                                listToString(key.getColumns())));
-            } else {
-                sb.append(MessageFormat.format(",\n   KEY {0} ({1})", key.getName(), listToString(key.getColumns())));
             }
         }
 
