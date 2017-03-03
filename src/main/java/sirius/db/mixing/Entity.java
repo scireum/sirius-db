@@ -36,6 +36,9 @@ import java.util.Map;
  * <p>
  * Additionally all <tt>Mixins</tt> {@link Mixin} will be used to add columns to the
  * target table. This is especially useful to extend existing entities from within customizations.
+ * <p>
+ * It also provides a {@link #getIdAsString()} method which returns
+ * the database ID as string. However, for new entities (not yet persisted), it returns "new"
  */
 public abstract class Entity extends Mixable {
 
@@ -75,6 +78,12 @@ public abstract class Entity extends Mixable {
      */
     @Transient
     protected Row fetchRow;
+
+
+    /**
+     * Contains the constant used to mark a new (unsaved) entity.
+     */
+    public static final String NEW = "new";
 
     /**
      * Returns the descriptor which maps the entity to the database table.
@@ -225,11 +234,25 @@ public abstract class Entity extends Mixable {
         }
         if (qry.exists()) {
             throw Exceptions.createHandled()
-                            .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getLabel())
-                            .set("value", NLS.toUserString(value))
-                            .handle();
+                    .withNLSKey("Property.fieldNotUnique")
+                    .set("field", getDescriptor().getProperty(field).getLabel())
+                    .set("value", NLS.toUserString(value))
+                    .handle();
         }
+    }
+
+    /**
+     * Returns a string representation of the entity ID.
+     * <p>
+     * If the entity is new, "new" will be returned.
+     *
+     * @return the entity ID as string or "new" if the entity {@link #isNew()}.
+     */
+    public String getIdAsString() {
+        if (isNew()) {
+            return NEW;
+        }
+        return String.valueOf(getId());
     }
 
     @Override
