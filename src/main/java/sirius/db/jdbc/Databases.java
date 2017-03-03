@@ -14,6 +14,7 @@ import sirius.db.mixing.EntityRef;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.extensions.Extension;
 import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
@@ -60,6 +61,13 @@ public class Databases {
     protected static Counter numQueries = new Counter();
     protected static Counter numSlowQueries = new Counter();
     protected static Average queryDuration = new Average();
+
+    private static final long SECOND_SHIFT = 1;
+    private static final long MINUTE_SHIFT = SECOND_SHIFT * 100;
+    private static final long HOUR_SHIFT = MINUTE_SHIFT * 100;
+    private static final long DAY_SHIFT = HOUR_SHIFT * 100;
+    private static final long MONTH_SHIFT = DAY_SHIFT * 100;
+    private static final long YEAR_SHIFT = MONTH_SHIFT * 100;
 
     /**
      * Provides some metrics across all managed data sources.
@@ -116,7 +124,7 @@ public class Databases {
      * @return a list of all known databases
      */
     public List<String> getDatabases() {
-        return Extensions.getExtensions("jdbc.database").stream().map(e -> e.getId()).collect(Collectors.toList());
+        return Extensions.getExtensions("jdbc.database").stream().map(Extension::getId).collect(Collectors.toList());
     }
 
     /**
@@ -141,13 +149,6 @@ public class Databases {
 
         return longQueryThresholdMillis;
     }
-
-    private static final long SECOND_SHIFT = 1;
-    private static final long MINUTE_SHIFT = SECOND_SHIFT * 100;
-    private static final long HOUR_SHIFT = MINUTE_SHIFT * 100;
-    private static final long DAY_SHIFT = HOUR_SHIFT * 100;
-    private static final long MONTH_SHIFT = DAY_SHIFT * 100;
-    private static final long YEAR_SHIFT = MONTH_SHIFT * 100;
 
     /**
      * Encodes a <tt>LocalDateTime</tt> as a long.

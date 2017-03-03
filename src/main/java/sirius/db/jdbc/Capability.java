@@ -8,7 +8,9 @@
 
 package sirius.db.jdbc;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * Encapsulates functions or features which are not supported by all databases.
@@ -39,15 +41,15 @@ public enum Capability {
     /**
      * Contains the capabilities of a MySQL database
      */
-    public static final EnumSet<Capability> MYSQL_CAPABILITIES = EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT);
+    public static final Set<Capability> MYSQL_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT));
 
     /**
      * Contains the capabilities of a HSQL database
      */
-    public static final EnumSet<Capability> HSQLDB_CAPABILITIES = EnumSet.of(LIMIT);
+    public static final Set<Capability> HSQLDB_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT));
 
     /**
      * Contains the capabilities of a Postgres database
      */
-    public static final EnumSet<Capability> POSTGRES_CAPABILITIES = EnumSet.of(LIMIT);
+    public static final Set<Capability> POSTGRES_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT));
 }

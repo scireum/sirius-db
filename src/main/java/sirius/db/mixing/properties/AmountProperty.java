@@ -45,7 +45,25 @@ public class AmountProperty extends Property {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new AmountProperty(descriptor, accessPath, field));
+            AmountProperty amountProperty = new AmountProperty(descriptor, accessPath, field);
+            if (amountProperty.isNullable()) {
+                try {
+                    if (field.get(descriptor.getType().newInstance()) == null) {
+                        OMA.LOG.WARN(
+                                "Field %s in %s is a nullable Amount. Such fields should be initialized with Amount.NOTHING as an amount should never be null!",
+                                field.getName(),
+                                field.getDeclaringClass().getName());
+                    }
+                } catch (Exception e) {
+                    OMA.LOG.WARN(
+                            "An error occured while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
+                            field.getName(),
+                            field.getDeclaringClass().getName(),
+                            e.getMessage(),
+                            e.getClass().getName());
+                }
+            }
+            propertyConsumer.accept(amountProperty);
         }
     }
 

@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a database connection obtained via {@link Databases#get(String)}.
@@ -39,6 +40,14 @@ import java.util.Map;
  */
 public class Database {
 
+    private static final String KEY_DRIVER = "driver";
+    private static final String KEY_URL = "url";
+    private static final String KEY_USER = "user";
+    private static final String KEY_PASSWORD = "password";
+    private static final String KEY_INITIAL_SIZE = "initialSize";
+    private static final String KEY_MAX_ACTIVE = "maxActive";
+    private static final String KEY_MAX_IDLE = "maxIdle";
+    private static final String KEY_VALIDATION_QUERY = "validationQuery";
     protected final String name;
     private String driver;
     private String url;
@@ -50,7 +59,7 @@ public class Database {
     private boolean testOnBorrow;
     private String validationQuery;
     private BasicDataSource ds;
-    private EnumSet<Capability> capabilities;
+    private Set<Capability> capabilities;
 
     /*
      * Use the get(name) method to create a new object.
@@ -67,27 +76,27 @@ public class Database {
         Context ctx = profile.getContext();
         ctx.putAll(ext.getContext());
         this.name = name;
-        this.driver = ext.get("driver").isEmptyString() ?
-                      Formatter.create(profile.get("driver").asString()).set(ctx).format() :
-                      ext.get("driver").asString();
-        this.url = ext.get("url").isEmptyString() ?
-                   Formatter.create(profile.get("url").asString()).set(ctx).format() :
-                   ext.get("url").asString();
-        this.username = ext.get("user").isEmptyString() ?
-                        Formatter.create(profile.get("user").asString()).set(ctx).format() :
-                        ext.get("user").asString();
-        this.password = ext.get("password").isEmptyString() ?
-                        Formatter.create(profile.get("password").asString()).set(ctx).format() :
-                        ext.get("password").asString();
-        this.initialSize = ext.get("initialSize").isFilled() ?
-                           ext.get("initialSize").asInt(0) :
-                           profile.get("initialSize").asInt(0);
+        this.driver = ext.get(KEY_DRIVER).isEmptyString() ?
+                      Formatter.create(profile.get(KEY_DRIVER).asString()).set(ctx).format() :
+                      ext.get(KEY_DRIVER).asString();
+        this.url = ext.get(KEY_URL).isEmptyString() ?
+                   Formatter.create(profile.get(KEY_URL).asString()).set(ctx).format() :
+                   ext.get(KEY_URL).asString();
+        this.username = ext.get(KEY_USER).isEmptyString() ?
+                        Formatter.create(profile.get(KEY_USER).asString()).set(ctx).format() :
+                        ext.get(KEY_USER).asString();
+        this.password = ext.get(KEY_PASSWORD).isEmptyString() ?
+                        Formatter.create(profile.get(KEY_PASSWORD).asString()).set(ctx).format() :
+                        ext.get(KEY_PASSWORD).asString();
+        this.initialSize = ext.get(KEY_INITIAL_SIZE).isFilled() ?
+                           ext.get(KEY_INITIAL_SIZE).asInt(0) :
+                           profile.get(KEY_INITIAL_SIZE).asInt(0);
         this.maxActive =
-                ext.get("maxActive").isFilled() ? ext.get("maxActive").asInt(10) : profile.get("maxActive").asInt(10);
-        this.maxIdle = ext.get("maxIdle").isFilled() ? ext.get("maxIdle").asInt(1) : profile.get("maxIdle").asInt(1);
-        this.validationQuery = ext.get("validationQuery").isEmptyString() ?
-                               Formatter.create(profile.get("validationQuery").asString()).set(ctx).format() :
-                               ext.get("validationQuery").asString();
+                ext.get(KEY_MAX_ACTIVE).isFilled() ? ext.get(KEY_MAX_ACTIVE).asInt(10) : profile.get(KEY_MAX_ACTIVE).asInt(10);
+        this.maxIdle = ext.get(KEY_MAX_IDLE).isFilled() ? ext.get(KEY_MAX_IDLE).asInt(1) : profile.get(KEY_MAX_IDLE).asInt(1);
+        this.validationQuery = ext.get(KEY_VALIDATION_QUERY).isEmptyString() ?
+                               Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).set(ctx).format() :
+                               ext.get(KEY_VALIDATION_QUERY).asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
     }
 
@@ -218,29 +227,31 @@ public class Database {
      */
     public void rollback() {
         List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        if (transactions != null && !transactions.isEmpty()) {
-            // Rollback this and all joined (copied) transactions
-            HandledException ex = null;
-            int lastIndex = transactions.size() - 1;
-            for (int idx = lastIndex; idx >= 0; idx--) {
-                try {
-                    Transaction txn = transactions.get(idx);
-                    txn.rollback();
-                    if (!txn.isCopy()) {
-                        break;
-                    }
-                } catch (Throwable e) {
-                    ex = Exceptions.handle()
-                                   .to(Databases.LOG)
-                                   .error(e)
-                                   .withSystemErrorMessage("Error while rolling back transaction: %s (%s)")
-                                   .handle();
+        if (transactions == null || transactions.isEmpty()) {
+            return;
+        }
+
+        // Rollback this and all joined (copied) transactions
+        HandledException ex = null;
+        int lastIndex = transactions.size() - 1;
+        for (int idx = lastIndex; idx >= 0; idx--) {
+            try {
+                Transaction txn = transactions.get(idx);
+                txn.rollback();
+                if (!txn.isCopy()) {
+                    break;
                 }
+            } catch (Exception e) {
+                ex = Exceptions.handle()
+                               .to(Databases.LOG)
+                               .error(e)
+                               .withSystemErrorMessage("Error while rolling back transaction: %s (%s)")
+                               .handle();
             }
-            transactions.remove(lastIndex);
-            if (ex != null) {
-                throw ex;
-            }
+        }
+        transactions.remove(lastIndex);
+        if (ex != null) {
+            throw ex;
         }
     }
 
@@ -254,10 +265,10 @@ public class Database {
             join();
             r.run();
             tryCommit();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             try {
                 rollback();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Exceptions.handle()
                           .to(Databases.LOG)
                           .error(e)
@@ -283,10 +294,10 @@ public class Database {
             begin();
             r.run();
             tryCommit();
-        } catch (Throwable t) {
+        } catch (Exception t) {
             try {
                 rollback();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Exceptions.handle()
                           .to(Databases.LOG)
                           .error(e)
@@ -349,35 +360,43 @@ public class Database {
             StringBuilder fields = new StringBuilder();
             StringBuilder values = new StringBuilder();
             List<Object> valueList = Lists.newArrayList();
-            for (Map.Entry<String, Object> entry : ctx.entrySet()) {
-                if (entry.getValue() != null) {
-                    if (fields.length() > 0) {
-                        fields.append(", ");
-                        values.append(", ");
-                    }
-                    fields.append(entry.getKey());
-                    values.append("?");
-                    valueList.add(Databases.convertValue(entry.getValue()));
-                }
-            }
+            prepareValues(ctx, fields, values, valueList);
             String sql = "INSERT INTO " + table + " (" + fields + ") VALUES(" + values + ")";
             try (PreparedStatement stmt = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                int index = 1;
-                for (Object o : valueList) {
-                    try {
-                        stmt.setObject(index++, o);
-                    } catch (Exception e) {
-                        throw new IllegalArgumentException(e.getMessage()
-                                                           + " - Index: "
-                                                           + index
-                                                           + ", Value: "
-                                                           + o
-                                                           + ", Query: "
-                                                           + sql, e);
-                    }
-                }
+                fillValues(valueList, sql, stmt);
                 stmt.executeUpdate();
                 return SQLQuery.fetchGeneratedKeys(stmt);
+            }
+        }
+    }
+
+    protected void fillValues(List<Object> valueList, String sql, PreparedStatement stmt) {
+        int index = 1;
+        for (Object o : valueList) {
+            try {
+                stmt.setObject(index++, o);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(e.getMessage()
+                                                   + " - Index: "
+                                                   + index
+                                                   + ", Value: "
+                                                   + o
+                                                   + ", Query: "
+                                                   + sql, e);
+            }
+        }
+    }
+
+    protected void prepareValues(Context ctx, StringBuilder fields, StringBuilder values, List<Object> valueList) {
+        for (Map.Entry<String, Object> entry : ctx.entrySet()) {
+            if (entry.getValue() != null) {
+                if (fields.length() > 0) {
+                    fields.append(", ");
+                    values.append(", ");
+                }
+                fields.append(entry.getKey());
+                values.append("?");
+                valueList.add(Databases.convertValue(entry.getValue()));
             }
         }
     }
