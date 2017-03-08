@@ -46,22 +46,20 @@ public class AmountProperty extends Property {
                            Field field,
                            Consumer<Property> propertyConsumer) {
             AmountProperty amountProperty = new AmountProperty(descriptor, accessPath, field);
-            if (amountProperty.isNullable()) {
-                try {
-                    if (field.get(descriptor.getType().newInstance()) == null) {
-                        OMA.LOG.WARN(
-                                "Field %s in %s is a nullable Amount. Such fields should be initialized with Amount.NOTHING as an amount should never be null!",
-                                field.getName(),
-                                field.getDeclaringClass().getName());
-                    }
-                } catch (Exception e) {
+            try {
+                if (field.get(descriptor.getType().newInstance()) == null) {
                     OMA.LOG.WARN(
-                            "An error occured while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
+                            "Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING as an amount should never be null!",
                             field.getName(),
-                            field.getDeclaringClass().getName(),
-                            e.getMessage(),
-                            e.getClass().getName());
+                            field.getDeclaringClass().getName());
                 }
+            } catch (Exception e) {
+                OMA.LOG.WARN(
+                        "An error occured while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
+                        field.getName(),
+                        field.getDeclaringClass().getName(),
+                        e.getMessage(),
+                        e.getClass().getName());
             }
             propertyConsumer.accept(amountProperty);
         }
@@ -74,7 +72,7 @@ public class AmountProperty extends Property {
     @Override
     public Object transformValue(Value value) {
         if (!value.isFilled()) {
-            return isNullable() ? null : Amount.NOTHING;
+            return Amount.NOTHING;
         } else {
             return NLS.parseUserString(Amount.class, value.asString());
         }
@@ -88,7 +86,7 @@ public class AmountProperty extends Property {
     @Override
     protected Object transformFromColumn(Object object) {
         if (object == null) {
-            return isNullable() ? null : Amount.NOTHING;
+            return Amount.NOTHING;
         }
         if (object instanceof Double) {
             return Amount.of((Double) object);
