@@ -30,11 +30,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -263,7 +259,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     public SmartQuery<E> copy() {
         SmartQuery<E> copy = new SmartQuery<>(type, db);
         copy.distinct = distinct;
-        copy.fields.addAll(fields);
+        copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
         copy.constaints.addAll(constaints);
 
@@ -523,8 +519,9 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         private PreparedStatement prepareStatement(Connection c) throws SQLException {
-            PreparedStatement stmt =
-                    c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+            PreparedStatement stmt = c.prepareStatement(getQuery(),
+                                                        ResultSet.TYPE_FORWARD_ONLY,
+                                                        ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < parameters.size(); i++) {
                 stmt.setObject(i + 1, parameters.get(i));
             }

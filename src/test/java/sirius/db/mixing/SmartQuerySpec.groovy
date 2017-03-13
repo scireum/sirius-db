@@ -242,4 +242,16 @@ class SmartQuerySpec extends BaseSpecification {
         qry.count() == 1
     }
 
+    def "copy of query does also copy fields"() {
+        given:
+        SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                .fields(SmartQueryTestEntity.TEST_NUMBER, SmartQueryTestEntity.VALUE)
+                .copy()
+                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+        when:
+        def result = qry.queryList()
+        then:
+        result.stream().map({ x -> x.getValue() } as Function).collect(Collectors.toList()) == ["Test", "Hello", "World"]
+    }
+
 }
