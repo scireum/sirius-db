@@ -66,33 +66,73 @@ public class Redis implements Lifecycle {
     @Part
     private Tasks tasks;
 
+    @ConfigValue("redis.host")
+    private String host;
+
+    @ConfigValue("redis.port")
+    private int port;
+
+    @ConfigValue("redis.timeout")
+    private int connectTimeout;
+
+    @ConfigValue("redis.password")
+    private String password;
+
+    @ConfigValue("redis.db")
+    private int db;
+
+    @ConfigValue("redis.maxActive")
+    private int maxActive;
+
+    @ConfigValue("redis.maxIdle")
+    private int maxIdle;
+
+    private static final String PREFIX_LOCK = "lock_";
+    private static final String SUFFIX_DATE = "_date";
+
+    private static final String NAME_REDIS = "redis";
+    public static final Log LOG = Log.get(NAME_REDIS);
+
+    protected Average callDuration = new Average();
+    protected Average messageDuration = new Average();
+    protected JedisPool jedis;
+
+    /**
+     * Contains the entry name of the info section under which redis reports the amount of consumed ram
+     */
+    public static final String INFO_USED_MEMORY = "used_memory";
+
     @Override
     public void started() {
         for (Subscriber subscriber : subscribers) {
             JedisPubSub subscription = new JedisPubSub() {
                 @Override
                 public void onMessage(String channel, String message) {
-                    tasks.executor("redis-pubsub").start(() -> {
-                        Watch w = Watch.start();
-                        try {
-                            subscriber.onMessage(message);
-                        } catch (Throwable e) {
-                            Exceptions.handle()
-                                      .to(LOG)
-                                      .error(e)
-                                      .withSystemErrorMessage("Failed to process a message '%s' for topic '%s': %s (%s)",
-                                                              message,
-                                                              subscriber.getTopic())
-                                      .handle();
-                        }
-                        w.submitMicroTiming("redis", channel);
-                        messageDuration.addValue(w.elapsedMillis());
-                    });
+                    handlePubSubMessage(channel, message, subscriber);
                 }
             };
             subscriptions.add(subscription);
             new Thread(() -> subscribe(subscriber, subscription), "redis-subscriber-" + subscriber.getTopic()).start();
         }
+    }
+
+    protected void handlePubSubMessage(String channel, String message, Subscriber subscriber) {
+        tasks.executor("redis-pubsub").start(() -> {
+            Watch w = Watch.start();
+            try {
+                subscriber.onMessage(message);
+            } catch (Exception e) {
+                Exceptions.handle()
+                          .to(LOG)
+                          .error(e)
+                          .withSystemErrorMessage("Failed to process a message '%s' for topic '%s': %s (%s)",
+                                                  message,
+                                                  subscriber.getTopic())
+                          .handle();
+            }
+            w.submitMicroTiming(NAME_REDIS, channel);
+            messageDuration.addValue(w.elapsedMillis());
+        });
     }
 
     private void subscribe(Subscriber subscriber, JedisPubSub subscription) {
@@ -103,7 +143,7 @@ public class Redis implements Lifecycle {
                 if (subscriptionsActive.get()) {
                     Wait.seconds(5);
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Exceptions.handle()
                           .to(LOG)
                           .error(e)
@@ -121,7 +161,7 @@ public class Redis implements Lifecycle {
         for (JedisPubSub subscription : subscriptions) {
             try {
                 subscription.unsubscribe();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 Exceptions.handle()
                           .to(LOG)
                           .error(e)
@@ -136,39 +176,13 @@ public class Redis implements Lifecycle {
 
     @Override
     public void awaitTermination() {
+        // Noting to do
     }
 
     @Override
     public String getName() {
-        return "redis";
+        return NAME_REDIS;
     }
-
-    @ConfigValue("redis.host")
-    private String host;
-
-    @ConfigValue("redis.port")
-    private int port;
-
-    @ConfigValue("redis.timeout")
-    private int timeout;
-
-    @ConfigValue("redis.password")
-    private String password;
-
-    @ConfigValue("redis.db")
-    private int db;
-
-    @ConfigValue("redis.maxActive")
-    private int maxActive;
-
-    @ConfigValue("redis.maxIdle")
-    private int maxIdle;
-
-    public static final Log LOG = Log.get("redis");
-
-    protected Average callDuration = new Average();
-    protected Average messageDuration = new Average();
-    protected JedisPool jedis;
 
     /**
      * Determines if access to Redis is configured.
@@ -187,7 +201,7 @@ public class Redis implements Lifecycle {
             jedis = new JedisPool(jedisPoolConfig,
                                   host,
                                   port,
-                                  timeout,
+                                  connectTimeout,
                                   Strings.isFilled(password) ? password : null,
                                   db,
                                   CallContext.getNodeName());
@@ -206,16 +220,14 @@ public class Redis implements Lifecycle {
      */
     public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
         Watch w = Watch.start();
-        Operation op = Operation.create("redis", description, Duration.ofSeconds(10));
-        try (Jedis redis = getConnection()) {
+        try (Operation op = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
             return task.apply(redis);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw Exceptions.handle(LOG, e);
         } finally {
-            Operation.release(op);
             callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("redis", description.get());
+                w.submitMicroTiming(NAME_REDIS, description.get());
             }
         }
     }
@@ -276,11 +288,6 @@ public class Redis implements Lifecycle {
     }
 
     /**
-     * Contains the entry name of the info section under which redis reports the amount of consumed ram
-     */
-    public static final String INFO_USED_MEMORY = "used_memory";
-
-    /**
      * Returns a map of monitoring info about the redis server.
      *
      * @return a map containing statistical values supplied by the server
@@ -304,33 +311,38 @@ public class Redis implements Lifecycle {
         /**
          * The full name of the lock, as found in redis
          */
-        public String key;
+        public final String key;
 
         /**
          * The name of the lock, without any reids prefixes
          */
-        public String name;
+        public final String name;
 
         /**
          * The current value of the lock which can be used to determine who holds the lock
          */
-        public String value;
+        public final String value;
 
         /**
          * The timestamp when the lock was last acquired
          */
-        public LocalDateTime since;
+        public final LocalDateTime since;
 
         /**
          * The maximal time to live of the lock.
          * <p>
          * The lock will be auto released after a certain amount of seconds in case of a server crash
          */
-        public Long ttl;
-    }
+        public final Long ttl;
 
-    private static final String PREFIX_LOCK = "lock_";
-    private static final String SUFFIX_DATE = "_date";
+        public LockInfo(String key, String name, String value, LocalDateTime since, Long ttl) {
+            this.key = key;
+            this.name = name;
+            this.value = value;
+            this.since = since;
+            this.ttl = ttl;
+        }
+    }
 
     /**
      * Returns a list of all currently held locks.
@@ -343,28 +355,30 @@ public class Redis implements Lifecycle {
         List<LockInfo> result = Lists.newArrayList();
         exec(() -> "Get List of Locks", redis -> {
             for (String key : redis.keys(PREFIX_LOCK + "*")) {
-                if (key.endsWith(SUFFIX_DATE)) {
-                    continue;
+                if (!key.endsWith(SUFFIX_DATE)) {
+                    LockInfo info = computeLockInfo(redis, key);
+                    result.add(info);
                 }
-                String owner = redis.get(key);
-                String since = redis.get(key + SUFFIX_DATE);
-                Long ttl = redis.ttl(key);
-
-                LockInfo info = new LockInfo();
-                info.key = key;
-                info.name = key.substring(PREFIX_LOCK.length());
-                info.value = owner;
-                if (Strings.isFilled(since)) {
-                    info.since = LocalDateTime.parse(since);
-                }
-                if (ttl != null && ttl > -1) {
-                    info.ttl = ttl;
-                }
-                result.add(info);
             }
         });
 
         return result;
+    }
+
+    protected LockInfo computeLockInfo(Jedis redis, String key) {
+        String owner = redis.get(key);
+        String since = redis.get(key + SUFFIX_DATE);
+        Long ttl = redis.ttl(key);
+
+        String name = key.substring(PREFIX_LOCK.length());
+        LocalDateTime sinceDate = null;
+        if (Strings.isFilled(since)) {
+            sinceDate = LocalDateTime.parse(since);
+        }
+        if (ttl != null && ttl < 0) {
+            ttl = null;
+        }
+        return new LockInfo(key, name, owner, sinceDate, ttl);
     }
 
     /**
@@ -414,7 +428,7 @@ public class Redis implements Lifecycle {
                 waitInMillis = Math.min(1500, waitInMillis + 500);
             } while (System.currentTimeMillis() < timeout);
             return false;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Exceptions.handle(LOG, e);
             return false;
         }

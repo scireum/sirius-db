@@ -91,9 +91,11 @@ public class Database {
         this.initialSize = ext.get(KEY_INITIAL_SIZE).isFilled() ?
                            ext.get(KEY_INITIAL_SIZE).asInt(0) :
                            profile.get(KEY_INITIAL_SIZE).asInt(0);
-        this.maxActive =
-                ext.get(KEY_MAX_ACTIVE).isFilled() ? ext.get(KEY_MAX_ACTIVE).asInt(10) : profile.get(KEY_MAX_ACTIVE).asInt(10);
-        this.maxIdle = ext.get(KEY_MAX_IDLE).isFilled() ? ext.get(KEY_MAX_IDLE).asInt(1) : profile.get(KEY_MAX_IDLE).asInt(1);
+        this.maxActive = ext.get(KEY_MAX_ACTIVE).isFilled() ?
+                         ext.get(KEY_MAX_ACTIVE).asInt(10) :
+                         profile.get(KEY_MAX_ACTIVE).asInt(10);
+        this.maxIdle =
+                ext.get(KEY_MAX_IDLE).isFilled() ? ext.get(KEY_MAX_IDLE).asInt(1) : profile.get(KEY_MAX_IDLE).asInt(1);
         this.validationQuery = ext.get(KEY_VALIDATION_QUERY).isEmptyString() ?
                                Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).set(ctx).format() :
                                ext.get(KEY_VALIDATION_QUERY).asString();
@@ -139,11 +141,8 @@ public class Database {
     }
 
     private Connection createConnection() throws SQLException {
-        Operation op = Operation.create("sql", () -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5));
-        try {
+        try (Operation op = new Operation(() -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5))) {
             return new WrappedConnection(getDatasource().getConnection(), this);
-        } finally {
-            Operation.release(op);
         }
     }
 
