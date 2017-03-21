@@ -151,17 +151,11 @@ public class EntityRefProperty extends Property {
         super.link();
         EntityRef.OnDelete deleteHandler = getEntityRef().getDeleteHandler();
 
-        setTypeNameAsAlternativePropertyKey();
-
         createDeleteCascadeHandler(deleteHandler);
 
         if (deleteHandler == EntityRef.OnDelete.LAZY_CASCADE || deleteHandler == EntityRef.OnDelete.SOFT_CASCADE) {
             createBackgroundCascadeHandler();
         }
-    }
-
-    protected void setTypeNameAsAlternativePropertyKey() {
-        this.alternativePropertyKey = getReferencedType().getName();
     }
 
     protected void createDeleteCascadeHandler(EntityRef.OnDelete deleteHandler) {
