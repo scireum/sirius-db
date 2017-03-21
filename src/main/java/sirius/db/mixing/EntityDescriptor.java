@@ -517,7 +517,7 @@ public class EntityDescriptor {
             key.setName(index.name());
             for (int i = 0; i < index.columns().length; i++) {
                 String name = index.columns()[i];
-                if (columnAliases.containsKey(name)) {
+                if (columnAliases != null && columnAliases.containsKey(name)) {
                     name = columnAliases.get(name);
                 }
                 key.addColumn(i, name);
