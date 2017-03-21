@@ -516,7 +516,11 @@ public class EntityDescriptor {
             Key key = new Key();
             key.setName(index.name());
             for (int i = 0; i < index.columns().length; i++) {
-                key.addColumn(i, index.columns()[i]);
+                String name = index.columns()[i];
+                if (columnAliases.containsKey(name)) {
+                    name = columnAliases.get(name);
+                }
+                key.addColumn(i, name);
             }
             key.setUnique(index.unique());
             table.getKeys().add(key);
