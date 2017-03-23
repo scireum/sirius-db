@@ -17,6 +17,7 @@ import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
@@ -125,5 +126,14 @@ public class AmountProperty extends Property {
             column.setScale(column.getPrecision());
         }
         return column;
+    }
+
+    @Override
+    protected void checkNullability(Object propertyValue) {
+        super.checkNullability(propertyValue);
+
+        if (!isNullable() && ((Amount) propertyValue).isEmpty()) {
+            throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
+        }
     }
 }
