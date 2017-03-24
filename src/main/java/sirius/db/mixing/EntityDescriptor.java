@@ -28,6 +28,7 @@ import sirius.db.mixing.schema.Table;
 import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
+import sirius.kernel.commons.PriorityCollector;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
@@ -118,7 +119,15 @@ public class EntityDescriptor {
     /**
      * A list of all additional handlers to be executed once an entity is about to be saved
      */
-    protected List<Consumer<Entity>> beforeSaveHandlers = Lists.newArrayList();
+    protected List<Consumer<Entity>> sortedBeforeSaveHandlers;
+
+    /**
+     * As handles which are executed before entity is saved, need to be in order (some checks might depend on others),
+     * {@link BeforeSave} permits to specify a property which is used to here to sort the handlers.
+     * <p>
+     * <tt>sortedBeforeSaveHandlers</tt> will be filled when first accessed and provide a properly sorted list
+     */
+    protected PriorityCollector<Consumer<Entity>> beforeSaveHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all additional handlers to be executed once an entity is was saved
@@ -299,13 +308,23 @@ public class EntityDescriptor {
      */
     protected final void beforeSave(Entity entity) {
         beforeSaveChecks(entity);
-        for (Consumer<Entity> c : beforeSaveHandlers) {
+
+        for (Consumer<Entity> c : getSortedBeforeSaveHandlers()) {
             c.accept(entity);
         }
         for (Property property : properties.values()) {
             property.onBeforeSave(entity);
         }
         onBeforeSave(entity);
+    }
+
+    private List<Consumer<Entity>> getSortedBeforeSaveHandlers() {
+        if (sortedBeforeSaveHandlers == null) {
+            sortedBeforeSaveHandlers = beforeSaveHandlerCollector.getData();
+            beforeSaveHandlerCollector = null;
+        }
+
+        return sortedBeforeSaveHandlers;
     }
 
     /**
@@ -630,8 +649,7 @@ public class EntityDescriptor {
 
     private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
         if (method.isAnnotationPresent(BeforeSave.class)) {
-            warnOnWrongVisibility(method);
-            descriptor.beforeSaveHandlers.add(e -> invokeHandler(accessPath, method, e));
+            handleBeforeSaveMethod(descriptor, accessPath, method);
         } else if (method.isAnnotationPresent(AfterSave.class)) {
             warnOnWrongVisibility(method);
             descriptor.afterSaveHandlers.add(e -> invokeHandler(accessPath, method, e));
@@ -642,20 +660,40 @@ public class EntityDescriptor {
             warnOnWrongVisibility(method);
             descriptor.afterDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
         } else if (method.isAnnotationPresent(OnValidate.class)) {
-            warnOnWrongVisibility(method);
-            if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
-                // When declared within an entity, we only have Consumer<String> as parameter
-                descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, c));
-            } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
-                // When declared within a mixin, we have the entity itself as first parameter
-                // and the consumer as second...
-                descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, e, c));
-            } else {
-                OMA.LOG.WARN("OnValidate handler %s.%s doesn have Consumer<String> as parameter!",
-                             method.getDeclaringClass().getName(),
-                             method.getName());
-            }
+            handleOnValidateMethod(descriptor, accessPath, method);
         }
+    }
+
+    private static void handleOnValidateMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
+        warnOnWrongVisibility(method);
+        if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
+            // When declared within an entity, we only have Consumer<String> as parameter
+            descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, c));
+        } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
+            // When declared within a mixin, we have the entity itself as first parameter
+            // and the consumer as second...
+            descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, e, c));
+        } else {
+            OMA.LOG.WARN("OnValidate handler %s.%s doesn't have Consumer<String> as parameter!",
+                         method.getDeclaringClass().getName(),
+                         method.getName());
+        }
+    }
+
+    private static void handleBeforeSaveMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
+        warnOnWrongVisibility(method);
+        if (descriptor.beforeSaveHandlerCollector == null) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage(
+                                    "Cannot provide a before-save-handler, as the sorted list was already computed. Descriptor: %s, Method: %s.%s",
+                                    descriptor.getType().getName(),
+                                    method.getDeclaringClass().getName(),
+                                    method.getName())
+                            .handle();
+        }
+        descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),
+                                                  e -> invokeHandler(accessPath, method, e));
     }
 
     private static void warnOnWrongVisibility(Method method) {

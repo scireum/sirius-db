@@ -8,6 +8,8 @@
 
 package sirius.db.mixing.annotations;
 
+import sirius.kernel.di.std.Priorized;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,4 +21,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface BeforeSave {
+
+    /**
+     * Determines the execution order of all before save handlers.
+     *
+     * @return the execution priority. Handlers will be executed in an ascending order, the one with the lowest value
+     * will be executed first.
+     */
+    int priority() default Priorized.DEFAULT_PRIORITY;
 }
