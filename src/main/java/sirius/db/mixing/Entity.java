@@ -78,8 +78,7 @@ public abstract class Entity extends Mixable {
      */
     @Transient
     protected Row fetchRow;
-
-
+    
     /**
      * Contains the constant used to mark a new (unsaved) entity.
      */

@@ -50,6 +50,32 @@ public class Schema implements Initializable {
     private Map<String, EntityDescriptor> descriptorsByName = Maps.newHashMap();
     private Future readyFuture = new Future();
 
+    @Part
+    private Databases dbs;
+
+    @Part
+    private Tasks tasks;
+
+    private Database db;
+
+    @Part(configPath = "mixing.dialect")
+    private DatabaseDialect dialect;
+
+    @ConfigValue("mixing.database")
+    private String database;
+
+    @ConfigValue("mixing.updateSchema")
+    private boolean updateSchema;
+
+    private List<SchemaUpdateAction> requiredSchemaChanges = Lists.newArrayList();
+
+    protected Database getDatabase() {
+        if (db == null) {
+            db = dbs.get(database);
+        }
+        return db;
+    }
+
     /**
      * Returns the descriptor of the given entity class.
      *
@@ -106,32 +132,6 @@ public class Schema implements Initializable {
         return descriptorsByType.values();
     }
 
-    @Part
-    private Databases dbs;
-
-    @Part
-    private Tasks tasks;
-
-    private Database db;
-    private Future ready = new Future();
-
-    protected Database getDatabase() {
-        if (db == null) {
-            db = dbs.get(database);
-        }
-        return db;
-    }
-
-    @Part(configPath = "mixing.dialect")
-    private DatabaseDialect dialect;
-
-    @ConfigValue("mixing.database")
-    private String database;
-
-    @ConfigValue("mixing.updateSchema")
-    private boolean updateSchema;
-
-    private List<SchemaUpdateAction> requiredSchemaChanges = Lists.newArrayList();
 
     @Override
     public void initialize() throws Exception {
@@ -244,8 +244,7 @@ public class Schema implements Initializable {
                 target.add(ed.createTable());
             }
             SchemaTool tool = new SchemaTool(dialect);
-            Database database = getDatabase();
-            requiredSchemaChanges = tool.migrateSchemaTo(database, target, true);
+            requiredSchemaChanges = tool.migrateSchemaTo(getDatabase(), target, true);
         } catch (SQLException e) {
             Exceptions.handle(OMA.LOG, e);
         }
@@ -346,6 +345,7 @@ public class Schema implements Initializable {
             long id = Long.parseLong(typeAndId.getSecond());
             return Tuple.create(typeAndId.getFirst(), id);
         } catch (NumberFormatException e) {
+            Exceptions.ignore(e);
             throw Exceptions.createHandled()
                             .withSystemErrorMessage("Invalid entity id in unique object name: %s", uniqueName)
                             .handle();

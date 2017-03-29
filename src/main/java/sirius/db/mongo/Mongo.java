@@ -48,6 +48,9 @@ public class Mongo {
     @ConfigValue("mongo.db")
     private String dbName;
 
+    @Parts(IndexDescription.class)
+    private PartCollection<IndexDescription> indexDescriptions;
+
     protected volatile boolean tracing;
     protected volatile int traceLimit;
     protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
@@ -70,23 +73,7 @@ public class Mongo {
     public DB db() {
         try {
             if (mongoClient == null) {
-                synchronized (this) {
-                    if (mongoClient == null) {
-                        if (dbHosts.isEmpty()) {
-                            mongoClient = new MongoClient(dbHost);
-                        } else {
-                            mongoClient = new MongoClient(dbHosts.stream().map(host -> {
-                                try {
-                                    return new ServerAddress(host);
-                                } catch (UnknownHostException e) {
-                                    Exceptions.handle(LOG, e);
-                                    return null;
-                                }
-                            }).filter(Objects::nonNull).collect(Collectors.toList()));
-                        }
-                        createIndices(mongoClient.getDB(dbName));
-                    }
-                }
+                initializeClient();
             }
 
             return mongoClient.getDB(dbName);
@@ -95,8 +82,26 @@ public class Mongo {
         }
     }
 
-    @Parts(IndexDescription.class)
-    private PartCollection<IndexDescription> indexDescriptions;
+    protected synchronized void initializeClient() throws UnknownHostException {
+        if (mongoClient != null) {
+            return;
+        }
+
+        if (dbHosts.isEmpty()) {
+            mongoClient = new MongoClient(dbHost);
+        } else {
+            mongoClient = new MongoClient(dbHosts.stream().map(host -> {
+                try {
+                    return new ServerAddress(host);
+                } catch (UnknownHostException e) {
+                    Exceptions.handle(LOG, e);
+                    return null;
+                }
+            }).filter(Objects::nonNull).collect(Collectors.toList()));
+        }
+
+        createIndices(mongoClient.getDB(dbName));
+    }
 
     private void createIndices(DB db) {
         for (IndexDescription idx : indexDescriptions) {
@@ -105,7 +110,7 @@ public class Mongo {
                 LOG.INFO("Creating indices in Mongo DB: %s", idx.getClass().getName());
                 idx.createIndices(db);
                 LOG.INFO("Completed indices for: %s (%s)", idx.getClass().getName(), w.duration());
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 Exceptions.handle()
                           .to(LOG)
                           .error(t)

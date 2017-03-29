@@ -127,36 +127,48 @@ public class SQLQuery {
                 if (stmt == null) {
                     return;
                 }
-                if (limit == null) {
-                    limit = Limit.UNLIMITED;
-                }
-                if (limit.getTotalItems() > 0) {
-                    stmt.setMaxRows(limit.getTotalItems());
-                }
-                if (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0) {
-                    if (ds.hasCapability(Capability.STREAMING)) {
-                        stmt.setFetchSize(Integer.MIN_VALUE);
-                    } else {
-                        stmt.setFetchSize(1000);
-                    }
-                }
+                Limit effectiveLimit = (limit == null) ? Limit.UNLIMITED : limit;
+                applyMaxRows(stmt, effectiveLimit);
+                applyFetchSize(stmt, effectiveLimit);
+
                 try (ResultSet rs = stmt.executeQuery()) {
                     TaskContext tc = TaskContext.get();
-                    while (rs.next() && tc.isActive()) {
-                        Row row = loadIntoRow(rs);
-                        if (limit.nextRow()) {
-                            if (!handler.apply(row)) {
-                                break;
-                            }
-                        }
-                        if (!limit.shouldContinue()) {
-                            break;
-                        }
-                    }
+                    processResultSet(handler, effectiveLimit, rs, tc);
                 }
             }
         } finally {
             w.submitMicroTiming("SQL-QUERY", sql);
+        }
+    }
+
+    protected void applyMaxRows(PreparedStatement stmt, Limit effectiveLimit) throws SQLException {
+        if (effectiveLimit.getTotalItems() > 0) {
+            stmt.setMaxRows(effectiveLimit.getTotalItems());
+        }
+    }
+
+    protected void applyFetchSize(PreparedStatement stmt, Limit effectiveLimit) throws SQLException {
+        if (effectiveLimit.getTotalItems() > 1000 || effectiveLimit.getTotalItems() <= 0) {
+            if (ds.hasCapability(Capability.STREAMING)) {
+                stmt.setFetchSize(Integer.MIN_VALUE);
+            } else {
+                stmt.setFetchSize(1000);
+            }
+        }
+    }
+
+    protected void processResultSet(Function<Row, Boolean> handler, Limit effectiveLimit, ResultSet rs, TaskContext tc)
+            throws SQLException {
+        while (rs.next() && tc.isActive()) {
+            Row row = loadIntoRow(rs);
+            if (effectiveLimit.nextRow()) {
+                if (!handler.apply(row)) {
+                    return;
+                }
+            }
+            if (!effectiveLimit.shouldContinue()) {
+                return;
+            }
         }
     }
 
@@ -223,7 +235,7 @@ public class SQLQuery {
             fetchedFieldNames = Lists.newArrayListWithCapacity(rs.getMetaData().getColumnCount());
         }
         for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-            String fieldName = null;
+            String fieldName;
             if (fieldNames != null) {
                 fieldName = fieldNames.get(col - 1);
             } else {
@@ -232,7 +244,7 @@ public class SQLQuery {
             }
             Object obj = rs.getObject(col);
             if (obj instanceof Blob) {
-                writeBlobToParameter(fieldName, rs, col, (Blob) obj);
+                writeBlobToParameter(fieldName, (Blob) obj);
             } else {
                 row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
             }
@@ -249,16 +261,18 @@ public class SQLQuery {
      * If a Blob is inside a result set, we expect an OutputStream as parameter with the same name which we write
      * the data to.
      */
-    protected void writeBlobToParameter(String name, ResultSet rs, int col, Blob blob) throws SQLException {
+    protected void writeBlobToParameter(String name, Blob blob) throws SQLException {
         OutputStream out = (OutputStream) params.get(name);
-        if (out != null) {
-            try {
-                try (InputStream in = blob.getBinaryStream()) {
-                    ByteStreams.copy(in, out);
-                }
-            } catch (IOException e) {
-                throw new SQLException(e);
+        if (out == null) {
+            return;
+        }
+
+        try {
+            try (InputStream in = blob.getBinaryStream()) {
+                ByteStreams.copy(in, out);
             }
+        } catch (IOException e) {
+            throw new SQLException(e);
         }
     }
 

@@ -23,7 +23,7 @@ class JDBCSpec extends BaseSpecification {
 
     def "test database is loaded from config while profile is applied"() {
         when:
-        def db = dbs.get("test");
+        def db = dbs.get("test")
         then:
         db.createQuery("SELECT 1 FROM INFORMATION_SCHEMA.SYSTEM_USERS").queryList().size() == 1
         and: "no connection is active"
