@@ -380,8 +380,8 @@ public abstract class Property {
         try {
             setValue(e, transformValue(value));
         } catch (IllegalArgumentException exception) {
-            throw Exceptions.handle()
-                            .withNLSKey("Property.template")
+            throw Exceptions.createHandled()
+                            .withNLSKey("Property.parseValueErrorMessage")
                             .set("message", exception.getMessage())
                             .error(exception)
                             .handle();
