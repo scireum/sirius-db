@@ -58,6 +58,7 @@ public class Databases {
     private static long longQueryThresholdMillis = -1;
 
     protected static Counter numUses = new Counter();
+    protected static Counter numConnects = new Counter();
     protected static Counter numQueries = new Counter();
     protected static Counter numSlowQueries = new Counter();
     protected static Average queryDuration = new Average();
@@ -80,11 +81,15 @@ public class Databases {
             // Only report statistics if we have at least one database connection...
             if (!datasources.isEmpty()) {
                 collector.differentialMetric("jdbc-use", "db-uses", "JDBC Uses", numUses.getCount(), "/min");
-                int highestUtilization = 0;
-                for (Database db : datasources.values()) {
-                    highestUtilization = Math.max(highestUtilization, db.getNumActive() * 100 / db.getSize());
-                }
+                collector.differentialMetric("jdbc-connects",
+                                             "db-connects",
+                                             "JDBC Connects",
+                                             numConnects.getCount(),
+                                             "/min");
+
+                int highestUtilization = determineHighestUtilization();
                 collector.metric("db-pool-utilization", "JDBC Pool Utilization (max)", highestUtilization, "%");
+
                 collector.differentialMetric("jdbc-queries",
                                              "db-queries",
                                              "JDBC Queries",
@@ -98,6 +103,15 @@ public class Databases {
                 collector.metric("db-query-duration", "JDBC Query Duration", queryDuration.getAndClearAverage(), "ms");
             }
         }
+
+        protected int determineHighestUtilization() {
+            int highestUtilization = 0;
+            for (Database db : datasources.values()) {
+                highestUtilization = Math.max(highestUtilization, db.getNumActive() * 100 / db.getSize());
+            }
+            return highestUtilization;
+        }
+
     }
 
     /**
