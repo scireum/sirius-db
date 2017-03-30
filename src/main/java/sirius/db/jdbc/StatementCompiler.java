@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -68,7 +69,7 @@ class StatementCompiler {
      * @param context the context defining the parameters available
      */
     protected void buildParameterizedStatement(String query, Context context) throws SQLException {
-        this.params = Lists.newArrayList();
+        this.params = new ArrayList<>();
         if (query != null) {
             this.originalSQL = query;
             this.context = context;
@@ -206,8 +207,19 @@ class StatementCompiler {
     }
 
     private boolean isParameterFilled(Object paramValue) {
-        return (Strings.isFilled(paramValue)) && (!(paramValue instanceof Collection<?>)
-                                                  || !((Collection<?>) paramValue).isEmpty());
+        if (paramValue == null) {
+            return false;
+        }
+
+        if (paramValue instanceof Collection<?>) {
+            return !((Collection<?>) paramValue).isEmpty();
+        }
+
+        if (paramValue instanceof String) {
+            return ((String)paramValue).length() > 0;
+        }
+
+        return true;
     }
 
     private int findClosingCurlyBracket(String sql, int index) throws SQLException {

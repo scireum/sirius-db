@@ -267,10 +267,8 @@ public class SQLQuery {
             return;
         }
 
-        try {
-            try (InputStream in = blob.getBinaryStream()) {
-                ByteStreams.copy(in, out);
-            }
+        try (InputStream in = blob.getBinaryStream()) {
+            ByteStreams.copy(in, out);
         } catch (IOException e) {
             throw new SQLException(e);
         }
