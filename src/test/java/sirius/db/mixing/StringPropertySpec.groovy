@@ -16,22 +16,22 @@ import java.time.Duration
 class StringPropertySpec extends BaseSpecification {
 
     @Part
-    private static OMA oma;
+    private static OMA oma
 
     @Part
-    private static Schema schema;
+    private static Schema schema
 
     def "reading and writing clobs works"() {
         given:
-        schema.getReadyFuture().await(Duration.ofSeconds(45));
+        schema.getReadyFuture().await(Duration.ofSeconds(45))
         and:
-        TestClobEntity test = new TestClobEntity();
+        TestClobEntity test = new TestClobEntity()
         when:
-        test.setLargeValue("This is a test");
+        test.setLargeValue("This is a test")
         and:
-        oma.update(test);
+        oma.update(test)
         and:
-        test = oma.refreshOrFail(test);
+        test = oma.refreshOrFail(test)
         then:
         test.getLargeValue() == "This is a test"
     }
