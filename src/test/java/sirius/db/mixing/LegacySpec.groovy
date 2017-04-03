@@ -16,22 +16,22 @@ import java.time.Duration
 class LegacySpec extends BaseSpecification {
 
     @Part
-    private static OMA oma;
+    private static OMA oma
 
     def setupSpec() {
-        oma.getReadyFuture().await(Duration.ofSeconds(60));
+        oma.getReadyFuture().await(Duration.ofSeconds(60))
     }
 
     def "check if aliasing for columns work"() {
         given:
-        LegacyEntity e = new LegacyEntity();
+        LegacyEntity e = new LegacyEntity()
         when:
-        e.setFirstname("Test");
-        e.setLastname("Entity");
-        e.getComposite().setStreet("Street");
-        e.getComposite().setCity("Test-City");
-        e.getComposite().setZip("1245");
-        oma.update(e);
+        e.setFirstname("Test")
+        e.setLastname("Entity")
+        e.getComposite().setStreet("Street")
+        e.getComposite().setCity("Test-City")
+        e.getComposite().setZip("1245")
+        oma.update(e)
         LegacyEntity fromDB = oma.select(LegacyEntity.class)
                 .eq(Column.named("firstname"), "Test")
                 .orderAsc(Column.named("composite").inner(Column.named("street")))

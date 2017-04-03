@@ -16,21 +16,21 @@ import java.time.Duration
 class LongPropertySpec extends BaseSpecification {
 
     @Part
-    private static OMA oma;
+    private static OMA oma
 
     def setupSpec() {
-        oma.getReadyFuture().await(Duration.ofSeconds(60));
+        oma.getReadyFuture().await(Duration.ofSeconds(60))
     }
 
     def "reading and writing long works"() {
         given:
-        LongEntity test = new LongEntity();
+        LongEntity test = new LongEntity()
         when:
-        test.setLongValue(Long.MAX_VALUE);
+        test.setLongValue(Long.MAX_VALUE)
         and:
-        oma.update(test);
+        oma.update(test)
         and:
-        test = oma.refreshOrFail(test);
+        test = oma.refreshOrFail(test)
         then:
         test.getLongValue() == Long.MAX_VALUE
     }
