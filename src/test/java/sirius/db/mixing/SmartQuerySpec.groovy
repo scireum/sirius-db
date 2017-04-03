@@ -204,6 +204,17 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().map({ x -> x.getParent().getValue().getName() + x.getOtherParent().getValue().getName() } as Function).collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
     }
 
+    def "automatic joins work across several tables"() {
+        given:
+        SmartQuery<SmartQueryTestChildChildEntity> qry = oma.select(SmartQueryTestChildChildEntity.class)
+                .fields(SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(SmartQueryTestParentEntity.NAME))
+                .orderAsc(SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(SmartQueryTestParentEntity.NAME))
+        when:
+        def result = qry.queryList()
+        then:
+        result.stream().map({ x -> x.getParentChild().getValue().getParent().getValue().getName() } as Function).collect(Collectors.toList()) == ["Parent 1"]
+    }
+
     def "exists works when referencing a child entity"() {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestParentEntity.class).where(Exists.matchingIn(SmartQueryTestParentEntity.ID, SmartQueryTestChildEntity.class, SmartQueryTestChildEntity.PARENT))
