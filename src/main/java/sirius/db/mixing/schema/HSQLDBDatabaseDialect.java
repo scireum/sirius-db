@@ -14,7 +14,6 @@ import sirius.kernel.di.std.Register;
 
 import java.sql.Types;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -85,32 +84,6 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
         }
 
         return Strings.areEqual(left, right);
-    }
-
-    @Override
-    public Table completeTableInfos(Table table) {
-        for (TableColumn col : table.getColumns()) {
-            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col)) {
-                col.setDefaultValue("'" + col.getDefaultValue() + "'");
-            }
-        }
-        // The PK is also identified as INDEX...
-        Key key = table.getKey("PRIMARY");
-        if (key != null) {
-            table.getKeys().remove(key);
-        }
-        return table;
-    }
-
-    protected boolean hasEscapedDefaultValue(TableColumn col) {
-        if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType()) {
-            return true;
-        }
-
-        return Types.DATE == col.getType()
-               || Types.TIMESTAMP == col.getType()
-               || Types.LONGVARCHAR == col.getType()
-               || Types.TIME == col.getType();
     }
 
     @Override
@@ -224,44 +197,6 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
                                                          SchemaTool.getJdbcTypeName(type)));
     }
 
-    private String listToString(List<String> columns) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String col : columns) {
-            if (!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append(col);
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public String generateAddForeignKey(Table table, ForeignKey key) {
-        return MessageFormat.format("ALTER TABLE {0} ADD CONSTRAINT {1} FOREIGN KEY ({2}) REFERENCES {3} ({4})",
-                                    table.getName(),
-                                    key.getName(),
-                                    listToString(key.getColumns()),
-                                    key.getForeignTable(),
-                                    listToString(key.getForeignColumns()));
-    }
-
-    @Override
-    public String generateAddKey(Table table, Key key) {
-        if (key.isUnique()) {
-            return MessageFormat.format("ALTER TABLE {0} ADD CONSTRAINT {1} UNIQUE ({2})",
-                                        table.getName(),
-                                        key.getName(),
-                                        listToString(key.getColumns()));
-        } else {
-            return MessageFormat.format("ALTER TABLE {0} ADD INDEX {1} ({2})",
-                                        table.getName(),
-                                        key.getName(),
-                                        listToString(key.getColumns()));
-        }
-    }
-
     @Override
     public List<String> generateAlterColumnTo(Table table, String oldName, TableColumn toColumn) {
         String name = oldName;
@@ -279,33 +214,6 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
                                                               toColumn.isNullable() ? "" : NOT_NULL,
                                                               toColumn.isAutoIncrement() ? IDENTITY : "",
                                                               getDefaultValueAsString(toColumn)));
-    }
-
-    @Override
-    public List<String> generateAlterForeignKey(Table table, ForeignKey from, ForeignKey to) {
-        List<String> actions = new ArrayList<>();
-        if (from != null) {
-            actions.add(generateDropForeignKey(table, from));
-        }
-        actions.add(generateAddForeignKey(table, to));
-        return actions;
-    }
-
-    @Override
-    public List<String> generateAlterKey(Table table, Key from, Key to) {
-        List<String> actions = new ArrayList<>();
-        if (from != null) {
-            actions.add(generateDropKey(table, from));
-        }
-        actions.add(generateAddKey(table, to));
-        return actions;
-    }
-
-    @Override
-    public List<String> generateAlterPrimaryKey(Table table) {
-        return Collections.singletonList(MessageFormat.format("ALTER TABLE {0} DROP PRIMARY KEY, ADD PRIMARY KEY ({1})",
-                                                              table.getName(),
-                                                              listToString(table.getPrimaryKey())));
     }
 
     @Override
