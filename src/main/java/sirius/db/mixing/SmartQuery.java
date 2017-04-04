@@ -484,7 +484,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                     jf.subFetches.put(col.getName(), subFetch);
                 }
                 jf = subFetch;
-                currentDescriptor = subFetch.property.getDescriptor();
+                currentDescriptor = subFetch.property.getReferencedDescriptor();
             }
         }
 

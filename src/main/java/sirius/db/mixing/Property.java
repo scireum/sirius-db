@@ -377,7 +377,15 @@ public abstract class Property {
      * @param value the value to parse and apply
      */
     public void parseValue(Entity e, Value value) {
-        setValue(e, transformValue(value));
+        try {
+            setValue(e, transformValue(value));
+        } catch (IllegalArgumentException exception) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("Property.parseValueErrorMessage")
+                            .set("message", exception.getMessage())
+                            .error(exception)
+                            .handle();
+        }
     }
 
     /**

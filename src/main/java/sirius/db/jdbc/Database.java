@@ -9,7 +9,6 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
-import org.apache.commons.dbcp2.BasicDataSource;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
@@ -58,7 +57,7 @@ public class Database {
     private int maxIdle;
     private boolean testOnBorrow;
     private String validationQuery;
-    private BasicDataSource ds;
+    private MonitoredDataSource ds;
     private Set<Capability> capabilities;
 
     /*
@@ -114,7 +113,7 @@ public class Database {
      */
     public DataSource getDatasource() {
         if (ds == null) {
-            ds = new BasicDataSource();
+            ds = new MonitoredDataSource();
             initialize();
         }
         return ds;
