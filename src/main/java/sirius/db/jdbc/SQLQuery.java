@@ -127,7 +127,7 @@ public class SQLQuery {
                 if (stmt == null) {
                     return;
                 }
-                Limit effectiveLimit = (limit == null) ? Limit.UNLIMITED : limit;
+                Limit effectiveLimit = limit != null ? limit : Limit.UNLIMITED;
                 applyMaxRows(stmt, effectiveLimit);
                 applyFetchSize(stmt, effectiveLimit);
 
@@ -157,10 +157,12 @@ public class SQLQuery {
         }
     }
 
-    protected void processResultSet(Function<Row, Boolean> handler, Limit effectiveLimit, ResultSet rs, TaskContext tc)
-            throws SQLException {
-        while (rs.next() && tc.isActive()) {
-            Row row = loadIntoRow(rs);
+    protected void processResultSet(Function<Row, Boolean> handler,
+                                    Limit effectiveLimit,
+                                    ResultSet resultSet,
+                                    TaskContext taskContext) throws SQLException {
+        while (resultSet.next() && taskContext.isActive()) {
+            Row row = loadIntoRow(resultSet);
             if (effectiveLimit.nextRow()) {
                 if (!handler.apply(row)) {
                     return;

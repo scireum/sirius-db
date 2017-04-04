@@ -97,7 +97,7 @@ public class SQLCall {
             sql.append(")}");
 
             try (CallableStatement stmt = c.prepareCall(sql.toString())) {
-                writeParamters(stmt);
+                writeParameters(stmt);
                 stmt.execute();
                 readBackParameters(stmt);
             }
@@ -108,7 +108,7 @@ public class SQLCall {
         return this;
     }
 
-    protected void writeParamters(CallableStatement stmt) throws SQLException {
+    protected void writeParameters(CallableStatement stmt) throws SQLException {
         for (int i = 0; i < names.size(); i++) {
             if (types.get(i) != null) {
                 stmt.registerOutParameter(i + 1, types.get(i));
