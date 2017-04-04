@@ -39,7 +39,7 @@ public class AccessPath {
     @Nonnull
     public AccessPath append(@Nonnull String prefix, @Nonnull Function<Object, Object> accessor) {
         AccessPath result = new AccessPath();
-        if (this == IDENTITY) {
+        if (IDENTITY.equals(this)) {
             result.prefix = prefix;
             result.accessor = accessor;
 

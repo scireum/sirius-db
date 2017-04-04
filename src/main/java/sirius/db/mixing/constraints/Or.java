@@ -17,6 +17,14 @@ import java.util.List;
  */
 public class Or extends CombinedConstraint {
 
+    protected Or(List<Constraint> inner) {
+        super(inner);
+    }
+
+    protected Or(Constraint... inner) {
+        super(inner);
+    }
+
     /**
      * Combines the given constraints using an OR operator.
      *
@@ -42,14 +50,6 @@ public class Or extends CombinedConstraint {
         }
 
         return new Or(inner);
-    }
-
-    protected Or(List<Constraint> inner) {
-        super(inner);
-    }
-
-    protected Or(Constraint... inner) {
-        super(inner);
     }
 
     @Override

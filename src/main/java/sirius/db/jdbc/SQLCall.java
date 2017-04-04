@@ -97,25 +97,33 @@ public class SQLCall {
             sql.append(")}");
 
             try (CallableStatement stmt = c.prepareCall(sql.toString())) {
-                for (int i = 0; i < names.size(); i++) {
-                    if (types.get(i) != null) {
-                        stmt.registerOutParameter(i + 1, types.get(i));
-                    } else {
-                        stmt.setObject(i + 1, data.get(i));
-                    }
-                }
+                writeParameters(stmt);
                 stmt.execute();
-                for (int i = 0; i < names.size(); i++) {
-                    if (types.get(i) != null) {
-                        output.put(names.get(i), stmt.getObject(i + 1));
-                    }
-                }
+                readBackParameters(stmt);
             }
         } finally {
             w.submitMicroTiming("SQL", "CALL: " + fun);
         }
 
         return this;
+    }
+
+    protected void writeParameters(CallableStatement stmt) throws SQLException {
+        for (int i = 0; i < names.size(); i++) {
+            if (types.get(i) != null) {
+                stmt.registerOutParameter(i + 1, types.get(i));
+            } else {
+                stmt.setObject(i + 1, data.get(i));
+            }
+        }
+    }
+
+    protected void readBackParameters(CallableStatement stmt) throws SQLException {
+        for (int i = 0; i < names.size(); i++) {
+            if (types.get(i) != null) {
+                output.put(names.get(i), stmt.getObject(i + 1));
+            }
+        }
     }
 
     /**

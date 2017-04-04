@@ -31,6 +31,9 @@ public class Exists extends Constraint {
     private Class<? extends Entity> other;
     private boolean not = false;
 
+    @Part
+    private static Schema schema;
+
     private Exists() {
     }
 
@@ -83,9 +86,6 @@ public class Exists extends Constraint {
     public boolean addsConstraint() {
         return true;
     }
-
-    @Part
-    private static Schema schema;
 
     @Override
     public void appendSQL(SmartQuery.Compiler compiler) {

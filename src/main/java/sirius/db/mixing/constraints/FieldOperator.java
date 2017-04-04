@@ -158,38 +158,47 @@ public class FieldOperator extends Constraint {
         if (op == null) {
             throw new IllegalStateException("operator not set");
         }
-        if (addsConstraint()) {
-            String columnName = compiler.translateColumnName(field);
-            if (value == null) {
-                if (op == Operator.EQ) {
-                    compiler.getWHEREBuilder().append(columnName).append(" IS NULL");
-                    return;
-                } else if (op == Operator.NE) {
-                    if (orNull) {
-                        // x IS NOT NULL OR x IS NULL === true
-                        // This constraint is pointless but as we might be in an OR, we still need to
-                        // output a constraint that is always true. As there is no boolean literal in
-                        // SQL, we use this brilliant expression:
-                        compiler.getWHEREBuilder().append("1=1");
-                    } else {
-                        compiler.getWHEREBuilder().append(columnName).append(" IS NOT NULL");
-                    }
-                    return;
-                }
-            }
+        if (!addsConstraint()) {
+            return;
+        }
 
+        String columnName = compiler.translateColumnName(field);
+        if (value == null) {
+            appendNullConstraint(compiler, columnName);
+        } else {
+            appendConstraint(compiler, columnName);
+        }
+    }
+
+    protected void appendConstraint(SmartQuery.Compiler compiler, String columnName) {
+        if (orNull) {
+            compiler.getWHEREBuilder()
+                    .append("(")
+                    .append(columnName)
+                    .append(op)
+                    .append(" ? OR ")
+                    .append(columnName)
+                    .append(" IS NULL)");
+        } else {
+            compiler.getWHEREBuilder().append(columnName).append(op).append(" ?");
+        }
+
+        compiler.addParameter(Databases.convertValue(value));
+    }
+
+    protected void appendNullConstraint(SmartQuery.Compiler compiler, String columnName) {
+        if (op == Operator.EQ) {
+            compiler.getWHEREBuilder().append(columnName).append(" IS NULL");
+        } else if (op == Operator.NE) {
             if (orNull) {
-                compiler.getWHEREBuilder()
-                        .append("(")
-                        .append(columnName)
-                        .append(op)
-                        .append(" ? OR ")
-                        .append(columnName)
-                        .append(" IS NULL)");
+                // x IS NOT NULL OR x IS NULL === true
+                // This constraint is pointless but as we might be in an OR, we still need to
+                // output a constraint that is always true. As there is no boolean literal in
+                // SQL, we use this brilliant expression:
+                compiler.getWHEREBuilder().append("1=1");
             } else {
-                compiler.getWHEREBuilder().append(columnName).append(op).append(" ?");
+                compiler.getWHEREBuilder().append(columnName).append(" IS NOT NULL");
             }
-            compiler.addParameter(Databases.convertValue(value));
         }
     }
 }

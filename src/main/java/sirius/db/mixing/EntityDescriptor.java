@@ -685,11 +685,11 @@ public class EntityDescriptor {
         if (descriptor.beforeSaveHandlerCollector == null) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
-                            .withSystemErrorMessage(
-                                    "Cannot provide a before-save-handler, as the sorted list was already computed. Descriptor: %s, Method: %s.%s",
-                                    descriptor.getType().getName(),
-                                    method.getDeclaringClass().getName(),
-                                    method.getName())
+                            .withSystemErrorMessage("Cannot provide a before-save-handler, as the sorted list was"
+                                                    + " already computed. Descriptor: %s, Method: %s.%s",
+                                                    descriptor.getType().getName(),
+                                                    method.getDeclaringClass().getName(),
+                                                    method.getName())
                             .handle();
         }
         descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),

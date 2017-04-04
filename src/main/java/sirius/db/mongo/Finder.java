@@ -24,6 +24,7 @@ import java.util.function.Function;
  */
 public class Finder extends QueryBuilder<Finder> {
 
+    private static final String KEY_MONGO = "mongo";
     private BasicDBObject fields;
     private BasicDBObject orderBy;
     private int skip;
@@ -125,7 +126,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("mongo", "FIND ONE - " + collection + ": " + filterObject);
+                w.submitMicroTiming(KEY_MONGO, "FIND ONE - " + collection + ": " + filterObject);
             }
             traceIfRequired(collection, w);
         }
@@ -164,7 +165,7 @@ public class Finder extends QueryBuilder<Finder> {
         cur.hasNext();
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {
-            w.submitMicroTiming("mongo", "FIND ALL - " + collection + ": " + filterObject);
+            w.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject);
         }
         traceIfRequired(collection, w);
     }
@@ -198,7 +199,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("mongo", "COUNT - " + collection + ": " + filterObject);
+                w.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject);
             }
             traceIfRequired(collection, w);
         }

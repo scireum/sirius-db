@@ -15,14 +15,15 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Provides methods to compile statements with embedded parameters and optional blocks.
@@ -34,6 +35,9 @@ class StatementCompiler {
     private Connection c;
     private StringBuilder sb;
     private boolean retrieveGeneratedKeys;
+    private String originalSQL;
+    private List<Object> params;
+    private Context context;
 
     protected StatementCompiler(Connection c, boolean retrieveGeneratedKeys) {
         this.c = c;
@@ -65,9 +69,11 @@ class StatementCompiler {
      * @param context the context defining the parameters available
      */
     protected void buildParameterizedStatement(String query, Context context) throws SQLException {
-        List<Object> params = Lists.newArrayList();
+        this.params = new ArrayList<>();
         if (query != null) {
-            parseSection(query, query, params, context);
+            this.originalSQL = query;
+            this.context = context;
+            parseSection(query);
         }
         int index = 0;
         for (Object param : params) {
@@ -92,8 +98,7 @@ class StatementCompiler {
      * If no [ was found, the complete string is compiled and added to the
      * result SQL.
      */
-    private void parseSection(String originalSQL, String sql, List<Object> params, Context context)
-            throws SQLException {
+    private void parseSection(String sql) throws SQLException {
         int index = sql.indexOf("[");
         if (index > -1) {
             int nextClose = sql.indexOf("]", index + 1);
@@ -106,38 +111,12 @@ class StatementCompiler {
                                                      index,
                                                      originalSQL));
             }
-            compileSection(false, sql, sql.substring(0, index), params, context);
-            compileSection(true, sql, sql.substring(index + 1, nextClose), params, context);
-            parseSection(originalSQL, sql.substring(nextClose + 1), params, context);
+            compileSection(false, sql.substring(0, index));
+            compileSection(true, sql.substring(index + 1, nextClose));
+            parseSection(sql.substring(nextClose + 1));
         } else {
-            compileSection(false, sql, sql, params, context);
+            compileSection(false, sql);
         }
-    }
-
-    /**
-     * Make <tt>searchString</tt> conform with SQL 92 syntax. Therefore all * are
-     * converted to % and a final % is appended at the end of the string.
-     *
-     * @param searchString the query to expand
-     * @param wildcardLeft determines if a % should be added to the start of the string
-     */
-    public static String addSQLWildcard(String searchString, boolean wildcardLeft) {
-        if (searchString == null) {
-            return null;
-        }
-        if (Strings.isEmpty(searchString)) {
-            return "%";
-        }
-        if ((!searchString.contains("%")) && (searchString.contains("*"))) {
-            searchString = searchString.replace('*', '%');
-        }
-        if (!searchString.endsWith("%")) {
-            searchString = searchString + "%";
-        }
-        if (wildcardLeft && !searchString.startsWith("%")) {
-            searchString = "%" + searchString;
-        }
-        return searchString;
     }
 
     /*
@@ -145,70 +124,105 @@ class StatementCompiler {
      * in context.
      */
     @SuppressWarnings("unchecked")
-    private void compileSection(boolean ignoreIfParametersNull,
-                                String originalSQL,
-                                String sql,
-                                List<Object> params,
-                                Map<String, Object> context) throws SQLException {
-        boolean parameterFound = !ignoreIfParametersNull;
+    private void compileSection(boolean ignoreIfParametersNull, String sql) throws SQLException {
         List<Object> tempParams = Lists.newArrayList();
         StringBuilder sqlBuilder = new StringBuilder();
-        int index = getNextRelevantIndex(sql);
-        boolean directSubstitution = (index > 0) && (sql.charAt(index) == '$');
-        while (index >= 0) {
-            int endIndex = findClosingCurlyBracket(originalSQL, sql, index);
-            String parameterName = sql.substring(index + 2, endIndex);
-            String accessPath = null;
-            if (parameterName.contains(".")) {
-                accessPath = parameterName.substring(parameterName.indexOf(".") + 1);
-                parameterName = parameterName.substring(0, parameterName.indexOf("."));
-            }
 
-            Object paramValue = context.get(parameterName);
-            if (accessPath != null && paramValue != null) {
-                try {
-                    paramValue = Reflection.evalAccessPath(accessPath, paramValue);
-                } catch (Throwable e) {
-                    throw new SQLException(NLS.fmtr("StatementCompiler.cannotEvalAccessPath")
-                                              .set("name", parameterName)
-                                              .set("path", accessPath)
-                                              .set("value", paramValue)
-                                              .set("query", originalSQL)
-                                              .format(), e);
-                }
-            }
-            // A parameter was found, if its value is not null or if it is a non
-            // empty collection
-            parameterFound = (Strings.isFilled(paramValue)) && (!(paramValue instanceof Collection<?>)
-                                                                || !((Collection<?>) paramValue).isEmpty());
-            if (directSubstitution || paramValue == null) {
-                tempParams.add(paramValue);
-            } else {
-                tempParams.add(addSQLWildcard(paramValue.toString().toLowerCase(), true));
-            }
-            sqlBuilder.append(sql.substring(0, index));
-            if (paramValue instanceof Collection<?>) {
-                for (int i = 0; i < ((Collection<?>) paramValue).size(); i++) {
-                    if (i > 0) {
-                        sqlBuilder.append(",");
-                    }
-                    sqlBuilder.append(" ? ");
-                }
-            } else {
-                sqlBuilder.append(" ? ");
-            }
-            sql = sql.substring(endIndex + 1);
-            index = getNextRelevantIndex(sql);
-            directSubstitution = (index > 0) && (sql.charAt(index) == '$');
-        }
-        sqlBuilder.append(sql);
-        if (parameterFound || !ignoreIfParametersNull) {
+        boolean appendToStatement = compileSectionPart(sql, tempParams, sqlBuilder, !ignoreIfParametersNull);
+
+        if (appendToStatement) {
             sb.append(sqlBuilder.toString());
             params.addAll(tempParams);
         }
     }
 
-    private int findClosingCurlyBracket(String originalSQL, String sql, int index) throws SQLException {
+    private boolean compileSectionPart(String sql,
+                                       List<Object> tempParams,
+                                       StringBuilder sqlBuilder,
+                                       boolean appendToStatement) throws SQLException {
+        Tuple<Integer, Boolean> nextSubstitution = getNextRelevantIndex(sql);
+        if (nextSubstitution == null) {
+            if (appendToStatement) {
+                sqlBuilder.append(sql);
+            }
+            return appendToStatement;
+        }
+
+        int endIndex = findClosingCurlyBracket(sql, nextSubstitution.getFirst());
+        String parameterName = sql.substring(nextSubstitution.getFirst() + 2, endIndex);
+        Object paramValue = computeEffectiveParameterValue(parameterName);
+
+        if (nextSubstitution.getSecond() || paramValue == null) {
+            tempParams.add(paramValue);
+        } else {
+            tempParams.add(addSQLWildcard(paramValue.toString().toLowerCase(), true));
+        }
+
+        sqlBuilder.append(sql.substring(0, nextSubstitution.getFirst()));
+
+        appendPlaceholdersToStatement(sqlBuilder, paramValue);
+
+        return compileSectionPart(sql.substring(endIndex + 1),
+                                  tempParams,
+                                  sqlBuilder,
+                                  appendToStatement || isParameterFilled(paramValue));
+    }
+
+    private Object computeEffectiveParameterValue(String fullParameterName) throws SQLException {
+        String accessPath = null;
+        String parameterName = fullParameterName;
+        if (fullParameterName.contains(".")) {
+            accessPath = parameterName.substring(parameterName.indexOf(".") + 1);
+            parameterName = parameterName.substring(0, parameterName.indexOf("."));
+        }
+
+        Object paramValue = context.get(parameterName);
+        if (accessPath == null || paramValue == null) {
+            return paramValue;
+        }
+
+        try {
+            return Reflection.evalAccessPath(accessPath, paramValue);
+        } catch (Exception e) {
+            throw new SQLException(NLS.fmtr("StatementCompiler.cannotEvalAccessPath")
+                                      .set("name", parameterName)
+                                      .set("path", accessPath)
+                                      .set("value", paramValue)
+                                      .set("query", originalSQL)
+                                      .format(), e);
+        }
+    }
+
+    private void appendPlaceholdersToStatement(StringBuilder sqlBuilder, Object paramValue) {
+        if (paramValue instanceof Collection<?>) {
+            for (int i = 0; i < ((Collection<?>) paramValue).size(); i++) {
+                if (i > 0) {
+                    sqlBuilder.append(",");
+                }
+                sqlBuilder.append(" ? ");
+            }
+        } else {
+            sqlBuilder.append(" ? ");
+        }
+    }
+
+    private boolean isParameterFilled(Object paramValue) {
+        if (paramValue == null) {
+            return false;
+        }
+
+        if (paramValue instanceof Collection<?>) {
+            return !((Collection<?>) paramValue).isEmpty();
+        }
+
+        if (paramValue instanceof String) {
+            return ((String)paramValue).length() > 0;
+        }
+
+        return true;
+    }
+
+    private int findClosingCurlyBracket(String sql, int index) throws SQLException {
         int endIndex = sql.indexOf("}", index);
         if (endIndex < 0) {
             throw new SQLException(NLS.fmtr("StatementCompiler.errorUnbalancedCurlyBracket")
@@ -222,12 +236,45 @@ class StatementCompiler {
     /*
      * Returns the next index of ${ or #{ in the given string.
      */
-    private int getNextRelevantIndex(String sql) {
+    @Nullable
+    private Tuple<Integer, Boolean> getNextRelevantIndex(String sql) {
         int index = sql.indexOf("${");
         int sharpIndex = sql.indexOf("#{");
         if ((sharpIndex > -1) && ((index < 0) || (sharpIndex < index))) {
-            return sharpIndex;
+            return Tuple.create(sharpIndex, false);
         }
-        return index;
+        if (index > -1) {
+            return Tuple.create(index, true);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Make <tt>searchString</tt> conform with SQL 92 syntax. Therefore all * are
+     * converted to % and a final % is appended at the end of the string.
+     *
+     * @param query        the query to expand
+     * @param wildcardLeft determines if a % should be added to the start of the string
+     */
+    public static String addSQLWildcard(String query, boolean wildcardLeft) {
+        if (query == null) {
+            return null;
+        }
+        if (Strings.isEmpty(query)) {
+            return "%";
+        }
+
+        String result = query;
+        if (!result.contains("%") && result.contains("*")) {
+            result = result.replace('*', '%');
+        }
+        if (!result.endsWith("%")) {
+            result = result + "%";
+        }
+        if (wildcardLeft && !result.startsWith("%")) {
+            result = "%" + result;
+        }
+        return result;
     }
 }

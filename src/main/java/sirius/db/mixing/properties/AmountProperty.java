@@ -49,10 +49,10 @@ public class AmountProperty extends Property {
             AmountProperty amountProperty = new AmountProperty(descriptor, accessPath, field);
             try {
                 if (field.get(descriptor.getType().newInstance()) == null) {
-                    OMA.LOG.WARN(
-                            "Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING as an amount should never be null!",
-                            field.getName(),
-                            field.getDeclaringClass().getName());
+                    OMA.LOG.WARN("Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING"
+                                 + " as an amount should never be null!",
+                                 field.getName(),
+                                 field.getDeclaringClass().getName());
                 }
             } catch (Exception e) {
                 OMA.LOG.WARN(

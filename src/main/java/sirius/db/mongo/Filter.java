@@ -16,11 +16,11 @@ import com.mongodb.BasicDBObject;
  */
 public class Filter {
 
-    private Filter() {
-    }
-
     protected String key;
     protected Object object;
+
+    private Filter() {
+    }
 
     private static Filter relOp(String operator, Filter[] filters) {
         Filter filter = new Filter();

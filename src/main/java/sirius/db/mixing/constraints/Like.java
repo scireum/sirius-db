@@ -24,6 +24,7 @@ import java.util.List;
  */
 public class Like extends Constraint {
 
+    private static final String WILDCARD = "*";
     private Column field;
     private String value;
     private boolean ignoreEmpty;
@@ -87,15 +88,16 @@ public class Like extends Constraint {
      * @return the constaint itself
      */
     public Like contains(String value) {
-        if (Strings.isFilled(value)) {
-            if (!value.startsWith("*")) {
-                value = "*" + value;
+        String effectiveValue = value;
+        if (Strings.isFilled(effectiveValue)) {
+            if (!effectiveValue.startsWith(WILDCARD)) {
+                effectiveValue = WILDCARD + effectiveValue;
             }
-            if (!value.endsWith("*")) {
-                value = value + "*";
+            if (!effectiveValue.endsWith(WILDCARD)) {
+                effectiveValue = effectiveValue + WILDCARD;
             }
         }
-        this.value = value;
+        this.value = effectiveValue;
         return this;
     }
 

@@ -17,6 +17,14 @@ import java.util.List;
  */
 public class And extends CombinedConstraint {
 
+    protected And(List<Constraint> inner) {
+        super(inner);
+    }
+
+    protected And(Constraint... inner) {
+        super(inner);
+    }
+
     /**
      * Combines the given constraints using an AND operator.
      *
@@ -43,14 +51,6 @@ public class And extends CombinedConstraint {
         }
 
         return new And(inner);
-    }
-
-    protected And(List<Constraint> inner) {
-        super(inner);
-    }
-
-    protected And(Constraint... inner) {
-        super(inner);
     }
 
     @Override
