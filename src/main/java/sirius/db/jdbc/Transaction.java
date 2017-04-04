@@ -47,7 +47,7 @@ public class Transaction extends DelegatingConnection<WrappedConnection> {
         if (closed) {
             return;
         }
-        Databases.LOG.FINE("COMMIT " + delegate.ds.name);
+        Databases.LOG.FINE("COMMIT " + delegate.database.name);
         closed = true;
         delegate.commit();
     }
@@ -60,7 +60,7 @@ public class Transaction extends DelegatingConnection<WrappedConnection> {
         if (closed) {
             throw new SQLException("Transaction has already been committed or rolled back");
         }
-        Databases.LOG.FINE("COMMIT " + delegate.ds.name);
+        Databases.LOG.FINE("COMMIT " + delegate.database.name);
         closed = true;
         delegate.commit();
     }
@@ -70,10 +70,10 @@ public class Transaction extends DelegatingConnection<WrappedConnection> {
         if (copy || closed) {
             return;
         }
-        Databases.LOG.FINE("ROLLBACK " + delegate.ds.name);
+        Databases.LOG.FINE("ROLLBACK " + delegate.database.name);
         closed = true;
         delegate.rollback();
-        watch.submitMicroTiming("SQL", "Transaction Duration: " + delegate.ds.name);
+        watch.submitMicroTiming("SQL", "Transaction Duration: " + delegate.database.name);
     }
 
     @Override

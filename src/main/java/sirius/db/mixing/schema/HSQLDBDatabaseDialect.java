@@ -246,14 +246,14 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
             if (key.isUnique()) {
                 sb.append(MessageFormat.format(",\n   CONSTRAINT {0} UNIQUE ({1})",
                                                key.getName(),
-                                               listToString(key.getColumns())));
+                                               String.join(", ", key.getColumns())));
             }
         }
 
         // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
         // cannot be created. Therefore only the PK is generated....
         if (!hasIdentityColumn) {
-            sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})", listToString(table.getPrimaryKey())));
+            sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})",  String.join(", ", table.getPrimaryKey())));
         }
         sb.append("\n)");
         return sb.toString();

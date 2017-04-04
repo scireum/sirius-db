@@ -23,23 +23,23 @@ import java.time.Duration;
  */
 class WrappedConnection extends DelegatingConnection<Connection> {
 
-    protected final Database ds;
+    protected final Database database;
     private final Watch watch = Watch.start();
 
-    WrappedConnection(Connection c, Database ds) {
+    WrappedConnection(Connection c, Database database) {
         super(c);
-        this.ds = ds;
+        this.database = database;
         Databases.numUses.inc();
     }
 
     @Override
     public String toString() {
-        return "WrappedConnection [" + ds.getUrl() + "] (" + delegate.toString() + ")";
+        return "WrappedConnection [" + database.getUrl() + "] (" + delegate.toString() + ")";
     }
 
     @Override
     public void close() throws SQLException {
-        try (Operation op = new Operation(() -> ds.name + ".close()", Duration.ofSeconds(5))) {
+        try (Operation op = new Operation(() -> database.name + ".close()", Duration.ofSeconds(5))) {
             delegate.close();
         } catch (SQLException e) {
             // Most likely this exception will be a false alert because DBCP
@@ -54,7 +54,7 @@ class WrappedConnection extends DelegatingConnection<Connection> {
             Databases.LOG.INFO("Error closing connection");
             Databases.LOG.INFO(e);
         } finally {
-            watch.submitMicroTiming("SQL", "Connection Duration: " + ds.name);
+            watch.submitMicroTiming("SQL", "Connection Duration: " + database.name);
         }
     }
 

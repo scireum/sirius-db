@@ -271,14 +271,14 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
             if (key.isUnique()) {
                 sb.append(MessageFormat.format("   CONSTRAINT `{0}` UNIQUE ({1}),\n",
                                                key.getName(),
-                                               listToString(key.getColumns())));
+                                               String.join(", ", key.getColumns())));
             } else {
-                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(), listToString(key.getColumns())));
+                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(),  String.join(", ", key.getColumns())));
             }
         }
         // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
         // cannot be created. Therefore only the PK is generated....
-        sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB", listToString(table.getPrimaryKey())));
+        sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB",  String.join(", ", table.getPrimaryKey())));
         return sb.toString();
     }
 

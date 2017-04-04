@@ -58,27 +58,14 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
                || Types.TIME == col.getType();
     }
 
-    protected String listToString(List<String> columns) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String col : columns) {
-            if (!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append(col);
-        }
-        return sb.toString();
-    }
-
     @Override
     public String generateAddForeignKey(Table table, ForeignKey key) {
         return MessageFormat.format("ALTER TABLE `{0}` ADD CONSTRAINT `{1}` FOREIGN KEY ({2}) REFERENCES `{3}` ({4})",
                                     table.getName(),
                                     key.getName(),
-                                    listToString(key.getColumns()),
+                                    String.join(", ", key.getColumns()),
                                     key.getForeignTable(),
-                                    listToString(key.getForeignColumns()));
+                                    String.join(", ", key.getForeignColumns()));
     }
 
     @Override
@@ -87,12 +74,12 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
             return MessageFormat.format("ALTER TABLE `{0}` ADD CONSTRAINT `{1}` UNIQUE ({2})",
                                         table.getName(),
                                         key.getName(),
-                                        listToString(key.getColumns()));
+                                        String.join(", ", key.getColumns()));
         } else {
             return MessageFormat.format("ALTER TABLE `{0}` ADD INDEX `{1}` ({2})",
                                         table.getName(),
                                         key.getName(),
-                                        listToString(key.getColumns()));
+                                        String.join(", ", key.getColumns()));
         }
     }
 
@@ -121,7 +108,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         return Collections.singletonList(MessageFormat.format(
                 "ALTER TABLE `{0}` DROP PRIMARY KEY, ADD PRIMARY KEY ({1})",
                 table.getName(),
-                listToString(table.getPrimaryKey())));
+                String.join(", ", table.getPrimaryKey())));
     }
 
     @Override
