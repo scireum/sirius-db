@@ -84,7 +84,7 @@ public class EntityRefProperty extends Property {
     @Override
     public void contributeToTable(Table table) {
         super.contributeToTable(table);
-        EntityRef.OnDelete deleteHandler = getEntityRef().getDeleteHandler();
+        EntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
         if (deleteHandler != EntityRef.OnDelete.SOFT_CASCADE && deleteHandler != EntityRef.OnDelete.LAZY_CASCADE) {
             ForeignKey fk = new ForeignKey();
             fk.setName("fk_"
@@ -130,6 +130,68 @@ public class EntityRefProperty extends Property {
         return referencedDescriptor;
     }
 
+    private EntityRef<?> getReferenceEntityRef() {
+        if (entityRef == null) {
+            this.entityRef = getEntityRef(accessPath.apply(descriptor.getReferenceInstance()));
+        }
+        return entityRef;
+    }
+
+    @Override
+    protected Object getValueFromField(Object target) {
+        return getEntityRef(target).getId();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Object transformValue(Value value) {
+        if (value.isEmptyString()) {
+            return null;
+        }
+        Optional<Entity> e = oma.find((Class<Entity>) entityRef.getType(), value.asString());
+        if (!e.isPresent()) {
+            throw illegalFieldValue(value);
+        }
+        return e.get();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected EntityRef<Entity> getEntityRef(Object entity) {
+        try {
+            return (EntityRef<Entity>) super.getValueFromField(entity);
+        } catch (Exception e) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .error(e)
+                            .withSystemErrorMessage(
+                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
+                                    getName(),
+                                    descriptor.getType().getName())
+                            .handle();
+        }
+    }
+
+    /**
+     * Updates the field ({@link EntityRef} within the given parent to point to the given child.
+     *
+     * @param parent the parent containing the reference to the child
+     * @param child  the referenced child entity
+     */
+    public void setReferencedEntity(Entity parent, Entity child) {
+        getEntityRef(accessPath.apply(parent)).setValue(child);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void setValueToField(Object value, Object target) {
+        EntityRef<Entity> ref = getEntityRef(target);
+        if (value == null || value instanceof Entity) {
+            ref.setValue((Entity) value);
+        } else {
+            ref.setId((Long) value);
+        }
+    }
+
     @Override
     protected void onBeforeSaveChecks(Entity entity) {
         EntityRef<?> ref = getEntityRef(accessPath.apply(entity));
@@ -149,7 +211,7 @@ public class EntityRefProperty extends Property {
     @Override
     public void link() {
         super.link();
-        EntityRef.OnDelete deleteHandler = getEntityRef().getDeleteHandler();
+        EntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
 
         createDeleteCascadeHandler(deleteHandler);
 
@@ -219,68 +281,6 @@ public class EntityRefProperty extends Property {
                                               descriptor.getType().getName(),
                                               getName())
                       .handle();
-        }
-    }
-
-    private EntityRef<?> getEntityRef() {
-        if (entityRef == null) {
-            this.entityRef = getEntityRef(accessPath.apply(descriptor.getReferenceInstance()));
-        }
-        return entityRef;
-    }
-
-    @Override
-    protected Object getValueFromField(Object target) {
-        return getEntityRef(target).getId();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Object transformValue(Value value) {
-        if (value.isEmptyString()) {
-            return null;
-        }
-        Optional<Entity> e = oma.find((Class<Entity>) entityRef.getType(), value.asString());
-        if (!e.isPresent()) {
-            throw illegalFieldValue(value);
-        }
-        return e.get();
-    }
-
-    @SuppressWarnings("unchecked")
-    protected EntityRef<Entity> getEntityRef(Object entity) {
-        try {
-            return (EntityRef<Entity>) super.getValueFromField(entity);
-        } catch (Exception e) {
-            throw Exceptions.handle()
-                            .to(OMA.LOG)
-                            .error(e)
-                            .withSystemErrorMessage(
-                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
-                                    getName(),
-                                    descriptor.getType().getName())
-                            .handle();
-        }
-    }
-
-    /**
-     * Updates the field ({@link EntityRef} within the given parent to point to the given child.
-     *
-     * @param parent the parent containing the reference to the child
-     * @param child  the referenced child entity
-     */
-    public void setReferencedEntity(Entity parent, Entity child) {
-        getEntityRef(accessPath.apply(parent)).setValue(child);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected void setValueToField(Object value, Object target) {
-        EntityRef<Entity> ref = (EntityRef<Entity>) super.getValueFromField(target);
-        if (value == null || value instanceof Entity) {
-            ref.setValue((Entity) value);
-        } else {
-            ref.setId((Long) value);
         }
     }
 }
