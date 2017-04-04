@@ -15,7 +15,6 @@ import sirius.kernel.nls.NLS;
 
 import java.sql.Types;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -117,31 +116,9 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
         return Strings.areEqual(left, right);
     }
 
-    @Override
-    public Table completeTableInfos(Table table) {
-        for (TableColumn col : table.getColumns()) {
-            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col)) {
-                col.setDefaultValue("'" + col.getDefaultValue() + "'");
-            }
-        }
-        // The PK is also identified as INDEX...
-        Key key = table.getKey("PRIMARY");
-        if (key != null) {
-            table.getKeys().remove(key);
-        }
-        return table;
-    }
 
-    protected boolean hasEscapedDefaultValue(TableColumn col) {
-        if (Types.CHAR == col.getType() || Types.VARCHAR == col.getType() || Types.CLOB == col.getType()) {
-            return true;
-        }
 
-        return Types.DATE == col.getType()
-               || Types.TIMESTAMP == col.getType()
-               || Types.LONGVARCHAR == col.getType()
-               || Types.TIME == col.getType();
-    }
+
 
     @Override
     public String generateAddColumn(Table table, TableColumn col) {
@@ -256,46 +233,6 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
                                                          SchemaTool.getJdbcTypeName(type)));
     }
 
-    private String listToString(List<String> columns) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String col : columns) {
-            if (!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append("`");
-            sb.append(col);
-            sb.append("`");
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public String generateAddForeignKey(Table table, ForeignKey key) {
-        return MessageFormat.format("ALTER TABLE `{0}` ADD CONSTRAINT `{1}` FOREIGN KEY ({2}) REFERENCES `{3}` ({4})",
-                                    table.getName(),
-                                    key.getName(),
-                                    listToString(key.getColumns()),
-                                    key.getForeignTable(),
-                                    listToString(key.getForeignColumns()));
-    }
-
-    @Override
-    public String generateAddKey(Table table, Key key) {
-        if (key.isUnique()) {
-            return MessageFormat.format("ALTER TABLE `{0}` ADD CONSTRAINT `{1}` UNIQUE ({2})",
-                                        table.getName(),
-                                        key.getName(),
-                                        listToString(key.getColumns()));
-        } else {
-            return MessageFormat.format("ALTER TABLE `{0}` ADD INDEX `{1}` ({2})",
-                                        table.getName(),
-                                        key.getName(),
-                                        listToString(key.getColumns()));
-        }
-    }
-
     @Override
     public List<String> generateAlterColumnTo(Table table, String oldName, TableColumn toColumn) {
         String name = oldName;
@@ -311,34 +248,6 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
                 toColumn.isNullable() ? "" : NOT_NULL,
                 toColumn.isAutoIncrement() ? AUTO_INCREMENT : "",
                 getDefaultValueAsString(toColumn)));
-    }
-
-    @Override
-    public List<String> generateAlterForeignKey(Table table, ForeignKey from, ForeignKey to) {
-        List<String> actions = new ArrayList<>();
-        if (from != null) {
-            actions.add(generateDropForeignKey(table, from));
-        }
-        actions.add(generateAddForeignKey(table, to));
-        return actions;
-    }
-
-    @Override
-    public List<String> generateAlterKey(Table table, Key from, Key to) {
-        List<String> actions = new ArrayList<>();
-        if (from != null) {
-            actions.add(generateDropKey(table, from));
-        }
-        actions.add(generateAddKey(table, to));
-        return actions;
-    }
-
-    @Override
-    public List<String> generateAlterPrimaryKey(Table table) {
-        return Collections.singletonList(MessageFormat.format(
-                "ALTER TABLE `{0}` DROP PRIMARY KEY, ADD PRIMARY KEY ({1})",
-                table.getName(),
-                listToString(table.getPrimaryKey())));
     }
 
     @Override
@@ -362,41 +271,17 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
             if (key.isUnique()) {
                 sb.append(MessageFormat.format("   CONSTRAINT `{0}` UNIQUE ({1}),\n",
                                                key.getName(),
-                                               listToString(key.getColumns())));
+                                               String.join(", ", key.getColumns())));
             } else {
-                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(), listToString(key.getColumns())));
+                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(),  String.join(", ", key.getColumns())));
             }
         }
         // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
         // cannot be created. Therefore only the PK is generated....
-        sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB", listToString(table.getPrimaryKey())));
+        sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB",  String.join(", ", table.getPrimaryKey())));
         return sb.toString();
     }
 
-    @Override
-    public String generateDropColumn(Table table, TableColumn col) {
-        return MessageFormat.format("ALTER TABLE `{0}` DROP COLUMN `{1}`", table.getName(), col.getName());
-    }
-
-    @Override
-    public String generateDropForeignKey(Table table, ForeignKey key) {
-        return MessageFormat.format("ALTER TABLE `{0}` DROP FOREIGN KEY `{1}`", table.getName(), key.getName());
-    }
-
-    @Override
-    public String generateDropKey(Table table, Key key) {
-        return MessageFormat.format("ALTER TABLE `{0}` DROP INDEX `{1}`", table.getName(), key.getName());
-    }
-
-    @Override
-    public String generateDropTable(Table table) {
-        return MessageFormat.format("DROP TABLE `{0}` ", table.getName());
-    }
-
-    @Override
-    public String translateColumnName(String name) {
-        return name;
-    }
 
     @Override
     public boolean isColumnCaseSensitive() {
