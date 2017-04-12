@@ -78,7 +78,7 @@ public abstract class Entity extends Mixable {
      */
     @Transient
     protected Row fetchRow;
-    
+
     /**
      * Contains the constant used to mark a new (unsaved) entity.
      */
@@ -233,10 +233,10 @@ public abstract class Entity extends Mixable {
         }
         if (qry.exists()) {
             throw Exceptions.createHandled()
-                    .withNLSKey("Property.fieldNotUnique")
-                    .set("field", getDescriptor().getProperty(field).getLabel())
-                    .set("value", NLS.toUserString(value))
-                    .handle();
+                            .withNLSKey("Property.fieldNotUnique")
+                            .set("field", getDescriptor().getProperty(field).getLabel())
+                            .set("value", NLS.toUserString(value))
+                            .handle();
         }
     }
 
@@ -252,6 +252,16 @@ public abstract class Entity extends Mixable {
             return NEW;
         }
         return String.valueOf(getId());
+    }
+
+    /**
+     * Determines if the given {@link Column} was changed in this {@link Entity} since it was last fetched from the database.
+     *
+     * @param columnToCheck the column to check if if was changed
+     * @return <tt>true</tt> if the column was changed, <tt>false</tt> otherwise
+     */
+    public boolean isColumnChanged(Column columnToCheck) {
+        return getDescriptor().isChanged(this, getDescriptor().getProperty(columnToCheck));
     }
 
     @Override
