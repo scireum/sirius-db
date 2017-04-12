@@ -255,13 +255,18 @@ public abstract class Entity extends Mixable {
     }
 
     /**
-     * Determines if the given {@link Column} was changed in this {@link Entity} since it was last fetched from the database.
+     * Determines if at least one of the given {@link Column}s were changed in this {@link Entity} since it was last fetched from the database.
      *
-     * @param columnToCheck the column to check if if was changed
-     * @return <tt>true</tt> if the column was changed, <tt>false</tt> otherwise
+     * @param columnsToCheck the columns to check whether they were changed
+     * @return <tt>true</tt> if at least one column was changed, <tt>false</tt> otherwise
      */
-    public boolean isColumnChanged(Column columnToCheck) {
-        return getDescriptor().isChanged(this, getDescriptor().getProperty(columnToCheck));
+    public boolean isColumnChanged(Column... columnsToCheck) {
+        for (Column column : columnsToCheck) {
+            if (getDescriptor().isChanged(this, getDescriptor().getProperty(column))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
