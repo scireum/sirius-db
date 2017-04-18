@@ -11,17 +11,17 @@ package sirius.db.jdbc;
 import com.google.common.collect.Maps;
 import sirius.db.mixing.Entity;
 import sirius.db.mixing.EntityRef;
+import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.extensions.Extension;
-import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.health.metrics.MetricProvider;
 import sirius.kernel.health.metrics.MetricsCollector;
+import sirius.kernel.settings.Extension;
 
 import javax.annotation.Nullable;
 import java.sql.Date;
@@ -111,7 +111,6 @@ public class Databases {
             }
             return highestUtilization;
         }
-
     }
 
     /**
@@ -138,7 +137,11 @@ public class Databases {
      * @return a list of all known databases
      */
     public List<String> getDatabases() {
-        return Extensions.getExtensions("jdbc.database").stream().map(Extension::getId).collect(Collectors.toList());
+        return Sirius.getSettings()
+                     .getExtensions("jdbc.database")
+                     .stream()
+                     .map(Extension::getId)
+                     .collect(Collectors.toList());
     }
 
     /**
@@ -148,7 +151,8 @@ public class Databases {
      * @return <tt>true</tt> if a configuration <tt>jdbc.database.[name]</tt> does exist, <tt>false</tt> otherwise
      */
     public boolean hasDatabase(String name) {
-        return Extensions.getExtension("jdbc.database", name) != null;
+        Extension extension = Sirius.getSettings().getExtension("jdbc.database", name);
+        return extension != null && !extension.isDefault();
     }
 
     /**

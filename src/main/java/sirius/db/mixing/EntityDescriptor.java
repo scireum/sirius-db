@@ -171,7 +171,9 @@ public class EntityDescriptor {
         this.versioned = type.isAnnotationPresent(Versioned.class);
         this.tableName = type.getSimpleName().toLowerCase();
         String configKey = "mixing.legacy." + type.getSimpleName();
-        this.legacyInfo = Sirius.getConfig().hasPath(configKey) ? Sirius.getConfig().getConfig(configKey) : null;
+        this.legacyInfo = Sirius.getSettings().getConfig().hasPath(configKey) ?
+                          Sirius.getSettings().getConfig().getConfig(configKey) :
+                          null;
         if (legacyInfo != null) {
             if (legacyInfo.hasPath("tableName")) {
                 this.tableName = legacyInfo.getString("tableName");

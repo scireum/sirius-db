@@ -9,14 +9,14 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
+import sirius.kernel.Sirius;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.extensions.Extension;
-import sirius.kernel.extensions.Extensions;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.Formatter;
+import sirius.kernel.settings.Extension;
 
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
@@ -64,14 +64,14 @@ public class Database {
      * Use the get(name) method to create a new object.
      */
     protected Database(String name) {
-        Extension ext = Extensions.getExtension("jdbc.database", name);
+        Extension ext = Sirius.getSettings().getExtension("jdbc.database", name);
         if (ext == null) {
             throw Exceptions.handle()
                             .to(Databases.LOG)
                             .withSystemErrorMessage("Unknown JDBC database: %s", name)
                             .handle();
         }
-        Extension profile = Extensions.getExtension("jdbc.profile", ext.get("profile").asString("default"));
+        Extension profile = Sirius.getSettings().getExtension("jdbc.profile", ext.get("profile").asString("default"));
         Context ctx = profile.getContext();
         ctx.putAll(ext.getContext());
         this.name = name;
