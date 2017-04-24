@@ -95,7 +95,7 @@ public class Exists extends Constraint {
             compiler.getWHEREBuilder().append("NOT ");
         }
         compiler.getWHEREBuilder()
-                .append("EXISTS(SELECT * FROM ")
+                .append("EXISTS(SELECT NULL FROM ")
                 .append(ed.getTableName())
                 .append(" ")
                 .append(newAlias)
