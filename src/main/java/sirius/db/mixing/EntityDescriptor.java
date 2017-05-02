@@ -826,7 +826,9 @@ public class EntityDescriptor {
     private void readIdAndVersion(String alias, Set<String> columns, ResultSet rs, Entity entity) throws SQLException {
         String idColumnLabel = getIdColumnLabel(alias);
         if (columns.contains(idColumnLabel.toUpperCase())) {
-            entity.setId(rs.getLong(idColumnLabel));
+            if (rs.getString(idColumnLabel) != null) {
+                entity.setId(rs.getLong(idColumnLabel));
+            }
         }
         if (isVersioned()) {
             String versionColumnLabel = getVersionColumnLabel(alias);
