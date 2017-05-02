@@ -150,7 +150,7 @@ public class OMA {
 
             for (Property property : ed.getProperties()) {
                 if (property.getField().getType() == EntityRef.class
-                    && (Long) property.getValueForColumn(entity) == -1) {
+                    && (Long) property.getValueForColumn(entity) == -1L) {
                     throw new IllegalArgumentException("Can not save non-existant reference");
                 }
             }
