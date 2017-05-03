@@ -12,6 +12,7 @@ import sirius.db.jdbc.Database
 import sirius.db.mixing.constraints.Exists
 import sirius.db.mixing.constraints.FieldOperator
 import sirius.kernel.BaseSpecification
+import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
 
@@ -53,6 +54,7 @@ class SmartQuerySpec extends BaseSpecification {
         SmartQueryTestParentEntity p2 = new SmartQueryTestParentEntity()
         p2.setName("Parent 2")
         oma.update(p2)
+
 
         SmartQueryTestChildEntity c = new SmartQueryTestChildEntity()
         c.setName("Child 1")
@@ -273,4 +275,59 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().map({ x -> x.getValue() } as Function).collect(Collectors.toList()) == ["Test", "Hello", "World"]
     }
 
+    def "select non existant entity ref"() {
+        given:
+        TestEntityWithNullRef testChild = new TestEntityWithNullRef()
+        testChild.setName("bliblablub")
+
+        oma.update(testChild)
+
+        when:
+        def result = oma.select(TestEntityWithNullRef.class)
+                .fields(TestEntityWithNullRef.NAME,
+                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
+                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.ID))
+                .eq(SmartQueryTestChildEntity.ID, testChild.getId()).queryList()
+
+        and:
+        TestEntityWithNullRef found = result.get(0)
+
+        then:
+        found.getParent().isFilled()
+        and:
+        found.getParent().getValue().isNew()
+        and:
+        found.getParent().getId() == -1L
+    }
+
+    def "select existant entity ref without id"() {
+        given:
+        SmartQueryTestParentEntity parent = new SmartQueryTestParentEntity()
+        parent.setName("Parent 3")
+        oma.update(parent)
+        and:
+        TestEntityWithNullRef testChild = new TestEntityWithNullRef()
+        testChild.setName("bliblablub")
+        testChild.getParent().setValue(parent)
+
+        oma.update(testChild)
+
+        when:
+        def result = oma.select(TestEntityWithNullRef.class)
+                .fields(TestEntityWithNullRef.NAME,
+                SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                .eq(SmartQueryTestChildEntity.ID, testChild.getId()).queryList()
+
+        and:
+        TestEntityWithNullRef found = result.get(0)
+
+        then:
+        found.getParent().isFilled()
+        and:
+        found.getParent().getValue().isNew()
+        and:
+        found.getParent().getId() == -1L
+        and:
+        Strings.isFilled(found.getParent().getValue().getName())
+    }
 }

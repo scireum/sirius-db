@@ -244,6 +244,6 @@ public class EntityRef<E extends Entity> {
      * @return <tt>true</tt> if the referenced entity was not yet saved to the database, <tt>false</tt> otherwise
      */
     public boolean containsNonpersistentValue() {
-        return id == null && value != null;
+        return value != null && (id == null || value.isNew());
     }
 }

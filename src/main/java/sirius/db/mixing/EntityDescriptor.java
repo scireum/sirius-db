@@ -827,6 +827,10 @@ public class EntityDescriptor {
         String idColumnLabel = getIdColumnLabel(alias);
         if (columns.contains(idColumnLabel.toUpperCase())) {
             entity.setId(rs.getLong(idColumnLabel));
+
+            if (rs.wasNull()) {
+                entity.setId(-1L);
+            }
         }
         if (isVersioned()) {
             String versionColumnLabel = getVersionColumnLabel(alias);
