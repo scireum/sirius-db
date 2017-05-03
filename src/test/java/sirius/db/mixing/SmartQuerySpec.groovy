@@ -26,9 +26,6 @@ class SmartQuerySpec extends BaseSpecification {
     @Part
     static OMA oma
 
-    SmartQueryTestParentEntity parent1
-    SmartQueryTestParentEntity parent2
-
     def setupSpec() {
         oma.getReadyFuture().await(Duration.ofSeconds(60))
         fillSmartQueryTestEntity()
@@ -58,8 +55,6 @@ class SmartQuerySpec extends BaseSpecification {
         p2.setName("Parent 2")
         oma.update(p2)
 
-        parent1 = p1
-        parent2 = p2
 
         SmartQueryTestChildEntity c = new SmartQueryTestChildEntity()
         c.setName("Child 1")
@@ -282,8 +277,6 @@ class SmartQuerySpec extends BaseSpecification {
 
     def "select non existant entity ref"() {
         given:
-        fillSmartQueryTestChildAndParentEntity()
-        and:
         TestEntityWithNullRef testChild = new TestEntityWithNullRef()
         testChild.setName("bliblablub")
 
@@ -309,11 +302,13 @@ class SmartQuerySpec extends BaseSpecification {
 
     def "select existant entity ref without id"() {
         given:
-        fillSmartQueryTestChildAndParentEntity()
+        SmartQueryTestParentEntity parent = new SmartQueryTestParentEntity()
+        parent.setName("Parent 3")
+        oma.update(parent)
         and:
         TestEntityWithNullRef testChild = new TestEntityWithNullRef()
         testChild.setName("bliblablub")
-        testChild.getParent().setValue(parent1)
+        testChild.getParent().setValue(parent)
 
         oma.update(testChild)
 
