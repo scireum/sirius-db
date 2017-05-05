@@ -54,10 +54,10 @@ class WrappedPreparedStatement implements PreparedStatement {
         Databases.queryDuration.addValue(w.elapsedMillis());
         if (w.elapsedMillis() > Databases.getLongQueryThresholdMillis()) {
             Databases.numSlowQueries.inc();
-            Databases.SLOW_QUERIES_LOG.INFO("A slow query was executed (%s): %s\n%s",
-                                            w.duration(),
-                                            sql,
-                                            ExecutionPoint.snapshot().toString());
+            Databases.SLOW_DB_LOG.INFO("A slow query was executed (%s): %s\n%s",
+                                       w.duration(),
+                                       sql,
+                                       ExecutionPoint.snapshot().toString());
         }
     }
 

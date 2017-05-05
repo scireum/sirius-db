@@ -50,12 +50,16 @@ import java.util.stream.Collectors;
 public class Databases {
 
     protected static final Log LOG = Log.get("db");
-    protected static final Log SLOW_QUERIES_LOG = Log.get("db-slow-queries");
+    protected static final Log SLOW_DB_LOG = Log.get("db-slow");
     private static final Map<String, Database> datasources = Maps.newConcurrentMap();
 
     @ConfigValue("jdbc.logQueryThreshold")
     private static Duration longQueryThreshold;
     private static long longQueryThresholdMillis = -1;
+
+    @ConfigValue("jdbc.logConnectionThreshold")
+    private static Duration longConnectionThreshold;
+    private static long longConnectionThresholdMillis = -1;
 
     protected static Counter numUses = new Counter();
     protected static Counter numConnects = new Counter();
@@ -156,7 +160,7 @@ public class Databases {
     }
 
     /**
-     * Converts the threshold into a long containing milliseconds for performance reasons.
+     * Converts the threshold for "slow queries" into a long containing milliseconds for performance reasons.
      *
      * @return the threshold for long queries in milliseconds
      */
@@ -166,6 +170,20 @@ public class Databases {
         }
 
         return longQueryThresholdMillis;
+    }
+
+
+    /**
+     * Converts the threshold for "long connections" into a long containing milliseconds for performance reasons.
+     *
+     * @return the threshold for long queries in milliseconds
+     */
+    protected static long getLongConnectionThresholdMillis() {
+        if (longConnectionThresholdMillis < 0) {
+            longConnectionThresholdMillis = longConnectionThreshold.toMillis();
+        }
+
+        return longConnectionThresholdMillis;
     }
 
     /**
