@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc;
 
+import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Watch;
 
@@ -25,6 +26,7 @@ class WrappedConnection extends DelegatingConnection<Connection> {
 
     protected final Database database;
     private final Watch watch = Watch.start();
+    private final ExecutionPoint connected = ExecutionPoint.fastSnapshot();
 
     WrappedConnection(Connection c, Database database) {
         super(c);
@@ -55,6 +57,12 @@ class WrappedConnection extends DelegatingConnection<Connection> {
             Databases.LOG.INFO(e);
         } finally {
             watch.submitMicroTiming("SQL", "Connection Duration: " + database.name);
+            if (watch.elapsedMillis() > Databases.getLongConnectionThresholdMillis()) {
+                Databases.SLOW_DB_LOG.INFO("A long running connection was detected (%s): Opened:\n%s\n\nClosed:\n%s",
+                                           watch.duration(),
+                                           connected.toString(),
+                                           ExecutionPoint.snapshot().toString());
+            }
         }
     }
 
@@ -112,5 +120,4 @@ class WrappedConnection extends DelegatingConnection<Connection> {
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         return new WrappedPreparedStatement(delegate.prepareStatement(sql), sql);
     }
-
 }
