@@ -46,7 +46,6 @@ public class BooleanProperty extends Property {
 
     BooleanProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
-        this.nullable = false;
     }
 
     @Override
