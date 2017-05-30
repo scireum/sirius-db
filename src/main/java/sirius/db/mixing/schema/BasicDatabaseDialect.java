@@ -206,4 +206,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
 
         throw new IllegalArgumentException(Strings.apply("The class $s cannot be converted into a JDBC type!", clazz));
     }
+
+    @Override
+    public String getEffectiveKeyName(Table targetTable, Key key) {
+        return key.getName();
+    }
 }

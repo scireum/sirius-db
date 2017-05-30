@@ -179,4 +179,13 @@ public interface DatabaseDialect {
      * @return <tt>true</tt> if the key should be dropped, <tt>false</tt> otherwise
      */
     boolean shouldDropKey(Table targetTable, Table currentTable, Key key);
+
+    /**
+     * Computes the effective name used fora key.
+     *
+     * @param targetTable the table which contains the key
+     * @param key         the key itself
+     * @return the effective name for the key
+     */
+    String getEffectiveKeyName(Table targetTable, Key key);
 }

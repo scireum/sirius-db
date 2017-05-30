@@ -201,6 +201,8 @@ public class SchemaTool {
                                     List<Table> currentSchema,
                                     List<Table> targetSchema) {
         for (Table targetTable : targetSchema) {
+            generateEffectiveKeyNames(targetTable);
+
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
                 SchemaUpdateAction action = new SchemaUpdateAction();
@@ -245,6 +247,10 @@ public class SchemaTool {
             action.setSql(dialect.generateAlterPrimaryKey(targetTable));
             result.add(action);
         }
+    }
+
+    private void generateEffectiveKeyNames(Table targetTable) {
+        targetTable.getKeys().forEach(key-> key.setName(dialect.getEffectiveKeyName(targetTable, key)));
     }
 
     private void dropKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {

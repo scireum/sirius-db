@@ -253,7 +253,7 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
         // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
         // cannot be created. Therefore only the PK is generated....
         if (!hasIdentityColumn) {
-            sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})",  String.join(", ", table.getPrimaryKey())));
+            sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})", String.join(", ", table.getPrimaryKey())));
         }
         sb.append("\n)");
         return sb.toString();
@@ -292,5 +292,10 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
     @Override
     public boolean shouldDropKey(Table targetTable, Table currentTable, Key key) {
         return !key.getName().startsWith("SQL");
+    }
+
+    @Override
+    public String getEffectiveKeyName(Table targetTable, Key key) {
+        return targetTable.getName() + "_" + key.getName();
     }
 }
