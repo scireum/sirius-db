@@ -87,6 +87,9 @@ public class Redis implements Lifecycle {
     @ConfigValue("redis.maxIdle")
     private int maxIdle;
 
+    @ConfigValue("redis.prefix")
+    private String prefix;
+
     private static final String PREFIX_LOCK = "lock_";
     private static final String SUFFIX_DATE = "_date";
 
@@ -354,7 +357,7 @@ public class Redis implements Lifecycle {
     public List<LockInfo> getLockList() {
         List<LockInfo> result = Lists.newArrayList();
         exec(() -> "Get List of Locks", redis -> {
-            for (String key : redis.keys(PREFIX_LOCK + "*")) {
+            for (String key : redis.keys(getPrefix() + PREFIX_LOCK + "*")) {
                 if (!key.endsWith(SUFFIX_DATE)) {
                     LockInfo info = computeLockInfo(redis, key);
                     result.add(info);
@@ -370,7 +373,7 @@ public class Redis implements Lifecycle {
         String since = redis.get(key + SUFFIX_DATE);
         Long ttl = redis.ttl(key);
 
-        String name = key.substring(PREFIX_LOCK.length());
+        String name = key.substring((getPrefix() + PREFIX_LOCK).length());
         LocalDateTime sinceDate = null;
         if (Strings.isFilled(since)) {
             sinceDate = LocalDateTime.parse(since);
@@ -405,7 +408,7 @@ public class Redis implements Lifecycle {
             int waitInMillis = 500;
             do {
                 boolean locked = query(() -> "Try to Lock: " + lock, redis -> {
-                    String key = PREFIX_LOCK + lock;
+                    String key = getPrefix() + PREFIX_LOCK + lock;
                     String response =
                             redis.set(key, CallContext.getNodeName(), "NX", "EX", (int) lockTimeout.getSeconds());
                     if ("OK".equals(response)) {
@@ -469,7 +472,7 @@ public class Redis implements Lifecycle {
      */
     public boolean isLocked(@Nonnull String lock) {
         return query(() -> "Check If Locked: " + lock, redis -> {
-            String key = PREFIX_LOCK + lock;
+            String key = getPrefix() + PREFIX_LOCK + lock;
             return redis.exists(key);
         });
     }
@@ -493,7 +496,7 @@ public class Redis implements Lifecycle {
      */
     public void unlock(String lock, boolean force) {
         exec(() -> "Unlock: " + lock, redis -> {
-            String key = PREFIX_LOCK + lock;
+            String key = getPrefix() + PREFIX_LOCK + lock;
             String lockOwner = redis.get(key);
             if (force || Strings.areEqual(lockOwner, CallContext.getNodeName())) {
                 redis.del(key);
@@ -501,15 +504,22 @@ public class Redis implements Lifecycle {
             } else {
                 if (lockOwner == null) {
                     LOG.WARN("Not going to unlock '%s' for '%s' as it seems to be expired already",
-                             lock,
-                             CallContext.getNodeName());
+                            lock,
+                            CallContext.getNodeName());
                 } else {
                     LOG.WARN("Not going to unlock '%s' for '%s' as it is currently held by '%s'",
-                             lock,
-                             CallContext.getNodeName(),
-                             lockOwner);
+                            lock,
+                            CallContext.getNodeName(),
+                            lockOwner);
                 }
             }
         });
+    }
+
+    public String getPrefix() {
+        if (Strings.isEmpty(prefix)) {
+            return "";
+        }
+        return prefix + "_";
     }
 }
