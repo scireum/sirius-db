@@ -504,13 +504,13 @@ public class Redis implements Lifecycle {
             } else {
                 if (lockOwner == null) {
                     LOG.WARN("Not going to unlock '%s' for '%s' as it seems to be expired already",
-                            lock,
-                            CallContext.getNodeName());
+                             lock,
+                             CallContext.getNodeName());
                 } else {
                     LOG.WARN("Not going to unlock '%s' for '%s' as it is currently held by '%s'",
-                            lock,
-                            CallContext.getNodeName(),
-                            lockOwner);
+                             lock,
+                             CallContext.getNodeName(),
+                             lockOwner);
                 }
             }
         });
