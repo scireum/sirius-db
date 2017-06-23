@@ -235,12 +235,21 @@ public class EntityRefProperty extends Property {
         } else if (deleteHandler == EntityRef.OnDelete.REJECT) {
             getReferencedDescriptor().addBeforeDeleteHandler(e -> {
                 long count = oma.select(this.descriptor.getType()).eq(nameAsColumn, e.getId()).count();
-                if (count > 0) {
+                if (count == 1) {
+                    throw Exceptions.createHandled()
+                                    .withNLSKey("EntityRefProperty.cannotDeleteEntityWithChild")
+                                    .set("field", getLabel())
+                                    .set("type", getReferencedDescriptor().getLabel())
+                                    .set("source", getDescriptor().getLabel())
+                                    .handle();
+                }
+                if (count > 1) {
                     throw Exceptions.createHandled()
                                     .withNLSKey("EntityRefProperty.cannotDeleteEntityWithChildren")
                                     .set("count", count)
                                     .set("field", getLabel())
-                                    .set("type", getReferencedDescriptor().getPluralLabel())
+                                    .set("type", getReferencedDescriptor().getLabel())
+                                    .set("source", getDescriptor().getLabel())
                                     .handle();
                 }
             });
