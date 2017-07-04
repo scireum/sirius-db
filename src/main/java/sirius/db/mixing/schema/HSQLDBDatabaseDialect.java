@@ -211,9 +211,9 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
                                                                           toColumn.getLength(),
                                                                           toColumn.getPrecision(),
                                                                           toColumn.getScale()),
+                                                              getDefaultValueAsString(toColumn),
                                                               toColumn.isNullable() ? "" : NOT_NULL,
-                                                              toColumn.isAutoIncrement() ? IDENTITY : "",
-                                                              getDefaultValueAsString(toColumn)));
+                                                              toColumn.isAutoIncrement() ? IDENTITY : ""));
     }
 
     @Override
@@ -238,9 +238,9 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
                                                        col.getLength(),
                                                        col.getPrecision(),
                                                        col.getScale()),
+                                           getDefaultValueAsString(col),
                                            col.isNullable() ? "" : NOT_NULL,
-                                           col.isAutoIncrement() ? IDENTITY : "",
-                                           getDefaultValueAsString(col)));
+                                           col.isAutoIncrement() ? IDENTITY : ""));
         }
         for (Key key : table.getKeys()) {
             if (key.isUnique()) {
@@ -253,7 +253,7 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
         // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
         // cannot be created. Therefore only the PK is generated....
         if (!hasIdentityColumn) {
-            sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})",  String.join(", ", table.getPrimaryKey())));
+            sb.append(MessageFormat.format(",\n PRIMARY KEY ({0})", String.join(", ", table.getPrimaryKey())));
         }
         sb.append("\n)");
         return sb.toString();
