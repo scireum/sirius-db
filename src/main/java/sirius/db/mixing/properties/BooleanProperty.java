@@ -63,6 +63,15 @@ public class BooleanProperty extends Property {
     }
 
     @Override
+    protected void determineDefaultValue() {
+        if (field.getType().isPrimitive()) {
+            this.defaultValue = "0";
+        } else {
+            super.determineDefaultValue();
+        }
+    }
+
+    @Override
     protected Object transformToColumn(Object object) {
         return ((Boolean) object) ? 1 : 0;
     }
