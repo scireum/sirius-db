@@ -59,6 +59,14 @@ public class BooleanProperty extends Property {
             return object;
         }
 
+        if (object == null) {
+            if (field.getType().isPrimitive()) {
+                return false;
+            } else {
+                return null;
+            }
+        }
+
         return ((Integer) object) != 0;
     }
 
