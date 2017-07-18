@@ -369,10 +369,10 @@ public class Database {
     }
 
     protected void fillValues(List<Object> valueList, String sql, PreparedStatement stmt) {
-        int index = 1;
+        int index = 0;
         for (Object o : valueList) {
             try {
-                stmt.setObject(index++, o);
+                stmt.setObject(++index, o);
             } catch (Exception e) {
                 throw new IllegalArgumentException(e.getMessage()
                                                    + " - Index: "
