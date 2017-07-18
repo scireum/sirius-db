@@ -116,10 +116,6 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
         return Strings.areEqual(left, right);
     }
 
-
-
-
-
     @Override
     public String generateAddColumn(Table table, TableColumn col) {
         return MessageFormat.format("ALTER TABLE `{0}` ADD COLUMN `{1}` {2} {3} {4} {5}",
@@ -281,7 +277,6 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
         sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB",  String.join(", ", table.getPrimaryKey())));
         return sb.toString();
     }
-
 
     @Override
     public boolean isColumnCaseSensitive() {
