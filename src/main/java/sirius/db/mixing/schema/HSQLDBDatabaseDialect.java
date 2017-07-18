@@ -293,4 +293,9 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
     public boolean shouldDropKey(Table targetTable, Table currentTable, Key key) {
         return !key.getName().startsWith("SQL");
     }
+
+    @Override
+    public String getEffectiveKeyName(Table targetTable, Key key) {
+        return targetTable.getName() + "_" + key.getName();
+    }
 }
