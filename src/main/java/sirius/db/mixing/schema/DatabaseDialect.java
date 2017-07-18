@@ -181,7 +181,7 @@ public interface DatabaseDialect {
     boolean shouldDropKey(Table targetTable, Table currentTable, Key key);
 
     /**
-     * Computes the effective name used fora key.
+     * Computes the effective name used for a key.
      *
      * @param targetTable the table which contains the key
      * @param key         the key itself
