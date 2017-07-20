@@ -63,6 +63,26 @@ public class Filter {
     }
 
     /**
+     * Builds a filter which verifies that the given field exists.
+     *
+     * @param key the name of the field to check
+     * @return a filter representing the given operation
+     */
+    public static Filter exists(String key) {
+        return op("$exists", key, true);
+    }
+
+    /**
+     * Builds a filter which verifies that the given field does not exist.
+     *
+     * @param key the name of the field to check
+     * @return a filter representing the given operation
+     */
+    public static Filter notExists(String key) {
+        return op("$exists", key, false);
+    }
+
+    /**
      * Builds a filter which represents <tt>field == value</tt>
      *
      * @param key   the name of the field to check

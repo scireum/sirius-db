@@ -117,7 +117,7 @@ public class Finder extends QueryBuilder<Finder> {
     public Optional<Document> singleIn(String collection) {
         Watch w = Watch.start();
         try {
-            DBObject obj = mongo.db().getCollection(collection).findOne(filterObject, fields);
+            DBObject obj = mongo.db().getCollection(collection).findOne(filterObject, fields, orderBy);
             if (obj == null) {
                 return Optional.empty();
             } else {

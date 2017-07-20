@@ -25,6 +25,7 @@ public class Updater extends QueryBuilder<Updater> {
     private BasicDBObject addToSetObject;
     private BasicDBObject pullAllObject;
     private BasicDBObject pullObject;
+    private boolean upsert = false;
     private boolean many = false;
 
     protected Updater(Mongo mongo) {
@@ -40,6 +41,18 @@ public class Updater extends QueryBuilder<Updater> {
      */
     public Updater many() {
         this.many = true;
+        return this;
+    }
+
+    /**
+     * Specifies that multiple documents should be updated.
+     * <p>
+     * By default only one document is updated.
+     *
+     * @return the builder itself for fluent method calls
+     */
+    public Updater upsert() {
+        this.upsert = true;
         return this;
     }
 
@@ -171,18 +184,14 @@ public class Updater extends QueryBuilder<Updater> {
 
         if (updateObject.isEmpty()) {
             throw Exceptions.handle()
-                            .to(Mongo.LOG)
-                            .withSystemErrorMessage("Cannot execute an empty update on %s", collection)
-                            .handle();
+                    .to(Mongo.LOG)
+                    .withSystemErrorMessage("Cannot execute an empty update on %s", collection)
+                    .handle();
         }
 
         Watch w = Watch.start();
         try {
-            if (many) {
-                return mongo.db().getCollection(collection).updateMulti(filterObject, updateObject);
-            } else {
-                return mongo.db().getCollection(collection).update(filterObject, updateObject);
-            }
+            return mongo.db().getCollection(collection).update(filterObject, updateObject, upsert, many);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
