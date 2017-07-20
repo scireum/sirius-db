@@ -23,7 +23,6 @@ import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 
-import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,18 +70,14 @@ public class Mongo {
      * @return an initialized client instance to access Mongo DB.
      */
     public DB db() {
-        try {
-            if (mongoClient == null) {
-                initializeClient();
-            }
-
-            return mongoClient.getDB(dbName);
-        } catch (UnknownHostException e) {
-            throw Exceptions.handle(e);
+        if (mongoClient == null) {
+            initializeClient();
         }
+
+        return mongoClient.getDB(dbName);
     }
 
-    protected synchronized void initializeClient() throws UnknownHostException {
+    protected synchronized void initializeClient() {
         if (mongoClient != null) {
             return;
         }
@@ -90,14 +85,10 @@ public class Mongo {
         if (dbHosts.isEmpty()) {
             mongoClient = new MongoClient(dbHost);
         } else {
-            mongoClient = new MongoClient(dbHosts.stream().map(host -> {
-                try {
-                    return new ServerAddress(host);
-                } catch (UnknownHostException e) {
-                    Exceptions.handle(LOG, e);
-                    return null;
-                }
-            }).filter(Objects::nonNull).collect(Collectors.toList()));
+            mongoClient = new MongoClient(dbHosts.stream()
+                                                 .map(ServerAddress::new)
+                                                 .filter(Objects::nonNull)
+                                                 .collect(Collectors.toList()));
         }
 
         createIndices(mongoClient.getDB(dbName));
