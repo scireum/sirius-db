@@ -45,9 +45,9 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
-     * Specifies that multiple documents should be updated.
+     * Specifies that a new document should be created if the update filter does not match anything.
      * <p>
-     * By default only one document is updated.
+     * By default nothing happens if the update filter does not match anything.
      *
      * @return the builder itself for fluent method calls
      */
