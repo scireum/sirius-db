@@ -652,16 +652,20 @@ public class EntityDescriptor {
     private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
         if (method.isAnnotationPresent(BeforeSave.class)) {
             handleBeforeSaveMethod(descriptor, accessPath, method);
-        } else if (method.isAnnotationPresent(AfterSave.class)) {
+        }
+        if (method.isAnnotationPresent(AfterSave.class)) {
             warnOnWrongVisibility(method);
             descriptor.afterSaveHandlers.add(e -> invokeHandler(accessPath, method, e));
-        } else if (method.isAnnotationPresent(BeforeDelete.class)) {
+        }
+        if (method.isAnnotationPresent(BeforeDelete.class)) {
             warnOnWrongVisibility(method);
             descriptor.beforeDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
-        } else if (method.isAnnotationPresent(AfterDelete.class)) {
+        }
+        if (method.isAnnotationPresent(AfterDelete.class)) {
             warnOnWrongVisibility(method);
             descriptor.afterDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
-        } else if (method.isAnnotationPresent(OnValidate.class)) {
+        }
+        if (method.isAnnotationPresent(OnValidate.class)) {
             handleOnValidateMethod(descriptor, accessPath, method);
         }
     }
