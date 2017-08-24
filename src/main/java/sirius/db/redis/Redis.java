@@ -61,7 +61,7 @@ public class Redis implements Lifecycle {
     private PartCollection<Subscriber> subscribers;
 
     private List<JedisPubSub> subscriptions = Lists.newCopyOnWriteArrayList();
-    private volatile AtomicBoolean subscriptionsActive = new AtomicBoolean(true);
+    private AtomicBoolean running = new AtomicBoolean(false);
 
     @Part
     private Tasks tasks;
@@ -104,6 +104,7 @@ public class Redis implements Lifecycle {
 
     @Override
     public void started() {
+        running.set(true);
         for (Subscriber subscriber : subscribers) {
             JedisPubSub subscription = new JedisPubSub() {
                 @Override
@@ -114,6 +115,10 @@ public class Redis implements Lifecycle {
             subscriptions.add(subscription);
             new Thread(() -> subscribe(subscriber, subscription), "redis-subscriber-" + subscriber.getTopic()).start();
         }
+    }
+
+    public boolean isRunning() {
+        return running.get();
     }
 
     protected void handlePubSubMessage(String channel, String message, Subscriber subscriber) {
@@ -136,11 +141,11 @@ public class Redis implements Lifecycle {
     }
 
     private void subscribe(Subscriber subscriber, JedisPubSub subscription) {
-        while (subscriptionsActive.get()) {
+        while (isRunning()) {
             try (Jedis redis = getConnection()) {
                 LOG.INFO("Starting subscription for: %s", subscriber.getTopic());
                 redis.subscribe(subscription, subscriber.getTopic());
-                if (subscriptionsActive.get()) {
+                if (isRunning()) {
                     Wait.seconds(5);
                 }
             } catch (Exception e) {
@@ -157,7 +162,7 @@ public class Redis implements Lifecycle {
 
     @Override
     public void stopped() {
-        subscriptionsActive.set(false);
+        running.set(false);
         for (JedisPubSub subscription : subscriptions) {
             try {
                 subscription.unsubscribe();
