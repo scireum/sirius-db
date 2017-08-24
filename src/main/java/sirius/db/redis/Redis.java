@@ -169,14 +169,13 @@ public class Redis implements Lifecycle {
                           .handle();
             }
         }
-        if (jedis != null) {
-            jedis.close();
-        }
     }
 
     @Override
     public void awaitTermination() {
-        // Noting to do
+        if (jedis != null) {
+            jedis.close();
+        }
     }
 
     @Override
