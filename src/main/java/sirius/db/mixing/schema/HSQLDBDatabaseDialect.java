@@ -133,7 +133,7 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
             return "BIGINT";
         }
         if (Types.BOOLEAN == type || Types.BIT == type) {
-            return "SMALLINT";
+            return "BOOLEAN";
         }
         if (Types.DOUBLE == type) {
             return "DOUBLE";

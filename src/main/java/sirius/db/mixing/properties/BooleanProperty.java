@@ -86,6 +86,6 @@ public class BooleanProperty extends Property {
 
     @Override
     protected int getSQLType() {
-        return Types.TINYINT;
+        return Types.BOOLEAN;
     }
 }
