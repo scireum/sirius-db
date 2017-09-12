@@ -508,7 +508,7 @@ public class OMA {
         }
 
         Tuple<String, String> typeAndId = Schema.splitUniqueName(name);
-        if (Strings.isEmpty(typeAndId.getFirst()) || Strings.isEmpty(typeAndId.getSecond())) {
+        if (Strings.isEmpty(typeAndId.getSecond())) {
             return Optional.empty();
         }
 
