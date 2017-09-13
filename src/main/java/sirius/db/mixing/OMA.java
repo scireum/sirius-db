@@ -508,7 +508,12 @@ public class OMA {
         }
 
         Tuple<String, String> typeAndId = Schema.splitUniqueName(name);
-        return find((Class<E>) schema.getDescriptor(typeAndId.getFirst()).getType(), typeAndId.getSecond());
+        if (Strings.isEmpty(typeAndId.getSecond())) {
+            return Optional.empty();
+        }
+
+        return schema.findDescriptor(typeAndId.getFirst())
+                     .flatMap(descriptor -> find((Class<E>) descriptor.getType(), typeAndId.getSecond()));
     }
 
     /**
