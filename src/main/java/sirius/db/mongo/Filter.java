@@ -22,6 +22,17 @@ public class Filter {
     private Filter() {
     }
 
+    /**
+     * Creates a new filter with the given key and filter object.
+     *
+     * @param key    the key used in the filter object
+     * @param object the filter expression as object
+     */
+    public Filter(String key, Object object) {
+        this.key = key;
+        this.object = object;
+    }
+
     private static Filter relOp(String operator, Filter[] filters) {
         Filter filter = new Filter();
         filter.key = operator;
@@ -107,6 +118,43 @@ public class Filter {
         filter.object = new BasicDBObject("$regex", expression).append("$options", options);
 
         return filter;
+    }
+
+    /**
+     * Builds a filter which represents a geospatial query.
+     *
+     * @param key               the name of the field to check
+     * @param geometry          the geometry used to filter by
+     * @param maxDistanceMeters the max distance to consider relevant
+     * @return a filter representing the given operation
+     */
+    public static Filter nearSphere(String key, BasicDBObject geometry, int maxDistanceMeters) {
+        Filter filter = new Filter();
+        filter.key = key;
+        filter.object = new BasicDBObject("$nearSphere",
+                                          new BasicDBObject().append("$geometry", geometry)
+                                                             .append("$maxDistance", maxDistanceMeters));
+
+        return filter;
+    }
+
+    /**
+     * Builds a filter which represents a geospatial query for a point.
+     *
+     * @param key               the name of the field to check
+     * @param lat               the latitude of the point used as search geometry.
+     * @param lon               the longitude of the point used as search geometry.
+     * @param maxDistanceMeters the max distance to consider relevant
+     * @return a filter representing the given operation
+     */
+    public static Filter nearSphere(String key, double lat, double lon, int maxDistanceMeters) {
+        BasicDBList coordinates = new BasicDBList();
+        coordinates.add(lat);
+        coordinates.add(lon);
+
+        return nearSphere(key,
+                          new BasicDBObject().append("type", "Point").append("coordinates", coordinates),
+                          maxDistanceMeters);
     }
 
     /**
