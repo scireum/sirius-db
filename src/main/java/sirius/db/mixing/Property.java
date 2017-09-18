@@ -278,7 +278,7 @@ public abstract class Property {
     protected void setValueToField(Object value, Object target) {
         try {
             field.set(target, value);
-        } catch (IllegalAccessException e) {
+        } catch (IllegalAccessException | IllegalArgumentException e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
@@ -306,12 +306,21 @@ public abstract class Property {
      * Applies the given datbase value to the given entity.
      * <p>
      * The internal access path will be used to find the target object which contains the field.
+     * <p>
+     * If the underlying field of this property is primitive, but the given value is <tt>null</tt> or transformed to
+     * <tt>null</tt>, this will be ignored. An scenario like this might happen, if we join-fetch a value, which is not
+     * present.
      *
      * @param entity the entity to write to
      * @param object the database value to store
      */
     protected void setValueFromColumn(Entity entity, Object object) {
-        setValue(entity, transformFromColumn(object));
+        Object effectiveValue = transformFromColumn(object);
+        if (field.getType().isPrimitive() && object == null) {
+            return;
+        }
+
+        setValue(entity, effectiveValue);
     }
 
     /**
