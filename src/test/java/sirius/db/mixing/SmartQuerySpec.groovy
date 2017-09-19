@@ -194,6 +194,16 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().map({ x -> x.getParent().getValue().getName() } as Function).collect(Collectors.toList()) == ["Parent 1", "Parent 2"]
     }
 
+    def "ids are propertly propagated in join fetches "() {
+        given:
+        SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
+                .fields(SmartQueryTestChildEntity.PARENT, SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+        when:
+        def result = qry.queryList()
+        then:
+        result.stream().map({ x -> x.getParent().getId() } as Function).collect(Collectors.toList()) == [0, 1]
+    }
+
     def "automatic joins work when referencing one table in two relations"() {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)

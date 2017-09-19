@@ -173,12 +173,26 @@ public class EntityRefProperty extends Property {
 
     /**
      * Updates the field ({@link EntityRef} within the given parent to point to the given child.
+     * <p>
+     * If also ensures that the ID is propagated correctly. If a join fetch is executed, the id property might have
+     * beend skipped. This will reset the id within the EntityRef to -1, which is the placeholder of the id in the
+     * partially fetched entity. Therefore, we remember the original id, which is filled via the foreign key. We then
+     * apply the join-fetched value and restore the id (on both sides) if required.
      *
      * @param parent the parent containing the reference to the child
      * @param child  the referenced child entity
      */
     public void setReferencedEntity(Entity parent, Entity child) {
-        getEntityRef(accessPath.apply(parent)).setValue(child);
+        EntityRef<Entity> targetRef = getEntityRef(accessPath.apply(parent));
+        long referencedId = targetRef.getId() != null ? targetRef.getId() : -1;
+        targetRef.setValue(child);
+
+        // Check if the entity was partially join-fetched and restore the ID property if this
+        // was not contained in the join fetch - which is quite common
+        if (targetRef.getId() != referencedId && referencedId != -1) {
+            child.setId(referencedId);
+            targetRef.setId(referencedId);
+        }
     }
 
     @SuppressWarnings("unchecked")
