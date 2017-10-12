@@ -197,7 +197,7 @@ public class EntityRefProperty extends Property {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected void setValueToField(Object value, Object target) {
+    protected void setValueToField(Object value, Object target, Entity entity) {
         EntityRef<Entity> ref = getEntityRef(target);
         if (value == null || value instanceof Entity) {
             ref.setValue((Entity) value);
