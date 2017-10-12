@@ -77,7 +77,7 @@ public class StringProperty extends Property {
     }
 
     @Override
-    protected void setValueToField(Object value, Object target) {
+    protected void setValueToField(Object value, Object target, Entity entity) {
         Object effectiveValue = value;
         if (effectiveValue instanceof Clob) {
             try {
@@ -101,7 +101,7 @@ public class StringProperty extends Property {
                 effectiveValue = null;
             }
         }
-        super.setValueToField(effectiveValue, target);
+        super.setValueToField(effectiveValue, target, entity);
     }
 
     @Override

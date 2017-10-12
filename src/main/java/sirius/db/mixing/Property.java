@@ -274,8 +274,9 @@ public abstract class Property {
      *
      * @param value  the database value to store
      * @param target the target object determined by the access path
+     * @param entity the basic entity, e.g. the base class in a {@link Mixable}
      */
-    protected void setValueToField(Object value, Object target) {
+    protected void setValueToField(Object value, Object target, Entity entity) {
         try {
             field.set(target, value);
         } catch (IllegalAccessException | IllegalArgumentException e) {
@@ -299,7 +300,7 @@ public abstract class Property {
      */
     protected void setValue(Entity entity, Object object) {
         Object target = accessPath.apply(entity);
-        setValueToField(object, target);
+        setValueToField(object, target, entity);
     }
 
     /**
