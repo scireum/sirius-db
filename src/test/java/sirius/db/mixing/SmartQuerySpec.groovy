@@ -303,11 +303,7 @@ class SmartQuerySpec extends BaseSpecification {
         TestEntityWithNullRef found = result.get(0)
 
         then:
-        found.getParent().isFilled()
-        and:
-        found.getParent().getValue().isNew()
-        and:
-        found.getParent().getId() == -1L
+        found.getParent().isEmpty()
     }
 
     def "select existant entity ref without id"() {
@@ -333,10 +329,6 @@ class SmartQuerySpec extends BaseSpecification {
 
         then:
         found.getParent().isFilled()
-        and:
-        found.getParent().getValue().isNew()
-        and:
-        found.getParent().getId() == -1L
         and:
         Strings.isFilled(found.getParent().getValue().getName())
     }

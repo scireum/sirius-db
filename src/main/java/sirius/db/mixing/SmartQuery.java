@@ -33,6 +33,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -170,8 +172,102 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> fields(Column... fields) {
-        this.fields = Arrays.asList(fields);
+        this.fields = new ArrayList<>(Arrays.asList(fields));
+        checkJoinColumnsPresent(aggregateRequiredJoinColumns(), aggregatePresentColumns());
+
         return this;
+    }
+
+    private HashMap<String, Column> aggregateRequiredJoinColumns() {
+        HashMap<String, Column> requiredJoinFields = new HashMap<>();
+
+        this.fields.forEach(field -> {
+            Monoflop mf = Monoflop.create();
+            StringBuilder fieldName = new StringBuilder();
+            Column currentField = field.getParent();
+
+            while (currentField != null) {
+                if (mf.successiveCall()) {
+                    fieldName.append(".");
+                }
+
+                fieldName.append(currentField.getName());
+
+                if (!requiredJoinFields.containsKey(fieldName.toString())) {
+                    requiredJoinFields.put(fieldName.toString(), copy(currentField));
+                }
+
+                currentField = currentField.getParent();
+            }
+        });
+
+        return requiredJoinFields;
+    }
+
+    private Set<String> aggregatePresentColumns() {
+        Set<String> presentColumnPaths = new HashSet<>();
+
+        this.fields.forEach(field -> {
+            Monoflop mf = Monoflop.create();
+            StringBuilder fieldName = new StringBuilder();
+            Column currentField = field;
+
+            while (currentField != null) {
+                if (mf.successiveCall()) {
+                    fieldName.append(".");
+                }
+                fieldName.append(currentField.getName());
+                currentField = currentField.getParent();
+            }
+
+            presentColumnPaths.add(fieldName.toString());
+        });
+
+        return presentColumnPaths;
+    }
+
+    private void checkJoinColumnsPresent(HashMap<String, Column> requiredJoinFields, Set<String> presentColumnPaths) {
+        List<Column> requiredColumns = new ArrayList<>();
+
+        requiredJoinFields.forEach((path, column) -> {
+            if (!presentColumnPaths.contains(path)) {
+                requiredColumns.add(column);
+            }
+        });
+
+        this.fields.addAll(requiredColumns);
+    }
+
+    private Column copy(Column column) {
+        Column currentColumn = column;
+        Column copy = Column.named(column.getName());
+
+        while (currentColumn.getParent() != null) {
+            copy = Column.named(currentColumn.getParent().getName()).join(copy);
+            currentColumn = currentColumn.getParent();
+        }
+
+        return copy;
+    }
+
+    private boolean isJoinColumnContained(Column currentField, Column fieldToCheck) {
+        if (currentField.getName().equals(fieldToCheck.getName())) {
+            Column currentFieldParent = currentField.getParent();
+            Column fieldToCheckParent = fieldToCheck.getParent();
+
+            while (currentFieldParent != null && fieldToCheckParent != null) {
+                if (currentFieldParent.getName().equals(fieldToCheck.getName())) {
+                    currentFieldParent = currentField.getParent();
+                    fieldToCheckParent = fieldToCheck.getParent();
+                } else {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
