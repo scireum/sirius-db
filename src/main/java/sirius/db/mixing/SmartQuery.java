@@ -173,11 +173,17 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      */
     public SmartQuery<E> fields(Column... fields) {
         this.fields = new ArrayList<>(Arrays.asList(fields));
-        checkJoinColumnsPresent(aggregateRequiredJoinColumns(), aggregatePresentColumns());
+        checkJoinColumnsPresent();
 
         return this;
     }
 
+    /**
+     * Aggregates all columns which must be present to fetch all join-columns so that the {@link EntityRef}
+     * implementation works correctly.
+     *
+     * @return a map of columns which need to be present
+     */
     private HashMap<String, Column> aggregateRequiredJoinColumns() {
         HashMap<String, Column> requiredJoinFields = new HashMap<>();
 
@@ -194,7 +200,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 fieldName.append(currentField.getName());
 
                 if (!requiredJoinFields.containsKey(fieldName.toString())) {
-                    requiredJoinFields.put(fieldName.toString(), copy(currentField));
+                    requiredJoinFields.put(fieldName.toString(), currentField);
                 }
 
                 currentField = currentField.getParent();
@@ -204,6 +210,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         return requiredJoinFields;
     }
 
+    /**
+     * Aggregates all columns which where explicitly set and should be fetched using {@link #fields(Column...)}.
+     *
+     * @return a set of columns which are about to be fetched
+     */
     private Set<String> aggregatePresentColumns() {
         Set<String> presentColumnPaths = new HashSet<>();
 
@@ -226,48 +237,18 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         return presentColumnPaths;
     }
 
-    private void checkJoinColumnsPresent(HashMap<String, Column> requiredJoinFields, Set<String> presentColumnPaths) {
-        List<Column> requiredColumns = new ArrayList<>();
+    /**
+     * Synchonizes the columns which where explicitly set using {@link #fields(Column...)} with the columns that are
+     * required for join-fetches. If columns are missing, they are automatically added.
+     */
+    private void checkJoinColumnsPresent() {
+        Set<String> presentColumnPaths = aggregatePresentColumns();
 
-        requiredJoinFields.forEach((path, column) -> {
+        aggregateRequiredJoinColumns().forEach((path, column) -> {
             if (!presentColumnPaths.contains(path)) {
-                requiredColumns.add(column);
+                this.fields.add(column);
             }
         });
-
-        this.fields.addAll(requiredColumns);
-    }
-
-    private Column copy(Column column) {
-        Column currentColumn = column;
-        Column copy = Column.named(column.getName());
-
-        while (currentColumn.getParent() != null) {
-            copy = Column.named(currentColumn.getParent().getName()).join(copy);
-            currentColumn = currentColumn.getParent();
-        }
-
-        return copy;
-    }
-
-    private boolean isJoinColumnContained(Column currentField, Column fieldToCheck) {
-        if (currentField.getName().equals(fieldToCheck.getName())) {
-            Column currentFieldParent = currentField.getParent();
-            Column fieldToCheckParent = fieldToCheck.getParent();
-
-            while (currentFieldParent != null && fieldToCheckParent != null) {
-                if (currentFieldParent.getName().equals(fieldToCheck.getName())) {
-                    currentFieldParent = currentField.getParent();
-                    fieldToCheckParent = fieldToCheck.getParent();
-                } else {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     /**
