@@ -174,7 +174,7 @@ public class EntityRefProperty extends Property {
     /**
      * Updates the field ({@link EntityRef} within the given parent to point to the given child.
      * <p>
-     * If also ensures that the ID is propagated correctly. If a join fetch is executed, the id property might have
+     * It also ensures that the ID is propagated correctly. If a join fetch is executed, the id property might have
      * beend skipped. This will reset the id within the EntityRef to -1, which is the placeholder of the id in the
      * partially fetched entity. Therefore, we remember the original id, which is filled via the foreign key. We then
      * apply the join-fetched value and restore the id (on both sides) if required.

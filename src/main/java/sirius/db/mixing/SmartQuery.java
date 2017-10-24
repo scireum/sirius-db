@@ -170,7 +170,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> fields(Column... fields) {
-        this.fields = Arrays.asList(fields);
+        this.fields = Lists.newArrayList(fields);
         return this;
     }
 
@@ -465,7 +465,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             }
         }
 
-        private void createJoinFetch(Column field) {
+        private void createJoinFetch(Column field, List<Column> fields, List<Column> requiredColumns) {
             List<Column> fetchPath = Lists.newArrayList();
             Column parent = field.getParent();
             while (parent != null) {
@@ -475,6 +475,9 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             JoinFetch jf = rootFetch;
             EntityDescriptor currentDescriptor = ed;
             for (Column col : fetchPath) {
+                if (!isContainedInFields(col, fields)) {
+                    requiredColumns.add(col);
+                }
                 JoinFetch subFetch = jf.subFetches.get(col.getName());
                 if (subFetch == null) {
                     subFetch = new JoinFetch();
@@ -486,6 +489,10 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 jf = subFetch;
                 currentDescriptor = subFetch.property.getReferencedDescriptor();
             }
+        }
+
+        private boolean isContainedInFields(Column col, List<Column> fields) {
+            return fields.stream().filter(field -> field.toString().equals(col.toString())).count() > 0;
         }
 
         protected void executeJoinFetches(Entity entity, Set<String> columns, ResultSet rs) {
@@ -578,24 +585,42 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
     private void appendFieldList(Compiler c, boolean applyAliases) {
         Monoflop mf = Monoflop.create();
-        for (Column field : fields) {
-            if (mf.successiveCall()) {
-                c.getSELECTBuilder().append(", ");
-            }
-            Tuple<String, EntityDescriptor> joinInfo = c.determineAlias(field.getParent());
-            c.getSELECTBuilder().append(joinInfo.getFirst());
-            c.getSELECTBuilder().append(".");
-            String columnName = fetchEffectiveColumnName(field, joinInfo);
-            c.getSELECTBuilder().append(columnName);
+        List<Column> requiredFields = new ArrayList<>();
 
-            if (!c.defaultAlias.equals(joinInfo.getFirst())) {
-                if (applyAliases) {
-                    c.getSELECTBuilder().append(" AS ");
-                    c.getSELECTBuilder().append(joinInfo.getFirst());
-                    c.getSELECTBuilder().append("_");
-                    c.getSELECTBuilder().append(columnName);
-                }
-                c.createJoinFetch(field);
+        for (Column field : fields) {
+            appendToSELECT(c, applyAliases, mf, field, true, requiredFields);
+        }
+
+        // make sure that the join fields are always fetched
+        requiredFields.forEach(requiredField -> {
+            appendToSELECT(c, applyAliases, mf, requiredField, false, null);
+        });
+    }
+
+    private void appendToSELECT(Compiler c,
+                                boolean applyAliases,
+                                Monoflop mf,
+                                Column field,
+                                boolean createJoinFetch,
+                                List<Column> requiredFieldsCollector) {
+        if (mf.successiveCall()) {
+            c.getSELECTBuilder().append(", ");
+        }
+        Tuple<String, EntityDescriptor> joinInfo = c.determineAlias(field.getParent());
+        c.getSELECTBuilder().append(joinInfo.getFirst());
+        c.getSELECTBuilder().append(".");
+        String columnName = fetchEffectiveColumnName(field, joinInfo);
+        c.getSELECTBuilder().append(columnName);
+
+        if (!c.defaultAlias.equals(joinInfo.getFirst())) {
+            if (applyAliases) {
+                c.getSELECTBuilder().append(" AS ");
+                c.getSELECTBuilder().append(joinInfo.getFirst());
+                c.getSELECTBuilder().append("_");
+                c.getSELECTBuilder().append(columnName);
+            }
+            if (createJoinFetch) {
+                c.createJoinFetch(field, fields, requiredFieldsCollector);
             }
         }
     }
