@@ -33,6 +33,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -170,8 +172,83 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> fields(Column... fields) {
-        this.fields = Arrays.asList(fields);
+        this.fields = new ArrayList<>(Arrays.asList(fields));
+        checkJoinColumnsPresent();
+
         return this;
+    }
+
+    /**
+     * Aggregates all columns which must be present to fetch all join-columns so that the {@link EntityRef}
+     * implementation works correctly.
+     *
+     * @return a map of columns which need to be present
+     */
+    private HashMap<String, Column> aggregateRequiredJoinColumns() {
+        HashMap<String, Column> requiredJoinFields = new HashMap<>();
+
+        this.fields.forEach(field -> {
+            Monoflop mf = Monoflop.create();
+            StringBuilder fieldName = new StringBuilder();
+            Column currentField = field.getParent();
+
+            while (currentField != null) {
+                if (mf.successiveCall()) {
+                    fieldName.append(".");
+                }
+
+                fieldName.append(currentField.getName());
+
+                if (!requiredJoinFields.containsKey(fieldName.toString())) {
+                    requiredJoinFields.put(fieldName.toString(), currentField);
+                }
+
+                currentField = currentField.getParent();
+            }
+        });
+
+        return requiredJoinFields;
+    }
+
+    /**
+     * Aggregates all columns which where explicitly set and should be fetched using {@link #fields(Column...)}.
+     *
+     * @return a set of columns which are about to be fetched
+     */
+    private Set<String> aggregatePresentColumns() {
+        Set<String> presentColumnPaths = new HashSet<>();
+
+        this.fields.forEach(field -> {
+            Monoflop mf = Monoflop.create();
+            StringBuilder fieldName = new StringBuilder();
+            Column currentField = field;
+
+            while (currentField != null) {
+                if (mf.successiveCall()) {
+                    fieldName.append(".");
+                }
+                fieldName.append(currentField.getName());
+                currentField = currentField.getParent();
+            }
+
+            presentColumnPaths.add(fieldName.toString());
+        });
+
+        return presentColumnPaths;
+    }
+
+    /**
+     * Synchonizes the columns which where explicitly set using {@link #fields(Column...)} with the columns that are
+     * required for join-fetches. If columns are missing, they are automatically added.
+     */
+    private void checkJoinColumnsPresent() {
+        Set<String> presentColumnPaths = aggregatePresentColumns();
+
+        aggregateRequiredJoinColumns().forEach((path, column) -> {
+            if (!presentColumnPaths.contains(path)) {
+                this.fields.add(column);
+            }
+        });
     }
 
     /**
