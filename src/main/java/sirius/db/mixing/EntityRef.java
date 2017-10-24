@@ -187,7 +187,7 @@ public class EntityRef<E extends Entity> {
      * @return <tt>true</tt> if an entity is referenced (the stored id is not <tt>null</tt>). <tt>false</tt> otherwise
      */
     public boolean isFilled() {
-        return id != null;
+        return id != null && id != -1L;
     }
 
     /**
@@ -196,7 +196,7 @@ public class EntityRef<E extends Entity> {
      * @return <tt>true</tt> if no entity is referenced, <tt>false</tt> if a non null id is present.
      */
     public boolean isEmpty() {
-        return id == null;
+        return id == null || id == -1L;
     }
 
     /**

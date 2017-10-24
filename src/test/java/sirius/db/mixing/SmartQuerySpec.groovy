@@ -295,22 +295,18 @@ class SmartQuerySpec extends BaseSpecification {
         when:
         def result = oma.select(TestEntityWithNullRef.class)
                 .fields(TestEntityWithNullRef.NAME,
-                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
-                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.ID))
+                SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
+                SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.ID))
                 .eq(SmartQueryTestChildEntity.ID, testChild.getId()).queryList()
 
         and:
         TestEntityWithNullRef found = result.get(0)
 
         then:
-        found.getParent().isFilled()
-        and:
-        found.getParent().getValue().isNew()
-        and:
-        found.getParent().getId() == -1L
+        found.getParent().isEmpty()
     }
 
-    def "select existant entity ref without id"() {
+    def "select existant entity ref with automatic id fetching"() {
         given:
         SmartQueryTestParentEntity parent = new SmartQueryTestParentEntity()
         parent.setName("Parent 3")
@@ -334,9 +330,7 @@ class SmartQuerySpec extends BaseSpecification {
         then:
         found.getParent().isFilled()
         and:
-        found.getParent().getValue().isNew()
-        and:
-        found.getParent().getId() == -1L
+        !found.getParent().getValue().isNew()
         and:
         Strings.isFilled(found.getParent().getValue().getName())
     }
