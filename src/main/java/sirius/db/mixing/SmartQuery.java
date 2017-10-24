@@ -587,9 +587,9 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         Monoflop mf = Monoflop.create();
         List<Column> requiredFields = new ArrayList<>();
 
-        for (Column field : fields) {
+        fields.forEach(field -> {
             appendToSELECT(c, applyAliases, mf, field, true, requiredFields);
-        }
+        });
 
         // make sure that the join fields are always fetched
         requiredFields.forEach(requiredField -> {
