@@ -33,12 +33,24 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
             return MSG_COLUMNS_DIFFER;
         }
 
-        if (target.isNullable() != current.isNullable() && target.getType() != Types.TIMESTAMP
-            || target.getDefaultValue() != null) {
+        // TIMESTAMP values cannot be null -> we gracefully ignore this
+        // here, since the alter statement would be ignored anyway.
+        if (target.getType() == Types.TIMESTAMP) {
+            return null;
+        }
+
+        if (target.isNullable() != current.isNullable()) {
+            // Don't change the column to NOT NULL if no default value exists, because some existing field values could
+            // be NULL
+            if (!target.isNullable() && target.getDefaultValue() == null) {
+                return null;
+            }
+
             return MSG_COLUMNS_DIFFER;
         }
 
-        if (checkDefaultValue(target, current)) {
+        // Change the default value if it was changed. Don't remove it in case the new default is empty
+        if (checkDefaultValue(target, current) && target.getDefaultValue() != null) {
             return MSG_COLUMNS_DIFFER;
         }
 
@@ -67,7 +79,7 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
     }
 
     protected boolean checkDefaultValue(TableColumn target, TableColumn current) {
-        return equalValue(target.getDefaultValue(), current.getDefaultValue());
+        return !equalValue(target.getDefaultValue(), current.getDefaultValue());
     }
 
     private boolean equalValue(String left, String right) {
