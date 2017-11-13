@@ -33,13 +33,8 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
             return MSG_COLUMNS_DIFFER;
         }
 
-        if (target.isNullable() != current.isNullable()) {
-            // TIMESTAMP values cannot be null -> we gracefully ignore this
-            // here, since the alter statement would be ignored anyway.
-            if (target.isNullable() && target.getType() == Types.TIMESTAMP) {
-                return null;
-            }
-
+        if (target.isNullable() != current.isNullable() && (target.getType() != Types.TIMESTAMP
+                                                            || target.getDefaultValue() != null)) {
             return MSG_COLUMNS_DIFFER;
         }
 

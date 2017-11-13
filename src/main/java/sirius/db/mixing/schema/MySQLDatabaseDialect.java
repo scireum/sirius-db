@@ -36,13 +36,8 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
             return reason;
         }
 
-        if (target.isNullable() != current.isNullable()) {
-            // TIMESTAMP values cannot be null -> we gracefully ignore this
-            // here, since the alter statement would be ignored anyway.
-            if (target.isNullable() && target.getType() == Types.TIMESTAMP) {
-                return null;
-            }
-
+        if (target.isNullable() != current.isNullable() && (target.getType() != Types.TIMESTAMP
+                                                            || target.getDefaultValue() != null)) {
             return NLS.get("MySQLDatabaseDialect.differentNull");
         }
 
@@ -57,7 +52,13 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
     }
 
     protected boolean areDefaultsDifferent(TableColumn target, TableColumn current) {
-        return !equalValue(target.getDefaultValue(), current.getDefaultValue());
+        if (equalValue(target.getDefaultValue(), current.getDefaultValue())) {
+            return false;
+        }
+
+        // TIMESTAMP values cannot be null -> we gracefully ignore this
+        // here, sice the alter statement would be ignored anyway.
+        return target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null;
     }
 
     protected String checkColumnSettings(TableColumn target, TableColumn current) {
