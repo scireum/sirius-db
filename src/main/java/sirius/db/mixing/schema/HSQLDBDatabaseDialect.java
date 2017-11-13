@@ -33,8 +33,8 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
             return MSG_COLUMNS_DIFFER;
         }
 
-        if (target.isNullable() != current.isNullable() && target.getType() != Types.TIMESTAMP
-            || target.getDefaultValue() != null) {
+        if (target.isNullable() != current.isNullable() && (target.getType() != Types.TIMESTAMP
+                                                            || target.getDefaultValue() != null)) {
             return MSG_COLUMNS_DIFFER;
         }
 
@@ -67,7 +67,7 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
     }
 
     protected boolean checkDefaultValue(TableColumn target, TableColumn current) {
-        return equalValue(target.getDefaultValue(), current.getDefaultValue());
+        return !equalValue(target.getDefaultValue(), current.getDefaultValue());
     }
 
     private boolean equalValue(String left, String right) {

@@ -36,8 +36,8 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
             return reason;
         }
 
-        if (target.isNullable() != current.isNullable() && target.getType() != Types.TIMESTAMP
-            || target.getDefaultValue() != null) {
+        if (target.isNullable() != current.isNullable() && (target.getType() != Types.TIMESTAMP
+                                                            || target.getDefaultValue() != null)) {
             return NLS.get("MySQLDatabaseDialect.differentNull");
         }
 
