@@ -335,7 +335,7 @@ public class Redis implements Lifecycle {
          */
         public final Long ttl;
 
-        public LockInfo(String key, String name, String value, LocalDateTime since, Long ttl) {
+        protected LockInfo(String key, String name, String value, LocalDateTime since, Long ttl) {
             this.key = key;
             this.name = name;
             this.value = value;

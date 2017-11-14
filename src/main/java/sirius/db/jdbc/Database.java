@@ -222,9 +222,9 @@ public class Database {
                 if (!SANE_COLUMN_NAME.matcher(entry.getKey()).matches()) {
                     throw Exceptions.handle()
                                     .to(Databases.LOG)
-                                    .withSystemErrorMessage(
-                                            "Cannot use '%s' as column name for an insert. Only characters, digits and '_' is allowed!",
-                                            entry.getKey())
+                                    .withSystemErrorMessage("Cannot use '%s' as column name for an insert. "
+                                                            + "Only characters, digits and '_' is allowed!",
+                                                            entry.getKey())
                                     .handle();
                 }
                 fields.append(entry.getKey());

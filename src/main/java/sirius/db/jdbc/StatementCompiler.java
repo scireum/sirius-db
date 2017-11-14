@@ -216,7 +216,7 @@ class StatementCompiler {
         }
 
         if (paramValue instanceof String) {
-            return ((String)paramValue).length() > 0;
+            return ((String) paramValue).length() > 0;
         }
 
         return true;

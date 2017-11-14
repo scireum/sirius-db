@@ -31,6 +31,8 @@ import java.util.concurrent.Executor;
  * Delegates all calls to the given delegate {@link Connection}.
  * <p>
  * Subclasses can overwrite specific methods to ensure a certain behaviour.
+ *
+ * @param <C> the generic type of the connection to wrap
  */
 abstract class DelegatingConnection<C extends Connection> implements Connection {
 

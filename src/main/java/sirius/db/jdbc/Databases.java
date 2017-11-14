@@ -172,7 +172,6 @@ public class Databases {
         return longQueryThresholdMillis;
     }
 
-
     /**
      * Converts the threshold for "long connections" into a long containing milliseconds for performance reasons.
      *
