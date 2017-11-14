@@ -14,11 +14,9 @@ import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.health.Exceptions;
-import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.Formatter;
 import sirius.kernel.settings.Extension;
 
-import javax.annotation.Nullable;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,6 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Represents a database connection obtained via {@link Databases#get(String)}.
@@ -59,6 +58,7 @@ public class Database {
     private String validationQuery;
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
+    private static final Pattern SANE_COLUMN_NAME = Pattern.compile("[a-zA-Z0-9_]+");
 
     /*
      * Use the get(name) method to create a new object.
@@ -131,182 +131,8 @@ public class Database {
      * @throws SQLException in case of a database error
      */
     public Connection getConnection() throws SQLException {
-        Transaction txn = getTransaction();
-        if (txn != null) {
-            return txn;
-        } else {
-            return createConnection();
-        }
-    }
-
-    private Connection createConnection() throws SQLException {
         try (Operation op = new Operation(() -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5))) {
             return new WrappedConnection(getDatasource().getConnection(), this);
-        }
-    }
-
-    @Nullable
-    protected Transaction getTransaction() throws SQLException {
-        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        if (transactions.isEmpty()) {
-            return null;
-        } else {
-            return transactions.get(transactions.size() - 1);
-        }
-    }
-
-    protected Transaction startTransaction() throws SQLException {
-        Databases.LOG.FINE("BEGIN " + name);
-        Transaction txn = new Transaction(new WrappedConnection(createConnection(), this));
-        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        transactions.add(txn);
-        return txn;
-    }
-
-    /**
-     * Starts a new transaction which can either be committed ({@link #commit()}) or rolled back ({@link #rollback()}.
-     *
-     * @throws SQLException in case of an database error
-     */
-    public void begin() throws SQLException {
-        startTransaction();
-    }
-
-    /**
-     * Joins an already running transaction or starts a new one if non is present.
-     *
-     * @return the joined or started transaction
-     * @throws SQLException in case of an database error
-     */
-    public Transaction join() throws SQLException {
-        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        if (transactions.isEmpty()) {
-            begin();
-            return transactions.get(0);
-        } else {
-            Transaction result = transactions.get(transactions.size() - 1).copy();
-            transactions.add(result);
-            return result;
-        }
-    }
-
-    /**
-     * Tries to commit a transaction. If none is present, nothing will happen.
-     *
-     * @throws SQLException in case of an database error
-     */
-    public void tryCommit() throws SQLException {
-        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        if (transactions != null && !transactions.isEmpty()) {
-            Transaction txn = transactions.get(transactions.size() - 1);
-            transactions.remove(transactions.size() - 1);
-            txn.tryCommit();
-        }
-    }
-
-    /**
-     * Commits the current transaction. Fails if none is present.
-     *
-     * @throws SQLException in case of an database error
-     */
-    public void commit() throws SQLException {
-        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        if (transactions == null || transactions.isEmpty()) {
-            throw new SQLException("Cannot commit a transaction: No transaction active!");
-        } else {
-            Transaction txn = transactions.get(transactions.size() - 1);
-            transactions.remove(transactions.size() - 1);
-            txn.commit();
-        }
-    }
-
-    /**
-     * Cancels (rolls back) the current transaction.
-     */
-    public void rollback() {
-        List<Transaction> transactions = TransactionContext.getTransactionStack(name);
-        if (transactions == null || transactions.isEmpty()) {
-            return;
-        }
-
-        // Rollback this and all joined (copied) transactions
-        HandledException ex = null;
-        int lastIndex = transactions.size() - 1;
-        for (int idx = lastIndex; idx >= 0; idx--) {
-            try {
-                Transaction txn = transactions.get(idx);
-                txn.rollback();
-                if (!txn.isCopy()) {
-                    break;
-                }
-            } catch (Exception e) {
-                ex = Exceptions.handle()
-                               .to(Databases.LOG)
-                               .error(e)
-                               .withSystemErrorMessage("Error while rolling back transaction: %s (%s)")
-                               .handle();
-            }
-        }
-        transactions.remove(lastIndex);
-        if (ex != null) {
-            throw ex;
-        }
-    }
-
-    /**
-     * Performs the given task in the current transaction. If none is present, a new one will be started.
-     *
-     * @param r the code to execute within a transaction
-     */
-    public void transaction(Runnable r) {
-        try {
-            join();
-            r.run();
-            tryCommit();
-        } catch (Exception t) {
-            try {
-                rollback();
-            } catch (Exception e) {
-                Exceptions.handle()
-                          .to(Databases.LOG)
-                          .error(e)
-                          .withSystemErrorMessage("Error while rolling back a transaction: %s (%s)")
-                          .handle();
-            }
-            throw Exceptions.handle()
-                            .to(Databases.LOG)
-                            .error(t)
-                            .withSystemErrorMessage("Error while executing a transaction: %s (%s)")
-                            .handle();
-        }
-    }
-
-    /**
-     * Performs the given code in its own transaction.
-     *
-     * @param r the code to execute
-     * @throws SQLException in case of an database error
-     */
-    public void separateTransaction(Runnable r) throws SQLException {
-        try {
-            begin();
-            r.run();
-            tryCommit();
-        } catch (Exception t) {
-            try {
-                rollback();
-            } catch (Exception e) {
-                Exceptions.handle()
-                          .to(Databases.LOG)
-                          .error(e)
-                          .withSystemErrorMessage("Error while rolling back a transaction: %s (%s)")
-                          .handle();
-            }
-            throw Exceptions.handle()
-                            .to(Databases.LOG)
-                            .error(t)
-                            .withSystemErrorMessage("Error while executing a transaction: %s (%s)")
-                            .handle();
         }
     }
 
@@ -353,6 +179,7 @@ public class Database {
      * @return a Row containing all generated keys
      * @throws SQLException in case of a database error
      */
+    @SuppressWarnings("squid:S2077")
     public Row insertRow(String table, Context ctx) throws SQLException {
         try (Connection c = getConnection()) {
             StringBuilder fields = new StringBuilder();
@@ -391,6 +218,14 @@ public class Database {
                 if (fields.length() > 0) {
                     fields.append(", ");
                     values.append(", ");
+                }
+                if (!SANE_COLUMN_NAME.matcher(entry.getKey()).matches()) {
+                    throw Exceptions.handle()
+                                    .to(Databases.LOG)
+                                    .withSystemErrorMessage(
+                                            "Cannot use '%s' as column name for an insert. Only characters, digits and '_' is allowed!",
+                                            entry.getKey())
+                                    .handle();
                 }
                 fields.append(entry.getKey());
                 values.append("?");
@@ -437,10 +272,20 @@ public class Database {
         return url;
     }
 
+    /**
+     * Returns the JDBC username supplied to the database.
+     *
+     * @return the username supplied to the database
+     */
     public String getUsername() {
         return username;
     }
 
+    /**
+     * Returns the JDBC password supplied to the database.
+     *
+     * @return the password supplied to the database
+     */
     public String getPassword() {
         return password;
     }
