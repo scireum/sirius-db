@@ -161,6 +161,7 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
+    @SuppressWarnings("squid:S899")
     private void handleTracingAndReporting(String collection, Watch w, DBCursor cur) {
         cur.hasNext();
         mongo.callDuration.addValue(w.elapsedMillis());

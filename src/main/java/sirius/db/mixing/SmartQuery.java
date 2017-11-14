@@ -530,6 +530,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             parameters.add(parameter);
         }
 
+        @SuppressWarnings("squid:S2095")
         private PreparedStatement prepareStatement(Connection c) throws SQLException {
             PreparedStatement stmt =
                     c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);

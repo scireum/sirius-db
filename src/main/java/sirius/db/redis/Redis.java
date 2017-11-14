@@ -103,6 +103,7 @@ public class Redis implements Lifecycle {
     public static final String INFO_USED_MEMORY = "used_memory";
 
     @Override
+    @SuppressWarnings("squid:S2250")
     public void started() {
         for (Subscriber subscriber : subscribers) {
             JedisPubSub subscription = new JedisPubSub() {

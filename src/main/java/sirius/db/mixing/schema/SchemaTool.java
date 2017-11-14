@@ -197,6 +197,7 @@ public class SchemaTool {
         }
     }
 
+    @SuppressWarnings("squid:S3047")
     private void syncRequiredTables(List<SchemaUpdateAction> result,
                                     List<Table> currentSchema,
                                     List<Table> targetSchema) {

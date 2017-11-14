@@ -276,6 +276,32 @@ class WrappedPreparedStatement implements PreparedStatement {
         return delegate.getResultSet();
     }
 
+    /**
+     * Sets the designated parameter to the given input stream, which
+     * will have the specified number of bytes.
+     * <p>
+     * When a very large Unicode value is input to a <code>LONGVARCHAR</code>
+     * parameter, it may be more practical to send it via a
+     * <code>java.io.InputStream</code> object. The data will be read from the
+     * stream as needed until end-of-file is reached.  The JDBC driver will
+     * do any necessary conversion from Unicode to the database char format.
+     * <p>
+     * The byte format of the Unicode stream must be a Java UTF-8, as defined in the
+     * Java Virtual Machine Specification.
+     * <p>
+     * <P><B>Note:</B> This stream object can either be a standard
+     * Java stream object or your own subclass that implements the
+     * standard interface.
+     *
+     * @param parameterIndex the first parameter is 1, the second is 2, ...
+     * @param x              a <code>java.io.InputStream</code> object that contains the
+     *                       Unicode parameter value
+     * @param length         the number of bytes in the stream
+     * @throws SQLException if parameterIndex does not correspond to a parameter
+     *                      marker in the SQL statement; if a database access error occurs or
+     *                      this method is called on a closed <code>PreparedStatement</code>
+     * @deprecated Use {@code setCharacterStream}
+     */
     @Override
     @Deprecated
     public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
