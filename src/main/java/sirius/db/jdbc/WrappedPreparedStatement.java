@@ -280,9 +280,9 @@ class WrappedPreparedStatement implements PreparedStatement {
      * Sets the designated parameter to the given input stream, which
      * will have the specified number of bytes.
      * <p>
-     * When a very large Unicode value is input to a <code>LONGVARCHAR</code>
+     * When a very large Unicode value is input to a {@code LONGVARCHAR}
      * parameter, it may be more practical to send it via a
-     * <code>java.io.InputStream</code> object. The data will be read from the
+     * {@code java.io.InputStream} object. The data will be read from the
      * stream as needed until end-of-file is reached.  The JDBC driver will
      * do any necessary conversion from Unicode to the database char format.
      * <p>
@@ -294,12 +294,12 @@ class WrappedPreparedStatement implements PreparedStatement {
      * standard interface.
      *
      * @param parameterIndex the first parameter is 1, the second is 2, ...
-     * @param x              a <code>java.io.InputStream</code> object that contains the
+     * @param x              a {@code java.io.InputStream} object that contains the
      *                       Unicode parameter value
      * @param length         the number of bytes in the stream
      * @throws SQLException if parameterIndex does not correspond to a parameter
      *                      marker in the SQL statement; if a database access error occurs or
-     *                      this method is called on a closed <code>PreparedStatement</code>
+     *                      this method is called on a closed {@code PreparedStatement}
      * @deprecated Use {@code setCharacterStream}
      */
     @Override
