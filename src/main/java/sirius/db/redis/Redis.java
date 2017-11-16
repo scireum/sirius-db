@@ -17,6 +17,7 @@ import sirius.kernel.Lifecycle;
 import sirius.kernel.async.CallContext;
 import sirius.kernel.async.Operation;
 import sirius.kernel.async.Tasks;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Wait;
@@ -103,6 +104,8 @@ public class Redis implements Lifecycle {
     public static final String INFO_USED_MEMORY = "used_memory";
 
     @Override
+    @SuppressWarnings("squid:S2250")
+    @Explain("There aren't that many subscriptions, so there is no performance hotspot")
     public void started() {
         for (Subscriber subscriber : subscribers) {
             JedisPubSub subscription = new JedisPubSub() {
@@ -334,7 +337,7 @@ public class Redis implements Lifecycle {
          */
         public final Long ttl;
 
-        public LockInfo(String key, String name, String value, LocalDateTime since, Long ttl) {
+        protected LockInfo(String key, String name, String value, LocalDateTime since, Long ttl) {
             this.key = key;
             this.name = name;
             this.value = value;

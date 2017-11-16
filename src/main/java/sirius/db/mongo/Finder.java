@@ -12,6 +12,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Microtiming;
 
@@ -161,6 +162,8 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
+    @SuppressWarnings("squid:S899")
+    @Explain("We don't care about the return value, we just need to ensure that the query is executed.")
     private void handleTracingAndReporting(String collection, Watch w, DBCursor cur) {
         cur.hasNext();
         mongo.callDuration.addValue(w.elapsedMillis());

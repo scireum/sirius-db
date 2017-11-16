@@ -41,7 +41,8 @@ public enum Capability {
     /**
      * Contains the capabilities of a MySQL database
      */
-    public static final Set<Capability> MYSQL_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT));
+    public static final Set<Capability> MYSQL_CAPABILITIES =
+            Collections.unmodifiableSet(EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT));
 
     /**
      * Contains the capabilities of a HSQL database

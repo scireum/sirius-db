@@ -44,15 +44,11 @@ class WrappedConnection extends DelegatingConnection<Connection> {
         try (Operation op = new Operation(() -> database.name + ".close()", Duration.ofSeconds(5))) {
             delegate.close();
         } catch (SQLException e) {
-            // Most likely this exception will be a false alert because DBCP
-            // 1.2.2 cannot deal with
-            // connections which are closed by their driver (due to network
-            // issues).
-            // The next release of DBCP will fix this problem. The exception is
-            // logged at INFO level
-            // in case a "real" problem occurred. If we wouldn't call
-            // delegate.close, the connection would
-            // remain active and might block the pool.
+            // Most likely this exception will be a false alert because DBCP 1.2.2 cannot deal with connections which
+            // are closed by their driver (due to network issues).
+            // The next release of DBCP will fix this problem. The exception is logged at INFO level in case a "real"
+            // problem occurred. If we wouldn't call delegate.close, the connection would remain active and might block
+            // the pool.
             Databases.LOG.INFO("Error closing connection");
             Databases.LOG.INFO(e);
         } finally {

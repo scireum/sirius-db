@@ -17,6 +17,7 @@ import sirius.db.jdbc.SQLQuery;
 import sirius.db.mixing.constraints.FieldOperator;
 import sirius.db.mixing.properties.EntityRefProperty;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
@@ -530,6 +531,8 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             parameters.add(parameter);
         }
 
+        @SuppressWarnings("squid:S2095")
+        @Explain("The statement will be closed by the caller.")
         private PreparedStatement prepareStatement(Connection c) throws SQLException {
             PreparedStatement stmt =
                     c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);

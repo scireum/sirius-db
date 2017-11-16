@@ -132,7 +132,6 @@ public class Schema implements Initializable {
         return descriptorsByType.values();
     }
 
-
     @Override
     public void initialize() throws Exception {
         if (dbs.hasDatabase(database)) {

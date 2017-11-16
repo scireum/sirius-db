@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.Database;
 import sirius.kernel.commons.ComparableTuple;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.health.Exceptions;
@@ -197,6 +198,8 @@ public class SchemaTool {
         }
     }
 
+    @SuppressWarnings("squid:S3047")
+    @Explain("False positive - targetSchema is modified in the first loop.")
     private void syncRequiredTables(List<SchemaUpdateAction> result,
                                     List<Table> currentSchema,
                                     List<Table> targetSchema) {

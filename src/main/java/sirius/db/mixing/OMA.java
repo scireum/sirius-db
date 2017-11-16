@@ -499,6 +499,7 @@ public class OMA {
      * Tries to resolve the {@link Entity#getUniqueName()} into an entity.
      *
      * @param name the name of the entity to resolve
+     * @param <E>  the generic parameter of the entity to resolve
      * @return the resolved entity wrapped as <tt>Optional</tt> or an empty optional if no such entity exists
      */
     @SuppressWarnings("unchecked")
