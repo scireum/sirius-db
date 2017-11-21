@@ -88,7 +88,7 @@ public class Column {
      * @return a column representing the combined path of this column and the given mixin
      */
     public Column inMixin(Class<?> mixinType) {
-        return new Column(name + SUBFIELD_SEPARATOR + mixinType.getSimpleName(), null);
+        return new Column(mixinType.getSimpleName() + SUBFIELD_SEPARATOR + name, null);
     }
 
     /**
