@@ -334,4 +334,19 @@ class SmartQuerySpec extends BaseSpecification {
         and:
         Strings.isFilled(found.getParent().getValue().getName())
     }
+
+    def "select a entity with attached mixin by value in mixin"() {
+        given:
+        SmartQueryTestMixinEntity mixinEntity = new SmartQueryTestMixinEntity()
+        mixinEntity.setValue("testvalue1")
+        SmartQueryTestMixinEntityMixin mixinEntityMixin = mixinEntity.as(SmartQueryTestMixinEntityMixin.class)
+        mixinEntityMixin.setMixinValue("mixinvalue1")
+        oma.update(mixinEntity)
+        when:
+        SmartQueryTestMixinEntity entity = oma.select(SmartQueryTestMixinEntity.class).eq(SmartQueryTestMixinEntityMixin.MIXIN_VALUE.inMixin(SmartQueryTestMixinEntityMixin.class), "mixinvalue1").queryFirst()
+        then:
+        !mixinEntity.isNew()
+        and:
+        mixinEntity.getId() == entity.getId()
+    }
 }
