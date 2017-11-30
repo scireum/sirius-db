@@ -80,6 +80,10 @@ public class Updater extends QueryBuilder<Updater> {
      * @return the builder itself for fluent method calls
      */
     public Updater setList(String key, Object... values) {
+        if (setObject == null) {
+            setObject = new BasicDBObject();
+        }
+
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
             list.add(QueryBuilder.transformValue(value));

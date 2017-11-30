@@ -13,6 +13,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.JedisSentinelPool;
 import sirius.kernel.Lifecycle;
 import sirius.kernel.async.CallContext;
 import sirius.kernel.async.Operation;
@@ -39,6 +40,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -88,6 +90,12 @@ public class Redis implements Lifecycle {
     @ConfigValue("redis.maxIdle")
     private int maxIdle;
 
+    @ConfigValue("redis.master")
+    private String masterName;
+
+    @ConfigValue("redis.sentinels")
+    private List<String> sentinels;
+
     private static final String PREFIX_LOCK = "lock_";
     private static final String SUFFIX_DATE = "_date";
 
@@ -97,6 +105,7 @@ public class Redis implements Lifecycle {
     protected Average callDuration = new Average();
     protected Average messageDuration = new Average();
     protected JedisPool jedis;
+    protected JedisSentinelPool sentinelPool;
 
     /**
      * Contains the entry name of the info section under which redis reports the amount of consumed ram
@@ -176,6 +185,9 @@ public class Redis implements Lifecycle {
 
     @Override
     public void awaitTermination() {
+        if (sentinelPool != null) {
+            sentinelPool.close();
+        }
         if (jedis != null) {
             jedis.close();
         }
@@ -196,6 +208,26 @@ public class Redis implements Lifecycle {
     }
 
     private Jedis getConnection() {
+        if (sentinelPool != null) {
+            return sentinelPool.getResource();
+        }
+        if (jedis != null) {
+            return jedis.getResource();
+        }
+
+        return setupConnection();
+    }
+
+    private Jedis setupConnection() {
+        if (sentinelPool == null && !sentinels.isEmpty()) {
+            JedisPoolConfig poolConfig = new JedisPoolConfig();
+            poolConfig.setMaxTotal(maxActive);
+            poolConfig.setMaxIdle(maxIdle);
+
+            sentinelPool = new JedisSentinelPool(masterName, new HashSet<>(sentinels), poolConfig);
+            return sentinelPool.getResource();
+        }
+
         if (jedis == null) {
             JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
             jedisPoolConfig.setMaxTotal(maxActive);
