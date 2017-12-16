@@ -201,10 +201,10 @@ public class Redis implements Lifecycle {
     /**
      * Determines if access to Redis is configured.
      *
-     * @return <tt>true</tt> if at least a host is given, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if at least a host is given or at least one sentinel is available, <tt>false</tt> otherwise
      */
     public boolean isConfigured() {
-        return Strings.isFilled(host);
+        return Strings.isFilled(host) || !sentinels.isEmpty();
     }
 
     private Jedis getConnection() {
