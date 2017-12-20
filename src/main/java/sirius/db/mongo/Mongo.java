@@ -67,7 +67,7 @@ public class Mongo {
     /**
      * Provides direct access to the Mongo DB for non-trivial operations.
      *
-     * @return an initialized client instance to access Mongo DB.
+     * @return a database object to access Mongo DB.
      */
     public DB db() {
         if (mongoClient == null) {
@@ -75,6 +75,19 @@ public class Mongo {
         }
 
         return mongoClient.getDB(dbName);
+    }
+
+    /**
+     * Provides direct access to the underlying Mongo DB client for non-trivial operations.
+     *
+     * @return an initialized client instance to access Mongo DB.
+     */
+    public MongoClient client() {
+        if (mongoClient == null) {
+            initializeClient();
+        }
+
+        return mongoClient;
     }
 
     protected synchronized void initializeClient() {
