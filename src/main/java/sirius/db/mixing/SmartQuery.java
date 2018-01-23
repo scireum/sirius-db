@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -354,7 +355,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         protected Map<String, Tuple<String, EntityDescriptor>> joinTable = Maps.newTreeMap();
         protected AtomicInteger aliasCounter = new AtomicInteger(1);
         protected String defaultAlias = "e";
-        private JoinFetch rootFetch = new JoinFetch();
+        protected JoinFetch rootFetch = new JoinFetch();
 
         /**
          * Creates a new compiler for the given entity descriptor.
@@ -384,6 +385,10 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             return postJoinQuery;
         }
 
+        public void setWHEREBuilder(StringBuilder newWHEREBuilder) {
+            this.postJoinQuery = newWHEREBuilder;
+        }
+
         /**
          * Generates an unique table alias.
          *
@@ -394,29 +399,41 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         /**
-         * Returns the currently active default alias along with the corresponding <tt>EntityDescritpor</tt>
+         * Returns the currently active translation state and replaces all settings for the new alias and base descriptor.
          * <p>
-         * The default alias is the one, on which all field relate which do not require a join. It can be changed for
-         * inner queries like EXISTS.
+         * To restore the state, {@link #restoreTranslationState(TranslationState)} can be used.
          *
-         * @return the currently active default alias and entity descriptor as tuple
+         * @return the currently active translation state
          */
-        public Tuple<String, EntityDescriptor> getDefaultAlias() {
-            return Tuple.create(defaultAlias, ed);
+        public TranslationState captureAndReplaceTranslationState(String newDefaultAlias,
+                                                                  EntityDescriptor newDefaultDescriptor) {
+            TranslationState result = new TranslationState(ed, defaultAlias, joins, joinTable);
+
+            this.defaultAlias = newDefaultAlias;
+            this.ed = newDefaultDescriptor;
+            this.joins = new StringBuilder();
+            this.joinTable = new TreeMap<>();
+
+            return result;
         }
 
         /**
-         * Changes the currently active default alias and entity descriptor.
-         * <p>
-         * Care should be taken to change the alias back once building a sub query is finised.
+         * Provides access to the currently generated JOINs.
          *
-         * @param defaultAlias         the new default alias
-         * @param newDefaultDescriptor the new default entity descriptor matching the table referenced by the given
-         *                             alias
+         * @return the currently generated JOINs
          */
-        public void setDefaultAlias(String defaultAlias, EntityDescriptor newDefaultDescriptor) {
-            this.defaultAlias = defaultAlias;
-            this.ed = newDefaultDescriptor;
+        public StringBuilder getJoins() {
+            return joins;
+        }
+
+        /**
+         * Restores a previously captured translation state.
+         */
+        public void restoreTranslationState(TranslationState state) {
+            this.defaultAlias = state.getDefaultAlias();
+            this.ed = state.getEd();
+            this.joins = state.getJoins();
+            this.joinTable = state.getJoinTable();
         }
 
         private Tuple<String, EntityDescriptor> determineAlias(Column parent) {
@@ -431,9 +448,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             Tuple<String, EntityDescriptor> parentAlias = determineAlias(parent.getParent());
             EntityRefProperty refProperty = (EntityRefProperty) parentAlias.getSecond().getProperty(parent.getName());
             EntityDescriptor other = refProperty.getReferencedDescriptor();
-            if (joins == null) {
-                joins = new StringBuilder();
-            }
+
             String tableAlias = generateTableAlias();
             joins.append(" LEFT JOIN ")
                  .append(other.getTableName())
@@ -493,7 +508,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
 
         private boolean isContainedInFields(Column col, List<Column> fields) {
-            return fields.stream().filter(field -> field.toString().equals(col.toString())).count() > 0;
+            return fields.stream().anyMatch(field -> field.toString().equals(col.toString()));
         }
 
         protected void executeJoinFetches(Entity entity, Set<String> columns, ResultSet rs) {
