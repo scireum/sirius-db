@@ -15,7 +15,7 @@ import sirius.db.mixing.Entity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Schema;
 import sirius.db.mixing.SmartQuery;
-import sirius.kernel.commons.Tuple;
+import sirius.db.mixing.TranslationState;
 import sirius.kernel.di.std.Part;
 
 import java.util.List;
@@ -89,32 +89,39 @@ public class Exists extends Constraint {
 
     @Override
     public void appendSQL(SmartQuery.Compiler compiler) {
+        // Determines the target descriptor and a new alias
         EntityDescriptor ed = schema.getDescriptor(other);
         String newAlias = compiler.generateTableAlias();
-        if (not) {
-            compiler.getWHEREBuilder().append("NOT ");
-        }
-        compiler.getWHEREBuilder()
-                .append("EXISTS(SELECT * FROM ")
-                .append(ed.getTableName())
-                .append(" ")
-                .append(newAlias)
-                .append(" WHERE ")
-                .append(compiler.translateColumnName(outerColumn))
-                .append(" = ");
-        Tuple<String, EntityDescriptor> oldAlias = compiler.getDefaultAlias();
-        try {
-            compiler.setDefaultAlias(newAlias, ed);
-            compiler.getWHEREBuilder().append(compiler.translateColumnName(innerColumn));
-            for (Constraint c : constraints) {
-                if (c.addsConstraint()) {
-                    compiler.getWHEREBuilder().append(" AND ");
-                    c.appendSQL(compiler);
-                }
+
+        // Creates a backup of the current WHERE string builder
+        StringBuilder originalWHEREBuilder = compiler.getWHEREBuilder();
+        compiler.setWHEREBuilder(new StringBuilder());
+
+        // Applies the main constraint and switches the underlying JOIN state just in time.
+        compiler.getWHEREBuilder().append(" WHERE ").append(compiler.translateColumnName(outerColumn)).append(" = ");
+        TranslationState state = compiler.captureAndReplaceTranslationState(newAlias, ed);
+        compiler.getWHEREBuilder().append(compiler.translateColumnName(innerColumn));
+
+        // Applies additional constraints...
+        for (Constraint c : constraints) {
+            if (c.addsConstraint()) {
+                compiler.getWHEREBuilder().append(" AND ");
+                c.appendSQL(compiler);
             }
-        } finally {
-            compiler.setDefaultAlias(oldAlias.getFirst(), oldAlias.getSecond());
         }
-        compiler.getWHEREBuilder().append(")");
+
+        // Generates the effective EXISTS constraint, restores the original WHERE builder
+        // and appends the EXISTS to it...
+        StringBuilder existsBuilder = new StringBuilder();
+        if (not) {
+            existsBuilder.append("NOT ");
+        }
+        existsBuilder.append("EXISTS(SELECT * FROM ").append(ed.getTableName()).append(" ").append(newAlias);
+        existsBuilder.append(compiler.getJoins());
+
+        compiler.restoreTranslationState(state);
+        StringBuilder existsWHEREBuilder = compiler.getWHEREBuilder();
+        compiler.setWHEREBuilder(originalWHEREBuilder);
+        compiler.getWHEREBuilder().append(existsBuilder).append(existsWHEREBuilder).append(")");
     }
 }
