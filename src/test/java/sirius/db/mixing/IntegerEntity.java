@@ -10,16 +10,16 @@ package sirius.db.mixing;
 
 import sirius.db.mixing.annotations.DefaultValue;
 
-public class LongEntity extends Entity {
+public class IntegerEntity extends Entity{
 
     @DefaultValue("100")
-    private long longValue;
+    private Integer intValue;
 
-    public long getLongValue() {
-        return longValue;
+    public Integer getIntValue() {
+        return intValue;
     }
 
-    public void setLongValue(long longValue) {
-        this.longValue = longValue;
+    public void setIntValue(Integer intValue) {
+        this.intValue = intValue;
     }
 }

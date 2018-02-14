@@ -9,12 +9,12 @@
 package sirius.db.mixing
 
 import sirius.kernel.BaseSpecification
-import sirius.kernel.di.std.Part
 import sirius.kernel.commons.Value
+import sirius.kernel.di.std.Part
+
 import java.time.Duration
 
-class LongPropertySpec extends BaseSpecification {
-
+class IntegerPropertySpec extends BaseSpecification{
     @Part
     private static OMA oma
 
@@ -24,28 +24,28 @@ class LongPropertySpec extends BaseSpecification {
 
     def "reading and writing long works"() {
         given:
-        LongEntity test = new LongEntity()
+        IntegerEntity test = new IntegerEntity()
         when:
-        test.setLongValue(Long.MAX_VALUE)
+        test.setIntValue(Integer.MAX_VALUE)
         and:
         oma.update(test)
         and:
         test = oma.refreshOrFail(test)
         then:
-        test.getLongValue() == Long.MAX_VALUE
+        test.getIntValue() == Integer.MAX_VALUE
     }
 
     def "default values work"() {
         given:
-        LongEntity test = new LongEntity()
-        Property longValue = test.getDescriptor().getProperty("longValue")
+        IntegerEntity test = new IntegerEntity()
+        Property intValue = test.getDescriptor().getProperty("intValue")
         when:
-        longValue.parseValue(test, Value.of(null))
+        intValue.parseValue(test, Value.of(null))
         and:
         oma.update(test)
         and:
         test = oma.refreshOrFail(test)
         then:
-        test.getLongValue() == 100L
+        test.getIntValue() == 100
     }
 }
