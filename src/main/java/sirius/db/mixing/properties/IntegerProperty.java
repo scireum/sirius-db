@@ -12,6 +12,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -51,7 +52,11 @@ public class IntegerProperty extends Property {
     @Override
     public Object transformValue(Value value) {
         if (!value.isFilled()) {
-            return null;
+            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+                return null;
+            } else {
+                return Value.of(defaultValue).getInteger();
+            }
         } else {
             Integer result = value.getInteger();
             if (result == null) {
