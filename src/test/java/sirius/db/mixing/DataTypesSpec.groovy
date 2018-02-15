@@ -36,7 +36,7 @@ class DataTypesSpec extends BaseSpecification {
         test.getLongValue() == Long.MAX_VALUE
     }
 
-    def "default values work"() {
+    def "default values work when using parseValue()"() {
         given:
         DataTypesEntity test = new DataTypesEntity()
         Property longValue = test.getDescriptor().getProperty("longValue")
@@ -57,6 +57,28 @@ class DataTypesSpec extends BaseSpecification {
         localDateValue.parseValue(test, Value.of(null))
         enumValue.parseValue(test, Value.of(null))
         and:
+        oma.update(test)
+        and:
+        test = oma.refreshOrFail(test)
+        then:
+        test.getAmountValue() == Amount.of(300)
+        test.getLongValue() == 100L
+        test.getIntValue() == 200
+        test.getStringValue() == "test"
+        test.getBoolValue()
+        test.getLocalTimeValue().getHour() == 10
+        test.getLocalTimeValue().getMinute() == 15
+        test.getLocalTimeValue().getSecond() == 30
+        test.getLocalDateValue().getYear() == 2018
+        test.getLocalDateValue().getMonth().getValue() == 1
+        test.getLocalDateValue().getDayOfMonth() == 1
+        test.getTestEnum() == DataTypesEntity.TestEnum.Test2
+    }
+
+    def "default values work"(){
+        given:
+        DataTypesEntity test = new DataTypesEntity()
+        when:
         oma.update(test)
         and:
         test = oma.refreshOrFail(test)

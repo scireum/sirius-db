@@ -24,10 +24,12 @@ public class DataTypesEntity extends Entity {
     }
 
     @DefaultValue("100")
-    private long longValue;
+    @NullAllowed
+    private Long longValue;
 
     @DefaultValue("200")
-    private int intValue;
+    @NullAllowed
+    private Integer intValue;
 
     @DefaultValue("test")
     @Length(255)
@@ -54,6 +56,8 @@ public class DataTypesEntity extends Entity {
     @DefaultValue("Test2")
     @NullAllowed
     private TestEnum enumValue;
+
+    private int intValue2 = 5;
 
     public long getLongValue() {
         return longValue;
