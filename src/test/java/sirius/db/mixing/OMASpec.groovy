@@ -119,6 +119,8 @@ class OMASpec extends BaseSpecification {
         then:
         e.isAnyColumnChanged()
         when:
+        oma.update(e)
+        and:
         e.as(TestMixin.class).setMiddleName("JayJay")
         then:
         e.isAnyColumnChanged()
