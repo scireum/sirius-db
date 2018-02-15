@@ -101,4 +101,27 @@ class OMASpec extends BaseSpecification {
         test == oma.resolveOrFail(test.getUniqueName())
     }
 
+    def "anyColumnChanged works"() {
+        given:
+        TestEntityWithMixin e = new TestEntityWithMixin()
+        e.setFirstname("Homer")
+        e.setLastname("Simpson")
+        e.as(TestMixin.class).setMiddleName("Jay")
+        e.as(TestMixin.class).as(TestMixinMixin.class).setInitial("J")
+        expect:
+        e.isAnyColumnChanged()
+        when:
+        oma.update(e)
+        then:
+        !e.isAnyColumnChanged()
+        when:
+        e.setLastname("SimpsonSimpson")
+        then:
+        e.isAnyColumnChanged()
+        when:
+        e.as(TestMixin.class).setMiddleName("JayJay")
+        then:
+        e.isAnyColumnChanged()
+    }
+
 }

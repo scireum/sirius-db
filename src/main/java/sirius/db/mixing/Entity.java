@@ -270,6 +270,15 @@ public abstract class Entity extends Mixable {
         return false;
     }
 
+    /**
+     * Checks whether any {@link Column} of the current {@link Entity} changed.
+     *
+     * @return <tt>true</tt> if at least one column was changed, <tt>false</tt> otherwise.
+     */
+    public boolean isAnyColumnChanged() {
+        return getDescriptor().getProperties().stream().anyMatch(property -> getDescriptor().isChanged(this, property));
+    }
+
     @Override
     public String toString() {
         if (isNew()) {
