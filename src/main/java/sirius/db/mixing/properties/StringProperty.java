@@ -106,7 +106,15 @@ public class StringProperty extends Property {
 
     @Override
     public Object transformValue(Value value) {
-        return value.isEmptyString() ? null : value.asString();
+        if (value.isFilled()) {
+            return value.asString();
+        } else {
+            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+                return null;
+            } else {
+                return defaultValue;
+            }
+        }
     }
 
     @Override

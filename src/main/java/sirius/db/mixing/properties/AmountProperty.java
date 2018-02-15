@@ -15,6 +15,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -72,10 +73,14 @@ public class AmountProperty extends Property {
 
     @Override
     public Object transformValue(Value value) {
-        if (!value.isFilled()) {
-            return Amount.NOTHING;
-        } else {
+        if (value.isFilled()) {
             return NLS.parseUserString(Amount.class, value.asString());
+        } else {
+            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+                return Amount.NOTHING;
+            } else {
+                return Value.of(defaultValue).getAmount();
+            }
         }
     }
 

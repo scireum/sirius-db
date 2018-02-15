@@ -51,18 +51,18 @@ public class IntegerProperty extends Property {
 
     @Override
     public Object transformValue(Value value) {
-        if (!value.isFilled()) {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return null;
-            } else {
-                return Value.of(defaultValue).getInteger();
-            }
-        } else {
+        if (value.isFilled()) {
             Integer result = value.getInteger();
             if (result == null) {
                 throw illegalFieldValue(value);
             }
             return result;
+        } else {
+            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+                return null;
+            } else {
+                return Value.of(defaultValue).getInteger();
+            }
         }
     }
 

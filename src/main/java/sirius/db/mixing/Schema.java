@@ -173,6 +173,9 @@ public class Schema implements Initializable {
                 executed++;
                 action.execute(getDatabase());
                 if (action.isFailed()) {
+                    OMA.LOG.WARN("Failed schema change action -  reason: %s - error: %s",
+                                 action.getReason(),
+                                 action.getError());
                     failed++;
                 }
             } else {

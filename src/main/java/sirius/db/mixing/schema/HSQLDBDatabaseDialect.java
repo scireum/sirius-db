@@ -101,7 +101,26 @@ public class HSQLDBDatabaseDialect extends BasicDatabaseDialect {
         if (col.getDefaultValue() == null) {
             return "";
         }
-        return "DEFAULT " + col.getDefaultValue();
+
+        if (isNeedsQuotation(col)) {
+            return "DEFAULT '" + col.getDefaultValue() + "'";
+        } else {
+            return "DEFAULT " + col.getDefaultValue();
+        }
+    }
+
+    private boolean isNeedsQuotation(TableColumn col) {
+        return col.getType() != Types.BIGINT
+               && col.getType() != Types.DECIMAL
+               && col.getType() != Types.CLOB
+               && col.getType() != Types.INTEGER
+               && col.getType() != Types.TINYINT
+               && col.getType() != Types.BOOLEAN
+               && col.getType() != Types.DOUBLE
+               && col.getType() != Types.FLOAT
+               && col.getType() != Types.SMALLINT
+               && col.getType() != Types.BLOB
+               && col.getType() != Types.NUMERIC;
     }
 
     private boolean areTypesEqual(int type, int other) {

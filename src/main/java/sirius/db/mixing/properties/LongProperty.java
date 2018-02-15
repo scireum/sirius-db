@@ -51,18 +51,18 @@ public class LongProperty extends Property {
 
     @Override
     public Object transformValue(Value value) {
-        if (!value.isFilled()) {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return null;
-            } else {
-                return Value.of(defaultValue).getLong();
-            }
-        } else {
+        if (value.isFilled()) {
             Long result = value.getLong();
             if (result == null) {
                 throw illegalFieldValue(value);
             }
             return result;
+        } else {
+            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+                return null;
+            } else {
+                return Value.of(defaultValue).getLong();
+            }
         }
     }
 
