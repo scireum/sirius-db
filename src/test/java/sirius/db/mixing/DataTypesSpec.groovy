@@ -46,6 +46,7 @@ class DataTypesSpec extends BaseSpecification {
         Property boolValue = test.getDescriptor().getProperty("boolValue")
         Property localTimeValue = test.getDescriptor().getProperty("localTimeValue")
         Property localDateValue = test.getDescriptor().getProperty("localDateValue")
+        Property enumValue = test.getDescriptor().getProperty("enumValue")
         when:
         longValue.parseValue(test, Value.of(null))
         intValue.parseValue(test, Value.of(null))
@@ -54,6 +55,7 @@ class DataTypesSpec extends BaseSpecification {
         boolValue.parseValue(test, Value.of(null))
         localTimeValue.parseValue(test, Value.of(null))
         localDateValue.parseValue(test, Value.of(null))
+        enumValue.parseValue(test, Value.of(null))
         and:
         oma.update(test)
         and:
@@ -70,5 +72,6 @@ class DataTypesSpec extends BaseSpecification {
         test.getLocalDateValue().getYear() == 2018
         test.getLocalDateValue().getMonth().getValue() == 1
         test.getLocalDateValue().getDayOfMonth() == 1
+        test.getTestEnum() == DataTypesEntity.TestEnum.Test2
     }
 }

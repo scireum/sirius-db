@@ -19,6 +19,10 @@ import java.time.LocalTime;
 
 public class DataTypesEntity extends Entity {
 
+    public enum TestEnum {
+        Test1, Test2
+    }
+
     @DefaultValue("100")
     private long longValue;
 
@@ -46,6 +50,10 @@ public class DataTypesEntity extends Entity {
     @DefaultValue("true")
     @NullAllowed
     private Boolean boolValue;
+
+    @DefaultValue("Test2")
+    @NullAllowed
+    private TestEnum enumValue;
 
     public long getLongValue() {
         return longValue;
@@ -101,5 +109,13 @@ public class DataTypesEntity extends Entity {
 
     public void setLocalTimeValue(LocalTime localTimeValue) {
         this.localTimeValue = localTimeValue;
+    }
+
+    public TestEnum getTestEnum() {
+        return enumValue;
+    }
+
+    public void setTestEnum(TestEnum enumValue) {
+        this.enumValue = enumValue;
     }
 }
