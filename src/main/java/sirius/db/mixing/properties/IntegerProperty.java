@@ -57,13 +57,11 @@ public class IntegerProperty extends Property {
                 throw illegalFieldValue(value);
             }
             return result;
-        } else {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return null;
-            } else {
-                return Value.of(defaultValue).getInteger();
-            }
         }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return null;
+        }
+        return Value.of(defaultValue).getInteger();
     }
 
     @Override

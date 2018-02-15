@@ -57,13 +57,11 @@ public class LongProperty extends Property {
                 throw illegalFieldValue(value);
             }
             return result;
-        } else {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return null;
-            } else {
-                return Value.of(defaultValue).getLong();
-            }
         }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return null;
+        }
+        return Value.of(defaultValue).getLong();
     }
 
     @Override

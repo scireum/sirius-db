@@ -8,7 +8,6 @@
 
 package sirius.db.mixing.properties;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;

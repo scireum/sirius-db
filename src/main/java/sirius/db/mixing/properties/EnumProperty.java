@@ -58,13 +58,11 @@ public class EnumProperty extends Property {
     public Object transformValue(Value value) {
         if (value.isFilled()) {
             return value.asEnum((Class<Enum>) field.getType());
-        } else {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return null;
-            } else {
-                return Value.of(defaultValue).asEnum((Class<Enum>) field.getType());
-            }
         }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return null;
+        }
+        return Value.of(defaultValue).asEnum((Class<Enum>) field.getType());
     }
 
     @Override

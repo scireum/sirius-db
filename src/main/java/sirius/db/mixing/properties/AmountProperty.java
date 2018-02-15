@@ -75,13 +75,11 @@ public class AmountProperty extends Property {
     public Object transformValue(Value value) {
         if (value.isFilled()) {
             return NLS.parseUserString(Amount.class, value.asString());
-        } else {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return Amount.NOTHING;
-            } else {
-                return Value.of(defaultValue).getAmount();
-            }
         }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return Amount.NOTHING;
+        }
+        return Value.of(defaultValue).getAmount();
     }
 
     @Override

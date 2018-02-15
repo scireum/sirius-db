@@ -108,13 +108,11 @@ public class StringProperty extends Property {
     public Object transformValue(Value value) {
         if (value.isFilled()) {
             return value.asString();
-        } else {
-            if (this.isNullable() || Strings.isEmpty(defaultValue)) {
-                return null;
-            } else {
-                return defaultValue;
-            }
         }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return null;
+        }
+        return defaultValue;
     }
 
     @Override
