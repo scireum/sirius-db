@@ -13,6 +13,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Ordinal;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -55,7 +56,13 @@ public class EnumProperty extends Property {
     @SuppressWarnings({"unchecked", "raw", "rawtypes"})
     @Override
     public Object transformValue(Value value) {
-        return value.asEnum((Class<Enum>) field.getType());
+        if (value.isFilled()) {
+            return value.asEnum((Class<Enum>) field.getType());
+        }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return null;
+        }
+        return Value.of(defaultValue).asEnum((Class<Enum>) field.getType());
     }
 
     @Override

@@ -12,6 +12,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -50,15 +51,17 @@ public class LongProperty extends Property {
 
     @Override
     public Object transformValue(Value value) {
-        if (!value.isFilled()) {
-            return null;
-        } else {
+        if (value.isFilled()) {
             Long result = value.getLong();
             if (result == null) {
                 throw illegalFieldValue(value);
             }
             return result;
         }
+        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+            return null;
+        }
+        return Value.of(defaultValue).getLong();
     }
 
     @Override

@@ -131,7 +131,26 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
         if (col.getDefaultValue() == null) {
             return "";
         }
-        return "DEFAULT '" + col.getDefaultValue() + "'";
+
+        if (isNeedsQuotation(col)) {
+            return "DEFAULT '" + col.getDefaultValue() + "'";
+        } else {
+            return "DEFAULT " + col.getDefaultValue();
+        }
+    }
+
+    private boolean isNeedsQuotation(TableColumn col) {
+        return col.getType() != Types.BIGINT
+               && col.getType() != Types.DECIMAL
+               && col.getType() != Types.CLOB
+               && col.getType() != Types.INTEGER
+               && col.getType() != Types.TINYINT
+               && col.getType() != Types.BOOLEAN
+               && col.getType() != Types.DOUBLE
+               && col.getType() != Types.FLOAT
+               && col.getType() != Types.SMALLINT
+               && col.getType() != Types.BLOB
+               && col.getType() != Types.NUMERIC;
     }
 
     private boolean areTypesEqual(int type, int other) {
@@ -269,12 +288,15 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
                                                key.getName(),
                                                String.join(", ", key.getColumns())));
             } else {
-                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n", key.getName(),  String.join(", ", key.getColumns())));
+                sb.append(MessageFormat.format("   KEY `{0}` ({1}),\n",
+                                               key.getName(),
+                                               String.join(", ", key.getColumns())));
             }
         }
         // We rely on the sync tool, to generate the constraints in the next run. Otherwise table with cross-references
         // cannot be created. Therefore only the PK is generated....
-        sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB",  String.join(", ", table.getPrimaryKey())));
+        sb.append(MessageFormat.format(" PRIMARY KEY ({0})\n) ENGINE=InnoDB",
+                                       String.join(", ", table.getPrimaryKey())));
         return sb.toString();
     }
 
