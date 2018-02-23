@@ -9,6 +9,7 @@
 package sirius.db.mongo;
 
 import com.mongodb.DBObject;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
@@ -82,6 +83,33 @@ public class Document {
     @SuppressWarnings("unchecked")
     public List<String> getStringList(String field) {
         return (List<String>) (Object) getList(field);
+    }
+
+    /**
+     * Returns the object stored for the given field.
+     * <p>
+     * If there is no object present or the given field doesn't contain an object, an empty readonly instance is returned.
+     *
+     * @param field the field to read
+     * @return the object stored for the field
+     */
+    public DBObject getObject(String field) {
+        return get(field).get(DBObject.class, ReadonlyObject.EMPTY_OBJECT);
+    }
+
+    /**
+     * Returns the inner value stored in the object in the given field.
+     *
+     * @param field the field to read the object from
+     * @param key   the key to read from the object
+     * @return the value within the inner object wrapped as {@link Value}
+     */
+    public Value getValueInObject(String field, String key) {
+        if (Strings.isEmpty(key)) {
+            return Value.EMPTY;
+        }
+
+        return Value.of(getObject(field).get(key));
     }
 
     /**
