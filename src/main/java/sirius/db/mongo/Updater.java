@@ -21,6 +21,7 @@ import sirius.kernel.health.Microtiming;
 public class Updater extends QueryBuilder<Updater> {
 
     private BasicDBObject setObject;
+    private BasicDBObject unsetObject;
     private BasicDBObject incObject;
     private BasicDBObject addToSetObject;
     private BasicDBObject pullAllObject;
@@ -68,6 +69,21 @@ public class Updater extends QueryBuilder<Updater> {
             setObject = new BasicDBObject();
         }
         setObject.put(field, transformValue(value));
+
+        return this;
+    }
+
+    /**
+     * Unsets a field.
+     *
+     * @param field the field to remove
+     * @return the builder itself for fluent method calls
+     */
+    public Updater unset(String field) {
+        if (unsetObject == null) {
+            unsetObject = new BasicDBObject();
+        }
+        unsetObject.put(field, "");
 
         return this;
     }
@@ -172,6 +188,9 @@ public class Updater extends QueryBuilder<Updater> {
         BasicDBObject updateObject = new BasicDBObject();
         if (setObject != null) {
             updateObject.put("$set", setObject);
+        }
+        if (unsetObject != null) {
+            updateObject.put("$unset", unsetObject);
         }
         if (incObject != null) {
             updateObject.put("$inc", incObject);
