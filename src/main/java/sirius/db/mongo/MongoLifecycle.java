@@ -13,7 +13,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 
 /**
- * Starts and stops the elasticsearch client.
+ * Starts and stops the {@link Mongo} client.
  */
 @Register(classes = Lifecycle.class)
 public class MongoLifecycle implements Lifecycle {
