@@ -94,6 +94,11 @@ public class Mongo {
         }
 
         if (dbName.contains("${timestamp}")) {
+            if (!Sirius.isStartedAsTest()) {
+                throw Exceptions.handle()
+                                .withSystemErrorMessage("${timestamp} in mongo.db is only allowed in test environment!")
+                                .handle();
+            }
             temporaryDB = true;
             dbName = dbName.replace("${timestamp}", String.valueOf(System.currentTimeMillis()));
             LOG.INFO("Using unique db name: %s", dbName);
