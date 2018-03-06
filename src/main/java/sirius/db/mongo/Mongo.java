@@ -12,6 +12,7 @@ import com.google.common.collect.Maps;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
+import sirius.kernel.Sirius;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -50,6 +51,7 @@ public class Mongo {
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
 
+    protected boolean temporaryDB;
     protected volatile boolean tracing;
     protected volatile int traceLimit;
     protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
@@ -91,6 +93,12 @@ public class Mongo {
                                                  .collect(Collectors.toList()));
         }
 
+        if (dbName.contains("${timestamp}")) {
+            temporaryDB = true;
+            dbName = dbName.replace("${timestamp}", String.valueOf(System.currentTimeMillis()));
+            LOG.INFO("Using unique db name: %s", dbName);
+        }
+
         createIndices(mongoClient.getDB(dbName));
     }
 
@@ -109,6 +117,24 @@ public class Mongo {
                                                   idx.getClass().getName())
                           .handle();
             }
+        }
+    }
+
+    /**
+     * Deletes the temporary DB (used by UNIT tests).
+     */
+    protected void dropTemporaryDB() {
+        if (Sirius.isStartedAsTest() && temporaryDB && mongoClient != null) {
+            this.db().dropDatabase();
+        }
+    }
+
+    /**
+     * Closes the connection
+     */
+    protected void close() {
+        if (mongoClient != null) {
+            mongoClient.close();
         }
     }
 
