@@ -8,6 +8,7 @@
 
 package sirius.db.mongo;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -94,7 +95,12 @@ public class Document {
      * @return the object stored for the field
      */
     public DBObject getObject(String field) {
-        return get(field).get(DBObject.class, ReadonlyObject.EMPTY_OBJECT);
+        Object result = get(field).get();
+        if (result instanceof BasicDBObject) {
+            return (DBObject) result;
+        }
+
+        return ReadonlyObject.EMPTY_OBJECT;
     }
 
     /**
