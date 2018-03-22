@@ -10,6 +10,7 @@ package sirius.db.redis
 
 import sirius.kernel.BaseSpecification
 import sirius.kernel.cache.Cache
+import sirius.kernel.cache.CacheEntry
 import sirius.kernel.cache.ValueComputer
 import sirius.kernel.cache.ValueVerifier
 import sirius.kernel.commons.Callback
@@ -117,6 +118,22 @@ class RedisCacheSpec extends BaseSpecification {
         !cache.contains("key2-a")
     }
 
+    def "test getContents"() {
+        when:
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+        cache.put("key3", "value3")
+        List<CacheEntry<String, String>> entries = cache.getContents()
+        then:
+        entries.size() == 3
+        entries.get(0).getKey() == "key1"
+        entries.get(0).getValue() == "value1"
+        entries.get(1).getKey() == "key2"
+        entries.get(1).getValue() == "value2"
+        entries.get(2).getKey() == "key3"
+        entries.get(2).getValue() == "value3"
+    }
+
     def "test hitrate"() {
         when:
         cache.put("key1", "value")
@@ -181,7 +198,7 @@ class RedisCacheSpec extends BaseSpecification {
     def "test onRemove-Callback is called after remove"() {
         given:
         Monoflop onRemoveCalled = Monoflop.create()
-        cache.onRemove({tuple -> onRemoveCalled.toggle()} as Callback)
+        cache.onRemove({ tuple -> onRemoveCalled.toggle() } as Callback)
         when:
         cache.put("key", "value")
         then:
@@ -195,7 +212,7 @@ class RedisCacheSpec extends BaseSpecification {
     def "test onRemove-Callback is called with right values"() {
         given:
         ValueHolder<Tuple<String, String>> resultTuple = new ValueHolder()
-        cache.onRemove({tuple -> resultTuple.set(tuple)} as Callback)
+        cache.onRemove({ tuple -> resultTuple.set(tuple) } as Callback)
         when:
         cache.put("key", "value")
         cache.remove("key")

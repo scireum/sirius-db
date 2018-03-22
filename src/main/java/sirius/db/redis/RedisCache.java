@@ -252,7 +252,7 @@ public class RedisCache implements Cache<String, String> {
     public List<CacheEntry<String, String>> getContents() {
         List<CacheEntry<String, String>> cacheEntries = new ArrayList<>();
         redis.query(() -> "Get all from " + getCacheName(), jedis -> jedis.hgetAll(getCacheName()))
-             .forEach((key, value) -> cacheEntries.add(new CacheEntry<>(key, value, 0, 0)));
+             .forEach((key, value) -> cacheEntries.add(getEntryFromJSON(value)));
         return cacheEntries;
     }
 
