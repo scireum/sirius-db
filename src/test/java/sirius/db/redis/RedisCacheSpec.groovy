@@ -260,4 +260,23 @@ class RedisCacheSpec extends BaseSpecification {
         cache.get("key") == "value"
         verifierCalled.isToggled() == true
     }
+
+    def "test runEviction"() {
+        when:
+        cache.put("key1", "value1")
+        cache.put("key2", "value2")
+        Wait.seconds(6)
+        cache.put("key3", "value3")
+        cache.put("key4", "value4")
+        then:
+        cache.getSize() == 4
+        cache.runEviction()
+        cache.getSize() == 2
+        def entries = cache.getContents()
+        entries.size() == 2
+        entries.get(0).getKey() == "key3"
+        entries.get(0).getValue() == "value3"
+        entries.get(1).getKey() == "key4"
+        entries.get(1).getValue() == "value4"
+    }
 }

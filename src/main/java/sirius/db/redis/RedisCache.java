@@ -55,11 +55,12 @@ public class RedisCache implements Cache<String, String> {
     private final long timeToLive;
     private final Integer maxSize;
 
-    protected Counter hits = new Counter();
-    protected Counter misses = new Counter();
-    protected List<Long> usesHistory = new ArrayList<>(MAX_HISTORY);
-    protected List<Long> hitRateHistory = new ArrayList<>(MAX_HISTORY);
+    private Counter hits = new Counter();
+    private Counter misses = new Counter();
+    private List<Long> usesHistory = new ArrayList<>(MAX_HISTORY);
+    private List<Long> hitRateHistory = new ArrayList<>(MAX_HISTORY);
     private Callback<Tuple<String, String>> removeListener;
+    private Date lastEvictionRun;
 
     public RedisCache(String name, ValueComputer<String, String> valueComputer, ValueVerifier<String> verifier) {
         this.name = name;
@@ -119,7 +120,7 @@ public class RedisCache implements Cache<String, String> {
 
     @Override
     public Date getLastEvictionRun() {
-        return null;
+        return lastEvictionRun;
     }
 
     @Override
@@ -221,6 +222,10 @@ public class RedisCache implements Cache<String, String> {
         }
 
         redis.exec(() -> "Removing from cache " + getCacheName(), jedis -> jedis.hdel(getCacheName(), key));
+
+        if (removeListener == null) {
+            return;
+        }
         try {
             removeListener.invoke(Tuple.create(currentValue.getKey(), currentValue.getValue()));
         } catch (Exception e) {
@@ -278,6 +283,21 @@ public class RedisCache implements Cache<String, String> {
 
     @Override
     public void runEviction() {
+        if (timeToLive <= 0) {
+            return;
+        }
 
+        lastEvictionRun = new Date();
+        long now = System.currentTimeMillis();
+        int numEvicted = 0;
+        for (CacheEntry<String, String> entry : getContents()) {
+            if (entry.getMaxAge() < now) {
+                remove(entry.getKey());
+                numEvicted++;
+            }
+        }
+        if (numEvicted > 0 && CacheManager.LOG.isFINE()) {
+            CacheManager.LOG.FINE("Evicted %d entries from %s", numEvicted, name);
+        }
     }
 }
