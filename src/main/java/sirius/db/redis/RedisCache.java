@@ -8,9 +8,13 @@
 
 package sirius.db.redis;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.primitives.Ints;
+import sirius.kernel.Sirius;
 import sirius.kernel.cache.Cache;
 import sirius.kernel.cache.CacheEntry;
+import sirius.kernel.cache.CacheManager;
 import sirius.kernel.cache.ValueComputer;
 import sirius.kernel.cache.ValueVerifier;
 import sirius.kernel.commons.Callback;
@@ -18,6 +22,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Counter;
+import sirius.kernel.settings.Extension;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,12 +38,21 @@ public class RedisCache implements Cache<String, String> {
     protected static final int MAX_HISTORY = 25;
     private static final double ONE_HUNDERT_PERCENT = 100d;
 
+    private static final String EXTENSION_TYPE_CACHE = "cache";
+    private static final String CONFIG_KEY_MAX_SIZE = "maxSize";
+    private static final String CONFIG_KEY_TTL = "ttl";
+    private static final String CONFIG_KEY_VERIFICATION = "verification";
+
     @Part
     private static Redis redis;
 
     private String name;
     private ValueComputer<String, String> valueComputer;
     private ValueVerifier<String> verifier;
+
+    private final long verificationInterval;
+    private final long timeToLive;
+    private final Integer maxSize;
 
     protected Counter hits = new Counter();
     protected Counter misses = new Counter();
@@ -49,6 +63,14 @@ public class RedisCache implements Cache<String, String> {
         this.name = name;
         this.valueComputer = valueComputer;
         this.verifier = verifier;
+
+        Extension cacheInfo = Sirius.getSettings().getExtension(EXTENSION_TYPE_CACHE, name);
+        if (cacheInfo.isDefault()) {
+            CacheManager.LOG.WARN("Cache %s does not exist! Using defaults...", name);
+        }
+        this.verificationInterval = cacheInfo.getMilliseconds(CONFIG_KEY_VERIFICATION);
+        this.timeToLive = cacheInfo.getMilliseconds(CONFIG_KEY_TTL);
+        this.maxSize = cacheInfo.get(CONFIG_KEY_MAX_SIZE).getInteger();
     }
 
     @Override
@@ -114,23 +136,79 @@ public class RedisCache implements Cache<String, String> {
     @Nullable
     @Override
     public String get(@Nonnull String key, @Nullable ValueComputer<String, String> computer) {
-        String result =
-                redis.query(() -> "Getting from cache " + getCacheName(), jedis -> jedis.hget(getCacheName(), key));
-        if (Strings.isEmpty(result)) {
+        CacheEntry<String, String> entry = getEntryFromJSON(getStringFromRedis(key));
+
+        if (entry != null) {
+            entry = verifyEntry(entry);
+        }
+
+        if (entry == null) {
             if (computer != null) {
-                result = computer.compute(key);
-                put(key, result);
+                long now = System.currentTimeMillis();
+                entry = new CacheEntry<>(key, computer.compute(key), now + timeToLive, now + verificationInterval);
+                put(key, entry);
             }
             misses.inc();
         } else {
             hits.inc();
         }
-        return result;
+
+        if (entry != null) {
+            return entry.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    private String getStringFromRedis(@Nonnull String key) {
+        return redis.query(() -> "Getting from cache " + getCacheName(), jedis -> jedis.hget(getCacheName(), key));
+    }
+
+    private CacheEntry<String, String> verifyEntry(CacheEntry<String, String> entry) {
+        long now = System.currentTimeMillis();
+
+        // Verify age of entry
+        if (entry.getMaxAge() > 0 && entry.getMaxAge() < now) {
+            remove(entry.getKey());
+            return null;
+        }
+
+        // Apply verifier if present
+        if (verifier != null && verificationInterval > 0 && entry.getNextVerification() < now) {
+            if (!verifier.valid(entry.getValue())) {
+                remove(entry.getKey());
+                return null;
+            }
+        }
+        return entry;
+    }
+
+    private CacheEntry<String, String> getEntryFromJSON(String result) {
+        if (Strings.isEmpty(result)) {
+            return null;
+        }
+        JSONObject parseObject = JSON.parseObject(result);
+        long created = parseObject.getLong("created");
+        long used = parseObject.getLong("used");
+        String key = parseObject.getString("key");
+        String value = parseObject.getString("value");
+        long maxAge = parseObject.getLong("maxAge");
+        long nextVerification = parseObject.getLong("nextVerification");
+        CacheEntry<String, String> cacheEntry = new CacheEntry<>(key, value, maxAge, nextVerification);
+        cacheEntry.setCreated(created);
+        cacheEntry.setUsed(used);
+        return cacheEntry;
     }
 
     @Override
     public void put(@Nonnull String key, @Nullable String value) {
-        redis.exec(() -> "Putting in cache " + getCacheName(), jedis -> jedis.hset(getCacheName(), key, value));
+        long now = System.currentTimeMillis();
+        put(key, new CacheEntry<>(key, value, now + timeToLive, now + verificationInterval));
+    }
+
+    private void put(@Nonnull String key, @Nullable CacheEntry<String, String> value) {
+        String newEntryJSON = JSON.toJSONString(value);
+        redis.exec(() -> "Putting in cache " + getCacheName(), jedis -> jedis.hset(getCacheName(), key, newEntryJSON));
     }
 
     @Override

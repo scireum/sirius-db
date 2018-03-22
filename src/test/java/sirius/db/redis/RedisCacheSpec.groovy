@@ -11,6 +11,9 @@ package sirius.db.redis
 import sirius.kernel.BaseSpecification
 import sirius.kernel.cache.Cache
 import sirius.kernel.cache.ValueComputer
+import sirius.kernel.cache.ValueVerifier
+import sirius.kernel.commons.Monoflop
+import sirius.kernel.commons.Wait
 
 import java.util.function.Predicate
 
@@ -127,7 +130,7 @@ class RedisCacheSpec extends BaseSpecification {
         hitrate == 0
     }
 
-    def "test hitrate history"(){
+    def "test hitrate history"() {
         when:
         cache.put("key1", "value")
         cache.get("key1")
@@ -145,7 +148,7 @@ class RedisCacheSpec extends BaseSpecification {
         cache.getHitRateHistory().get(1) == 33
     }
 
-    def "tets getUses"(){
+    def "tets getUses"() {
         when:
         cache.put("key1", "value")
         cache.get("key1")
@@ -154,7 +157,7 @@ class RedisCacheSpec extends BaseSpecification {
         cache.getUses() == 2
     }
 
-    def "test getUses history"(){
+    def "test getUses history"() {
         when:
         cache.put("key1", "value")
         cache.get("key1")
@@ -170,5 +173,45 @@ class RedisCacheSpec extends BaseSpecification {
         cache.getUseHistory().size() == 2
         cache.getUseHistory().get(0) == 2
         cache.getUseHistory().get(1) == 3
+    }
+
+    def "test evict afer ttl is reached"() {
+        when:
+        cache.put("key", "value")
+        then:
+        cache.get("key") == "value"
+        and:
+        Wait.seconds(6)
+        cache.get("key") == null
+    }
+
+    def "test call verify when it is time, remove value if verifier returns false"() {
+        given:
+        Monoflop verifierCalled = Monoflop.create()
+        cache = new RedisCache("test-cache", null, { value -> verifierCalled.toggle() } as ValueVerifier)
+        when:
+        cache.put("key", "value")
+        cache.get("key")
+        then:
+        verifierCalled.isToggled() == false
+        and:
+        Wait.seconds(3)
+        cache.get("key") == null
+        verifierCalled.isToggled() == true
+    }
+
+    def "test call verify when it is time, keep value if verifier returns true"() {
+        given:
+        Monoflop verifierCalled = Monoflop.create()
+        cache = new RedisCache("test-cache", null, { value -> !verifierCalled.toggle() } as ValueVerifier)
+        when:
+        cache.put("key", "value")
+        cache.get("key")
+        then:
+        verifierCalled.isToggled() == false
+        and:
+        Wait.seconds(3)
+        cache.get("key") == "value"
+        verifierCalled.isToggled() == true
     }
 }
