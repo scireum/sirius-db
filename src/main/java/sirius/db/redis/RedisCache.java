@@ -22,6 +22,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Counter;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.settings.Extension;
 
 import javax.annotation.Nonnull;
@@ -58,6 +59,7 @@ public class RedisCache implements Cache<String, String> {
     protected Counter misses = new Counter();
     protected List<Long> usesHistory = new ArrayList<>(MAX_HISTORY);
     protected List<Long> hitRateHistory = new ArrayList<>(MAX_HISTORY);
+    private Callback<Tuple<String, String>> removeListener;
 
     public RedisCache(String name, ValueComputer<String, String> valueComputer, ValueVerifier<String> verifier) {
         this.name = name;
@@ -213,7 +215,17 @@ public class RedisCache implements Cache<String, String> {
 
     @Override
     public void remove(@Nonnull String key) {
+        CacheEntry<String, String> currentValue = getEntryFromJSON(getStringFromRedis(key));
+        if (currentValue == null) {
+            return;
+        }
+
         redis.exec(() -> "Removing from cache " + getCacheName(), jedis -> jedis.hdel(getCacheName(), key));
+        try {
+            removeListener.invoke(Tuple.create(currentValue.getKey(), currentValue.getValue()));
+        } catch (Exception e) {
+            Exceptions.handle(e);
+        }
     }
 
     @Override
@@ -246,7 +258,8 @@ public class RedisCache implements Cache<String, String> {
 
     @Override
     public Cache<String, String> onRemove(Callback<Tuple<String, String>> onRemoveCallback) {
-        return null;
+        removeListener = onRemoveCallback;
+        return this;
     }
 
     @Override

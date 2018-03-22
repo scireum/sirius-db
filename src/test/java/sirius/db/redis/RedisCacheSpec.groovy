@@ -12,7 +12,10 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.cache.Cache
 import sirius.kernel.cache.ValueComputer
 import sirius.kernel.cache.ValueVerifier
+import sirius.kernel.commons.Callback
 import sirius.kernel.commons.Monoflop
+import sirius.kernel.commons.Tuple
+import sirius.kernel.commons.ValueHolder
 import sirius.kernel.commons.Wait
 
 import java.util.function.Predicate
@@ -173,6 +176,32 @@ class RedisCacheSpec extends BaseSpecification {
         cache.getUseHistory().size() == 2
         cache.getUseHistory().get(0) == 2
         cache.getUseHistory().get(1) == 3
+    }
+
+    def "test onRemove-Callback is called after remove"() {
+        given:
+        Monoflop onRemoveCalled = Monoflop.create()
+        cache.onRemove({tuple -> onRemoveCalled.toggle()} as Callback)
+        when:
+        cache.put("key", "value")
+        then:
+        onRemoveCalled.isToggled() == false
+        cache.remove("not-existing-key")
+        onRemoveCalled.isToggled() == false
+        cache.remove("key")
+        onRemoveCalled.isToggled() == true
+    }
+
+    def "test onRemove-Callback is called with right values"() {
+        given:
+        ValueHolder<Tuple<String, String>> resultTuple = new ValueHolder()
+        cache.onRemove({tuple -> resultTuple.set(tuple)} as Callback)
+        when:
+        cache.put("key", "value")
+        cache.remove("key")
+        then:
+        resultTuple.get().getFirst() == "key"
+        resultTuple.get().getSecond() == "value"
     }
 
     def "test evict afer ttl is reached"() {
