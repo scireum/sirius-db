@@ -103,11 +103,72 @@ class RedisCacheSpec extends BaseSpecification {
         cache.put("key1-a", "value")
         cache.put("key2-a", "value")
         cache.put("key3-b", "value")
-        cache.removeIf({entry -> entry.getKey().contains("a")} as Predicate)
+        cache.removeIf({ entry -> entry.getKey().contains("a") } as Predicate)
         then:
         cache.getSize() == 1
         cache.contains("key3-b")
         !cache.contains("key1-a")
         !cache.contains("key2-a")
+    }
+
+    def "test hitrate"() {
+        when:
+        cache.put("key1", "value")
+        cache.get("key1")
+        cache.get("key2")
+        then:
+        cache.getHitRate() == 50
+    }
+
+    def "test hitrate returns 0 if no call was made"() {
+        when:
+        def hitrate = cache.getHitRate()
+        then:
+        hitrate == 0
+    }
+
+    def "test hitrate history"(){
+        when:
+        cache.put("key1", "value")
+        cache.get("key1")
+        cache.get("key2")
+        cache.updateStatistics()
+        cache.get("key1")
+        cache.get("key2")
+        cache.get("key2")
+        cache.updateStatistics()
+        then:
+        cache.getHitRate() == 0
+        and:
+        cache.getHitRateHistory().size() == 2
+        cache.getHitRateHistory().get(0) == 50
+        cache.getHitRateHistory().get(1) == 33
+    }
+
+    def "tets getUses"(){
+        when:
+        cache.put("key1", "value")
+        cache.get("key1")
+        cache.get("key2")
+        then:
+        cache.getUses() == 2
+    }
+
+    def "test getUses history"(){
+        when:
+        cache.put("key1", "value")
+        cache.get("key1")
+        cache.get("key2")
+        cache.updateStatistics()
+        cache.get("key1")
+        cache.get("key2")
+        cache.get("key2")
+        cache.updateStatistics()
+        then:
+        cache.getUses() == 0
+        and:
+        cache.getUseHistory().size() == 2
+        cache.getUseHistory().get(0) == 2
+        cache.getUseHistory().get(1) == 3
     }
 }

@@ -17,6 +17,7 @@ import sirius.kernel.commons.Callback;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Counter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -29,6 +30,8 @@ import java.util.function.Predicate;
 public class RedisCache implements Cache<String, String> {
 
     private static final String CACHE_PREFIX = "cache-";
+    protected static final int MAX_HISTORY = 25;
+    private static final double ONE_HUNDERT_PERCENT = 100d;
 
     @Part
     private static Redis redis;
@@ -36,6 +39,11 @@ public class RedisCache implements Cache<String, String> {
     private String name;
     private ValueComputer<String, String> valueComputer;
     private ValueVerifier<String> verifier;
+
+    protected Counter hits = new Counter();
+    protected Counter misses = new Counter();
+    protected List<Long> usesHistory = new ArrayList<>(MAX_HISTORY);
+    protected List<Long> hitRateHistory = new ArrayList<>(MAX_HISTORY);
 
     public RedisCache(String name, ValueComputer<String, String> valueComputer, ValueVerifier<String> verifier) {
         this.name = name;
@@ -65,22 +73,24 @@ public class RedisCache implements Cache<String, String> {
 
     @Override
     public long getUses() {
-        return 0;
+        return hits.getCount() + misses.getCount();
     }
 
     @Override
     public List<Long> getUseHistory() {
-        return null;
+        return usesHistory;
     }
 
     @Override
     public Long getHitRate() {
-        return null;
+        long h = hits.getCount();
+        long m = misses.getCount();
+        return h + m == 0L ? 0L : Math.round(ONE_HUNDERT_PERCENT * h / (h + m));
     }
 
     @Override
     public List<Long> getHitRateHistory() {
-        return null;
+        return hitRateHistory;
     }
 
     @Override
@@ -91,6 +101,8 @@ public class RedisCache implements Cache<String, String> {
     @Override
     public void clear() {
         redis.exec(() -> "Clearing " + getCacheName(), jedis -> jedis.del(getCacheName()));
+        hits.reset();
+        misses.reset();
     }
 
     @Nullable
@@ -104,9 +116,14 @@ public class RedisCache implements Cache<String, String> {
     public String get(@Nonnull String key, @Nullable ValueComputer<String, String> computer) {
         String result =
                 redis.query(() -> "Getting from cache " + getCacheName(), jedis -> jedis.hget(getCacheName(), key));
-        if (Strings.isEmpty(result) && computer != null) {
-            result = computer.compute(key);
-            put(key, result);
+        if (Strings.isEmpty(result)) {
+            if (computer != null) {
+                result = computer.compute(key);
+                put(key, result);
+            }
+            misses.inc();
+        } else {
+            hits.inc();
         }
         return result;
     }
@@ -156,7 +173,16 @@ public class RedisCache implements Cache<String, String> {
 
     @Override
     public void updateStatistics() {
-
+        usesHistory.add(getUses());
+        if (usesHistory.size() > MAX_HISTORY) {
+            usesHistory.remove(0);
+        }
+        hitRateHistory.add(getHitRate());
+        if (hitRateHistory.size() > MAX_HISTORY) {
+            hitRateHistory.remove(0);
+        }
+        hits.reset();
+        misses.reset();
     }
 
     @Override
