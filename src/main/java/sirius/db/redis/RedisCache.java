@@ -33,6 +33,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * A distributed {@link Cache} backed by Redis. Cached data is the same across nodes for distributed applications.
+ */
 public class RedisCache implements Cache<String, String> {
 
     private static final String CACHE_PREFIX = "cache-";
