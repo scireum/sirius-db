@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.redis;
+package sirius.db.redis.cache;
 
 /**
  * For testing the saving of complex values in RedisCache.

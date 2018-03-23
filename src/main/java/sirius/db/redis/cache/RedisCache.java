@@ -6,11 +6,12 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.redis;
+package sirius.db.redis.cache;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.primitives.Ints;
+import sirius.db.redis.Redis;
 import sirius.kernel.Sirius;
 import sirius.kernel.cache.Cache;
 import sirius.kernel.cache.CacheEntry;

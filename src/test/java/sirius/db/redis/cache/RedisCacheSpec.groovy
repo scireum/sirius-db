@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.redis
+package sirius.db.redis.cache
 
 import sirius.kernel.BaseSpecification
 import sirius.kernel.cache.CacheEntry
