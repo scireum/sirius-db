@@ -17,6 +17,7 @@ import sirius.kernel.cache.CacheEntry;
 import sirius.kernel.cache.CacheManager;
 import sirius.kernel.cache.ValueComputer;
 import sirius.kernel.cache.ValueVerifier;
+import sirius.kernel.cache.distributed.ValueParser;
 import sirius.kernel.commons.Callback;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -36,7 +37,7 @@ import java.util.function.Predicate;
 /**
  * A distributed {@link Cache} backed by Redis. Cached data is the same across nodes for distributed applications.
  */
-public class RedisCache implements Cache<String, String> {
+public class RedisCache<V> implements Cache<String, V> {
 
     private static final String CACHE_PREFIX = "cache-";
     private static final int MAX_HISTORY = 25;
@@ -50,25 +51,30 @@ public class RedisCache implements Cache<String, String> {
     @Part
     private static Redis redis;
 
-    private String name;
-    private ValueComputer<String, String> valueComputer;
-    private ValueVerifier<String> verifier;
+    private final String name;
+    private final ValueComputer<String, V> valueComputer;
+    private final ValueVerifier<V> verifier;
+    private final ValueParser<V> valueParser;
 
     private final long verificationInterval;
     private final long timeToLive;
     private final Integer maxSize;
 
-    private Counter hits = new Counter();
-    private Counter misses = new Counter();
-    private List<Long> usesHistory = new ArrayList<>(MAX_HISTORY);
-    private List<Long> hitRateHistory = new ArrayList<>(MAX_HISTORY);
-    private Callback<Tuple<String, String>> removeListener;
+    private final Counter hits = new Counter();
+    private final Counter misses = new Counter();
+    private final List<Long> usesHistory = new ArrayList<>(MAX_HISTORY);
+    private final List<Long> hitRateHistory = new ArrayList<>(MAX_HISTORY);
+    private Callback<Tuple<String, V>> removeListener;
     private Date lastEvictionRun;
 
-    public RedisCache(String name, ValueComputer<String, String> valueComputer, ValueVerifier<String> verifier) {
+    public RedisCache(@Nonnull String name,
+                      @Nullable ValueComputer<String, V> valueComputer,
+                      @Nullable ValueVerifier<V> verifier,
+                      @Nonnull ValueParser<V> valueParser) {
         this.name = name;
         this.valueComputer = valueComputer;
         this.verifier = verifier;
+        this.valueParser = valueParser;
 
         Extension cacheInfo = Sirius.getSettings().getExtension(EXTENSION_TYPE_CACHE, name);
         if (cacheInfo.isDefault()) {
@@ -135,14 +141,14 @@ public class RedisCache implements Cache<String, String> {
 
     @Nullable
     @Override
-    public String get(@Nonnull String key) {
+    public V get(@Nonnull String key) {
         return get(key, valueComputer);
     }
 
     @Nullable
     @Override
-    public String get(@Nonnull String key, @Nullable ValueComputer<String, String> computer) {
-        CacheEntry<String, String> entry = getEntryFromJSON(getStringFromRedis(key));
+    public V get(@Nonnull String key, @Nullable ValueComputer<String, V> computer) {
+        CacheEntry<String, V> entry = getEntryFromJSON(getStringFromRedis(key));
 
         if (entry != null) {
             entry = verifyEntry(entry);
@@ -150,9 +156,7 @@ public class RedisCache implements Cache<String, String> {
 
         if (entry == null) {
             if (computer != null) {
-                long now = System.currentTimeMillis();
-                entry = new CacheEntry<>(key, computer.compute(key), now + timeToLive, now + verificationInterval);
-                put(key, entry);
+                entry = putAndCreateEntry(key, computer.compute(key));
             }
             misses.inc();
         } else {
@@ -170,7 +174,7 @@ public class RedisCache implements Cache<String, String> {
         return redis.query(() -> "Getting from cache " + getCacheName(), jedis -> jedis.hget(getCacheName(), key));
     }
 
-    private CacheEntry<String, String> verifyEntry(CacheEntry<String, String> entry) {
+    private CacheEntry<String, V> verifyEntry(CacheEntry<String, V> entry) {
         long now = System.currentTimeMillis();
 
         // Verify age of entry
@@ -189,7 +193,7 @@ public class RedisCache implements Cache<String, String> {
         return entry;
     }
 
-    private CacheEntry<String, String> getEntryFromJSON(String result) {
+    private CacheEntry<String, V> getEntryFromJSON(String result) {
         if (Strings.isEmpty(result)) {
             return null;
         }
@@ -197,29 +201,34 @@ public class RedisCache implements Cache<String, String> {
         long created = parseObject.getLong("created");
         long used = parseObject.getLong("used");
         String key = parseObject.getString("key");
-        String value = parseObject.getString("value");
+        V value = valueParser.toObject(parseObject.getString("value"));
         long maxAge = parseObject.getLong("maxAge");
         long nextVerification = parseObject.getLong("nextVerification");
-        CacheEntry<String, String> cacheEntry = new CacheEntry<>(key, value, maxAge, nextVerification);
+        CacheEntry<String, V> cacheEntry = new CacheEntry<>(key, value, maxAge, nextVerification);
         cacheEntry.setCreated(created);
         cacheEntry.setUsed(used);
         return cacheEntry;
     }
 
     @Override
-    public void put(@Nonnull String key, @Nullable String value) {
-        long now = System.currentTimeMillis();
-        put(key, new CacheEntry<>(key, value, now + timeToLive, now + verificationInterval));
+    public void put(@Nonnull String key, @Nullable V value) {
+        putAndCreateEntry(key, value);
     }
 
-    private void put(@Nonnull String key, @Nullable CacheEntry<String, String> value) {
-        String newEntryJSON = JSON.toJSONString(value);
+    private CacheEntry<String, V> putAndCreateEntry(@Nonnull String key, @Nullable V value) {
+        long now = System.currentTimeMillis();
+
+        CacheEntry<String, String> entryForRedis =
+                new CacheEntry<>(key, valueParser.toJSON(value), now + timeToLive, now + verificationInterval);
+        String newEntryJSON = JSON.toJSONString(entryForRedis);
         redis.exec(() -> "Putting in cache " + getCacheName(), jedis -> jedis.hset(getCacheName(), key, newEntryJSON));
+
+        return new CacheEntry<>(key, value, now + timeToLive, now + verificationInterval);
     }
 
     @Override
     public void remove(@Nonnull String key) {
-        CacheEntry<String, String> currentValue = getEntryFromJSON(getStringFromRedis(key));
+        CacheEntry<String, V> currentValue = getEntryFromJSON(getStringFromRedis(key));
         if (currentValue == null) {
             return;
         }
@@ -237,8 +246,8 @@ public class RedisCache implements Cache<String, String> {
     }
 
     @Override
-    public void removeIf(@Nonnull Predicate<CacheEntry<String, String>> predicate) {
-        for (CacheEntry<String, String> entry : getContents()) {
+    public void removeIf(@Nonnull Predicate<CacheEntry<String, V>> predicate) {
+        for (CacheEntry<String, V> entry : getContents()) {
             if (predicate.test(entry)) {
                 remove(entry.getKey());
             }
@@ -257,15 +266,15 @@ public class RedisCache implements Cache<String, String> {
     }
 
     @Override
-    public List<CacheEntry<String, String>> getContents() {
-        List<CacheEntry<String, String>> cacheEntries = new ArrayList<>();
+    public List<CacheEntry<String, V>> getContents() {
+        List<CacheEntry<String, V>> cacheEntries = new ArrayList<>();
         redis.query(() -> "Get all from " + getCacheName(), jedis -> jedis.hgetAll(getCacheName()))
              .forEach((key, value) -> cacheEntries.add(getEntryFromJSON(value)));
         return cacheEntries;
     }
 
     @Override
-    public Cache<String, String> onRemove(Callback<Tuple<String, String>> onRemoveCallback) {
+    public Cache<String, V> onRemove(Callback<Tuple<String, V>> onRemoveCallback) {
         removeListener = onRemoveCallback;
         return this;
     }
@@ -293,7 +302,7 @@ public class RedisCache implements Cache<String, String> {
         lastEvictionRun = new Date();
         long now = System.currentTimeMillis();
         int numEvicted = 0;
-        for (CacheEntry<String, String> entry : getContents()) {
+        for (CacheEntry<String, V> entry : getContents()) {
             if (entry.getMaxAge() < now) {
                 remove(entry.getKey());
                 numEvicted++;

@@ -9,10 +9,10 @@
 package sirius.db.redis
 
 import sirius.kernel.BaseSpecification
-import sirius.kernel.cache.Cache
 import sirius.kernel.cache.CacheEntry
 import sirius.kernel.cache.ValueComputer
 import sirius.kernel.cache.ValueVerifier
+import sirius.kernel.cache.distributed.DefaultValueParser
 import sirius.kernel.commons.Callback
 import sirius.kernel.commons.Monoflop
 import sirius.kernel.commons.Tuple
@@ -24,10 +24,10 @@ import java.util.function.Predicate
 class RedisCacheSpec extends BaseSpecification {
 
     // object under test
-    Cache<String, String> cache
+    def cache
 
     def setup() {
-        cache = new RedisCache("test-cache", null, null)
+        cache = new RedisCache<String>("test-cache", null, null, new DefaultValueParser(String.class))
     }
 
     def cleanup() {
@@ -221,6 +221,19 @@ class RedisCacheSpec extends BaseSpecification {
         resultTuple.get().getSecond() == "value"
     }
 
+    def "test save and get other datatype then strings"() {
+        given:
+        cache = new RedisCache<RedisCacheTestValue>("test-cache", null, null, new DefaultValueParser(RedisCacheTestValue.class))
+        def testPut = new RedisCacheTestValue("test-string", 815, true)
+        when:
+        cache.put("test-object", testPut)
+        def result = cache.get("test-object")
+        then:
+        result.getField1() == "test-string"
+        result.getField2() == 815
+        result.isField3() == true
+    }
+
     def "test evict afer ttl is reached"() {
         when:
         cache.put("key", "value")
@@ -234,7 +247,7 @@ class RedisCacheSpec extends BaseSpecification {
     def "test call verify when it is time, remove value if verifier returns false"() {
         given:
         Monoflop verifierCalled = Monoflop.create()
-        cache = new RedisCache("test-cache", null, { value -> verifierCalled.toggle() } as ValueVerifier)
+        cache = new RedisCache("test-cache", null, { value -> verifierCalled.toggle() } as ValueVerifier, new DefaultValueParser(String.class))
         when:
         cache.put("key", "value")
         cache.get("key")
@@ -249,7 +262,7 @@ class RedisCacheSpec extends BaseSpecification {
     def "test call verify when it is time, keep value if verifier returns true"() {
         given:
         Monoflop verifierCalled = Monoflop.create()
-        cache = new RedisCache("test-cache", null, { value -> !verifierCalled.toggle() } as ValueVerifier)
+        cache = new RedisCache("test-cache", null, { value -> !verifierCalled.toggle() } as ValueVerifier, new DefaultValueParser(String.class))
         when:
         cache.put("key", "value")
         cache.get("key")
