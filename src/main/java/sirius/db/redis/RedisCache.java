@@ -36,7 +36,7 @@ import java.util.function.Predicate;
 public class RedisCache implements Cache<String, String> {
 
     private static final String CACHE_PREFIX = "cache-";
-    protected static final int MAX_HISTORY = 25;
+    private static final int MAX_HISTORY = 25;
     private static final double ONE_HUNDERT_PERCENT = 100d;
 
     private static final String EXTENSION_TYPE_CACHE = "cache";
