@@ -45,7 +45,6 @@ public class RedisCache<V> implements Cache<String, V> {
     private static final double ONE_HUNDERT_PERCENT = 100d;
 
     private static final String EXTENSION_TYPE_CACHE = "cache";
-    private static final String CONFIG_KEY_MAX_SIZE = "maxSize";
     private static final String CONFIG_KEY_TTL = "ttl";
     private static final String CONFIG_KEY_VERIFICATION = "verification";
 
@@ -59,7 +58,6 @@ public class RedisCache<V> implements Cache<String, V> {
 
     private final long verificationInterval;
     private final long timeToLive;
-    private final Integer maxSize;
 
     private final Counter hits = new Counter();
     private final Counter misses = new Counter();
@@ -83,7 +81,6 @@ public class RedisCache<V> implements Cache<String, V> {
         }
         this.verificationInterval = cacheInfo.getMilliseconds(CONFIG_KEY_VERIFICATION);
         this.timeToLive = cacheInfo.getMilliseconds(CONFIG_KEY_TTL);
-        this.maxSize = cacheInfo.get(CONFIG_KEY_MAX_SIZE).getInteger();
     }
 
     @Override
