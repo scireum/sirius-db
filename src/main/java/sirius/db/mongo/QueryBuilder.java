@@ -9,7 +9,7 @@
 package sirius.db.mongo;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
@@ -70,7 +70,11 @@ public abstract class QueryBuilder<S> {
     protected void traceIfRequired(String collection, Watch w) {
         if (mongo.tracing && w.elapsedMillis() >= mongo.traceLimit) {
             String location = determineLocation();
-            DBObject explanation = mongo.db().getCollection(collection).find(filterObject).explain();
+            Document explanation = mongo.db()
+                                        .getCollection(collection)
+                                        .find(filterObject)
+                                        .modifiers(new Document("$explain", true))
+                                        .first();
             mongo.traceData.put(location,
                                 Tuple.create(collection + ": " + filterObject.toString() + " [" + w.duration() + "]",
                                              explanation.toString()));

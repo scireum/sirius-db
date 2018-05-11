@@ -9,9 +9,9 @@
 package sirius.db.mongo;
 
 import com.google.common.collect.Maps;
-import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoDatabase;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -71,12 +71,12 @@ public class Mongo {
      *
      * @return an initialized client instance to access Mongo DB.
      */
-    public DB db() {
+    public MongoDatabase db() {
         if (mongoClient == null) {
             initializeClient();
         }
 
-        return mongoClient.getDB(dbName);
+        return mongoClient.getDatabase(dbName);
     }
 
     protected synchronized void initializeClient() {
@@ -104,10 +104,10 @@ public class Mongo {
             LOG.INFO("Using unique db name: %s", dbName);
         }
 
-        createIndices(mongoClient.getDB(dbName));
+        createIndices(mongoClient.getDatabase(dbName));
     }
 
-    private void createIndices(DB db) {
+    private void createIndices(MongoDatabase db) {
         for (IndexDescription idx : indexDescriptions) {
             Watch w = Watch.start();
             try {
@@ -130,7 +130,7 @@ public class Mongo {
      */
     protected void dropTemporaryDB() {
         if (Sirius.isStartedAsTest() && temporaryDB && mongoClient != null) {
-            this.db().dropDatabase();
+            this.db().drop();
         }
     }
 
