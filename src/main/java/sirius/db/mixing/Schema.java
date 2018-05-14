@@ -17,11 +17,14 @@ import sirius.db.mixing.schema.DatabaseDialect;
 import sirius.db.mixing.schema.SchemaTool;
 import sirius.db.mixing.schema.SchemaUpdateAction;
 import sirius.db.mixing.schema.Table;
+import sirius.kernel.Lifecycle;
+import sirius.kernel.Sirius;
 import sirius.kernel.async.Future;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
+import sirius.kernel.commons.Wait;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.std.ConfigValue;
@@ -31,6 +34,7 @@ import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,8 +47,8 @@ import java.util.Optional;
  * <p>
  * This does also generate/update the database schema.
  */
-@Register(classes = {Schema.class, Initializable.class})
-public class Schema implements Initializable {
+@Register(classes = {Schema.class, Lifecycle.class, Initializable.class})
+public class Schema implements Lifecycle, Initializable {
 
     private Map<Class<?>, EntityDescriptor> descriptorsByType = Maps.newHashMap();
     private Map<String, EntityDescriptor> descriptorsByName = Maps.newHashMap();
@@ -130,23 +134,6 @@ public class Schema implements Initializable {
      */
     public Collection<EntityDescriptor> getDesciptors() {
         return descriptorsByType.values();
-    }
-
-    @Override
-    public void initialize() throws Exception {
-        if (dbs.hasDatabase(database)) {
-            OMA.LOG.INFO("Mixing is starting up for database '%s'", database);
-            loadEntities();
-            linkSchema();
-
-            if (updateSchema) {
-                tasks.defaultExecutor().fork(this::updateSchemaAtStartup);
-            } else {
-                readyFuture.success();
-            }
-        } else {
-            OMA.LOG.INFO("Mixing is disabled as the database '%s' is not present in the configuration...", database);
-        }
     }
 
     /**
@@ -352,5 +339,74 @@ public class Schema implements Initializable {
                             .withSystemErrorMessage("Invalid entity id in unique object name: %s", uniqueName)
                             .handle();
         }
+    }
+
+    @Override
+    public int getPriority() {
+        return Tasks.LIFECYCLE_PRIORITY + 10;
+    }
+
+    @Override
+    public void started() {
+        if (dbs.hasDatabase(database)) {
+            OMA.LOG.INFO("Mixing is starting up for database '%s'", database);
+            loadEntities();
+            linkSchema();
+
+            waitForDatabaseToBecomeReady();
+
+            if (updateSchema) {
+                tasks.defaultExecutor().fork(this::updateSchemaAtStartup);
+            } else {
+                readyFuture.success();
+            }
+        } else {
+            OMA.LOG.INFO("Mixing is disabled as the database '%s' is not present in the configuration...", database);
+        }
+    }
+
+    /**
+     * When executing several scenarios via Docker, we observed, that especially MySQL isn't entirely ready,
+     * when then port 3306 is open. Therefore we try to establish a real connection (with up to 5 retries
+     * in a one second interval).
+     */
+    private void waitForDatabaseToBecomeReady() {
+        if (!Sirius.isStartedAsTest()) {
+            return;
+        }
+
+        int retries = 5;
+        int waitInSeconds = 1;
+        boolean connectionAvailable = false;
+        while (!connectionAvailable && retries-- > 0) {
+            try (Connection connection = db.getConnection()) {
+                connectionAvailable = true;
+            } catch (SQLException e) {
+                Exceptions.ignore(e);
+                Wait.seconds(waitInSeconds++);
+            }
+        }
+    }
+
+    @Override
+    public void stopped() {
+        // Nothing to stop...
+    }
+
+    @Override
+    public void awaitTermination() {
+        // Nothing to wait for...
+    }
+
+    @Override
+    public String getName() {
+        return "mixing-schema";
+    }
+
+    @Override
+    public void initialize() throws Exception {
+        readyFuture = new Future();
+        descriptorsByName.clear();
+        descriptorsByType.clear();
     }
 }

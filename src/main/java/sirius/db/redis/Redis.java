@@ -32,6 +32,7 @@ import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.health.Microtiming;
+import sirius.kernel.settings.PortMapper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,6 +60,8 @@ import java.util.stream.Collectors;
  */
 @Register(classes = {Redis.class, Lifecycle.class})
 public class Redis implements Lifecycle {
+
+    private static final String SERVICE_NAME = "redis";
 
     @Parts(Subscriber.class)
     private PartCollection<Subscriber> subscribers;
@@ -234,7 +237,7 @@ public class Redis implements Lifecycle {
             jedisPoolConfig.setMaxIdle(maxIdle);
             jedis = new JedisPool(jedisPoolConfig,
                                   host,
-                                  port,
+                                  PortMapper.mapPort(SERVICE_NAME, port),
                                   connectTimeout,
                                   Strings.isFilled(password) ? password : null,
                                   db,

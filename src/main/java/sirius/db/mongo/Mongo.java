@@ -23,6 +23,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
+import sirius.kernel.settings.PortMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,8 @@ import java.util.stream.Collectors;
 public class Mongo {
 
     public static final Log LOG = Log.get("mongo");
+    private static final String SERVICE_NAME = "mongo";
+    private static final int MONGO_PORT = 27017;
 
     private volatile MongoClient mongoClient;
 
@@ -85,12 +88,15 @@ public class Mongo {
         }
 
         if (dbHosts.isEmpty()) {
-            mongoClient = new MongoClient(dbHost);
+            mongoClient = new MongoClient(dbHost, PortMapper.mapPort(SERVICE_NAME, MONGO_PORT));
         } else {
-            mongoClient = new MongoClient(dbHosts.stream()
-                                                 .map(ServerAddress::new)
-                                                 .filter(Objects::nonNull)
-                                                 .collect(Collectors.toList()));
+            List<ServerAddress> hosts = dbHosts.stream()
+                                               .map(hostname -> new ServerAddress(hostname,
+                                                                                  PortMapper.mapPort(SERVICE_NAME,
+                                                                                                     MONGO_PORT)))
+                                               .filter(Objects::nonNull)
+                                               .collect(Collectors.toList());
+            mongoClient = new MongoClient(hosts);
         }
 
         if (dbName.contains("${timestamp}")) {
