@@ -201,7 +201,7 @@ class SmartQuerySpec extends BaseSpecification {
         when:
         def result = qry.queryList()
         then:
-        result.stream().map({ x -> x.getParent().getId() } as Function).collect(Collectors.toList()) == [0, 1]
+        result.stream().map({ x -> x.getParent().getId() } as Function).collect(Collectors.toList()) == [1, 2]
     }
 
     def "automatic joins work when referencing one table in two relations"() {
