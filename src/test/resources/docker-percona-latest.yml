@@ -1,0 +1,12 @@
+version: "2"
+
+services:
+  mysql:
+    image: percona:latest
+    ports:
+      - "3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    hostname: percona
+    volumes:
+      - ./docker/mysql:/docker-entrypoint-initdb.d/:ro

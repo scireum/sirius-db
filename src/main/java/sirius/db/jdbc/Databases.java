@@ -13,6 +13,7 @@ import sirius.db.mixing.Entity;
 import sirius.db.mixing.EntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.di.Initializable;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
@@ -46,8 +47,8 @@ import java.util.stream.Collectors;
  * Configuration is done via the system configuration. To declare a database provide an extension in
  * <tt>jdbc.database</tt>. For examples see "component-db.conf".
  */
-@Register(classes = Databases.class)
-public class Databases {
+@Register(classes = {Databases.class, Initializable.class})
+public class Databases implements Initializable {
 
     protected static final Log LOG = Log.get("db");
     protected static final Log SLOW_DB_LOG = Log.get("db-slow");
@@ -115,6 +116,11 @@ public class Databases {
             }
             return highestUtilization;
         }
+    }
+
+    @Override
+    public void initialize() throws Exception {
+        datasources.clear();
     }
 
     /**

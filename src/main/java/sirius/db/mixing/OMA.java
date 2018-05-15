@@ -184,6 +184,9 @@ public class OMA {
         } else if (keys.hasValue("GENERATED_KEY")) {
             // however MySQL reports "GENERATED_KEY"...
             entity.setId(keys.getValue("GENERATED_KEY").asLong(-1));
+        } else if (keys.hasValue("INSERT_ID")) {
+            // aaand MariaDB reports "INSERT_ID"...
+            entity.setId(keys.getValue("INSERT_ID").asLong(-1));
         }
     }
 
