@@ -25,14 +25,10 @@ class JDBCSpec extends BaseSpecification {
         when:
         def db = dbs.get("test")
         then:
-        db.createQuery("SELECT 1 FROM INFORMATION_SCHEMA.SYSTEM_USERS").queryList().size() == 1
-        and: "no connection is active"
-        db.getNumActive() == 0
-        and: "one connection resides in the pool"
-        db.getNumIdle() == 1
+        db.createQuery("SELECT 1").queryList().size() == 1
     }
 
-    def "create table for 'test_a' works on in-memory HSQLDB"() {
+    def "create table for 'test_a' works"() {
         given:
         def db = dbs.get("test")
         when: "a create statement is submitted"

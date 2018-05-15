@@ -17,6 +17,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.Formatter;
 import sirius.kernel.settings.Extension;
+import sirius.kernel.settings.PortMapper;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -29,6 +30,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -41,6 +43,7 @@ public class Database {
 
     private static final String KEY_DRIVER = "driver";
     private static final String KEY_URL = "url";
+    private static final String KEY_SERVICE = "service";
     private static final String KEY_USER = "user";
     private static final String KEY_PASSWORD = "password";
     private static final String KEY_INITIAL_SIZE = "initialSize";
@@ -48,6 +51,7 @@ public class Database {
     private static final String KEY_MAX_IDLE = "maxIdle";
     private static final String KEY_VALIDATION_QUERY = "validationQuery";
     protected final String name;
+    private final String service;
     private String driver;
     private String url;
     private String username;
@@ -60,6 +64,7 @@ public class Database {
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
     private static final Pattern SANE_COLUMN_NAME = Pattern.compile("[a-zA-Z0-9_]+");
+    private static final Pattern PORT_PATTERN = Pattern.compile(":(\\d+)");
 
     /*
      * Use the get(name) method to create a new object.
@@ -79,9 +84,13 @@ public class Database {
         this.driver = ext.get(KEY_DRIVER).isEmptyString() ?
                       Formatter.create(profile.get(KEY_DRIVER).asString()).set(ctx).format() :
                       ext.get(KEY_DRIVER).asString();
+        this.service = ext.get(KEY_SERVICE).isEmptyString() ?
+                       Formatter.create(profile.get(KEY_SERVICE).asString()).set(ctx).format() :
+                       ext.get(KEY_SERVICE).asString();
         this.url = ext.get(KEY_URL).isEmptyString() ?
                    Formatter.create(profile.get(KEY_URL).asString()).set(ctx).format() :
                    ext.get(KEY_URL).asString();
+        applyPortMapping();
         this.username = ext.get(KEY_USER).isEmptyString() ?
                         Formatter.create(profile.get(KEY_USER).asString()).set(ctx).format() :
                         ext.get(KEY_USER).asString();
@@ -100,6 +109,14 @@ public class Database {
                                Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).set(ctx).format() :
                                ext.get(KEY_VALIDATION_QUERY).asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
+    }
+
+    private void applyPortMapping() {
+        Matcher portMatcher = PORT_PATTERN.matcher(this.url);
+        if (portMatcher.find()) {
+            int effectivePort = PortMapper.mapPort(this.service, Integer.parseInt(portMatcher.group(1)));
+            this.url = portMatcher.replaceFirst(":" + effectivePort);
+        }
     }
 
     /**

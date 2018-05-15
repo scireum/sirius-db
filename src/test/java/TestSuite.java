@@ -7,23 +7,17 @@
  */
 
 import com.googlecode.junittoolbox.SuiteClasses;
-import com.googlecode.junittoolbox.WildcardPatternSuite;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import sirius.kernel.TestHelper;
+import sirius.kernel.Scenario;
+import sirius.kernel.ScenarioSuite;
 
-@RunWith(WildcardPatternSuite.class)
+@RunWith(ScenarioSuite.class)
 @SuiteClasses({"**/*Test.class", "**/*Spec.class"})
+@Scenario(file = "test-mariadb-latest.conf", filter = "sirius\\.db\\.(jdbc|mixing).*")
+@Scenario(file = "test-percona-latest.conf", filter = "sirius\\.db\\.(jdbc|mixing).*")
+@Scenario(file = "test-postgres-latest.conf", filter = "sirius\\.db\\.(jdbc).*")
+@Scenario(file = "test-redis-latest.conf", filter = "sirius\\.db\\.redis.*")
+@Scenario(file = "test-mongo-latest.conf", filter = "sirius\\.db\\.mongo.*")
 public class TestSuite {
 
-    @BeforeClass
-    public static void setUp() {
-        TestHelper.setUp(TestSuite.class);
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        TestHelper.tearDown(TestSuite.class);
-    }
 }
