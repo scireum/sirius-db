@@ -8,6 +8,7 @@
 
 package sirius.db.mongo;
 
+import org.bson.Document;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Part;
@@ -69,7 +70,7 @@ public class MongoCommand implements Command {
         output.blankLine();
         output.line("Mongo DB Statistics");
         output.separator();
-        output.line(mongo.db().getStats().toString());
+        output.line(mongo.db().runCommand(Document.parse("{ dbStats: 1, scale: 1 }")).toString());
     }
 
     @Override

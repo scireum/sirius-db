@@ -8,7 +8,7 @@
 
 package sirius.db.mongo;
 
-import com.mongodb.DB;
+import com.mongodb.client.MongoDatabase;
 
 /**
  * Used to setup indices in Mongo DB on system startup.
@@ -23,5 +23,5 @@ public interface IndexDescription {
      *
      * @param client can be used to create indices in the Mongo DB
      */
-    void createIndices(DB client);
+    void createIndices(MongoDatabase client);
 }

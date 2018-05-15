@@ -9,7 +9,7 @@
 package sirius.db.mongo;
 
 import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
+import org.bson.Document;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Microtiming;
 
@@ -18,7 +18,7 @@ import sirius.kernel.health.Microtiming;
  */
 public class Inserter {
 
-    private BasicDBObject obj = new BasicDBObject();
+    private Document obj = new Document();
     private Mongo mongo;
 
     protected Inserter(Mongo mongo) {
@@ -59,13 +59,13 @@ public class Inserter {
      * @param collection the collection to insert the document into
      * @return the inserted document
      */
-    public Document into(String collection) {
+    public Doc into(String collection) {
         Watch w = Watch.start();
-        mongo.db().getCollection(collection).insert(obj);
+        mongo.db().getCollection(collection).insertOne(obj);
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {
             w.submitMicroTiming("mongo", "INSERT - " + collection + ": " + obj);
         }
-        return new Document(obj);
+        return new Doc(obj);
     }
 }

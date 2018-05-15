@@ -8,28 +8,82 @@
 
 package sirius.db.mongo;
 
-import com.mongodb.DBObject;
-import org.bson.BSONObject;
+import org.bson.Document;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-class ReadonlyObject implements DBObject {
+class ReadonlyObject extends Document {
 
-    static DBObject EMPTY_OBJECT = new ReadonlyObject();
+    static Document EMPTY_OBJECT = new ReadonlyObject();
 
     private ReadonlyObject() {
 
     }
 
     @Override
-    public Object put(String s, Object o) {
+    public Document append(String key, Object value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void putAll(BSONObject bsonObject) {
+    public void clear() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void replaceAll(BiFunction<? super String, ? super Object, ?> function) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Nullable
+    @Override
+    public Object putIfAbsent(String key, Object value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean remove(Object key, Object value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean replace(String key, Object oldValue, Object newValue) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Nullable
+    @Override
+    public Object replace(String key, Object value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object computeIfAbsent(String key, Function<? super String, ?> mappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object computeIfPresent(String key, BiFunction<? super String, ? super Object, ?> remappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object compute(String key, BiFunction<? super String, ? super Object, ?> remappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object merge(String key, Object value, BiFunction<? super Object, ? super Object, ?> remappingFunction) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object put(String s, Object o) {
         throw new UnsupportedOperationException();
     }
 
@@ -40,43 +94,7 @@ class ReadonlyObject implements DBObject {
     }
 
     @Override
-    public Object get(String s) {
-        return null;
-    }
-
-    @Override
-    @SuppressWarnings("rawtypes")
-    public Map toMap() {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public Object removeField(String s) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsKey(String s) {
-        return false;
-    }
-
-    @Override
-    public boolean containsField(String s) {
-        return false;
-    }
-
-    @Override
     public Set<String> keySet() {
         return Collections.emptySet();
-    }
-
-    @Override
-    public void markAsPartialObject() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isPartialObject() {
-        return false;
     }
 }

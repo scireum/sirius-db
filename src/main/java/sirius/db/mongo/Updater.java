@@ -10,7 +10,10 @@ package sirius.db.mongo;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.WriteResult;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
@@ -184,8 +187,40 @@ public class Updater extends QueryBuilder<Updater> {
      * @param collection the collection to update
      * @return the result of the update
      */
-    public WriteResult executeFor(String collection) {
-        BasicDBObject updateObject = new BasicDBObject();
+    public UpdateResult executeFor(String collection) {
+        Document updateObject = prepareUpdate(collection);
+
+        Watch w = Watch.start();
+        try {
+            if (many) {
+                if (upsert) {
+                    return mongo.db()
+                                .getCollection(collection)
+                                .updateMany(filterObject, updateObject, new UpdateOptions().upsert(upsert));
+                } else {
+                    return mongo.db().getCollection(collection).updateMany(filterObject, updateObject);
+                }
+            } else {
+                if (upsert) {
+                    return mongo.db()
+                                .getCollection(collection)
+                                .updateOne(filterObject, updateObject, new UpdateOptions().upsert(upsert));
+                } else {
+                    return mongo.db().getCollection(collection).updateOne(filterObject, updateObject);
+                }
+            }
+        } finally {
+            mongo.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming("mongo", "UPDATE - " + collection + ": " + filterObject);
+            }
+            traceIfRequired(collection, w);
+        }
+    }
+
+    @NotNull
+    protected Document prepareUpdate(String collection) {
+        Document updateObject = new Document();
         if (setObject != null) {
             updateObject.put("$set", setObject);
         }
@@ -207,20 +242,10 @@ public class Updater extends QueryBuilder<Updater> {
 
         if (updateObject.isEmpty()) {
             throw Exceptions.handle()
-                    .to(Mongo.LOG)
-                    .withSystemErrorMessage("Cannot execute an empty update on %s", collection)
-                    .handle();
+                            .to(Mongo.LOG)
+                            .withSystemErrorMessage("Cannot execute an empty update on %s", collection)
+                            .handle();
         }
-
-        Watch w = Watch.start();
-        try {
-            return mongo.db().getCollection(collection).update(filterObject, updateObject, upsert, many);
-        } finally {
-            mongo.callDuration.addValue(w.elapsedMillis());
-            if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("mongo", "UPDATE - " + collection + ": " + filterObject);
-            }
-            traceIfRequired(collection, w);
-        }
+        return updateObject;
     }
 }

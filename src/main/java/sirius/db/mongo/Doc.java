@@ -8,8 +8,7 @@
 
 package sirius.db.mongo;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 
@@ -20,16 +19,16 @@ import java.util.List;
 /**
  * A simple wrapper of a document in Mongo DB.
  */
-public class Document {
+public class Doc {
 
-    private DBObject obj;
+    private Document obj;
 
     /**
      * Wraps a result from Mongo DB
      *
      * @param obj the document or object to wrap
      */
-    public Document(DBObject obj) {
+    public Doc(Document obj) {
         this.obj = obj;
     }
 
@@ -94,10 +93,10 @@ public class Document {
      * @param field the field to read
      * @return the object stored for the field
      */
-    public DBObject getObject(String field) {
+    public Document getObject(String field) {
         Object result = get(field).get();
-        if (result instanceof BasicDBObject) {
-            return (DBObject) result;
+        if (result instanceof Document) {
+            return (Document) result;
         }
 
         return ReadonlyObject.EMPTY_OBJECT;
@@ -141,7 +140,7 @@ public class Document {
      *
      * @return the underlying object
      */
-    public DBObject getUnderlyingObject() {
+    public Document getUnderlyingObject() {
         return obj;
     }
 }
