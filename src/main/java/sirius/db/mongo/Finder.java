@@ -118,7 +118,17 @@ public class Finder extends QueryBuilder<Finder> {
     public Optional<Doc> singleIn(String collection) {
         Watch w = Watch.start();
         try {
-            Document obj = mongo.db().getCollection(collection).find(filterObject).first();
+            FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
+            if (fields != null) {
+                cur.projection(fields);
+            }
+            if (orderBy != null) {
+                cur.sort(orderBy);
+            }
+            cur.skip(skip);
+
+            Document obj = cur.first();
+
             if (obj == null) {
                 return Optional.empty();
             } else {

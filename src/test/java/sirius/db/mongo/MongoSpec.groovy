@@ -33,4 +33,16 @@ class MongoSpec extends BaseSpecification {
                 orElse(null) == testString
     }
 
+    def "sort works for singleIn"() {
+        when:
+        def result1 = mongo.insert().set("sortBy", 1).set("id", keyGen.generateId()).into("test")
+        def result2 = mongo.insert().set("sortBy", 3).set("id", keyGen.generateId()).into("test")
+        def result3 = mongo.insert().set("sortBy", 2).set("id", keyGen.generateId()).into("test")
+        then:
+        mongo.find()
+                .orderByDesc("sortBy")
+                .singleIn("test")
+                .map({ entity -> entity.getString("id") })
+                .orElse(null) == result2.getString("id")
+    }
 }
