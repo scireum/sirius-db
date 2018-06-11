@@ -22,16 +22,20 @@
     </description>
     <url>http://www.sirius-lib.net</url>
 
+    <properties>
+        <sirius.kernel>9.10</sirius.kernel>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.scireum</groupId>
             <artifactId>sirius-kernel</artifactId>
-            <version>9.5</version>
+            <version>${sirius.kernel}</version>
         </dependency>
         <dependency>
             <groupId>com.scireum</groupId>
             <artifactId>sirius-kernel</artifactId>
-            <version>9.5</version>
+            <version>${sirius.kernel}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
