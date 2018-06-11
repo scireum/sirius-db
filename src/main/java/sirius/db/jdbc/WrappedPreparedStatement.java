@@ -10,6 +10,7 @@ package sirius.db.jdbc;
 
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Watch;
 
 import java.io.InputStream;
@@ -304,6 +305,8 @@ class WrappedPreparedStatement implements PreparedStatement {
      */
     @Override
     @Deprecated
+    @SuppressWarnings("squid:S1133")
+    @Explain("We cannot change a Java core API")
     public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
         delegate.setUnicodeStream(parameterIndex, x, length);
     }
@@ -393,7 +396,23 @@ class WrappedPreparedStatement implements PreparedStatement {
 
     @Override
     public int[] executeBatch() throws SQLException {
-        return delegate.executeBatch();
+        Watch w = Watch.start();
+        try (Operation op = new Operation(() -> "executeBatch: " + preparedSQL, Duration.ofSeconds(30))) {
+            int[] result = delegate.executeBatch();
+            w.submitMicroTiming("BATCH-SQL", preparedSQL);
+            Databases.numQueries.inc();
+            Databases.queryDuration.addValue(w.elapsedMillis());
+            if (w.elapsedMillis() > Databases.getLongQueryThresholdMillis()) {
+                Databases.numSlowQueries.inc();
+                Databases.SLOW_DB_LOG.INFO("A slow batch query was executed (%s): %s (%s rows)\n%s",
+                                           w.duration(),
+                                           preparedSQL,
+                                           result.length,
+                                           ExecutionPoint.snapshot().toString());
+            }
+
+            return result;
+        }
     }
 
     @Override

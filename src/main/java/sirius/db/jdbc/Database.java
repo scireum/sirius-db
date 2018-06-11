@@ -21,6 +21,7 @@ import sirius.kernel.settings.PortMapper;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -43,6 +44,7 @@ public class Database {
 
     private static final String KEY_DRIVER = "driver";
     private static final String KEY_URL = "url";
+    private static final String KEY_HOST_URL = "hostUrl";
     private static final String KEY_SERVICE = "service";
     private static final String KEY_USER = "user";
     private static final String KEY_PASSWORD = "password";
@@ -54,6 +56,7 @@ public class Database {
     private final String service;
     private String driver;
     private String url;
+    private String hostUrl;
     private String username;
     private String password;
     private int initialSize;
@@ -90,6 +93,9 @@ public class Database {
         this.url = ext.get(KEY_URL).isEmptyString() ?
                    Formatter.create(profile.get(KEY_URL).asString()).set(ctx).format() :
                    ext.get(KEY_URL).asString();
+        this.hostUrl = ext.get(KEY_HOST_URL).isEmptyString() ?
+                       Formatter.create(profile.get(KEY_HOST_URL).asString()).set(ctx).format() :
+                       ext.get(KEY_HOST_URL).asString();
         applyPortMapping();
         this.username = ext.get(KEY_USER).isEmptyString() ?
                         Formatter.create(profile.get(KEY_USER).asString()).set(ctx).format() :
@@ -116,6 +122,12 @@ public class Database {
         if (portMatcher.find()) {
             int effectivePort = PortMapper.mapPort(this.service, Integer.parseInt(portMatcher.group(1)));
             this.url = portMatcher.replaceFirst(":" + effectivePort);
+        }
+
+        portMatcher = PORT_PATTERN.matcher(this.hostUrl);
+        if (portMatcher.find()) {
+            int effectivePort = PortMapper.mapPort(this.service, Integer.parseInt(portMatcher.group(1)));
+            this.hostUrl = portMatcher.replaceFirst(":" + effectivePort);
         }
     }
 
@@ -151,6 +163,22 @@ public class Database {
     public Connection getConnection() throws SQLException {
         try (Operation op = new Operation(() -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5))) {
             return new WrappedConnection(getDatasource().getConnection(), this);
+        }
+    }
+
+    public Connection getHostConnection() throws SQLException {
+        if (Strings.isEmpty(hostUrl)) {
+            return getConnection();
+        }
+
+        try (Operation op = new Operation(() -> "Database: " + name + ".getHostConnection()", Duration.ofSeconds(5))) {
+            try {
+                Class.forName(driver);
+            } catch (ClassNotFoundException e) {
+                Exceptions.handle(OMA.LOG, e);
+            }
+
+            return DriverManager.getConnection(hostUrl, username, password);
         }
     }
 
@@ -206,7 +234,9 @@ public class Database {
             List<Object> valueList = Lists.newArrayList();
             prepareValues(ctx, fields, values, valueList);
             String sql = "INSERT INTO " + table + " (" + fields + ") VALUES(" + values + ")";
-            try (PreparedStatement stmt = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement stmt = hasCapability(Capability.GENERATED_KEYS) ?
+                                          c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS) :
+                                          c.prepareStatement(sql)) {
                 fillValues(valueList, sql, stmt);
                 stmt.executeUpdate();
                 return SQLQuery.fetchGeneratedKeys(stmt);
@@ -350,12 +380,13 @@ public class Database {
      */
     public boolean hasCapability(Capability cap) {
         if (capabilities == null) {
-            if ("com.mysql.jdbc.Driver".equalsIgnoreCase(driver)) {
+            if ("com.mysql.jdbc.Driver".equalsIgnoreCase(driver)
+                || "org.mariadb.jdbc.Driver".equalsIgnoreCase(driver)) {
                 capabilities = Capability.MYSQL_CAPABILITIES;
-            } else if ("org.hsqldb.jdbc.JDBCDriver".equalsIgnoreCase(driver)) {
-                capabilities = Capability.HSQLDB_CAPABILITIES;
             } else if ("org.postgresql.Driver".equalsIgnoreCase(driver)) {
                 capabilities = Capability.POSTGRES_CAPABILITIES;
+            } else if ("ru.yandex.clickhouse.ClickHouseDriver".equalsIgnoreCase(driver)) {
+                capabilities = Capability.CLICKHOUSE_CAPABILITIES;
             } else {
                 capabilities = EnumSet.noneOf(Capability.class);
             }

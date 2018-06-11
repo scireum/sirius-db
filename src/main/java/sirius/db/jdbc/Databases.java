@@ -9,8 +9,6 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Maps;
-import sirius.db.mixing.Entity;
-import sirius.db.mixing.EntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.di.Initializable;
@@ -105,7 +103,7 @@ public class Databases implements Initializable {
                                              "Slow JDBC Queries",
                                              numSlowQueries.getCount(),
                                              "/min");
-                collector.metric("db-query-duration", "JDBC Query Duration", queryDuration.getAndClearAverage(), "ms");
+                collector.metric("db-query-duration", "JDBC Query Duration", queryDuration.getAndClear(), "ms");
             }
         }
 
@@ -277,11 +275,11 @@ public class Databases implements Initializable {
         if (value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         }
-        if (value instanceof EntityRef) {
-            return ((EntityRef<?>) value).getId();
+        if (value instanceof SQLEntityRef) {
+            return ((SQLEntityRef<?>) value).getId();
         }
-        if (value instanceof Entity) {
-            return ((Entity) value).getId();
+        if (value instanceof SQLEntity) {
+            return ((SQLEntity) value).getId();
         }
 
         return value;

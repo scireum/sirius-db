@@ -24,7 +24,7 @@ import java.time.Duration;
  */
 class WrappedStatement implements Statement {
 
-    private Statement stmt;
+    protected Statement stmt;
 
     WrappedStatement(Statement stmt) {
         super();

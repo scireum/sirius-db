@@ -158,7 +158,7 @@ class StatementCompiler {
             tempParams.add(addSQLWildcard(paramValue.toString().toLowerCase(), true));
         }
 
-        sqlBuilder.append(sql.substring(0, nextSubstitution.getFirst()));
+        sqlBuilder.append(sql, 0, nextSubstitution.getFirst());
 
         appendPlaceholdersToStatement(sqlBuilder, paramValue);
 

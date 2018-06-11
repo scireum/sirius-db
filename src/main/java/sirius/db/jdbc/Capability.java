@@ -36,21 +36,24 @@ public enum Capability {
      * case the best bet is to only use lower cased table names in the first place to avoid a lot of
      * trouble.
      */
-    LOWER_CASE_TABLE_NAMES;
+    LOWER_CASE_TABLE_NAMES,
+
+    GENERATED_KEYS;
 
     /**
      * Contains the capabilities of a MySQL database
      */
     public static final Set<Capability> MYSQL_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT));
-
-    /**
-     * Contains the capabilities of a HSQL database
-     */
-    public static final Set<Capability> HSQLDB_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT));
+            Collections.unmodifiableSet(EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT, GENERATED_KEYS));
 
     /**
      * Contains the capabilities of a Postgres database
      */
-    public static final Set<Capability> POSTGRES_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT));
+    public static final Set<Capability> POSTGRES_CAPABILITIES =
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS));
+
+    /**
+     * Contains the capabilities of a Clickhouse database
+     */
+    public static final Set<Capability> CLICKHOUSE_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT));
 }

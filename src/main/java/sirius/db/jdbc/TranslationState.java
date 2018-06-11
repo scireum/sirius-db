@@ -6,16 +6,17 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.jdbc;
 
+import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.commons.Tuple;
 
 import java.util.Map;
 
 /**
- * Keeps track of the internal JOIN and column translation state of a {@link sirius.db.mixing.SmartQuery.Compiler}.
+ * Keeps track of the internal JOIN and column translation state of a {@link SmartQuery.Compiler}.
  * <p>
- * This is mainly used by constraints which generate internal JOINS like {@link sirius.db.mixing.constraints.Exists}.
+ * This is mainly used by constraints which generate internal JOINS like {@link sirius.db.jdbc.constraints.Exists}.
  */
 public class TranslationState {
 
@@ -25,9 +26,9 @@ public class TranslationState {
     private final Map<String, Tuple<String, EntityDescriptor>> joinTable;
 
     protected TranslationState(EntityDescriptor ed,
-                            String defaultAlias,
-                            StringBuilder joins,
-                            Map<String, Tuple<String, EntityDescriptor>> joinTable) {
+                               String defaultAlias,
+                               StringBuilder joins,
+                               Map<String, Tuple<String, EntityDescriptor>> joinTable) {
 
         this.ed = ed;
         this.defaultAlias = defaultAlias;

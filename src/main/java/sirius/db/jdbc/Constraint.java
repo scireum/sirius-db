@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.jdbc;
 
 /**
  * Represents a constraint which can be added to the WHERE part of a SQL query.

@@ -6,21 +6,22 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import sirius.db.jdbc.Capability;
-import sirius.db.jdbc.Database;
-import sirius.db.jdbc.SQLQuery;
-import sirius.db.mixing.constraints.FieldOperator;
-import sirius.db.mixing.properties.EntityRefProperty;
+import sirius.db.jdbc.constraints.FieldOperator;
+import sirius.db.jdbc.properties.SQLEntityRefProperty;
+import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Query;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
+import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -42,19 +43,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
- * Provides a query DSL which is used to query {@link Entity} instances from the database.
+ * Provides a query DSL which is used to query {@link SQLEntity} instances from the database.
  *
  * @param <E> the generic type of entities being queried
  */
-public class SmartQuery<E extends Entity> extends BaseQuery<E> {
+public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
 
     @Part
     private static OMA oma;
 
-    protected final EntityDescriptor descriptor;
-    protected List<Column> fields = Collections.emptyList();
+    protected List<Mapping> fields = Collections.emptyList();
     protected boolean distinct;
-    protected List<Tuple<Column, Boolean>> orderBys = Lists.newArrayList();
+    protected List<Tuple<Mapping, Boolean>> orderBys = Lists.newArrayList();
     protected List<Constraint> constaints = Lists.newArrayList();
     protected Database db;
 
@@ -63,13 +63,11 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * <p>
      * Use {@link OMA#select(Class)} to create a new query.
      *
-     * @param type the entity type to select
      * @param db   the database to operate on
      */
-    protected SmartQuery(Class<E> type, Database db) {
-        super(type);
+    protected SmartQuery(EntityDescriptor descriptor, Database db) {
+        super(descriptor);
         this.db = db;
-        this.descriptor = getDescriptor();
     }
 
     /**
@@ -79,16 +77,6 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      */
     public EntityDescriptor getEntityDescriptor() {
         return descriptor;
-    }
-
-    @Override
-    public SmartQuery<E> skip(int skip) {
-        return (SmartQuery<E>) super.skip(skip);
-    }
-
-    @Override
-    public SmartQuery<E> limit(int limit) {
-        return (SmartQuery<E>) super.limit(limit);
     }
 
     /**
@@ -103,50 +91,26 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         return this;
     }
 
-    /**
-     * Adds an {@link FieldOperator#eq(Object)} constraint for the given field and value.
-     *
-     * @param field the field to check
-     * @param value the value to filter on
-     * @return the query itself for fluent method calls
-     */
-    public SmartQuery<E> eq(Column field, Object value) {
+    @Override
+    public SmartQuery<E> eq(Mapping field, Object value) {
         this.constaints.add(FieldOperator.on(field).eq(value));
         return this;
     }
 
-    /**
-     * Adds an {@link FieldOperator#eq(Object)} constraint for the given field and value, if the value is non-null.
-     * <p>
-     * If the given value is <tt>null</tt>, the constraint is skipped.
-     *
-     * @param field the field to check
-     * @param value the value to filter on
-     * @return the query itself for fluent method calls
-     */
-    public SmartQuery<E> eqIgnoreNull(Column field, Object value) {
+    @Override
+    public SmartQuery<E> eqIgnoreNull(Mapping field, Object value) {
         this.constaints.add(FieldOperator.on(field).eq(value).ignoreNull());
         return this;
     }
 
-    /**
-     * Adds an ascending order on the given field.
-     *
-     * @param field the field to order by
-     * @return the query itself for fluent method calls
-     */
-    public SmartQuery<E> orderAsc(Column field) {
+    @Override
+    public SmartQuery<E> orderAsc(Mapping field) {
         orderBys.add(Tuple.create(field, true));
         return this;
     }
 
-    /**
-     * Adds a descending order on the given field.
-     *
-     * @param field the field to order by
-     * @return the query itself for fluent method calls
-     */
-    public SmartQuery<E> orderDesc(Column field) {
+    @Override
+    public SmartQuery<E> orderDesc(Mapping field) {
         orderBys.add(Tuple.create(field, false));
         return this;
     }
@@ -157,7 +121,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @param fields the fields to select and to apply a <tt>DISTINCT</tt> filter on.
      * @return the query itself for fluent method calls
      */
-    public SmartQuery<E> distinctFields(Column... fields) {
+    public SmartQuery<E> distinctFields(Mapping... fields) {
         this.fields = Arrays.asList(fields);
         this.distinct = true;
         return this;
@@ -171,16 +135,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * @param fields the list of fields to select
      * @return the query itself for fluent method calls
      */
-    public SmartQuery<E> fields(Column... fields) {
+    public SmartQuery<E> fields(Mapping... fields) {
         this.fields = Lists.newArrayList(fields);
         return this;
     }
 
-    /**
-     * Executes the query and counts the number of results.
-     *
-     * @return the number of matched rows
-     */
+    @Override
     public long count() {
         Watch w = Watch.start();
         Compiler compiler = compileCOUNT();
@@ -198,7 +158,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                             .error(e)
                             .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
                                                     compiler,
-                                                    type.getName())
+                                                    descriptor.getType().getName())
                             .handle();
         }
     }
@@ -215,11 +175,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         }
     }
 
-    /**
-     * Determines if the query would have at least one matching row.
-     *
-     * @return <tt>true</tt> if at least one row matches the query, <tt>false</tt> otherwise.
-     */
+    @Override
     public boolean exists() {
         return count() > 0;
     }
@@ -228,7 +184,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
      * Deletes all entities matching this query.
      * <p>
      * Note that this will not generate a <tt>DELETE</tt> statement but rather select the results and invoke
-     * {@link OMA#delete(Entity)} on each entity to ensure that framework checks are triggered.
+     * {@link OMA#delete(sirius.db.mixing.BaseEntity)} on each entity to ensure that framework checks are triggered.
      */
     public void delete() {
         iterateAll(oma::delete);
@@ -259,12 +215,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     /**
-     * Creates a full copy of the query which can be modified without modifying this query.
+     * Creates a full copyValue of the query which can be modified without modifying this query.
      *
-     * @return a copy of this query
+     * @return a copyValue of this query
      */
     public SmartQuery<E> copy() {
-        SmartQuery<E> copy = new SmartQuery<>(type, db);
+        SmartQuery<E> copy = new SmartQuery<>(descriptor, db);
         copy.distinct = distinct;
         copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
@@ -296,7 +252,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                             .error(e)
                             .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
                                                     compiler.toString(),
-                                                    type.getName())
+                                                    descriptor.getType().getName())
                             .handle();
         }
     }
@@ -311,7 +267,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         Set<String> columns = readColumns(rs);
         while (rs.next() && tc.isActive()) {
             if (nativeLimit || limit.nextRow()) {
-                Entity e = descriptor.readFrom(null, columns, rs);
+                SQLEntity e = makeEntity(descriptor, null, columns, rs);
                 compiler.executeJoinFetches(e, columns, rs);
                 if (!handler.apply((E) e)) {
                     return;
@@ -321,6 +277,17 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 return;
             }
         }
+    }
+
+    private static SQLEntity makeEntity(EntityDescriptor descriptor, String alias, Set<String> columns, ResultSet rs)
+            throws Exception {
+        return (SQLEntity) descriptor.make(alias, key -> {
+            try {
+                return columns.contains(key.toUpperCase()) ? Value.of(rs.getObject(key)) : null;
+            } catch (SQLException e) {
+                throw Exceptions.handle(OMA.LOG, e);
+            }
+        });
     }
 
     protected void tuneStatement(PreparedStatement stmt, Limit limit, boolean nativeLimit) throws SQLException {
@@ -343,7 +310,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
         private static class JoinFetch {
             String tableAlias;
-            EntityRefProperty property;
+            SQLEntityRefProperty property;
             Map<String, JoinFetch> subFetches = Maps.newTreeMap();
         }
 
@@ -436,7 +403,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             this.joinTable = state.getJoinTable();
         }
 
-        private Tuple<String, EntityDescriptor> determineAlias(Column parent) {
+        private Tuple<String, EntityDescriptor> determineAlias(Mapping parent) {
             if (parent == null || ed == null) {
                 return Tuple.create(defaultAlias, ed);
             }
@@ -446,12 +413,12 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                 return result;
             }
             Tuple<String, EntityDescriptor> parentAlias = determineAlias(parent.getParent());
-            EntityRefProperty refProperty = (EntityRefProperty) parentAlias.getSecond().getProperty(parent.getName());
+            SQLEntityRefProperty refProperty = (SQLEntityRefProperty) parentAlias.getSecond().getProperty(parent.getName());
             EntityDescriptor other = refProperty.getReferencedDescriptor();
 
             String tableAlias = generateTableAlias();
             joins.append(" LEFT JOIN ")
-                 .append(other.getTableName())
+                 .append(other.getRelationName())
                  .append(" ")
                  .append(tableAlias)
                  .append(" ON ")
@@ -459,7 +426,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                  .append(".id = ")
                  .append(parentAlias.getFirst())
                  .append(".")
-                 .append(parentAlias.getSecond().rewriteColumnName(parent.getName()));
+                 .append(parent.getName());
             result = Tuple.create(tableAlias, other);
             joinTable.put(path, result);
             return result;
@@ -471,26 +438,26 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
          * @param column the column to translate
          * @return the translated name which is used in the database
          */
-        public String translateColumnName(Column column) {
+        public String translateColumnName(Mapping column) {
             Tuple<String, EntityDescriptor> aliasAndDescriptor = determineAlias(column.getParent());
             EntityDescriptor effectiveDescriptor = aliasAndDescriptor.getSecond();
             if (effectiveDescriptor != null) {
-                return aliasAndDescriptor.getFirst() + "." + effectiveDescriptor.rewriteColumnName(column.getName());
+                return aliasAndDescriptor.getFirst() + "." + effectiveDescriptor.rewritePropertyName(column.getName());
             } else {
                 return aliasAndDescriptor.getFirst() + "." + column.getName();
             }
         }
 
-        private void createJoinFetch(Column field, List<Column> fields, List<Column> requiredColumns) {
-            List<Column> fetchPath = Lists.newArrayList();
-            Column parent = field.getParent();
+        private void createJoinFetch(Mapping field, List<Mapping> fields, List<Mapping> requiredColumns) {
+            List<Mapping> fetchPath = Lists.newArrayList();
+            Mapping parent = field.getParent();
             while (parent != null) {
                 fetchPath.add(0, parent);
                 parent = parent.getParent();
             }
             JoinFetch jf = rootFetch;
             EntityDescriptor currentDescriptor = ed;
-            for (Column col : fetchPath) {
+            for (Mapping col : fetchPath) {
                 if (!isContainedInFields(col, fields)) {
                     requiredColumns.add(col);
                 }
@@ -499,7 +466,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
                     subFetch = new JoinFetch();
                     Tuple<String, EntityDescriptor> parentInfo = determineAlias(col);
                     subFetch.tableAlias = parentInfo.getFirst();
-                    subFetch.property = (EntityRefProperty) currentDescriptor.getProperty(col.getName());
+                    subFetch.property = (SQLEntityRefProperty) currentDescriptor.getProperty(col.getName());
                     jf.subFetches.put(col.getName(), subFetch);
                 }
                 jf = subFetch;
@@ -507,19 +474,19 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             }
         }
 
-        private boolean isContainedInFields(Column col, List<Column> fields) {
+        private boolean isContainedInFields(Mapping col, List<Mapping> fields) {
             return fields.stream().anyMatch(field -> field.toString().equals(col.toString()));
         }
 
-        protected void executeJoinFetches(Entity entity, Set<String> columns, ResultSet rs) {
+        protected void executeJoinFetches(SQLEntity entity, Set<String> columns, ResultSet rs) {
             executeJoinFetch(rootFetch, entity, columns, rs);
         }
 
-        private void executeJoinFetch(JoinFetch jf, Entity parent, Set<String> columns, ResultSet rs) {
+        private void executeJoinFetch(JoinFetch jf, SQLEntity parent, Set<String> columns, ResultSet rs) {
             try {
-                Entity child = parent;
+                SQLEntity child = parent;
                 if (jf.property != null) {
-                    child = jf.property.getReferencedDescriptor().readFrom(jf.tableAlias, columns, rs);
+                    child = makeEntity(jf.property.getReferencedDescriptor(), jf.tableAlias, columns, rs);
                     jf.property.setReferencedEntity(parent, child);
                 }
                 for (JoinFetch subFetch : jf.subFetches.values()) {
@@ -603,7 +570,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
 
     private void appendFieldList(Compiler c, boolean applyAliases) {
         Monoflop mf = Monoflop.create();
-        List<Column> requiredFields = new ArrayList<>();
+        List<Mapping> requiredFields = new ArrayList<>();
 
         fields.forEach(field -> {
             appendToSELECT(c, applyAliases, mf, field, true, requiredFields);
@@ -618,16 +585,16 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     private void appendToSELECT(Compiler c,
                                 boolean applyAliases,
                                 Monoflop mf,
-                                Column field,
+                                Mapping field,
                                 boolean createJoinFetch,
-                                List<Column> requiredFieldsCollector) {
+                                List<Mapping> requiredFieldsCollector) {
         if (mf.successiveCall()) {
             c.getSELECTBuilder().append(", ");
         }
         Tuple<String, EntityDescriptor> joinInfo = c.determineAlias(field.getParent());
         c.getSELECTBuilder().append(joinInfo.getFirst());
         c.getSELECTBuilder().append(".");
-        String columnName = fetchEffectiveColumnName(field, joinInfo);
+        String columnName = joinInfo.getSecond().getProperty(field.getName()).getPropertyName();
         c.getSELECTBuilder().append(columnName);
 
         if (!c.defaultAlias.equals(joinInfo.getFirst())) {
@@ -640,14 +607,6 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
             if (createJoinFetch) {
                 c.createJoinFetch(field, fields, requiredFieldsCollector);
             }
-        }
-    }
-
-    private String fetchEffectiveColumnName(Column field, Tuple<String, EntityDescriptor> joinInfo) {
-        if (Entity.ID.getName().equals(field.getName()) || Entity.VERSION.getName().equals(field.getName())) {
-            return field.getName();
-        } else {
-            return joinInfo.getSecond().getProperty(field.getName()).getColumnName();
         }
     }
 
@@ -667,7 +626,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
     }
 
     private void from(Compiler compiler) {
-        compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getTableName()).append(" e");
+        compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getRelationName()).append(" e");
     }
 
     private void where(Compiler compiler) {
@@ -697,7 +656,7 @@ public class SmartQuery<E extends Entity> extends BaseQuery<E> {
         if (!orderBys.isEmpty()) {
             compiler.getWHEREBuilder().append(" ORDER BY ");
             Monoflop mf = Monoflop.create();
-            for (Tuple<Column, Boolean> e : orderBys) {
+            for (Tuple<Mapping, Boolean> e : orderBys) {
                 if (mf.successiveCall()) {
                     compiler.getWHEREBuilder().append(", ");
                 }
