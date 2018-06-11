@@ -26,27 +26,16 @@ public class RedisMetricProvider implements MetricProvider {
     @Override
     public void gather(MetricsCollector collector) {
         if (redis.isConfigured()) {
-            collector.differentialMetric("redis-calls",
-                                         "redis-calls",
-                                         "Redis Calls",
-                                         redis.callDuration.getCount(),
-                                         "/min");
-            collector.metric("redis-call-duration",
-                             "Redis Call Duration",
-                             redis.callDuration.getAndClearAverage(),
-                             "ms");
+            collector.metric("redis-calls", "Redis Calls", redis.callDuration.getCount(), "/min");
+            collector.metric("redis-call-duration", "Redis Call Duration", redis.callDuration.getAndClear(), "ms");
             collector.metric("redis-memory-usage",
                              "Redis Memory Usage",
                              Value.of(redis.getInfo().get(Redis.INFO_USED_MEMORY)).asLong(0) / 1024d / 1024d,
                              "MB");
-            collector.differentialMetric("redis-messages",
-                                         "redis-messages",
-                                         "Redis PubSub Messages",
-                                         redis.messageDuration.getCount(),
-                                         "/min");
+            collector.metric("redis-messages", "Redis PubSub Messages", redis.messageDuration.getCount(), "/min");
             collector.metric("redis-message-duration",
                              "Redis PubSub Message Duration",
-                             redis.messageDuration.getAndClearAverage(),
+                             redis.messageDuration.getAndClear(),
                              "ms");
         }
     }
