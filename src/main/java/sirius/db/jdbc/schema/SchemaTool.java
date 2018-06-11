@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.schema;
+package sirius.db.jdbc.schema;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -39,6 +39,7 @@ public class SchemaTool {
     private static final String COLUMN_COLUMN_NAME = "COLUMN_NAME";
     private static final String KEY_TABLE = "table";
     private static final String KEY_COLUMN = "column";
+    private String realm;
     private final DatabaseDialect dialect;
 
     private static Map<Integer, String> map;
@@ -48,7 +49,8 @@ public class SchemaTool {
      *
      * @param dialect the dialect to use when generatic schema change actions.
      */
-    public SchemaTool(DatabaseDialect dialect) {
+    public SchemaTool(String realm, DatabaseDialect dialect) {
+        this.realm = realm;
         this.dialect = dialect;
     }
 
@@ -90,9 +92,7 @@ public class SchemaTool {
     }
 
     private void fillFKs(Connection c, Table table) throws SQLException {
-        ResultSet rs;
-        // FKs
-        rs = c.getMetaData().getImportedKeys(c.getSchema(), null, table.getName());
+        ResultSet rs = c.getMetaData().getImportedKeys(c.getSchema(), null, table.getName());
         while (rs.next()) {
             String indexName = rs.getString("FK_NAME");
             if (indexName != null) {
@@ -111,7 +111,6 @@ public class SchemaTool {
     }
 
     private void fillIndices(Connection c, Table table) throws SQLException {
-        // Indices
         ResultSet rs = c.getMetaData().getIndexInfo(c.getSchema(), null, table.getName(), false, false);
         while (rs.next()) {
             String indexName = rs.getString("INDEX_NAME");
@@ -130,7 +129,6 @@ public class SchemaTool {
     }
 
     private void fillPK(Connection c, Table table) throws SQLException {
-        // PKs
         ResultSet rs = c.getMetaData().getPrimaryKeys(c.getSchema(), null, table.getName());
         List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
         while (rs.next()) {
@@ -166,7 +164,7 @@ public class SchemaTool {
      * Compares the expected target schema to the database connected via the given connection.
      *
      * @param db           the database used to determine the existing schema
-     * @param targetSchema the target schema defined by {@link sirius.db.mixing.Schema}
+     * @param targetSchema the target schema defined by {@link Schema}
      * @param dropTables   determines if unknown tables should be dropped or not
      * @return a list of change actions to that the existing schema matches the expected one
      * @throws SQLException in case of a database error
@@ -189,7 +187,7 @@ public class SchemaTool {
                                   List<Table> targetSchema) {
         for (Table table : currentSchema) {
             if (findInList(targetSchema, table) == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.tableUnused").set(KEY_TABLE, table.getName()).format());
                 action.setDataLossPossible(true);
                 action.setSql(dialect.generateDropTable(table));
@@ -208,7 +206,7 @@ public class SchemaTool {
 
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
                                     .set(KEY_TABLE, targetTable.getName())
                                     .format());
@@ -244,7 +242,7 @@ public class SchemaTool {
         syncColumns(targetTable, other, result);
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
-            SchemaUpdateAction action = new SchemaUpdateAction();
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
             action.setReason(NLS.fmtr("SchemaTool.pkChanged").set(KEY_TABLE, targetTable.getName()).format());
             action.setDataLossPossible(true);
             action.setSql(dialect.generateAlterPrimaryKey(targetTable));
@@ -253,7 +251,7 @@ public class SchemaTool {
     }
 
     private void generateEffectiveKeyNames(Table targetTable) {
-        targetTable.getKeys().forEach(key-> key.setName(dialect.getEffectiveKeyName(targetTable, key)));
+        targetTable.getKeys().forEach(key -> key.setName(dialect.getEffectiveKeyName(targetTable, key)));
     }
 
     private void dropKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
@@ -263,7 +261,7 @@ public class SchemaTool {
             if (findInList(targetTable.getKeys(), key) == null
                 && findInList(targetTable.getForeignKeys(), fk) == null
                 && dialect.shouldDropKey(targetTable, other, key)) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.indexUnused")
                                     .set("key", key.getName())
                                     .set(KEY_TABLE, other.getName())
@@ -278,7 +276,7 @@ public class SchemaTool {
     private void dropForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         for (ForeignKey key : other.getForeignKeys()) {
             if (findInList(targetTable.getForeignKeys(), key) == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.fkUnused")
                                     .set("key", key.getName())
                                     .set(KEY_TABLE, other.getName())
@@ -294,7 +292,7 @@ public class SchemaTool {
         for (Key targetKey : targetTable.getKeys()) {
             Key otherKey = findInList(other.getKeys(), targetKey);
             if (otherKey == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
                                     .set("key", targetKey.getName())
                                     .set(KEY_TABLE, targetTable.getName())
@@ -305,7 +303,7 @@ public class SchemaTool {
             } else {
                 if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
                     || targetKey.isUnique() != otherKey.isUnique()) {
-                    SchemaUpdateAction action = new SchemaUpdateAction();
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
                     action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
                                         .set("key", targetKey.getName())
                                         .set(KEY_TABLE, targetTable.getName())
@@ -322,7 +320,7 @@ public class SchemaTool {
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
             ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.fkDoesNotExist")
                                     .set("key", targetKey.getName())
                                     .set(KEY_TABLE, targetTable.getName())
@@ -334,7 +332,7 @@ public class SchemaTool {
                 if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
                     || !keyListEqual(targetKey.getForeignColumns(), otherKey.getForeignColumns())
                     || !targetKey.getForeignTable().equalsIgnoreCase(otherKey.getForeignTable())) {
-                    SchemaUpdateAction action = new SchemaUpdateAction();
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
                     action.setReason(NLS.fmtr("SchemaTool.fkNeedsChange")
                                         .set("key", targetKey.getName())
                                         .set(KEY_TABLE, targetTable.getName())
@@ -373,7 +371,7 @@ public class SchemaTool {
                                      Set<String> usedColumns) {
         for (TableColumn col : other.getColumns()) {
             if (!usedColumns.contains(col.getName())) {
-                SchemaUpdateAction action = new SchemaUpdateAction();
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.columnUnused")
                                     .set(KEY_COLUMN, col.getName())
                                     .set(KEY_TABLE, other.getName())
@@ -409,7 +407,7 @@ public class SchemaTool {
                         .format();
         }
         if (reason != null) {
-            SchemaUpdateAction action = new SchemaUpdateAction();
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
             action.setReason(reason);
             action.setDataLossPossible(true);
             action.setSql(dialect.generateAlterColumnTo(targetTable, targetCol.getOldName(), targetCol));
@@ -418,7 +416,7 @@ public class SchemaTool {
     }
 
     private void handleNewColumn(Table targetTable, List<SchemaUpdateAction> result, TableColumn targetCol) {
-        SchemaUpdateAction action = new SchemaUpdateAction();
+        SchemaUpdateAction action = new SchemaUpdateAction(realm);
         action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
                             .set(KEY_COLUMN, targetCol.getName())
                             .set(KEY_TABLE, targetTable.getName())

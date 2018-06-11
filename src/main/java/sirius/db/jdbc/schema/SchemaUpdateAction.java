@@ -6,10 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.schema;
+package sirius.db.jdbc.schema;
 
 import sirius.db.jdbc.Database;
-import sirius.db.mixing.OMA;
+import sirius.db.jdbc.OMA;
 import sirius.kernel.async.TaskContext;
 
 import java.sql.SQLException;
@@ -28,7 +28,20 @@ public class SchemaUpdateAction {
     private List<String> sql;
     private boolean dataLossPossible;
     private String error;
+    private String realm;
     private volatile boolean executed;
+
+    public SchemaUpdateAction(String realm) {
+        this.realm = realm;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    protected void setRealm(String realm) {
+        this.realm = realm;
+    }
 
     /**
      * Contains a short description of what the change will cause.
@@ -49,7 +62,7 @@ public class SchemaUpdateAction {
      * @return a list of SQL statement which make up the change
      */
     public List<String> getSql() {
-        return sql;
+        return Collections.unmodifiableList(sql);
     }
 
     protected void setSql(String sql) {

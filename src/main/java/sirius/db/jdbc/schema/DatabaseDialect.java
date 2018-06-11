@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.schema;
+package sirius.db.jdbc.schema;
 
 import javax.annotation.Nullable;
 import java.sql.Types;

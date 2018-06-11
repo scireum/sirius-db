@@ -6,8 +6,9 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.schema;
+package sirius.db.jdbc.schema;
 
+import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
@@ -17,11 +18,24 @@ import java.util.List;
  * Represents a database table.
  */
 public class Table {
+
+    private EntityDescriptor source;
     private String name;
     private List<String> primaryKey = new ArrayList<>();
     private List<TableColumn> columns = new ArrayList<>();
     private List<Key> keys = new ArrayList<>();
     private List<ForeignKey> foreignKeys = new ArrayList<>();
+
+    public Table(EntityDescriptor source) {
+        this.source = source;
+    }
+
+    public Table() {
+    }
+
+    public EntityDescriptor getSource() {
+        return source;
+    }
 
     /**
      * Returns the columns which make up the primary key

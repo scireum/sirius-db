@@ -6,8 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.schema;
+package sirius.db.jdbc.schema;
 
+import sirius.db.mixing.Property;
+import sirius.db.mixing.annotations.Numeric;
 import sirius.kernel.commons.Strings;
 
 /**
@@ -23,6 +25,29 @@ public class TableColumn {
     private int precision;
     private int scale;
     private String defaultValue;
+    private Property source;
+
+    public TableColumn() {
+
+    }
+
+    public TableColumn(Property property, int sqlType) {
+        this.source = property;
+        this.name = property.getPropertyName();
+        this.nullable = property.isNullable();
+        this.length = property.getLength();
+        this.defaultValue = property.getDefaultValue();
+        this.type = sqlType;
+
+        property.getAnnotation(Numeric.class).ifPresent(numeric -> {
+            this.precision = numeric.precision();
+            this.scale = numeric.scale();
+        });
+    }
+
+    public Property getSource() {
+        return source;
+    }
 
     /**
      * Determines whether auto inctement is enabled for this column.
