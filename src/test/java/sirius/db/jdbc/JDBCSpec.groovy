@@ -138,7 +138,7 @@ class JDBCSpec extends BaseSpecification {
         when:
         def qry = db.createQuery('SELECT a,b FROM test_a')
         then:
-        qry.iterate({ it.getFields().size() == 2 } as Function, Limit.UNLIMITED)
+        qry.iterate({ it.getFieldsList().size() == 2 } as Function, Limit.UNLIMITED)
     }
 
 }
