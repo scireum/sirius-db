@@ -125,7 +125,7 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
 
         // Check if the entity was partially join-fetched and restore the ID property if this
         // was not contained in the join fetch - which is quite common
-        if (targetRef.getId() != referencedId && referencedId != -1) {
+        if (!targetRef.is(referencedId) && referencedId != -1) {
             child.setId(referencedId);
             targetRef.setId(referencedId);
         }

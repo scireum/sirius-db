@@ -8,8 +8,6 @@
 
 package sirius.db.mixing;
 
-import sirius.db.jdbc.SQLEntity;
-import sirius.db.jdbc.schema.Schema;
 import sirius.kernel.Sirius;
 import sirius.kernel.di.ClassLoadAction;
 import sirius.kernel.di.MutableGlobalContext;
@@ -22,16 +20,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Used to add all {@link SQLEntity} classes to the {@link sirius.kernel.di.GlobalContext} so that the {@link Schema} will
- * find them.
- */
 public class EntityLoadAction implements ClassLoadAction {
 
     private static List<Class<? extends BaseEntity<?>>> mappableClasses = new ArrayList<>();
 
     protected static List<Class<? extends BaseEntity<?>>> getMappableClasses() {
         return Collections.unmodifiableList(mappableClasses);
+    }
+
+    public EntityLoadAction() {
+        mappableClasses.clear();
     }
 
     @Nullable

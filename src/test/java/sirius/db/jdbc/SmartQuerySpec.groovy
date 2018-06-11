@@ -8,10 +8,10 @@
 
 package sirius.db.jdbc
 
-import sirius.db.mixing.Mixing
 import sirius.db.jdbc.constraints.Exists
 import sirius.db.jdbc.constraints.FieldOperator
 import sirius.db.jdbc.schema.Schema
+import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
@@ -277,10 +277,10 @@ class SmartQuerySpec extends BaseSpecification {
 
         when:
         def result = oma.select(TestEntityWithNullRef.class)
-                .fields(TestEntityWithNullRef.NAME,
-                SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
-                SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.ID))
-                .eq(SmartQueryTestChildEntity.ID, testChild.getId()).queryList()
+                        .fields(TestEntityWithNullRef.NAME,
+                                TestEntityWithNullRef.PARENT.join(SmartQueryTestParentEntity.NAME),
+                                TestEntityWithNullRef.PARENT.join(SmartQueryTestParentEntity.ID))
+                        .eq(TestEntityWithNullRef.ID, testChild.getId()).queryList()
 
         and:
         TestEntityWithNullRef found = result.get(0)
@@ -305,7 +305,7 @@ class SmartQuerySpec extends BaseSpecification {
         def result = oma.select(TestEntityWithNullRef.class)
                 .fields(TestEntityWithNullRef.NAME,
                 SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
-                .eq(SmartQueryTestChildEntity.ID, testChild.getId()).queryList()
+                .eq(TestEntityWithNullRef.ID, testChild.getId()).queryList()
 
         and:
         TestEntityWithNullRef found = result.get(0)

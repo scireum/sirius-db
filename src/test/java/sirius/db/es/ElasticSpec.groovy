@@ -91,17 +91,20 @@ class ElasticSpec extends BaseSpecification {
         Wait.seconds(2)
         LockedTestEntity copyOfOriginal = elastic.refreshOrFail(entity)
         and:
+        entity.setValue("Test2")
         elastic.update(entity)
         Wait.seconds(2)
         and:
+        entity.setValue("Test3")
         elastic.update(entity)
         Wait.seconds(2)
         and:
+        copyOfOriginal.setValue("Test2")
         elastic.tryUpdate(copyOfOriginal)
         then:
         thrown(OptimisticLockException)
         when:
-        elastic.tryUpdate(copyOfOriginal)
+        elastic.tryDelete(copyOfOriginal)
         then:
         thrown(OptimisticLockException)
         when:

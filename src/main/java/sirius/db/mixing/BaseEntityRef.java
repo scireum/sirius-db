@@ -95,6 +95,8 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     public void setId(@Nullable I id) {
         this.id = id;
 
+        // As SQL entities use -1 to indicate that no id is available,
+        // we handle this case gracefully here...
         if (this.id instanceof Long && (Long) this.id < 0) {
             this.id = null;
         }
@@ -147,7 +149,7 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
      */
     public void setValue(@Nullable E value) {
         this.value = value;
-        if (value == null) {
+        if (value == null || value.isNew()) {
             this.id = null;
         } else {
             this.id = value.getId();

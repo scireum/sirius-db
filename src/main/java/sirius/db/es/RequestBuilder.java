@@ -96,7 +96,7 @@ public class RequestBuilder {
                 entity = new NStringEntity(data.toJSONString(), ContentType.APPLICATION_JSON);
             }
             if (rawData != null) {
-                entity = new NStringEntity(rawData,ContentType.create(contentType));
+                entity = new NStringEntity(rawData, ContentType.create(contentType));
             }
             Response response =
                     restClient.performRequest(method, uri, params == null ? Collections.emptyMap() : params, entity);
@@ -121,8 +121,8 @@ public class RequestBuilder {
                             .error(e)
                             .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
                                                     e.getResponse().getHost(),
-                                                    error.getString("reason"),
-                                                    error.getString("type"))
+                                                    error == null ? "unknown" : error.getString("reason"),
+                                                    error == null ? "-" : error.getString("type"))
                             .handle();
         } catch (IOException e) {
             throw Exceptions.handle()

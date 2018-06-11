@@ -23,7 +23,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>9.10</sirius.kernel>
+        <sirius.kernel>9.11</sirius.kernel>
     </properties>
 
     <dependencies>

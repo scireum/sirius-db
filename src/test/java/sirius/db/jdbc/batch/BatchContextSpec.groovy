@@ -8,16 +8,12 @@
 
 package sirius.db.jdbc.batch
 
-import sirius.db.mixing.Mixing
-import sirius.db.jdbc.ClickhouseTestEntity
 import sirius.db.jdbc.OMA
 import sirius.db.jdbc.TestEntity
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
-import java.time.Instant
-import java.time.LocalDate
 
 class BatchContextSpec extends BaseSpecification {
 
@@ -30,7 +26,7 @@ class BatchContextSpec extends BaseSpecification {
 
     def "insert works"() {
         setup:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         InsertQuery<TestEntity> insert = ctx.insertQuery(
                 TestEntity.class,
@@ -53,7 +49,7 @@ class BatchContextSpec extends BaseSpecification {
 
     def "batch insert works"() {
         setup:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         InsertQuery<TestEntity> insert = ctx.insertQuery(
                 TestEntity.class,
@@ -86,7 +82,7 @@ class BatchContextSpec extends BaseSpecification {
         and:
         oma.update(e)
         and:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         UpdateQuery<TestEntity> update = ctx.updateByIdQuery(TestEntity.class, TestEntity.FIRSTNAME)
         and:
@@ -107,7 +103,7 @@ class BatchContextSpec extends BaseSpecification {
         and:
         oma.update(e)
         and:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         UpdateQuery<TestEntity> update = ctx.updateByIdQuery(TestEntity.class, TestEntity.FIRSTNAME)
         and:
@@ -131,7 +127,7 @@ class BatchContextSpec extends BaseSpecification {
         and:
         oma.update(e)
         and:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         FindQuery<TestEntity> find = ctx.findQuery(TestEntity.class, TestEntity.FIRSTNAME)
         and:
@@ -162,7 +158,7 @@ class BatchContextSpec extends BaseSpecification {
         and:
         oma.update(e)
         and:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         DeleteQuery<TestEntity> delete = ctx.deleteQuery(TestEntity.class, TestEntity.FIRSTNAME)
         and:
@@ -182,7 +178,7 @@ class BatchContextSpec extends BaseSpecification {
         and:
         oma.update(e)
         and:
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         DeleteQuery<TestEntity> delete = ctx.deleteQuery(TestEntity.class, TestEntity.FIRSTNAME)
         and:
@@ -197,34 +193,6 @@ class BatchContextSpec extends BaseSpecification {
         ctx.close()
     }
 
-    def "batch insert into clickhouse works"() {
-        setup:
-        BatchContext ctx = new BatchContext()
-        when:
-        InsertQuery<ClickhouseTestEntity> insert = ctx.insertQuery(
-                ClickhouseTestEntity.class, false)
-        and:
-        for (int i = 0; i < 100; i++) {
-            ClickhouseTestEntity e = new ClickhouseTestEntity()
-            e.setDateTime(Instant.now())
-            e.setDate(LocalDate.now())
-            e.setInt8(i)
-            e.setInt16(i)
-            e.setInt32(i)
-            e.setInt64(i)
-            e.setString("Test")
-            e.setFixedString("B")
-            insert.insert(e, true, true)
-        }
-        and:
-        insert.commit()
-        then:
-        oma.select(ClickhouseTestEntity.class).eq(ClickhouseTestEntity.FIXED_STRING, "B").count() == 100
-        cleanup:
-        OMA.LOG.INFO(ctx)
-        ctx.close()
-    }
-
     def "custom query works"() {
         setup:
         TestEntity e = new TestEntity()
@@ -232,7 +200,7 @@ class BatchContextSpec extends BaseSpecification {
         e.setLastname("CustomTest")
         and:
         oma.update(e)
-        BatchContext ctx = new BatchContext()
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
         when:
         CustomQuery find = ctx.customQuery(TestEntity.class, false, "SELECT * FROM testentity WHERE lastname = ?")
         then:

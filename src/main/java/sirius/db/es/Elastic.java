@@ -95,6 +95,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
 
     private synchronized void initializeClient() {
         if (client == null) {
+            Elastic.LOG.INFO("Initializing Elasticsearch client against: %s", hosts);
             client = new LowLevelClient(RestClient.builder(hosts.stream()
                                                                 .map(host -> Strings.splitAtLast(host, ":"))
                                                                 .map(this::parsePort)
@@ -105,7 +106,21 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.
             if (dockerDetected) {
-                Wait.seconds(5);
+                int retries = 5;
+                while (retries-- > 0) {
+                    try {
+                        if (client.getRestClient()
+                                  .performRequest("GET", "/_cat/indices")
+                                  .getStatusLine()
+                                  .getStatusCode() == 200) {
+                            return;
+                        }
+                    } catch (Exception e) {
+                        Exceptions.ignore(e);
+                    }
+                    Elastic.LOG.INFO("Sleeping two seconds to wait until Elasticsearch is ready...");
+                    Wait.seconds(2);
+                }
             }
         }
     }
@@ -169,7 +184,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     }
 
     @Override
-    protected <E extends ElasticEntity> void updateEntity(E entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected <E extends ElasticEntity> void updateEntity(E entity, boolean force, EntityDescriptor ed)
+            throws Exception {
         JSONObject data = new JSONObject();
         boolean changed = toJSON(entity, ed, data);
 
@@ -243,7 +259,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     }
 
     @Override
-    protected <E extends ElasticEntity> void deleteEntity(E entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected <E extends ElasticEntity> void deleteEntity(E entity, boolean force, EntityDescriptor ed)
+            throws Exception {
         getLowLevelClient().delete(determineIndex(ed, entity),
                                    determineTypeName(ed),
                                    entity.getId(),
@@ -273,8 +290,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <E extends ElasticEntity> Optional<E> findEntity(Object id, EntityDescriptor ed, Function<String, Value> context)
-            throws Exception {
+    protected <E extends ElasticEntity> Optional<E> findEntity(Object id,
+                                                               EntityDescriptor ed,
+                                                               Function<String, Value> context) throws Exception {
         String routing = context.apply(CONTEXT_ROUTING).getString();
 
         if (routing == null && isRouted(ed)) {

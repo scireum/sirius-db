@@ -76,6 +76,7 @@ public class Schema implements Lifecycle, Initializable {
      * @param realm the realm to determine the database for
      * @return the database used by the framework
      */
+    @Nullable
     public Database getDatabase(String realm) {
         return databases.get(realm);
     }
@@ -137,7 +138,9 @@ public class Schema implements Lifecycle, Initializable {
         MultiMap<String, Table> targetByRealm = MultiMap.create();
         for (EntityDescriptor ed : mixing.getDesciptors()) {
             if (SQLEntity.class.isAssignableFrom(ed.getType())) {
-                targetByRealm.put(ed.getRealm(), createTable(ed));
+                if (databases.containsKey(ed.getRealm())) {
+                    targetByRealm.put(ed.getRealm(), createTable(ed));
+                }
             }
         }
 

@@ -23,6 +23,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,6 +52,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
      * @param realm the realm to determine the database for
      * @return the database used by the framework
      */
+    @Nullable
     public Database getDatabase(String realm) {
         return schema.getDatabase(realm);
     }
