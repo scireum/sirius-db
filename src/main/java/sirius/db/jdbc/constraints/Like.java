@@ -6,12 +6,12 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.constraints;
+package sirius.db.jdbc.constraints;
 
 import com.google.common.collect.Lists;
-import sirius.db.mixing.Column;
-import sirius.db.mixing.Constraint;
-import sirius.db.mixing.SmartQuery;
+import sirius.db.mixing.Mapping;
+import sirius.db.jdbc.Constraint;
+import sirius.db.jdbc.SmartQuery;
 import sirius.kernel.commons.Strings;
 
 import java.util.List;
@@ -25,12 +25,12 @@ import java.util.List;
 public class Like extends Constraint {
 
     private static final String WILDCARD = "*";
-    private Column field;
+    private Mapping field;
     private String value;
     private boolean ignoreEmpty;
     private boolean ignoreCase;
 
-    private Like(Column field) {
+    private Like(Mapping field) {
         this.field = field;
     }
 
@@ -44,11 +44,11 @@ public class Like extends Constraint {
      * @param fields the fields to search in
      * @return a constraint representing the given query in the given fields
      */
-    public static Constraint allWordsInAnyField(String query, Column... fields) {
+    public static Constraint allWordsInAnyField(String query, Mapping... fields) {
         List<Constraint> wordConstraints = Lists.newArrayList();
         for (String word : query.split("\\s")) {
             List<Constraint> fieldConstraints = Lists.newArrayList();
-            for (Column field : fields) {
+            for (Mapping field : fields) {
                 fieldConstraints.add(Like.on(field).contains(word).ignoreCase().ignoreEmpty());
             }
             wordConstraints.add(Or.of(fieldConstraints));
@@ -62,7 +62,7 @@ public class Like extends Constraint {
      * @param field the field to search in
      * @return a like constraint applied to the given field
      */
-    public static Like on(Column field) {
+    public static Like on(Mapping field) {
         return new Like(field);
     }
 

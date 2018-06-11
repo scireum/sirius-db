@@ -6,16 +6,16 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.constraints;
+package sirius.db.jdbc.constraints;
 
 import com.google.common.collect.Lists;
-import sirius.db.mixing.Column;
-import sirius.db.mixing.Constraint;
-import sirius.db.mixing.Entity;
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.Mixing;
+import sirius.db.mixing.Mapping;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Schema;
-import sirius.db.mixing.SmartQuery;
-import sirius.db.mixing.TranslationState;
+import sirius.db.jdbc.Constraint;
+import sirius.db.jdbc.SmartQuery;
+import sirius.db.jdbc.TranslationState;
 import sirius.kernel.di.std.Part;
 
 import java.util.List;
@@ -25,14 +25,14 @@ import java.util.List;
  */
 public class Exists extends Constraint {
 
-    private Column outerColumn;
-    private Column innerColumn;
+    private Mapping outerColumn;
+    private Mapping innerColumn;
     private List<Constraint> constraints = Lists.newArrayList();
-    private Class<? extends Entity> other;
+    private Class<? extends SQLEntity> other;
     private boolean not = false;
 
     @Part
-    private static Schema schema;
+    private static Mixing mixing;
 
     private Exists() {
     }
@@ -45,7 +45,7 @@ public class Exists extends Constraint {
      * @param innerColumn the column within that inner entity type which must match the outer column
      * @return an exists constraint which can be filtered with additional constraints
      */
-    public static Exists notMatchingIn(Column outerColumn, Class<? extends Entity> other, Column innerColumn) {
+    public static Exists notMatchingIn(Mapping outerColumn, Class<? extends SQLEntity> other, Mapping innerColumn) {
         Exists result = new Exists();
         result.outerColumn = outerColumn;
         result.innerColumn = innerColumn;
@@ -62,7 +62,7 @@ public class Exists extends Constraint {
      * @param innerColumn the column within that inner entity type which must match the outer column
      * @return an exists constraint which can be filtered with additional constraints
      */
-    public static Exists matchingIn(Column outerColumn, Class<? extends Entity> other, Column innerColumn) {
+    public static Exists matchingIn(Mapping outerColumn, Class<? extends SQLEntity> other, Mapping innerColumn) {
         Exists result = new Exists();
         result.outerColumn = outerColumn;
         result.innerColumn = innerColumn;
@@ -90,7 +90,7 @@ public class Exists extends Constraint {
     @Override
     public void appendSQL(SmartQuery.Compiler compiler) {
         // Determines the target descriptor and a new alias
-        EntityDescriptor ed = schema.getDescriptor(other);
+        EntityDescriptor ed = mixing.getDescriptor(other);
         String newAlias = compiler.generateTableAlias();
 
         // Creates a backup of the current WHERE string builder
@@ -116,7 +116,7 @@ public class Exists extends Constraint {
         if (not) {
             existsBuilder.append("NOT ");
         }
-        existsBuilder.append("EXISTS(SELECT * FROM ").append(ed.getTableName()).append(" ").append(newAlias);
+        existsBuilder.append("EXISTS(SELECT * FROM ").append(ed.getRelationName()).append(" ").append(newAlias);
         existsBuilder.append(compiler.getJoins());
 
         compiler.restoreTranslationState(state);

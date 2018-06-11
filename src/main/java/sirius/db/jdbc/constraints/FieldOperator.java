@@ -6,12 +6,12 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.constraints;
+package sirius.db.jdbc.constraints;
 
 import sirius.db.jdbc.Databases;
-import sirius.db.mixing.Column;
-import sirius.db.mixing.Constraint;
-import sirius.db.mixing.SmartQuery;
+import sirius.db.mixing.Mapping;
+import sirius.db.jdbc.Constraint;
+import sirius.db.jdbc.SmartQuery;
 
 /**
  * Represents a relational operator applied on a field.
@@ -36,13 +36,13 @@ public class FieldOperator extends Constraint {
         }
     }
 
-    private Column field;
+    private Mapping field;
     private Object value;
     private Operator op;
     private boolean ignoreNull;
     private boolean orNull;
 
-    private FieldOperator(Column field) {
+    private FieldOperator(Mapping field) {
         this.field = field;
     }
 
@@ -52,7 +52,7 @@ public class FieldOperator extends Constraint {
      * @param field the field to filter on
      * @return the constraint applied on the given field
      */
-    public static FieldOperator on(Column field) {
+    public static FieldOperator on(Mapping field) {
         return new FieldOperator(field);
     }
 

@@ -6,11 +6,11 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.constraints;
+package sirius.db.jdbc.constraints;
 
 import com.google.common.collect.Lists;
-import sirius.db.mixing.Constraint;
-import sirius.db.mixing.SmartQuery;
+import sirius.db.jdbc.Constraint;
+import sirius.db.jdbc.SmartQuery;
 import sirius.kernel.commons.Monoflop;
 
 import java.util.Arrays;

@@ -6,10 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.constraints;
+package sirius.db.jdbc.constraints;
 
-import sirius.db.mixing.Constraint;
-import sirius.db.mixing.SmartQuery;
+import sirius.db.jdbc.Constraint;
+import sirius.db.jdbc.SmartQuery;
 
 /**
  * Inverts the given constraint.
