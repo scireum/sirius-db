@@ -10,10 +10,13 @@ package sirius.db.mixing.properties;
 
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.OMA;
+import sirius.db.mixing.Mixable;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.schema.TableColumn;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -27,9 +30,9 @@ import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link Amount} field within a {@link sirius.db.mixing.Mixable}.
+ * Represents an {@link Amount} field within a {@link Mixable}.
  */
-public class AmountProperty extends Property {
+public class AmountProperty extends Property implements SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -50,13 +53,13 @@ public class AmountProperty extends Property {
             AmountProperty amountProperty = new AmountProperty(descriptor, accessPath, field);
             try {
                 if (field.get(descriptor.getType().newInstance()) == null) {
-                    OMA.LOG.WARN("Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING"
-                                 + " as an amount should never be null!",
-                                 field.getName(),
-                                 field.getDeclaringClass().getName());
+                    Mixing.LOG.WARN("Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING"
+                                    + " as an amount should never be null!",
+                                    field.getName(),
+                                    field.getDeclaringClass().getName());
                 }
             } catch (Exception e) {
-                OMA.LOG.WARN(
+                Mixing.LOG.WARN(
                         "An error occured while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
                         field.getName(),
                         field.getDeclaringClass().getName(),
@@ -83,12 +86,13 @@ public class AmountProperty extends Property {
     }
 
     @Override
-    protected Object transformToColumn(Object object) {
+    protected Object transformToDatasource(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
     }
 
     @Override
-    protected Object transformFromColumn(Object object) {
+    protected Object transformFromDatasource(Value data) {
+        Object object = data.get();
         if (object == null) {
             return Amount.NOTHING;
         }
@@ -99,36 +103,32 @@ public class AmountProperty extends Property {
     }
 
     @Override
-    protected int getSQLType() {
-        return Types.DECIMAL;
-    }
-
-    @Override
-    protected TableColumn createColumn() {
-        TableColumn column = super.createColumn();
+    public void contributeToTable(Table table) {
+        TableColumn column = new TableColumn(this, Types.DECIMAL);
         if (column.getLength() > 0) {
-            OMA.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property must not specify a length!",
-                         getName(),
-                         field.getName(),
-                         field.getDeclaringClass().getName());
+            Mixing.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property must not specify a length!",
+                            getName(),
+                            field.getName(),
+                            field.getDeclaringClass().getName());
         }
         if (column.getPrecision() <= 0) {
-            OMA.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property needs a precision!"
-                         + " Use @Numeric to specify one. Defaulting to 15.",
-                         getName(),
-                         field.getName(),
-                         field.getDeclaringClass().getName());
+            Mixing.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property needs a precision!"
+                            + " Use @Numeric to specify one. Defaulting to 15.",
+                            getName(),
+                            field.getName(),
+                            field.getDeclaringClass().getName());
             column.setPrecision(15);
         }
         if (column.getScale() > column.getPrecision()) {
-            OMA.LOG.WARN(
+            Mixing.LOG.WARN(
                     "Error in property '%s' ('%s' of '%s'): An 'Amount' must not have a higher scale than precision",
                     getName(),
                     field.getName(),
                     field.getDeclaringClass().getName());
             column.setScale(column.getPrecision());
         }
-        return column;
+
+        table.getColumns().add(column);
     }
 
     @Override
@@ -139,4 +139,5 @@ public class AmountProperty extends Property {
             throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
         }
     }
+
 }

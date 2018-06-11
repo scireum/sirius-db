@@ -8,10 +8,19 @@
 
 package sirius.db.mixing.properties;
 
+import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.IndexMappings;
+import sirius.db.es.annotations.ESOption;
+import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -21,9 +30,10 @@ import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link Integer} field within a {@link sirius.db.mixing.Mixable}.
+ * Represents an {@link Integer} field within a {@link Mixable}.
  */
-public class IntegerProperty extends Property {
+public class IntegerProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
+
 
     /**
      * Factory for generating properties based on their field type
@@ -65,7 +75,16 @@ public class IntegerProperty extends Property {
     }
 
     @Override
-    protected int getSQLType() {
-        return Types.INTEGER;
+    public void contributeToTable(Table table) {
+        table.getColumns().add(new TableColumn(this, Types.INTEGER));
+    }
+
+
+    @Override
+    public void describeProperty(JSONObject description) {
+        description.put(IndexMappings.MAPPING_TYPE, "integer");
+        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
     }
 }

@@ -9,8 +9,7 @@
 package sirius.db.mixing;
 
 /**
- * Signals that a concurrent modification occured on an entity wearing a {@link sirius.db.mixing.annotations.Versioned}
- * annotation.
+ * Signals that a concurrent modification occured on an versioned entity which supports <tt>optimistic locking</tt>.
  * <p>
  * In contrast to <tt>pessimistic locking</tt>, <tt>optimistic locking</tt> does not acquire any locks or perform
  * other measures to quarantee mutual exclusion. Rather it keepts track of the entity version it last read from
@@ -26,4 +25,19 @@ package sirius.db.mixing;
 public class OptimisticLockException extends Exception {
 
     private static final long serialVersionUID = -834083199170415643L;
+
+    public OptimisticLockException() {
+    }
+
+    public OptimisticLockException(String message) {
+        super(message);
+    }
+
+    public OptimisticLockException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public OptimisticLockException(Throwable cause) {
+        super(cause);
+    }
 }

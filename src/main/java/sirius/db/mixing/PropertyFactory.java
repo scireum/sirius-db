@@ -8,6 +8,8 @@
 
 package sirius.db.mixing;
 
+import sirius.kernel.di.std.Priorized;
+
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.util.function.Consumer;
@@ -20,7 +22,12 @@ import java.util.function.Consumer;
  * {@link #accepts(java.lang.reflect.Field)} will be used to compute the property for a field by calling
  * {@link #create(EntityDescriptor, AccessPath, Field, Consumer)}.
  */
-public interface PropertyFactory {
+public interface PropertyFactory extends Priorized {
+
+    @Override
+    default int getPriority() {
+        return DEFAULT_PRIORITY;
+    }
 
     /**
      * Determines if the given field is handled by this property factory.

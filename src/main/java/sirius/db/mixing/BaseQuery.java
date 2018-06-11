@@ -8,11 +8,13 @@
 
 package sirius.db.mixing;
 
-import com.google.common.collect.Lists;
+import sirius.db.mongo.Mongo;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -23,37 +25,30 @@ import java.util.function.Function;
  *
  * @param <E> the generic type of the entity being queried
  */
-abstract class BaseQuery<E extends Entity> {
-    /*
-     * Contains the entity type which are to be queried
-     */
-    protected Class<E> type;
+public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
 
-    /*
+    public static final int MAX_LIST_SIZE = 1000;
+
+    /**
      * Contains the max number of items to fetch (or 0 for "unlimited")
      */
     protected int limit;
 
-    /*
+    /**
      * Contains the the number of items to skip before items are added to the result
      */
     protected int skip;
 
     @Part
-    private static Schema schema;
+    protected static Mixing mixing;
 
-    /*
+    protected final EntityDescriptor descriptor;
+
+    /**
      * Creates a new query for entities of the given type
      */
-    BaseQuery(Class<E> type) {
-        this.type = type;
-    }
-
-    /*
-     * Returns the descriptor of the entity type of the query.
-     */
-    protected EntityDescriptor getDescriptor() {
-        return schema.getDescriptor(type);
+    protected BaseQuery(EntityDescriptor descriptor) {
+        this.descriptor = descriptor;
     }
 
     /*
@@ -69,9 +64,10 @@ abstract class BaseQuery<E extends Entity> {
      * @param limit the max. number of items to fetch. Value &lt;= 0 indicate "unlimited".
      * @return the query itself for fluent method calls
      */
-    public BaseQuery<E> limit(int limit) {
+    @SuppressWarnings("unchecked")
+    public Q limit(int limit) {
         this.limit = limit;
-        return this;
+        return (Q) this;
     }
 
     /**
@@ -80,9 +76,10 @@ abstract class BaseQuery<E extends Entity> {
      * @param skip the number of items to skip. Value &lt;= 0 are ignored.
      * @return the query itself for fluent method calls
      */
-    public BaseQuery<E> skip(int skip) {
+    @SuppressWarnings("unchecked")
+    public Q skip(int skip) {
         this.skip = skip;
-        return this;
+        return (Q) this;
     }
 
     /**
@@ -119,9 +116,42 @@ abstract class BaseQuery<E extends Entity> {
      * @return a list of items in the query or an empty list if the query did not match any items
      */
     public List<E> queryList() {
-        List<E> result = Lists.newArrayList();
-        iterateAll(result::add);
+        List<E> result = new ArrayList<>();
+
+        // Ensure a sane limit...
+        if (limit > MAX_LIST_SIZE) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage(
+                                    "When using 'queryList' as most %s items can be selected. Use 'iterate' for larger results. Query: %s",
+                                    MAX_LIST_SIZE,
+                                    this)
+                            .handle();
+        }
+
+        // Install circuit breaker...
+        if (limit == 0) {
+            limit = MAX_LIST_SIZE;
+        }
+
+        iterateAll(entity -> {
+            result.add(entity);
+            failIOnOverflow(result);
+        });
+
         return result;
+    }
+
+    protected void failIOnOverflow(List<E> result) {
+        if (result.size() >= MAX_LIST_SIZE) {
+            throw Exceptions.handle()
+                            .to(Mongo.LOG)
+                            .withSystemErrorMessage(
+                                    "More than %s results were loaded into a list by executing: %s",
+                                    MAX_LIST_SIZE,
+                                    this)
+                            .handle();
+        }
     }
 
     /**
@@ -141,7 +171,8 @@ abstract class BaseQuery<E extends Entity> {
      */
     public E queryFirst() {
         ValueHolder<E> result = ValueHolder.of(null);
-        limit(1).iterate(r -> {
+        limit(1);
+        iterate(r -> {
             result.set(r);
             return false;
         });
@@ -165,7 +196,8 @@ abstract class BaseQuery<E extends Entity> {
      * @return the first item matched by the query or <tt>null</tt> if the query has no <b>or several</b> matches.
      */
     public E queryOne() {
-        List<E> result = limit(2).queryList();
+        limit(2);
+        List<E> result = queryList();
         if (result.size() != 1) {
             return null;
         } else {

@@ -8,20 +8,25 @@
 
 package sirius.db.mixing.annotations;
 
-import sirius.db.mixing.Mixable;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to mark methods in {@link Mixable}s which will be called once is validated.
+ * Specifies the realm to use for an entity.
  * <p>
- * Note that such a method must accept a <tt>Consumer&lt;String&gt;</tt> as first parameter or the entity
- * itself and the consumer as second parameter, when called within a mixin.
+ * This can be used to determine which datasource is used to reprenset an entity class.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface OnValidate {
+@Target(ElementType.TYPE)
+public @interface Realm {
+
+    /**
+     * The name of the realm to use.
+     *
+     * @return the name of the realm
+     */
+    String value();
+
 }

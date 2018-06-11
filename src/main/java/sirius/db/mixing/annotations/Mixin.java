@@ -8,14 +8,16 @@
 
 package sirius.db.mixing.annotations;
 
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.Composite;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a class as mixin for another taret class (which is either an {@link sirius.db.mixing.Entity} or a {@link
- * sirius.db.mixing.Composite}).
+ * Marks a class as mixin for another target class (which is either an {@link SQLEntity} or a {@link Composite}).
  * <p>
  * A mixin can add properties to an entity or composite, which are not defined in the original class. This can be used
  * to defined customer extensions without modifying the standard classes.

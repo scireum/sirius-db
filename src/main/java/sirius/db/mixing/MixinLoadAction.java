@@ -17,7 +17,7 @@ import sirius.kernel.di.std.Framework;
 import java.lang.annotation.Annotation;
 
 /**
- * Loads all {@link Mixin}s so that they don't hvae to wear a {@link sirius.kernel.di.std.Register} annotation.
+ * Loads all {@link Mixin}s so that they don't have to wear a {@link sirius.kernel.di.std.Register} annotation.
  */
 public class MixinLoadAction implements ClassLoadAction {
 

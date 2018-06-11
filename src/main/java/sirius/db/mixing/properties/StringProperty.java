@@ -8,15 +8,20 @@
 
 package sirius.db.mixing.properties;
 
+import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.ESPropertyInfo;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.Entity;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.OMA;
+import sirius.db.mixing.Mixable;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.annotations.Trim;
-import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -28,9 +33,9 @@ import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link String} field within a {@link sirius.db.mixing.Mixable}.
+ * Represents an {@link String} field within a {@link Mixable}.
  */
-public class StringProperty extends Property {
+public class StringProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
 
     private final boolean trim;
     private final boolean lob;
@@ -62,10 +67,10 @@ public class StringProperty extends Property {
     }
 
     @Override
-    protected Object transformToColumn(Object object) {
-        if (!lob && object != null && ((String) object).length() > length) {
+    protected Object transformToDatasource(Object object) {
+        if (length > 0 && !lob && object != null && ((String) object).length() > length) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withNLSKey("StringProperty.dataTruncation")
                             .set("value", Strings.limit(object, 30))
                             .set("field", getLabel())
@@ -77,31 +82,38 @@ public class StringProperty extends Property {
     }
 
     @Override
-    protected void setValueToField(Object value, Object target) {
-        Object effectiveValue = value;
+    protected void setValueFromDatasource(BaseEntity<?> entity, Value data) {
+        Object effectiveValue = data.get();
         if (effectiveValue instanceof Clob) {
             try {
-                effectiveValue = ((Clob) value).getSubString(1, (int) ((Clob) value).length());
+                setValue(entity, ((Clob) effectiveValue).getSubString(1, (int) ((Clob) effectiveValue).length()));
+                return;
             } catch (Exception e) {
                 throw Exceptions.handle()
-                                .to(OMA.LOG)
+                                .to(Mixing.LOG)
                                 .error(e)
                                 .withSystemErrorMessage("Cannot read CLOB property %s of %s (%s): %s (%s)",
-                                                        getColumnName(),
+                                                        getName(),
                                                         getDescriptor().getType().getName(),
-                                                        getDescriptor().getTableName())
+                                                        getDescriptor().getRelationName())
                                 .handle();
             }
         }
+
+        setValue(entity, effectiveValue);
+    }
+
+    @Override
+    protected void setValueToField(Object value, Object target) {
         if (trim) {
-            if (effectiveValue != null) {
-                effectiveValue = ((String) effectiveValue).trim();
+            if (value != null) {
+                value = ((String) value).trim();
             }
-            if ("".equals(effectiveValue)) {
-                effectiveValue = null;
+            if ("".equals(value)) {
+                value = null;
             }
         }
-        super.setValueToField(effectiveValue, target);
+        super.setValueToField(value, target);
     }
 
     @Override
@@ -116,7 +128,7 @@ public class StringProperty extends Property {
     }
 
     @Override
-    public void onBeforeSaveChecks(Entity entity) {
+    public void onBeforeSaveChecks(BaseEntity<?> entity) {
         if (trim) {
             String value = (String) getValue(entity);
             if (value != null) {
@@ -131,25 +143,13 @@ public class StringProperty extends Property {
     }
 
     @Override
-    protected int getSQLType() {
-        return Types.CHAR;
+    public void contributeToTable(Table table) {
+        table.getColumns().add(new TableColumn(this, lob ? Types.CLOB : Types.CHAR));
     }
 
     @Override
-    protected TableColumn createColumn() {
-        TableColumn column = super.createColumn();
-        if (lob) {
-            column.setType(Types.CLOB);
-        } else {
-            if (column.getLength() <= 0) {
-                OMA.LOG.WARN("Error in property '%s' ('%s' of '%s'): A string property needs a length!"
-                             + " (Use @Length to specify one). Defaulting to 255.",
-                             getName(),
-                             field.getName(),
-                             field.getDeclaringClass().getName());
-                column.setLength(255);
-            }
-        }
-        return column;
+    public void describeProperty(JSONObject description) {
+        //TODO analysis stuff
+        description.put("type", "keyword");
     }
 }

@@ -8,7 +8,8 @@
 
 package sirius.db.mixing.annotations;
 
-import sirius.db.mixing.Schema;
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.jdbc.schema.Schema;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -17,7 +18,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Defines an additional index on an {@link sirius.db.mixing.Entity}.
+ * Defines an additional index on an {@link SQLEntity}.
  * <p>
  * The index will be picked up and created by {@link Schema#computeRequiredSchemaChanges()}
  */
@@ -39,6 +40,8 @@ public @interface Index {
      * @return the columns which make up the index
      */
     String[] columns();
+
+    String[] columnSettings() default {};
 
     /**
      * Determines if the index implies an unique constraint on the combination of the given columns.

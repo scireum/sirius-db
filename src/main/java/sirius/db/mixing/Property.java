@@ -11,28 +11,22 @@ package sirius.db.mixing;
 import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
-import sirius.db.mixing.annotations.Numeric;
 import sirius.db.mixing.annotations.Unique;
-import sirius.db.mixing.schema.Table;
-import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
-import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
- * Maps a field, which is either defined in an entity, a composite or a mixin to a table column.
+ * Maps a field, which is either defined in an entity, a composite or a mixin to a mapped property.
  * <p>
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
@@ -42,20 +36,20 @@ public abstract class Property {
     /**
      * Contains the effective property name. If the field, for which this property was created, resides
      * inside a mixin or composite, the name will be prefixed appropriately. Names are separated by
-     * {@link Column#SUBFIELD_SEPARATOR} which is a <tt>_</tt>.
+     * {@link Mapping#SUBFIELD_SEPARATOR} which is a <tt>_</tt>.
      */
     protected String name;
 
     /**
-     * Contains the effective column name. This is normally the same as {@link #name} but can be re-written
+     * Contains the effective property name. This is normally the same as {@link #name} but can be re-written
      * to support legacy table and column names.
      */
-    protected String columnName;
+    protected String propertyName;
 
     /**
-     * Represents the name of the property a {@link Column}
+     * Represents the name of the property a {@link Mapping}
      */
-    protected Column nameAsColumn;
+    protected Mapping nameAsMapping;
 
     /**
      * Contains a used defined name. This is intended to overwrite property names in customizations.
@@ -99,33 +93,17 @@ public abstract class Property {
     protected String defaultValue;
 
     /**
-     * Contains the length of the database column
+     * Contains the length of this property
      */
     protected int length = 0;
 
     /**
-     * Contains the scale of the database column
-     */
-    protected int scale = 0;
-
-    /**
-     * Contains the precision of the database column
-     */
-    protected int precision = 0;
-
-    /**
-     * Determines the nullability of the database column
+     * Determines the nullability of the property
      */
     protected boolean nullable;
 
-    @Part
-    protected static OMA oma;
-
     /**
      * Creates a new property for the given descriptor, access path and field.
-     * <p>
-     * Fills the column description by checking for a {@link Length} annotation. Also initializes <tt>propertyKey</tt>
-     * and <tt>alternativePropertyKey</tt> and computes the property name based on the field name and access path.
      *
      * @param descriptor the descriptor which owns the property
      * @param accessPath the access path required to obtain the target object which contains the field
@@ -139,8 +117,8 @@ public abstract class Property {
         this.alternativePropertyKey = "Model." + field.getName();
         this.field.setAccessible(true);
         this.name = accessPath.prefix() + field.getName();
-        this.columnName = descriptor.rewriteColumnName(name);
-        this.nameAsColumn = Column.named(columnName);
+        this.propertyName = descriptor.rewritePropertyName(name);
+        this.nameAsMapping = Mapping.named(propertyName);
 
         determineNullability();
         determineLengths();
@@ -165,11 +143,6 @@ public abstract class Property {
         if (len != null) {
             this.length = len.value();
         }
-        Numeric num = field.getAnnotation(Numeric.class);
-        if (num != null) {
-            this.scale = num.scale();
-            this.precision = num.precision();
-        }
     }
 
     /**
@@ -190,18 +163,8 @@ public abstract class Property {
      * @return the annotation as optional or <tt>null</tt>, if the field defining the property doesn't wear an
      * annotation of the given type
      */
-    @Nullable
-    public <A extends Annotation> A getAnnotation(Class<A> type) {
-        return field.getAnnotation(type);
-    }
-
-    /**
-     * Returns the effective column name.
-     *
-     * @return the name of the column in the database
-     */
-    public String getColumnName() {
-        return columnName;
+    public <A extends Annotation> Optional<A> getAnnotation(Class<A> type) {
+        return Optional.ofNullable(field.getAnnotation(type));
     }
 
     /**
@@ -211,6 +174,15 @@ public abstract class Property {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Returns the effective property name.
+     *
+     * @return the name of the property in the database
+     */
+    public String getPropertyName() {
+        return propertyName;
     }
 
     /**
@@ -230,8 +202,6 @@ public abstract class Property {
      * <p>
      * The label can be set in three ways:
      * <ol>
-     * <li>Set the <tt>label</tt> field using {@link #setLabel(String)}
-     * (e.g. via a {@link PropertyModifier}).</li>
      * <li>Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaingClass].[field]</tt>.
      * So for <tt>com.acme.model.Customer.customerNumber</tt> this would be <tt>Customer.customerNumber</tt></li>
      * <li>Define an i18n value for <tt>alternativePropertyKey</tt>, which is normally <tt>Model.[field]</tt>.
@@ -260,17 +230,20 @@ public abstract class Property {
     }
 
     /**
-     * Converts the database value which comes from the JDBC driver to the appropriate field value.
+     * Applies the given value to the given entity.
+     * <p>
+     * The internal access path will be used to find the target object which contains the field.
      *
-     * @param object the database value
-     * @return the value which can be stored in the associated field
+     * @param entity the entity to write to
+     * @param object the value to write to the field
      */
-    protected Object transformFromColumn(Object object) {
-        return object;
+    protected void setValue(BaseEntity<?> entity, Object object) {
+        Object target = accessPath.apply(entity);
+        setValueToField(object, target);
     }
 
     /**
-     * Applies the database value to the field in the given target object
+     * Applies the given value to the field in the given target object
      *
      * @param value  the database value to store
      * @param target the target object determined by the access path
@@ -280,7 +253,7 @@ public abstract class Property {
             field.set(target, value);
         } catch (IllegalAccessException | IllegalArgumentException e) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .error(e)
                             .withSystemErrorMessage("Cannot write property '%s' (from '%s'): %s (%s)",
                                                     getName(),
@@ -290,20 +263,7 @@ public abstract class Property {
     }
 
     /**
-     * Applies the given value to the given entity.
-     * <p>
-     * The internal access path will be used to find the target object which contains the field.
-     *
-     * @param entity the entity to write to
-     * @param object the value to write to the field
-     */
-    protected void setValue(Entity entity, Object object) {
-        Object target = accessPath.apply(entity);
-        setValueToField(object, target);
-    }
-
-    /**
-     * Applies the given datbase value to the given entity.
+     * Applies the given database value to the given entity.
      * <p>
      * The internal access path will be used to find the target object which contains the field.
      * <p>
@@ -312,11 +272,11 @@ public abstract class Property {
      * present.
      *
      * @param entity the entity to write to
-     * @param object the database value to store
+     * @param data   the database value to store
      */
-    protected void setValueFromColumn(Entity entity, Object object) {
-        Object effectiveValue = transformFromColumn(object);
-        if (field.getType().isPrimitive() && object == null) {
+    protected void setValueFromDatasource(BaseEntity<?> entity, Value data) {
+        Object effectiveValue = transformFromDatasource(data);
+        if (field.getType().isPrimitive() && effectiveValue == null) {
             return;
         }
 
@@ -324,14 +284,37 @@ public abstract class Property {
     }
 
     /**
-     * Converts the Java object which resides in the associated field to the database value which is to be
-     * written into the database via JDBC.
+     * Converts the database value to the appropriate field value.
      *
-     * @param object the current field value
-     * @return the value which is to be written to the database
+     * @param object the database value
+     * @return the value which can be stored in the associated field
      */
-    protected Object transformToColumn(Object object) {
-        return object;
+    protected Object transformFromDatasource(Value object) {
+        return object.get();
+    }
+
+    /**
+     * Obtains the field value from the given entity.
+     * <p>
+     * The internal access path will be used to find the target object which contains the field.
+     *
+     * @param entity the entity to fetch the value from
+     * @return the value which is currently stored in the field
+     */
+    public Object getValue(BaseEntity<?> entity) {
+        Object target = accessPath.apply(entity);
+        return getValueFromField(target);
+    }
+
+    /**
+     * For modifyable datatypes like collections, this returns the value as copyValue so that further modifications
+     * will not change the returned value.
+     *
+     * @param entity the entity to fetch the value from
+     * @return the as compy of the value which is currently stored in the field
+     */
+    public Object getValueAsCopy(BaseEntity<?> entity) {
+        return getValue(entity);
     }
 
     /**
@@ -345,26 +328,13 @@ public abstract class Property {
             return field.get(target);
         } catch (IllegalAccessException e) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .error(e)
                             .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
                                                     getName(),
                                                     getDefinition())
                             .handle();
         }
-    }
-
-    /**
-     * Obtains the field value from the given entity.
-     * <p>
-     * The internal access path will be used to find the target object which contains the field.
-     *
-     * @param entity the entity to write to
-     * @return the value which is currently stored in the field
-     */
-    public Object getValue(Entity entity) {
-        Object target = accessPath.apply(entity);
-        return getValueFromField(target);
     }
 
     /**
@@ -375,8 +345,19 @@ public abstract class Property {
      * @param entity the entity to write to
      * @return the database value to store in the db
      */
-    protected Object getValueForColumn(Entity entity) {
-        return transformToColumn(getValue(entity));
+    public Object getValueForDatasource(BaseEntity<?> entity) {
+        return transformToDatasource(getValue(entity));
+    }
+
+    /**
+     * Converts the Java object which resides in the associated field to the database value which is to be
+     * written into the database.
+     *
+     * @param object the current field value
+     * @return the value which is to be written to the database
+     */
+    protected Object transformToDatasource(Object object) {
+        return object;
     }
 
     /**
@@ -385,7 +366,7 @@ public abstract class Property {
      * @param e     the entity to receive the parsed value
      * @param value the value to parse and apply
      */
-    public void parseValue(Entity e, Value value) {
+    public void parseValue(BaseEntity<?> e, Value value) {
         try {
             setValue(e, transformValue(value));
         } catch (IllegalArgumentException exception) {
@@ -437,11 +418,15 @@ public abstract class Property {
      *
      * @param entity the entity to check
      */
-    protected final void onBeforeSave(Entity entity) {
+    protected final void onBeforeSave(BaseEntity<?> entity) {
         onBeforeSaveChecks(entity);
         Object propertyValue = getValue(entity);
         checkNullability(propertyValue);
-        checkUniqueness(entity, propertyValue);
+
+        if (entity.isNew() || entity.isChanged(nameAsMapping)) {
+            // Only enforce uniqueness if the value actually changed...
+            checkUniqueness(entity, propertyValue);
+        }
     }
 
     /**
@@ -451,7 +436,7 @@ public abstract class Property {
      *
      * @param entity the entity to check
      */
-    protected void onBeforeSaveChecks(Entity entity) {
+    protected void onBeforeSaveChecks(BaseEntity<?> entity) {
     }
 
     /**
@@ -471,7 +456,7 @@ public abstract class Property {
      * @param entity        the entity to check
      * @param propertyValue the value to check
      */
-    protected void checkUniqueness(Entity entity, Object propertyValue) {
+    protected void checkUniqueness(BaseEntity<?> entity, Object propertyValue) {
         Unique unique = field.getAnnotation(Unique.class);
         if (unique == null) {
             return;
@@ -480,8 +465,8 @@ public abstract class Property {
             return;
         }
 
-        List<Column> withinColumns = Arrays.stream(unique.within()).map(Column::named).collect(Collectors.toList());
-        entity.assertUnique(nameAsColumn, propertyValue, withinColumns.toArray(new Column[withinColumns.size()]));
+        Mapping[] withinColumns = Arrays.stream(unique.within()).map(Mapping::named).toArray(Mapping[]::new);
+        entity.assertUnique(nameAsMapping, propertyValue, withinColumns);
     }
 
     /**
@@ -489,7 +474,7 @@ public abstract class Property {
      *
      * @param entity the entity which was written to the database
      */
-    protected void onAfterSave(Entity entity) {
+    protected void onAfterSave(BaseEntity<?> entity) {
     }
 
     /**
@@ -497,7 +482,7 @@ public abstract class Property {
      *
      * @param entity the entity to be deleted
      */
-    protected void onBeforeDelete(Entity entity) {
+    protected void onBeforeDelete(BaseEntity<?> entity) {
     }
 
     /**
@@ -505,51 +490,8 @@ public abstract class Property {
      *
      * @param entity the entity which was deleted
      */
-    protected void onAfterDelete(Entity entity) {
+    protected void onAfterDelete(BaseEntity<?> entity) {
     }
-
-    /**
-     * Appends columns, keys and foreign keys to the given table to match the settings specified by
-     * this property
-     *
-     * @param table the table to add schema infos to
-     */
-    protected void contributeToTable(Table table) {
-        table.getColumns().add(createColumn());
-    }
-
-    /**
-     * Create the <tt>TableColumn</tt> which is added to the table by {@link #contributeToTable(Table)}
-     *
-     * @return a table column which describes the database column which represents this property
-     */
-    protected TableColumn createColumn() {
-        TableColumn column = new TableColumn();
-        column.setName(getColumnName());
-        if (defaultValue != null) {
-            column.setDefaultValue(defaultValue);
-        }
-        column.setType(getSQLType());
-        column.setNullable(isNullable());
-        if (getLength() > 0) {
-            column.setLength(getLength());
-        }
-        if (getPrecision() > 0) {
-            column.setPrecision(getPrecision());
-        }
-        if (getScale() > 0) {
-            column.setScale(getScale());
-        }
-        return column;
-    }
-
-    /**
-     * Returns the JDBC column type used as database column
-     *
-     * @return the JDBC column type used to store this property
-     * @see java.sql.Types
-     */
-    protected abstract int getSQLType();
 
     /**
      * Links this property.
@@ -565,27 +507,8 @@ public abstract class Property {
      *
      * @return <tt>true</tt> if this property accepts null values, <tt>false</tt> otherwise
      */
-    protected boolean isNullable() {
+    public boolean isNullable() {
         return nullable;
-    }
-
-    /**
-     * Returns the number of digits following the decimal point if the underlying column is a DECIMAL.
-     *
-     * @return the scale of the column
-     */
-    protected int getScale() {
-        return scale;
-    }
-
-    /**
-     * Returns the number of significat digits stored for this column if it is DECIMAL.
-     *
-     * @return the total number (including those following the decimal point) of
-     * significant digits stored for the column
-     */
-    protected int getPrecision() {
-        return precision;
     }
 
     /**
@@ -593,78 +516,12 @@ public abstract class Property {
      *
      * @return the length of the column or 0 if the associated column has no length
      */
-    protected int getLength() {
+    public int getLength() {
         return length;
     }
 
-    /**
-     * Explicitely sets the label for this column.
-     * <p>
-     * This should only be used to customizations, as the label will not be translated anymore.
-     * See <tt>getLabel()</tt> on how to set a label for a column.
-     *
-     * @param label the new label of the column
-     * @see #getLabel()
-     */
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    /**
-     * Can be used by a {@link PropertyModifier} to overwrite the length of the column.
-     * <p>
-     * Normally, the column length is specified by the type or via a {@link Length} annotation at the field.
-     *
-     * @param length the new length of the column
-     */
-    public void setLength(int length) {
-        this.length = length;
-    }
-
-    /**
-     * Can be used by a {@link PropertyModifier} to overwrite the default value of the column.
-     * <p>
-     * Normally, the default value is specified via a {@link DefaultValue} annotation at the field.
-     *
-     * @param defaultValue the new default value of the column
-     */
-    public void setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
-    }
-
-    /**
-     * Can be used by a {@link PropertyModifier} to overwrite the scale value of the column.
-     * <p>
-     * Normally, the column scale is specified by the type or via a {@link Length} annotation at the field.
-     *
-     * @param scale the new scale of the column
-     */
-    public void setScale(int scale) {
-        this.scale = scale;
-    }
-
-    /**
-     * Can be used by a {@link PropertyModifier} to overwrite the precision value of the column.
-     * <p>
-     * Normally, the column precision is specified by the type or via a {@link Length} annotation at the field.
-     *
-     * @param precision the new precision of the column
-     */
-    public void setPrecision(int precision) {
-        this.precision = precision;
-    }
-
-    /**
-     * Can be used by a {@link PropertyModifier} to overwrite the nullability value of the column,
-     * if permitted by the type.
-     * <p>
-     * Normally, the column nullability is specified via a {@link NullAllowed} annotation at the field. Note that if
-     * the type of the property does not handle null values (i.e. primitive fields), calling this method has no effect.
-     *
-     * @param nullable the new nullability setting of the column
-     */
-    public void setNullable(boolean nullable) {
-        this.nullable = nullable;
+    public String getDefaultValue() {
+        return defaultValue;
     }
 
     @Override

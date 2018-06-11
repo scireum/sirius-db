@@ -8,33 +8,26 @@
 
 package sirius.db.mixing;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
-import sirius.db.jdbc.Row;
 import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
 import sirius.db.mixing.annotations.BeforeSave;
-import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.OnValidate;
+import sirius.db.mixing.annotations.Realm;
 import sirius.db.mixing.annotations.Transient;
-import sirius.db.mixing.annotations.Versioned;
-import sirius.db.mixing.schema.Key;
-import sirius.db.mixing.schema.Table;
-import sirius.db.mixing.schema.TableColumn;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.PriorityCollector;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
+import sirius.kernel.commons.ValueSupplier;
 import sirius.kernel.di.Injector;
-import sirius.kernel.di.PartCollection;
-import sirius.kernel.di.std.Parts;
+import sirius.kernel.di.std.PriorityParts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
@@ -44,139 +37,140 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/**
- * Represents the recipe on how to write an entity class into a database table.
- * <p>
- * For each subclass of {@link Entity} a <tt>descriptor</tt> is created by the {@link Schema}. This descriptor
- * is in charge of reading and writing from and to the database as well as ensuring consistency of the data.
- * <p>
- * The descriptor is automatically created and its properties are discovered by checking all fields, composites
- * and mixins.
- */
 public class EntityDescriptor {
 
     /**
-     * Determines if the entity uses optimistic locking
+     * Contains the effective / technical to use in the datasource
      */
-    protected boolean versioned;
+    private String relationName;
+
+    /**
+     * Contains the realm of the mapped entity;
+     */
+    private final String realm;
 
     /**
      * Contains the entity class
      */
-    protected Class<? extends Entity> type;
+    protected final Class<? extends BaseEntity<?>> type;
 
     /**
-     * Contains the instance which was created by the {@link EntityLoadAction}
+     * Contains a reference instance required by runtime inspections.
      */
-    protected final Entity referenceInstance;
-
-    /**
-     * Contains the effective table name in the database
-     */
-    protected String tableName;
+    private BaseEntity<?> referenceInstance;
 
     /**
      * Contains all properties (defined via fields, composites or mixins)
      */
-    protected Map<String, Property> properties = Maps.newTreeMap();
+    protected final Map<String, Property> properties = new TreeMap<>();
 
     /**
      * Contains a set of all composites contained within this entity.
      */
-    protected Set<Class<? extends Composite>> composites = Sets.newHashSet();
+    protected final Set<Class<? extends Composite>> composites = new HashSet<>();
 
     /**
      * Contains a set of all mixins available for this entity.
      */
-    protected Set<Class<? extends Mixable>> mixins = Sets.newHashSet();
+    protected final Set<Class<? extends Mixable>> mixins = new HashSet<>();
 
     /**
      * A list of all additional handlers to be executed once an entity was deleted
      */
-    protected List<Consumer<Entity>> cascadeDeleteHandlers = Lists.newArrayList();
+    protected final List<Consumer<BaseEntity<?>>> cascadeDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity is about to be deleted
      */
-    protected List<Consumer<Entity>> beforeDeleteHandlers = Lists.newArrayList();
+    protected final List<Consumer<BaseEntity<?>>> beforeDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity was successfully deleted
      */
-    protected List<Consumer<Entity>> afterDeleteHandlers = Lists.newArrayList();
+    protected final List<Consumer<BaseEntity<?>>> afterDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity is about to be saved
      */
-    protected List<Consumer<Entity>> sortedBeforeSaveHandlers;
+    protected List<Consumer<BaseEntity<?>>> sortedBeforeSaveHandlers;
 
     /**
-     * As handles which are executed before entity is saved, need to be in order (some checks might depend on others),
+     * Collects handlers which are executed before entity is saved, need to be in order (some checks might depend on others),
      * {@link BeforeSave} permits to specify a property which is used to here to sort the handlers.
-     * <p>
+     *
      * <tt>sortedBeforeSaveHandlers</tt> will be filled when first accessed and provide a properly sorted list
      */
-    protected PriorityCollector<Consumer<Entity>> beforeSaveHandlerCollector = PriorityCollector.create();
+    protected PriorityCollector<Consumer<BaseEntity<?>>> beforeSaveHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all additional handlers to be executed once an entity is was saved
      */
-    protected List<Consumer<Entity>> afterSaveHandlers = Lists.newArrayList();
+    protected final List<Consumer<BaseEntity<?>>> afterSaveHandlers = new ArrayList<>();
 
     /**
      * A list of all handlers to be executed once an entity is validated
      */
-    protected List<BiConsumer<Entity, Consumer<String>>> validateHandlers = Lists.newArrayList();
-
-    protected Config legacyInfo;
-    protected Map<String, String> columnAliases;
+    protected final List<BiConsumer<BaseEntity<?>, Consumer<String>>> validateHandlers = new ArrayList<>();
 
     /*
      * Contains all known property factories. These are used to transform fields defined by entity classes to
      * properties
      */
-    @Parts(PropertyFactory.class)
-    protected static PartCollection<PropertyFactory> factories;
-
-    /*
-     * Contains all known property modifies, which can re-write existing properties to fix certain needs
-     */
-    @Parts(PropertyModifier.class)
-    protected static PartCollection<PropertyModifier> modifiers;
+    @PriorityParts(PropertyFactory.class)
+    protected static List<PropertyFactory> factories;
 
     /*
      * Contains all mixins known to the system
      */
     private static MultiMap<Class<? extends Mixable>, Class<?>> allMixins;
 
+    protected Config legacyInfo;
+    protected Map<String, String> columnAliases;
+
     /**
      * Creates a new entity for the given reference instance.
      *
-     * @param referenceInstance the instance from which the descriptor is filled
+     * @param type the type from which the descriptor is filled
      */
-    protected EntityDescriptor(Entity referenceInstance) {
-        this.type = referenceInstance.getClass();
-        this.referenceInstance = referenceInstance;
-        this.versioned = type.isAnnotationPresent(Versioned.class);
-        this.tableName = type.getSimpleName().toLowerCase();
+    protected EntityDescriptor(Class<? extends BaseEntity<?>> type) {
+        this.type = type;
+        this.relationName = type.getSimpleName().toLowerCase();
+        Realm realmAnnotation = type.getAnnotation(Realm.class);
+        this.realm = realmAnnotation != null ? realmAnnotation.value() : Mixing.DEFAULT_REALM;
+
+        try {
+            this.referenceInstance = type.newInstance();
+        } catch (Exception e) {
+            Exceptions.handle()
+                      .to(Mixing.LOG)
+                      .error(e)
+                      .withSystemErrorMessage("Cannot create reference instance of mapped type: %s - %s (%s)",
+                                              type.getName())
+                      .handle();
+        }
+
+        loadLegacyInfo(type);
+    }
+
+    private void loadLegacyInfo(Class<? extends BaseEntity<?>> type) {
         String configKey = "mixing.legacy." + type.getSimpleName();
         this.legacyInfo = Sirius.getSettings().getConfig().hasPath(configKey) ?
                           Sirius.getSettings().getConfig().getConfig(configKey) :
                           null;
         if (legacyInfo != null) {
             if (legacyInfo.hasPath("tableName")) {
-                this.tableName = legacyInfo.getString("tableName");
+                this.relationName = legacyInfo.getString("tableName");
             }
             if (legacyInfo.hasPath("alias")) {
                 Config aliases = legacyInfo.getConfig("alias");
@@ -186,6 +180,21 @@ public class EntityDescriptor {
                 }
             }
         }
+    }
+
+    /**
+     * Returns the technical simple name to use.
+     * <p>
+     * This is e.g. used to determine table names or collection names in the datasource.
+     *
+     * @return the technical name to use.
+     */
+    public String getRelationName() {
+        return relationName;
+    }
+
+    public String getRealm() {
+        return realm;
     }
 
     /**
@@ -212,24 +221,6 @@ public class EntityDescriptor {
      */
     public String getPluralLabel() {
         return NLS.get(getType().getSimpleName() + ".plural");
-    }
-
-    /**
-     * Returns the effective table name.
-     *
-     * @return the name of the table in the RDBMS
-     */
-    public String getTableName() {
-        return tableName;
-    }
-
-    /**
-     * Determiens if optimistic locking via version numbers is supported.
-     *
-     * @return <tt>true</tt> if versioning is supported, <tt>false</tt> otherwise
-     */
-    public boolean isVersioned() {
-        return versioned;
     }
 
     /*
@@ -260,10 +251,9 @@ public class EntityDescriptor {
      *
      * @param entity   the entity to check
      * @param property the property to check for
-     * @param <E>      the generic type of the entity
      * @return <tt>true</tt> if a value was fetched from the database, <tt>false</tt> otherwise
      */
-    public <E extends Entity> boolean isFetched(E entity, Property property) {
+    public boolean isFetched(BaseEntity<?> entity, Property property) {
         if (entity.isNew()) {
             return false;
         }
@@ -275,32 +265,10 @@ public class EntityDescriptor {
      *
      * @param entity   the entity to check
      * @param property the property to check for
-     * @param <E>      the generic type of the entity
      * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
      */
-    public <E extends Entity> boolean isChanged(E entity, Property property) {
+    public boolean isChanged(BaseEntity<?> entity, Property property) {
         return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
-    }
-
-    /**
-     * Determines the version (used for optimistic locking) of the given entity.
-     *
-     * @param entity the entity to read the version from
-     * @param <E>    the generic type of the entity
-     * @return the version stored in the database
-     */
-    public <E extends Entity> int getVersion(E entity) {
-        return entity.getVersion();
-    }
-
-    /**
-     * Updates the version (used for optimistic locking) of the given entity.
-     *
-     * @param entity  the entity to update
-     * @param version the new versin to set
-     */
-    public void setVersion(Entity entity, int version) {
-        entity.version = version;
     }
 
     /**
@@ -308,19 +276,16 @@ public class EntityDescriptor {
      *
      * @param entity the entity to perform the handlers on
      */
-    protected final void beforeSave(Entity entity) {
-        beforeSaveChecks(entity);
-
-        for (Consumer<Entity> c : getSortedBeforeSaveHandlers()) {
+    public final void beforeSave(BaseEntity<?> entity) {
+        for (Consumer<BaseEntity<?>> c : getSortedBeforeSaveHandlers()) {
             c.accept(entity);
         }
         for (Property property : properties.values()) {
             property.onBeforeSave(entity);
         }
-        onBeforeSave(entity);
     }
 
-    private List<Consumer<Entity>> getSortedBeforeSaveHandlers() {
+    private List<Consumer<BaseEntity<?>>> getSortedBeforeSaveHandlers() {
         if (sortedBeforeSaveHandlers == null) {
             sortedBeforeSaveHandlers = beforeSaveHandlerCollector.getData();
             beforeSaveHandlerCollector = null;
@@ -330,42 +295,22 @@ public class EntityDescriptor {
     }
 
     /**
-     * Executes actions on the given entity before the save checks are executed.
-     *
-     * @param entity the entity to modify
-     */
-    protected void beforeSaveChecks(Entity entity) {
-        // Can be overwritten by subclasses
-    }
-
-    /**
-     * Executes actions on the given entity after the save checks were executed, but before it is persisted to the
-     * database.
-     *
-     * @param entity the entity of modify
-     */
-    protected void onBeforeSave(Entity entity) {
-        // Can be overwritten by subclasses
-    }
-
-    /**
      * Executes all <tt>afterSaveHandlers</tt> once an entity was saved to the database.
      *
      * @param entity the entity which was saved
      */
-    protected void afterSave(Entity entity) {
-        for (Consumer<Entity> c : afterSaveHandlers) {
+    public void afterSave(BaseEntity<?> entity) {
+        for (Consumer<BaseEntity<?>> c : afterSaveHandlers) {
             c.accept(entity);
         }
         for (Property property : properties.values()) {
             property.onAfterSave(entity);
         }
-        onAfterSave(entity);
 
         // Reset persisted data
         entity.persistedData.clear();
         for (Property p : getProperties()) {
-            entity.persistedData.put(p, p.getValue(entity));
+            entity.persistedData.put(p, p.getValueAsCopy(entity));
         }
     }
 
@@ -375,9 +320,9 @@ public class EntityDescriptor {
      * @param entity the entity to validate
      * @return a list of all validation warnings
      */
-    protected List<String> validate(Entity entity) {
-        List<String> warnings = Lists.newArrayList();
-        for (BiConsumer<Entity, Consumer<String>> validator : validateHandlers) {
+    public List<String> validate(BaseEntity<?> entity) {
+        List<String> warnings = new ArrayList<>();
+        for (BiConsumer<BaseEntity<?>, Consumer<String>> validator : validateHandlers) {
             validator.accept(entity, warnings::add);
         }
 
@@ -390,8 +335,8 @@ public class EntityDescriptor {
      * @param entity the entity to check
      * @return <tt>true</tt> if there are validation warnings, <tt>false</tt> otherwise
      */
-    protected boolean hasValidationWarnings(Entity entity) {
-        for (BiConsumer<Entity, Consumer<String>> validator : validateHandlers) {
+    public boolean hasValidationWarnings(BaseEntity<?> entity) {
+        for (BiConsumer<BaseEntity<?>, Consumer<String>> validator : validateHandlers) {
             ValueHolder<Boolean> hasWarnings = ValueHolder.of(false);
             validator.accept(entity, warning -> hasWarnings.accept(true));
             if (hasWarnings.get()) {
@@ -403,28 +348,18 @@ public class EntityDescriptor {
     }
 
     /**
-     * Executed one all <tt>afterSaveHandlers</tt> were executed.
-     *
-     * @param entity the entity which was saved
-     */
-    protected void onAfterSave(Entity entity) {
-        // Can be overwritten by subclasses
-    }
-
-    /**
      * Invokes all <tt>beforeDeleteHandlers</tt> and then all <tt>cascadeDeleteHandlers</tt> for the given entity.
      *
      * @param entity the entity which is about to be deleted
      */
-    protected void beforeDelete(Entity entity) {
+    public void beforeDelete(BaseEntity<?> entity) {
         for (Property property : properties.values()) {
             property.onBeforeDelete(entity);
         }
-        onBeforeDelete(entity);
-        for (Consumer<Entity> handler : beforeDeleteHandlers) {
+        for (Consumer<BaseEntity<?>> handler : beforeDeleteHandlers) {
             handler.accept(entity);
         }
-        for (Consumer<Entity> handler : cascadeDeleteHandlers) {
+        for (Consumer<BaseEntity<?>> handler : cascadeDeleteHandlers) {
             handler.accept(entity);
         }
     }
@@ -434,7 +369,7 @@ public class EntityDescriptor {
      *
      * @param handler the handler to add
      */
-    public void addCascadeDeleteHandler(Consumer<Entity> handler) {
+    public void addCascadeDeleteHandler(Consumer<BaseEntity<?>> handler) {
         cascadeDeleteHandlers.add(handler);
     }
 
@@ -443,7 +378,7 @@ public class EntityDescriptor {
      *
      * @param handler the handler to add
      */
-    public void addBeforeDeleteHandler(Consumer<Entity> handler) {
+    public void addBeforeDeleteHandler(Consumer<BaseEntity<?>> handler) {
         beforeDeleteHandlers.add(handler);
     }
 
@@ -452,18 +387,8 @@ public class EntityDescriptor {
      *
      * @param handler the handler to add
      */
-    public void addValidationHandler(BiConsumer<Entity, Consumer<String>> handler) {
+    public void addValidationHandler(BiConsumer<BaseEntity<?>, Consumer<String>> handler) {
         validateHandlers.add(handler);
-    }
-
-    /**
-     * Invoked once all properties were notified about the deletion, but before the <tt>beforeDeleteHandlers</tt> and
-     * <tt>cascadeDeleteHandlers</tt> ran.
-     *
-     * @param entity the entity which is about to be deleted
-     */
-    protected void onBeforeDelete(Entity entity) {
-        // Can be overwritten by subclasses
     }
 
     /**
@@ -471,103 +396,12 @@ public class EntityDescriptor {
      *
      * @param entity the entity which was deleted
      */
-    protected void afterDelete(Entity entity) {
+    public void afterDelete(BaseEntity<?> entity) {
         for (Property property : properties.values()) {
             property.onAfterDelete(entity);
         }
-        for (Consumer<Entity> handler : afterDeleteHandlers) {
+        for (Consumer<BaseEntity<?>> handler : afterDeleteHandlers) {
             handler.accept(entity);
-        }
-        onAfterDelete(entity);
-    }
-
-    /**
-     * Invoked once an entity was deleted and all <tt>afterDeleteHandlers</tt> were executed.
-     *
-     * @param entity the deleted entity
-     */
-    protected void onAfterDelete(Entity entity) {
-        // Can be overwritten by subclasses
-    }
-
-    /**
-     * Creates a schema description based on the properties of this descriptor.
-     *
-     * @return a table which represents the expected schema based on the properties of this descriptor
-     */
-    protected Table createTable() {
-        Table table = new Table();
-        table.setName(tableName);
-
-        collectColumns(table);
-        collectKeys(table);
-
-        applyColumnRenamings(table);
-
-        return table;
-    }
-
-    private void applyColumnRenamings(Table table) {
-        if (legacyInfo != null && legacyInfo.hasPath("rename")) {
-            Config renamedColumns = legacyInfo.getConfig("rename");
-            for (TableColumn col : table.getColumns()) {
-                applyAlias(col);
-                applyRenaming(renamedColumns, col);
-            }
-        }
-    }
-
-    private void applyRenaming(Config renamedColumns, TableColumn col) {
-        if (renamedColumns != null && renamedColumns.hasPath(col.getName())) {
-            col.setOldName(renamedColumns.getString(col.getName()));
-        }
-    }
-
-    private void applyAlias(TableColumn col) {
-        if (columnAliases != null) {
-            String alias = columnAliases.get(col.getName());
-            if (Strings.isFilled(alias)) {
-                col.setName(alias);
-            }
-        }
-    }
-
-    private void collectKeys(Table table) {
-        for (Index index : getType().getAnnotationsByType(Index.class)) {
-            Key key = new Key();
-            key.setName(index.name());
-            for (int i = 0; i < index.columns().length; i++) {
-                String name = index.columns()[i];
-                if (columnAliases != null && columnAliases.containsKey(name)) {
-                    name = columnAliases.get(name);
-                }
-                key.addColumn(i, name);
-            }
-            key.setUnique(index.unique());
-            table.getKeys().add(key);
-        }
-    }
-
-    private void collectColumns(Table table) {
-        TableColumn idColumn = new TableColumn();
-        idColumn.setAutoIncrement(true);
-        idColumn.setName(Entity.ID.getName());
-        idColumn.setType(Types.BIGINT);
-        idColumn.setLength(20);
-        table.getColumns().add(idColumn);
-        table.getPrimaryKey().add(idColumn.getName());
-
-        if (isVersioned()) {
-            TableColumn versionColumn = new TableColumn();
-            versionColumn.setAutoIncrement(false);
-            versionColumn.setName(Entity.VERSION.getName());
-            versionColumn.setType(Types.BIGINT);
-            versionColumn.setLength(20);
-            table.getColumns().add(versionColumn);
-        }
-
-        for (Property p : properties.values()) {
-            p.contributeToTable(table);
         }
     }
 
@@ -577,7 +411,7 @@ public class EntityDescriptor {
     protected void initialize() {
         addFields(this, AccessPath.IDENTITY, type, p -> {
             if (properties.containsKey(p.getName())) {
-                OMA.LOG.SEVERE(Strings.apply(
+                Mixing.LOG.SEVERE(Strings.apply(
                         "A property named '%s' already exists for the type '%s'. Skipping redefinition: %s",
                         p.getName(),
                         type.getSimpleName(),
@@ -597,9 +431,9 @@ public class EntityDescriptor {
                 if (Mixable.class.isAssignableFrom(target)) {
                     mixinMap.put((Class<? extends Mixable>) target, mixinClass);
                 } else {
-                    OMA.LOG.WARN("Mixing class '%s' has a non mixable target class (%s). Skipping mixin.",
-                                 mixinClass.getName(),
-                                 target.getName());
+                    Mixing.LOG.WARN("Mixing class '%s' has a non mixable target class (%s). Skipping mixin.",
+                                    mixinClass.getName(),
+                                    target.getName());
                 }
             }
             allMixins = mixinMap;
@@ -680,9 +514,9 @@ public class EntityDescriptor {
             // and the consumer as second...
             descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, e, c));
         } else {
-            OMA.LOG.WARN("OnValidate handler %s.%s doesn't have Consumer<String> as parameter!",
-                         method.getDeclaringClass().getName(),
-                         method.getName());
+            Mixing.LOG.WARN("OnValidate handler %s.%s doesn't have Consumer<String> as parameter!",
+                            method.getDeclaringClass().getName(),
+                            method.getName());
         }
     }
 
@@ -690,7 +524,7 @@ public class EntityDescriptor {
         warnOnWrongVisibility(method);
         if (descriptor.beforeSaveHandlerCollector == null) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage("Cannot provide a before-save-handler, as the sorted list was"
                                                     + " already computed. Descriptor: %s, Method: %s.%s",
                                                     descriptor.getType().getName(),
@@ -704,30 +538,30 @@ public class EntityDescriptor {
 
     private static void warnOnWrongVisibility(Method method) {
         if (!Modifier.isProtected(method.getModifiers())) {
-            OMA.LOG.WARN("Handler %s.%s is not declared protected!",
-                         method.getDeclaringClass().getName(),
-                         method.getName());
+            Mixing.LOG.WARN("Handler %s.%s is not declared protected!",
+                            method.getDeclaringClass().getName(),
+                            method.getName());
         }
     }
 
-    private static void invokeHandler(AccessPath accessPath, Method m, Entity e, Object... params) {
+    private static void invokeHandler(AccessPath accessPath, Method m, BaseEntity<?> entity, Object... params) {
         try {
             m.setAccessible(true);
             if (m.getParameterCount() == 0) {
-                m.invoke(accessPath.apply(e));
+                m.invoke(accessPath.apply(entity));
             } else {
-                m.invoke(accessPath.apply(e), params.length == 0 ? new Object[]{e} : params);
+                m.invoke(accessPath.apply(entity), params.length == 0 ? new Object[]{entity} : params);
             }
         } catch (IllegalAccessException ex) {
-            throw Exceptions.handle(OMA.LOG, ex);
+            throw Exceptions.handle(Mixing.LOG, ex);
         } catch (InvocationTargetException ex) {
             Exceptions.ignore(ex);
-            throw Exceptions.handle(OMA.LOG, ex.getTargetException());
+            throw Exceptions.handle(Mixing.LOG, ex.getTargetException());
         }
     }
 
     private static AccessPath expandAccessPath(Class<?> mixin, AccessPath accessPath) {
-        return accessPath.append(mixin.getSimpleName() + Column.SUBFIELD_SEPARATOR, obj -> ((Mixable) obj).as(mixin));
+        return accessPath.append(mixin.getSimpleName() + Mapping.SUBFIELD_SEPARATOR, obj -> ((Mixable) obj).as(mixin));
     }
 
     private static void addField(EntityDescriptor descriptor,
@@ -737,138 +571,66 @@ public class EntityDescriptor {
                                  Field field,
                                  Consumer<Property> propertyConsumer) {
         if (!field.isAnnotationPresent(Transient.class) && !Modifier.isStatic(field.getModifiers())) {
-            for (PropertyFactory f : factories.getParts()) {
+            for (PropertyFactory f : factories) {
                 if (f.accepts(field)) {
-                    f.create(descriptor, accessPath, field, p -> propertyConsumer.accept(modifyProperty(p)));
+                    f.create(descriptor, accessPath, field, propertyConsumer);
                     return;
                 }
             }
-            OMA.LOG.WARN("Cannot create property %s in type %s (%s)",
-                         field.getName(),
-                         rootClass.getName(),
-                         clazz.getName());
+            Mixing.LOG.WARN("Cannot create property %s in type %s (%s)",
+                            field.getName(),
+                            rootClass.getName(),
+                            clazz.getName());
         }
-    }
-
-    private static Property modifyProperty(Property p) {
-        Property effectiveProperty = p;
-        for (PropertyModifier modifier : modifiers) {
-            if (modifierApplies(effectiveProperty, modifier)) {
-                effectiveProperty = modifier.modify(effectiveProperty);
-            }
-        }
-
-        return p;
-    }
-
-    private static boolean modifierApplies(Property p, PropertyModifier modifier) {
-        if (modifier.targetType() != null && !modifier.targetType()
-                                                      .isAssignableFrom(p.getField().getDeclaringClass())) {
-            return false;
-        }
-
-        return Strings.isEmpty(modifier.targetFieldName()) || Strings.areEqual(p.getField().getName(),
-                                                                               modifier.targetFieldName());
     }
 
     /**
      * Creates an entity from the given result row.
      *
-     * @param alias the field alias used to generate unique column names
-     * @param row   the result row to read from
+     * @param alias    the field alias used to generate unique column names
+     * @param supplier used to provide values for a given column name
      * @return an entity containing the values of the given result row
      */
-    protected Entity readFrom(String alias, Row row) throws Exception {
-        Entity entity = type.newInstance();
-        entity.fetchRow = row;
-        readIdAndVersion(alias, row, entity);
+    public BaseEntity<?> make(String alias, ValueSupplier<String> supplier) throws Exception {
+        BaseEntity<?> entity = type.newInstance();
+
         for (Property p : getProperties()) {
-            String columnName = (alias == null) ? p.getColumnName() : alias + "_" + p.getColumnName();
-            if (row.hasValue(columnName)) {
-                p.setValueFromColumn(entity, row.getValue(columnName).get());
-                entity.persistedData.put(p, p.getValue(entity));
+            String columnName = (alias == null) ? p.getPropertyName() : alias + "_" + p.getPropertyName();
+            Value data = supplier.apply(columnName);
+            if (data != null) {
+                p.setValueFromDatasource(entity, data);
+                entity.persistedData.put(p, p.getValueAsCopy(entity));
             }
         }
+
         return entity;
     }
 
-    private void readIdAndVersion(String alias, Row row, Entity entity) {
-        String idColumnLabel = getIdColumnLabel(alias).toUpperCase();
-        if (row.hasValue(idColumnLabel)) {
-            entity.setId(row.getValue(idColumnLabel).asLong(-1));
-        }
-        if (isVersioned()) {
-            String versionColumnLabel = getVersionColumnLabel(alias).toUpperCase();
-            if (row.hasValue(versionColumnLabel)) {
-                setVersion(entity, row.getValue(versionColumnLabel).asInt(0));
+    public void write(BaseEntity<?> entity, boolean changedOnly, BiConsumer<String, Object> dataConsumer) {
+        for (Property p : getProperties()) {
+            if (!changedOnly || isChanged(entity, p)) {
+                dataConsumer.accept(p.getPropertyName(), p.getValueForDatasource(entity));
             }
         }
     }
 
     /**
-     * Creates a new entity from the given result set.
-     *
-     * @param alias   the alias which was used to generate unique column names
-     * @param columns the columns to fetch
-     * @param rs      the result set pointing to the result row to read
-     * @return a new entity containing the values of the given result set
-     * @throws Exception in case of either a type error (class cannot be instantiated) or a database error
-     */
-    public Entity readFrom(String alias, Set<String> columns, ResultSet rs) throws Exception {
-        Entity entity = type.newInstance();
-        readIdAndVersion(alias, columns, rs, entity);
-        for (Property p : getProperties()) {
-            String columnName = (alias == null) ? p.getColumnName() : alias + "_" + p.getColumnName();
-            if (columns.contains(columnName.toUpperCase())) {
-                p.setValueFromColumn(entity, rs.getObject(columnName));
-                entity.persistedData.put(p, p.getValue(entity));
-            }
-        }
-        return entity;
-    }
-
-    private void readIdAndVersion(String alias, Set<String> columns, ResultSet rs, Entity entity) throws SQLException {
-        String idColumnLabel = getIdColumnLabel(alias);
-        if (columns.contains(idColumnLabel.toUpperCase())) {
-            entity.setId(rs.getLong(idColumnLabel));
-
-            if (rs.wasNull()) {
-                entity.setId(-1L);
-            }
-        }
-        if (isVersioned()) {
-            String versionColumnLabel = getVersionColumnLabel(alias);
-            if (columns.contains(versionColumnLabel.toUpperCase())) {
-                setVersion(entity, rs.getInt(versionColumnLabel));
-            }
-        }
-    }
-
-    private String getVersionColumnLabel(String alias) {
-        return (alias == null) ? "version" : alias + "_version";
-    }
-
-    private String getIdColumnLabel(String alias) {
-        return (alias == null) ? "id" : alias + "_id";
-    }
-
-    /**
-     * Applies legacy renaming rules to determine the effective column name based on the colum name generated by the
+     * Applies legacy renaming rules to determine the effective property name based on the name generated by the
      * property.
      *
-     * @param basicColumnName the generic column name generated by the property
-     * @return the (optionally) reqritten column name to match legacy schemas
+     * @param basicPropertyName the generic property name generated by the property
+     * @return the (optionally) rewritten property name to match legacy schemas
      */
-    public String rewriteColumnName(String basicColumnName) {
-        if (columnAliases != null && columnAliases.containsKey(basicColumnName)) {
-            return columnAliases.get(basicColumnName);
+    public String rewritePropertyName(String basicPropertyName) {
+        if (columnAliases != null && columnAliases.containsKey(basicPropertyName)) {
+            return columnAliases.get(basicPropertyName);
         }
-        return basicColumnName;
+        return basicPropertyName;
     }
 
     @Override
     public String toString() {
-        return tableName + " [" + type.getName() + "]";
+        return "Mapping [" + type.getName() + "]";
     }
 
     @Override
@@ -896,7 +658,7 @@ public class EntityDescriptor {
      *
      * @return the entity class
      */
-    public Class<? extends Entity> getType() {
+    public Class<? extends BaseEntity<?>> getType() {
         return type;
     }
 
@@ -906,7 +668,7 @@ public class EntityDescriptor {
      * @param column the name of the property given as column
      * @return the property which belongs to the given column
      */
-    public Property getProperty(Column column) {
+    public Property getProperty(Mapping column) {
         if (column.getParent() != null) {
             throw new IllegalArgumentException(Strings.apply("Cannot fetch joined property: %s", column));
         }
@@ -927,7 +689,7 @@ public class EntityDescriptor {
         Property prop = properties.get(property.replace('.', '_'));
         if (prop == null) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage("Cannot find property '%s' for type '%s'.",
                                                     property,
                                                     type.getName())
@@ -956,7 +718,7 @@ public class EntityDescriptor {
      *
      * @return the default instance
      */
-    public Entity getReferenceInstance() {
+    public BaseEntity<?> getReferenceInstance() {
         return referenceInstance;
     }
 
@@ -989,5 +751,9 @@ public class EntityDescriptor {
      */
     public Collection<Class<? extends Mixable>> getMixins() {
         return mixins;
+    }
+
+    public Config getLegacyInfo() {
+        return legacyInfo;
     }
 }

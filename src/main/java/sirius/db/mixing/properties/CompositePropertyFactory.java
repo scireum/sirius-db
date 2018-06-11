@@ -9,10 +9,11 @@
 package sirius.db.mixing.properties;
 
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.Column;
 import sirius.db.mixing.Composite;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.OMA;
+import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Mixable;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.di.std.Register;
@@ -23,7 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
 /**
- * Compiles a {@link Composite} field within a {@link sirius.db.mixing.Mixable} into respective {@link Property}
+ * Compiles a {@link Composite} field within a {@link Mixable} into respective {@link Property}
  * instances.
  */
 @Register
@@ -41,9 +42,9 @@ public class CompositePropertyFactory implements PropertyFactory {
                        Field field,
                        Consumer<Property> propertyConsumer) {
         if (!Modifier.isFinal(field.getModifiers())) {
-            OMA.LOG.WARN("Field %s in %s is not final! This will probably result in errors.",
-                         field.getName(),
-                         field.getDeclaringClass().getName());
+            Mixing.LOG.WARN("Field %s in %s is not final! This will probably result in errors.",
+                            field.getName(),
+                            field.getDeclaringClass().getName());
         }
 
         field.setAccessible(true);
@@ -53,12 +54,12 @@ public class CompositePropertyFactory implements PropertyFactory {
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {
-        return accessPath.append(field.getName() + Column.SUBFIELD_SEPARATOR, obj -> {
+        return accessPath.append(field.getName() + Mapping.SUBFIELD_SEPARATOR, obj -> {
             try {
                 return field.get(obj);
             } catch (Exception e) {
                 throw Exceptions.handle()
-                                .to(OMA.LOG)
+                                .to(Mixing.LOG)
                                 .error(e)
                                 .withSystemErrorMessage("Cannot access composite property %s in %s: %s (%s)",
                                                         field.getName(),

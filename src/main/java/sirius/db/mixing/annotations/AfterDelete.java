@@ -8,13 +8,15 @@
 
 package sirius.db.mixing.annotations;
 
+import sirius.db.mixing.Mixable;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to mark methods in {@link sirius.db.mixing.Mixable}s which will be called once an entity was deleted.
+ * Used to mark methods in {@link Mixable}s which will be called once an entity was deleted.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

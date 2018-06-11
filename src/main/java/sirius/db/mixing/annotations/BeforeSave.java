@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import sirius.db.mixing.Mixable;
 import sirius.kernel.di.std.Priorized;
 
 import java.lang.annotation.ElementType;
@@ -16,7 +17,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to mark methods in {@link sirius.db.mixing.Mixable}s which will be called before an entity is saved.
+ * Used to mark methods in {@link Mixable}s which will be called before an entity is saved.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

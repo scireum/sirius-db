@@ -1,0 +1,202 @@
+/*
+ * Made with all the love in the world
+ * by scireum in Remshalden, Germany
+ *
+ * Copyright by scireum GmbH
+ * http://www.scireum.de - info@scireum.de
+ */
+
+package sirius.db.mixing.properties;
+
+import sirius.db.jdbc.SQLEntityRef;
+import sirius.db.jdbc.OMA;
+import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseEntity;
+import sirius.db.mixing.BaseEntityRef;
+import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mixing;
+import sirius.db.mixing.Property;
+import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
+
+import java.lang.reflect.Field;
+import java.util.Optional;
+
+public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extends BaseEntityRef<I, E>>
+        extends Property {
+
+    @Part
+    protected static Mixing mixing;
+
+    protected R entityRef;
+    protected Class<? extends BaseEntity<?>> referencedType;
+    protected EntityDescriptor referencedDescriptor;
+
+    protected BaseEntityRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+        super(descriptor, accessPath, field);
+    }
+
+    /**
+     * Returns the entity class of the referenced type.
+     *
+     * @return the class of the referenced entity
+     */
+    public Class<? extends BaseEntity<?>> getReferencedType() {
+        if (referencedType == null) {
+            if (entityRef == null) {
+                throw new IllegalStateException("Schema not linked!");
+            }
+            referencedType = entityRef.getType();
+        }
+        return referencedType;
+    }
+
+    /**
+     * Returns the {@link EntityDescriptor} of the referenced entity.
+     *
+     * @return the referenced entity drescriptor
+     */
+    public EntityDescriptor getReferencedDescriptor() {
+        if (referencedDescriptor == null) {
+            if (entityRef == null) {
+                throw new IllegalStateException("Schema not linked!");
+            }
+            referencedDescriptor = mixing.getDescriptor(entityRef.getType());
+        }
+
+        return referencedDescriptor;
+    }
+
+    private R getReferenceEntityRef() {
+        if (entityRef == null) {
+            this.entityRef = getEntityRef(accessPath.apply(descriptor.getReferenceInstance()));
+        }
+
+        return entityRef;
+    }
+
+    @Override
+    protected Object getValueFromField(Object target) {
+        return getEntityRef(target).getId();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Object transformValue(Value value) {
+        if (value.isEmptyString()) {
+            return null;
+        }
+        Optional<E> e = find(entityRef.getType(), value);
+        if (!e.isPresent()) {
+            throw illegalFieldValue(value);
+        }
+        return e.get();
+    }
+
+    protected abstract Optional<E> find(Class<E> type, Value value);
+
+    @SuppressWarnings("unchecked")
+    protected R getEntityRef(Object entity) {
+        try {
+            return (R) super.getValueFromField(entity);
+        } catch (Exception e) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage(
+                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
+                                    getName(),
+                                    descriptor.getType().getName())
+                            .handle();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void setValueToField(Object value, Object target) {
+        R ref = getEntityRef(target);
+        if (value == null || value instanceof BaseEntity<?>) {
+            ref.setValue((E) value);
+        } else {
+            ref.setId((I) value);
+        }
+    }
+
+    @Override
+    protected void onBeforeSaveChecks(BaseEntity<?> entity) {
+        R ref = getEntityRef(accessPath.apply(entity));
+        if (ref.containsNonpersistentValue()) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage(
+                                    "Cannot save '%s' (%s) because the referenced entity '%s' in '%s' was not persisted yet.",
+                                    entity,
+                                    entity.getClass().getName(),
+                                    ref.getValue(),
+                                    getName())
+                            .handle();
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void link() {
+        super.link();
+
+        SQLEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
+        if (deleteHandler == SQLEntityRef.OnDelete.CASCADE) {
+            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
+        } else if (deleteHandler == SQLEntityRef.OnDelete.SET_NULL) {
+            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
+        } else if (deleteHandler == SQLEntityRef.OnDelete.REJECT) {
+            getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+        }
+    }
+
+    protected void onDeleteSetNull(BaseEntity<?> e) {
+        getDescriptor().getReferenceInstance()
+                       .getMapper()
+                       .select(getDescriptor().getType())
+                       .eq(nameAsMapping, e.getId())
+                       .iterateAll(other -> {
+                           setValue(other, null);
+                           other.getMapper().update(other);
+                       });
+    }
+
+    protected void onDeleteCascade(BaseEntity<?> e) {
+        getDescriptor().getReferenceInstance()
+                       .getMapper()
+                       .select(getDescriptor().getType())
+                       .eq(nameAsMapping, e.getId())
+                       .iterateAll(other -> {
+                           other.getMapper().delete(other);
+                       });
+    }
+
+    protected void onDeleteReject(BaseEntity<?> e) {
+        long count = getDescriptor().getReferenceInstance()
+                                    .getMapper()
+                                    .select(getDescriptor().getType())
+                                    .eq(nameAsMapping, e.getId())
+                                    .count();
+        if (count == 1) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
+                            .set("field", getLabel())
+                            .set("type", getReferencedDescriptor().getLabel())
+                            .set("source", getDescriptor().getLabel())
+                            .handle();
+        }
+        if (count > 1) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
+                            .set("count", count)
+                            .set("field", getLabel())
+                            .set("type", getReferencedDescriptor().getLabel())
+                            .set("source", getDescriptor().getLabel())
+                            .handle();
+        }
+    }
+}

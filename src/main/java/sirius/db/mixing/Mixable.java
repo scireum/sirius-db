@@ -9,6 +9,8 @@
 package sirius.db.mixing;
 
 import com.google.common.collect.Maps;
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.jdbc.OMA;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.di.std.Part;
@@ -22,7 +24,7 @@ import java.util.Optional;
 /**
  * A mixable can be extended by {@link Mixin}s.
  * <p>
- * As both, {@link Entity} and {@link Composite} can be extended by mixins, the common functionality is kept in this
+ * As both, {@link SQLEntity} and {@link Composite} can be extended by mixins, the common functionality is kept in this
  * superclass.
  * <p>
  * This mainly utilizes the {@link Composable} framework to transform an entity or composite into a mixin of the
@@ -61,7 +63,7 @@ public class Mixable extends Composable {
                     return Optional.of(result);
                 } catch (Exception e) {
                     throw Exceptions.handle()
-                                    .to(OMA.LOG)
+                                    .to(Mixing.LOG)
                                     .error(e)
                                     .withSystemErrorMessage("Cannot create mixin '%s' for type '%s': %s (%s)"
                                                             + " - Note that a Mixin must either have a default"
@@ -73,7 +75,7 @@ public class Mixable extends Composable {
                 }
             } else {
                 throw Exceptions.handle()
-                                .to(OMA.LOG)
+                                .to(Mixing.LOG)
                                 .withSystemErrorMessage("The requested mixin '%s' does not target '%s'",
                                                         adapterType.getName(),
                                                         this.getClass().getName())
