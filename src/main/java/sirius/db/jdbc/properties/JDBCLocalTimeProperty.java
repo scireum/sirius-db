@@ -6,26 +6,31 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing.properties;
+package sirius.db.jdbc.properties;
 
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
-import java.sql.Date;
+import java.sql.Time;
 import java.sql.Types;
-import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link LocalDate} field within a {@link sirius.db.mixing.Mixable}.
+ * Represents an {@link LocalTime} field within a {@link Mixable}.
  */
-public class LocalDateProperty extends Property {
+public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -35,7 +40,7 @@ public class LocalDateProperty extends Property {
 
         @Override
         public boolean accepts(Field field) {
-            return LocalDate.class.equals(field.getType());
+            return SQLEntity.class.isAssignableFrom(field.getDeclaringClass()) && LocalTime.class.equals(field.getType());
         }
 
         @Override
@@ -43,34 +48,36 @@ public class LocalDateProperty extends Property {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new LocalDateProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new JDBCLocalTimeProperty(descriptor, accessPath, field));
         }
     }
 
-    LocalDateProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    JDBCLocalTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
     @Override
     public Object transformValue(Value value) {
-        return NLS.parseUserString(LocalDate.class, value.asString());
+        return NLS.parseUserString(LocalTime.class, value.asString());
     }
 
     @Override
-    protected int getSQLType() {
-        return Types.DATE;
-    }
+    protected Object transformFromDatasource(Value data) {
+        Object object = data.get();
 
-    @Override
-    protected Object transformFromColumn(Object object) {
         if (object == null) {
             return null;
         }
-        return ((Date) object).toLocalDate();
+        return ((Time) object).toLocalTime();
     }
 
     @Override
-    protected Object transformToColumn(Object object) {
-        return object == null ? null : Date.valueOf((LocalDate) object);
+    protected Object transformToDatasource(Object object) {
+        return object == null ? null : Time.valueOf((LocalTime) object);
+    }
+
+    @Override
+    public void contributeToTable(Table table) {
+        table.getColumns().add(new TableColumn(this, Types.TIME));
     }
 }
