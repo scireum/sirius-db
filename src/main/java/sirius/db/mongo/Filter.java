@@ -10,6 +10,7 @@ package sirius.db.mongo;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
+import sirius.db.mixing.Mapping;
 
 /**
  * Represents a filter constraint to build complex filters.
@@ -20,6 +21,16 @@ public class Filter {
     protected Object object;
 
     private Filter() {
+    }
+
+    /**
+     * Creates a new filter with the given key and filter object.
+     *
+     * @param key    the key used in the filter object
+     * @param object the filter expression as object
+     */
+    public Filter(Mapping key, Object object) {
+        this(key.toString(), object);
     }
 
     /**
@@ -79,6 +90,16 @@ public class Filter {
      * @param key the name of the field to check
      * @return a filter representing the given operation
      */
+    public static Filter exists(Mapping key) {
+        return exists(key.toString());
+    }
+
+    /**
+     * Builds a filter which verifies that the given field exists.
+     *
+     * @param key the name of the field to check
+     * @return a filter representing the given operation
+     */
     public static Filter exists(String key) {
         return op("$exists", key, true);
     }
@@ -89,8 +110,29 @@ public class Filter {
      * @param key the name of the field to check
      * @return a filter representing the given operation
      */
+    public static Filter notExists(Mapping key) {
+        return notExists(key.toString());
+    }
+
+    /**
+     * Builds a filter which verifies that the given field does not exist.
+     *
+     * @param key the name of the field to check
+     * @return a filter representing the given operation
+     */
     public static Filter notExists(String key) {
         return op("$exists", key, false);
+    }
+
+    /**
+     * Builds a filter which represents <tt>field == value</tt>
+     *
+     * @param key   the name of the field to check
+     * @param value the value to compare against
+     * @return a filter representing the given operation
+     */
+    public static Filter eq(Mapping key, Object value) {
+        return eq(key.toString(), value);
     }
 
     /**
@@ -112,12 +154,36 @@ public class Filter {
      * @param options    the options to apply like "i" to match case insensitive
      * @return a filter representing the given operation
      */
+    public static Filter regex(Mapping key, Object expression, String options) {
+        return regex(key.toString(), expression, options);
+    }
+
+    /**
+     * Builds a filter which represents a regex filter for the given field and expression.
+     *
+     * @param key        the name of the field to check
+     * @param expression the regular expression to apply
+     * @param options    the options to apply like "i" to match case insensitive
+     * @return a filter representing the given operation
+     */
     public static Filter regex(String key, Object expression, String options) {
         Filter filter = new Filter();
         filter.key = key;
         filter.object = new BasicDBObject("$regex", expression).append("$options", options);
 
         return filter;
+    }
+
+    /**
+     * Builds a filter which represents a geospatial query.
+     *
+     * @param key               the name of the field to check
+     * @param geometry          the geometry used to filter by
+     * @param maxDistanceMeters the max distance to consider relevant
+     * @return a filter representing the given operation
+     */
+    public static Filter nearSphere(Mapping key, BasicDBObject geometry, int maxDistanceMeters) {
+        return nearSphere(key.toString(), geometry, maxDistanceMeters);
     }
 
     /**
@@ -147,6 +213,19 @@ public class Filter {
      * @param maxDistanceMeters the max distance to consider relevant
      * @return a filter representing the given operation
      */
+    public static Filter nearSphere(Mapping key, double lat, double lon, int maxDistanceMeters) {
+        return nearSphere(key.toString(), lat, lon, maxDistanceMeters);
+    }
+
+    /**
+     * Builds a filter which represents a geospatial query for a point.
+     *
+     * @param key               the name of the field to check
+     * @param lat               the latitude of the point used as search geometry.
+     * @param lon               the longitude of the point used as search geometry.
+     * @param maxDistanceMeters the max distance to consider relevant
+     * @return a filter representing the given operation
+     */
     public static Filter nearSphere(String key, double lat, double lon, int maxDistanceMeters) {
         BasicDBList coordinates = new BasicDBList();
         coordinates.add(lat);
@@ -155,6 +234,17 @@ public class Filter {
         return nearSphere(key,
                           new BasicDBObject().append("type", "Point").append("coordinates", coordinates),
                           maxDistanceMeters);
+    }
+
+    /**
+     * Builds a filter which represents <tt>field != value</tt>
+     *
+     * @param key   the name of the field to check
+     * @param value the value to compare against
+     * @return a filter representing the given operation
+     */
+    public static Filter ne(Mapping key, Object value) {
+        return ne(key.toString(), value);
     }
 
     /**
@@ -175,8 +265,30 @@ public class Filter {
      * @param value the value to compare against
      * @return a filter representing the given operation
      */
+    public static Filter gt(Mapping key, Object value) {
+        return gt(key.toString(), value);
+    }
+
+    /**
+     * Builds a filter which represents <tt>field &gt; value</tt>
+     *
+     * @param key   the name of the field to check
+     * @param value the value to compare against
+     * @return a filter representing the given operation
+     */
     public static Filter gt(String key, Object value) {
         return op("$gt", key, value);
+    }
+
+    /**
+     * Builds a filter which represents <tt>field &lt; value</tt>
+     *
+     * @param key   the name of the field to check
+     * @param value the value to compare against
+     * @return a filter representing the given operation
+     */
+    public static Filter lt(Mapping key, Object value) {
+        return lt(key.toString(), value);
     }
 
     /**
@@ -197,8 +309,30 @@ public class Filter {
      * @param value the value to compare against
      * @return a filter representing the given operation
      */
+    public static Filter gte(Mapping key, Object value) {
+        return gte(key.toString(), value);
+    }
+
+    /**
+     * Builds a filter which represents <tt>field &gt;= value</tt>
+     *
+     * @param key   the name of the field to check
+     * @param value the value to compare against
+     * @return a filter representing the given operation
+     */
     public static Filter gte(String key, Object value) {
         return op("$gte", key, value);
+    }
+
+    /**
+     * Builds a filter which represents <tt>field &lt;= value</tt>
+     *
+     * @param key   the name of the field to check
+     * @param value the value to compare against
+     * @return a filter representing the given operation
+     */
+    public static Filter lte(Mapping key, Object value) {
+        return lte(key.toString(), value);
     }
 
     /**
@@ -219,12 +353,34 @@ public class Filter {
      * @param values the values to compare against
      * @return a filter representing the given operation
      */
+    public static Filter in(Mapping key, Object... values) {
+        return in(key.toString(), values);
+    }
+
+    /**
+     * Builds a filter which determines if the given field equals one of the given values.
+     *
+     * @param key    the name of the field to check
+     * @param values the values to compare against
+     * @return a filter representing the given operation
+     */
     public static Filter in(String key, Object... values) {
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
             list.add(QueryBuilder.transformValue(value));
         }
         return op("$in", key, list);
+    }
+
+    /**
+     * Builds a filter which verifies that the given field equals none of the given values.
+     *
+     * @param key    the name of the field to check
+     * @param values the values to compare against
+     * @return a filter representing the given operation
+     */
+    public static Filter nin(Mapping key, Object... values) {
+        return nin(key.toString(), values);
     }
 
     /**

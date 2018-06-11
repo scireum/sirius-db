@@ -10,10 +10,13 @@ package sirius.db.mongo;
 
 import com.mongodb.BasicDBObject;
 import org.bson.Document;
+import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Mixing;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.di.std.Part;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,8 +35,22 @@ public abstract class QueryBuilder<S> {
     protected Mongo mongo;
     protected BasicDBObject filterObject = new BasicDBObject();
 
+    @Part
+    protected static Mixing mixing;
+
     QueryBuilder(Mongo mongo) {
         this.mongo = mongo;
+    }
+
+    /**
+     * Adds a condition which determines which documents should be selected.
+     *
+     * @param key   the name of the field to filter on
+     * @param value the value to filter on
+     * @return the builder itself for fluent method calls
+     */
+    public S where(Mapping key, Object value) {
+        return where(key.toString(), value);
     }
 
     /**
@@ -127,5 +144,10 @@ public abstract class QueryBuilder<S> {
         }
 
         return value;
+    }
+
+    @Override
+    public String toString() {
+        return filterObject.toString();
     }
 }

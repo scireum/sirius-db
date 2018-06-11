@@ -12,8 +12,7 @@ import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
-import sirius.kernel.Sirius;
-import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.PartCollection;
@@ -36,14 +35,15 @@ import java.util.stream.Collectors;
 @Register(classes = Mongo.class)
 public class Mongo {
 
-    public static final Log LOG = Log.get("mongo");
     private static final String SERVICE_NAME = "mongo";
+
+    @SuppressWarnings("squid:S1192")
+    @Explain("Constants have different semantics.")
+    public static final Log LOG = Log.get("mongo");
+
     private static final int MONGO_PORT = 27017;
 
     private volatile MongoClient mongoClient;
-
-    @ConfigValue("mongo.host")
-    private String dbHost;
 
     @ConfigValue("mongo.hosts")
     private List<String> dbHosts;
@@ -66,7 +66,7 @@ public class Mongo {
      * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
      */
     public boolean isConfigured() {
-        return Strings.isFilled(dbHost) || !dbHosts.isEmpty();
+        return !dbHosts.isEmpty();
     }
 
     /**
@@ -87,28 +87,13 @@ public class Mongo {
             return;
         }
 
-        if (dbHosts.isEmpty()) {
-            mongoClient = new MongoClient(dbHost, PortMapper.mapPort(SERVICE_NAME, MONGO_PORT));
-        } else {
-            List<ServerAddress> hosts = dbHosts.stream()
-                                               .map(hostname -> new ServerAddress(hostname,
-                                                                                  PortMapper.mapPort(SERVICE_NAME,
-                                                                                                     MONGO_PORT)))
-                                               .filter(Objects::nonNull)
-                                               .collect(Collectors.toList());
-            mongoClient = new MongoClient(hosts);
-        }
-
-        if (dbName.contains("${timestamp}")) {
-            if (!Sirius.isStartedAsTest()) {
-                throw Exceptions.handle()
-                                .withSystemErrorMessage("${timestamp} in mongo.db is only allowed in test environment!")
-                                .handle();
-            }
-            temporaryDB = true;
-            dbName = dbName.replace("${timestamp}", String.valueOf(System.currentTimeMillis()));
-            LOG.INFO("Using unique db name: %s", dbName);
-        }
+        List<ServerAddress> hosts = dbHosts.stream()
+                                           .map(hostname -> new ServerAddress(hostname,
+                                                                              PortMapper.mapPort(SERVICE_NAME,
+                                                                                                 MONGO_PORT)))
+                                           .filter(Objects::nonNull)
+                                           .collect(Collectors.toList());
+        mongoClient = new MongoClient(hosts);
 
         createIndices(mongoClient.getDatabase(dbName));
     }
@@ -128,15 +113,6 @@ public class Mongo {
                                                   idx.getClass().getName())
                           .handle();
             }
-        }
-    }
-
-    /**
-     * Deletes the temporary DB (used by UNIT tests).
-     */
-    protected void dropTemporaryDB() {
-        if (Sirius.isStartedAsTest() && temporaryDB && mongoClient != null) {
-            this.db().drop();
         }
     }
 

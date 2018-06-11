@@ -66,7 +66,7 @@ public class MongoCommand implements Command {
 
         output.line("Control tracing with 'mongo tracing <enable/disable> <limit>'.");
         output.line("Where limit specifies the minimal query duration in milliseconds to be eligible for tracing.");
-        output.line("Call 'mongo tracing' to view and reset reace data.");
+        output.line("Call 'mongo tracing' to view and reset trace data.");
         output.blankLine();
         output.line("Mongo DB Statistics");
         output.separator();

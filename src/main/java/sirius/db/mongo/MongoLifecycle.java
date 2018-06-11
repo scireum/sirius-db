@@ -40,7 +40,6 @@ public class MongoLifecycle implements Lifecycle {
     public void awaitTermination() {
         // We wait until this last call before we cut the connection to the database to permit
         // other stopping lifecycles access until the very end...
-        mongo.dropTemporaryDB();
         mongo.close();
     }
 

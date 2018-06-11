@@ -14,6 +14,7 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
+import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
@@ -67,6 +68,17 @@ public class Updater extends QueryBuilder<Updater> {
      * @param value the new value of the field
      * @return the builder itself for fluent method calls
      */
+    public Updater set(Mapping field, Object value) {
+        return set(field.toString(), value);
+    }
+
+    /**
+     * Sets a field to a new value.
+     *
+     * @param field the field to update
+     * @param value the new value of the field
+     * @return the builder itself for fluent method calls
+     */
     public Updater set(String field, Object value) {
         if (setObject == null) {
             setObject = new BasicDBObject();
@@ -82,6 +94,16 @@ public class Updater extends QueryBuilder<Updater> {
      * @param field the field to remove
      * @return the builder itself for fluent method calls
      */
+    public Updater unset(Mapping field) {
+        return unset(field.toString());
+    }
+
+    /**
+     * Unsets a field.
+     *
+     * @param field the field to remove
+     * @return the builder itself for fluent method calls
+     */
     public Updater unset(String field) {
         if (unsetObject == null) {
             unsetObject = new BasicDBObject();
@@ -89,6 +111,17 @@ public class Updater extends QueryBuilder<Updater> {
         unsetObject.put(field, "");
 
         return this;
+    }
+
+    /**
+     * Sets a field to the given list of values.
+     *
+     * @param key    the name of the field to set
+     * @param values the values to set the field to
+     * @return the builder itself for fluent method calls
+     */
+    public Updater setList(Mapping key, Object... values) {
+        return setList(key.toString(), values);
     }
 
     /**
@@ -119,6 +152,17 @@ public class Updater extends QueryBuilder<Updater> {
      * @param value the amount by which the field should be incremented
      * @return the builder itself for fluent method calls
      */
+    public Updater inc(Mapping field, int value) {
+        return inc(field.toString(), value);
+    }
+
+    /**
+     * Increments the given field by the given value.
+     *
+     * @param field the field to increment
+     * @param value the amount by which the field should be incremented
+     * @return the builder itself for fluent method calls
+     */
     public Updater inc(String field, int value) {
         if (incObject == null) {
             incObject = new BasicDBObject();
@@ -135,6 +179,17 @@ public class Updater extends QueryBuilder<Updater> {
      * @param value the value to add
      * @return the builder itself for fluent method calls
      */
+    public Updater addToSet(Mapping field, Object value) {
+        return addToSet(field.toString(), value);
+    }
+
+    /**
+     * Adds the given value to the given set / list.
+     *
+     * @param field the field containing the set / list
+     * @param value the value to add
+     * @return the builder itself for fluent method calls
+     */
     public Updater addToSet(String field, Object value) {
         if (addToSetObject == null) {
             addToSetObject = new BasicDBObject();
@@ -142,6 +197,17 @@ public class Updater extends QueryBuilder<Updater> {
         addToSetObject.put(field, transformValue(value));
 
         return this;
+    }
+
+    /**
+     * Removes all occurences of the given values from the list in the given field.
+     *
+     * @param field  the field containing the list
+     * @param values the values to remove
+     * @return the builder itself for fluent method calls
+     */
+    public Updater pullAll(Mapping field, Object... values) {
+        return pullAll(field.toString(), values);
     }
 
     /**
@@ -172,6 +238,17 @@ public class Updater extends QueryBuilder<Updater> {
      * @param value the value to remove
      * @return the builder itself for fluent method calls
      */
+    public Updater pull(Mapping field, Object value) {
+        return pull(field.toString(), value);
+    }
+
+    /**
+     * Removes all occurences of the given value from the list in the given field.
+     *
+     * @param field the field containing the list
+     * @param value the value to remove
+     * @return the builder itself for fluent method calls
+     */
     public Updater pull(String field, Object value) {
         if (pullObject == null) {
             pullObject = new BasicDBObject();
@@ -179,6 +256,27 @@ public class Updater extends QueryBuilder<Updater> {
         pullObject.put(field, transformValue(value));
 
         return this;
+    }
+
+    /**
+     * Executes the update on the given collection.
+     *
+     * @param type the type of entities to update
+     * @return the result of the update
+     */
+    public UpdateResult executeFor(Class<?> type) {
+        return executeFor(mixing.getDescriptor(type).getRelationName());
+    }
+
+    /**
+     * Executes the update on the given entity.
+     *
+     * @param entity the entity to filter (by ID) and update
+     * @return the result of the update
+     */
+    public UpdateResult executeFor(MongoEntity entity) {
+        where(MongoEntity.ID, entity.getId());
+        return executeFor(entity.getDescriptor().getRelationName());
     }
 
     /**
@@ -192,22 +290,11 @@ public class Updater extends QueryBuilder<Updater> {
 
         Watch w = Watch.start();
         try {
+            UpdateOptions updateOptions = new UpdateOptions().upsert(this.upsert);
             if (many) {
-                if (upsert) {
-                    return mongo.db()
-                                .getCollection(collection)
-                                .updateMany(filterObject, updateObject, new UpdateOptions().upsert(upsert));
-                } else {
-                    return mongo.db().getCollection(collection).updateMany(filterObject, updateObject);
-                }
+                return mongo.db().getCollection(collection).updateMany(filterObject, updateObject, updateOptions);
             } else {
-                if (upsert) {
-                    return mongo.db()
-                                .getCollection(collection)
-                                .updateOne(filterObject, updateObject, new UpdateOptions().upsert(upsert));
-                } else {
-                    return mongo.db().getCollection(collection).updateOne(filterObject, updateObject);
-                }
+                return mongo.db().getCollection(collection).updateOne(filterObject, updateObject, updateOptions);
             }
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());

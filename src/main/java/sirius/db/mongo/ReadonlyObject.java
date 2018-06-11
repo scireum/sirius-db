@@ -19,7 +19,9 @@ import java.util.function.Function;
 
 class ReadonlyObject extends Document {
 
-    static Document EMPTY_OBJECT = new ReadonlyObject();
+    protected static final Document EMPTY_OBJECT = new ReadonlyObject();
+
+    private static final long serialVersionUID = -1079350674050338133L;
 
     private ReadonlyObject() {
 

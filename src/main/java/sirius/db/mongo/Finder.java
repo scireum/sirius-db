@@ -10,6 +10,7 @@ package sirius.db.mongo;
 
 import com.mongodb.client.FindIterable;
 import org.bson.Document;
+import sirius.db.mixing.Mapping;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
@@ -41,6 +42,21 @@ public class Finder extends QueryBuilder<Finder> {
      * @param fieldsToReturn specified the list of fields to return
      * @return the builder itself for fluent method calls
      */
+    public Finder selectFields(Mapping... fieldsToReturn) {
+        fields = new Document();
+        for (Mapping field : fieldsToReturn) {
+            fields.put(field.toString(), 1);
+        }
+
+        return this;
+    }
+
+    /**
+     * Limits the fields being returned to the given list.
+     *
+     * @param fieldsToReturn specified the list of fields to return
+     * @return the builder itself for fluent method calls
+     */
     public Finder selectFields(String... fieldsToReturn) {
         fields = new Document();
         for (String field : fieldsToReturn) {
@@ -56,6 +72,16 @@ public class Finder extends QueryBuilder<Finder> {
      * @param field the field to order by.
      * @return the builder itself for fluent method calls
      */
+    public Finder orderByAsc(Mapping field) {
+        return orderByAsc(field.toString());
+    }
+
+    /**
+     * Adds a sort constraint to order by the given field ascending.
+     *
+     * @param field the field to order by.
+     * @return the builder itself for fluent method calls
+     */
     public Finder orderByAsc(String field) {
         if (orderBy == null) {
             orderBy = new Document();
@@ -63,6 +89,16 @@ public class Finder extends QueryBuilder<Finder> {
         orderBy.put(field, 1);
 
         return this;
+    }
+
+    /**
+     * Adds a sort constraint to order by the given field descending.
+     *
+     * @param field the field to order by.
+     * @return the builder itself for fluent method calls
+     */
+    public Finder orderByDesc(Mapping field) {
+        return orderByDesc(field.toString());
     }
 
     /**
@@ -110,6 +146,17 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     /**
+     * Specifies the number of items to skip before items are added to the result.
+     *
+     * @param skip the number of items to skip. Value &lt;= 0 are ignored.
+     * @return the query itself for fluent method calls
+     */
+    public Finder skip(int skip) {
+        this.skip = skip;
+        return this;
+    }
+
+    /**
      * Executes the query for the given collection and returns a single document.
      *
      * @param collection the collection to search in
@@ -118,7 +165,17 @@ public class Finder extends QueryBuilder<Finder> {
     public Optional<Doc> singleIn(String collection) {
         Watch w = Watch.start();
         try {
-            Document obj = mongo.db().getCollection(collection).find(filterObject).first();
+            FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
+            if (fields != null) {
+                cur.projection(fields);
+            }
+            if (orderBy != null) {
+                cur.sort(orderBy);
+            }
+            cur.skip(skip);
+
+            Document obj = cur.first();
+
             if (obj == null) {
                 return Optional.empty();
             } else {

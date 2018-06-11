@@ -10,6 +10,7 @@ package sirius.db.mongo;
 
 import com.mongodb.BasicDBList;
 import org.bson.Document;
+import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Microtiming;
 
@@ -32,9 +33,31 @@ public class Inserter {
      * @param value the value to set the field to
      * @return the builder itself for fluent method calls
      */
+    public Inserter set(Mapping key, Object value) {
+        return set(key.toString(), value);
+    }
+
+    /**
+     * Sets a field to the given value.
+     *
+     * @param key   the name of the field to set
+     * @param value the value to set the field to
+     * @return the builder itself for fluent method calls
+     */
     public Inserter set(String key, Object value) {
         obj.put(key, QueryBuilder.transformValue(value));
         return this;
+    }
+
+    /**
+     * Sets a field to the given list of values.
+     *
+     * @param key    the name of the field to set
+     * @param values the values to set the field to
+     * @return the builder itself for fluent method calls
+     */
+    public Inserter setList(Mapping key, Object... values) {
+        return setList(key.toString(), values);
     }
 
     /**
