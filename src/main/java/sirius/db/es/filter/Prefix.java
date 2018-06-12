@@ -6,26 +6,41 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
 
 /**
  * Represents a constraint which checks if the given field starts with the given value.
  * <p>
- * To prevent funny OutOfMemoryErrors the number of tokens being expanded is 256.
+ * To prevent funny OutOfMemoryErrors the maximal number of tokens being expanded is 256.
  */
 public class Prefix extends BaseFilter {
     private final String field;
     private String value;
     private Float boost;
 
-    /*
-     * Use the #on(String, Object) factory method
+    /**
+     * Createsa prefix filter for the given field and value.
+     *
+     * @param field the field to filter on
+     * @param value the prefix to filter by
      */
     public Prefix(String field, String value) {
         this.field = field;
+        this.value = value;
+    }
+
+    /**
+     * Createsa prefix filter for the given field and value.
+     *
+     * @param field the field to filter on
+     * @param value the prefix to filter by
+     */
+    public Prefix(Mapping field, String value) {
+        this.field = field.toString();
         this.value = value;
     }
 

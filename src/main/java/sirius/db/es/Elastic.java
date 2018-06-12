@@ -12,7 +12,6 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import sirius.db.KeyGenerator;
-import sirius.db.es.query.ElasticQuery;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
@@ -31,6 +30,7 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.settings.PortMapper;
 
+import javax.annotation.Nullable;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
@@ -39,6 +39,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ * Provides the {@link BaseMapper mapper} used to communicate with <tt>Elasticsearch</tt>.
+ */
 @Register(classes = Elastic.class)
 public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends ElasticEntity>> {
 
@@ -81,10 +84,20 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         discriminatorTable.put(ed, p);
     }
 
+    /**
+     * Provides a future which is fulfilled once the Elasticsearch client is fully initialized.
+     *
+     * @return a future which indicates when Elasticsearch is ready
+     */
     public Future getReadyFuture() {
         return readyFuture;
     }
 
+    /**
+     * Provides access to the underlying low level client.
+     *
+     * @return the underlying low level client used to perform the HTTP requests against Elasticsearch.
+     */
     public LowLevelClient getLowLevelClient() {
         if (client == null) {
             initializeClient();
@@ -106,22 +119,24 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.
             if (dockerDetected) {
-                int retries = 5;
-                while (retries-- > 0) {
-                    try {
-                        if (client.getRestClient()
-                                  .performRequest("GET", "/_cat/indices")
-                                  .getStatusLine()
-                                  .getStatusCode() == 200) {
-                            return;
-                        }
-                    } catch (Exception e) {
-                        Exceptions.ignore(e);
-                    }
-                    Elastic.LOG.INFO("Sleeping two seconds to wait until Elasticsearch is ready...");
-                    Wait.seconds(2);
-                }
+                waitForElasticsearchToBecomReady();
             }
+        }
+    }
+
+    private void waitForElasticsearchToBecomReady() {
+        int retries = 5;
+        while (retries-- > 0) {
+            try {
+                if (client.getRestClient().performRequest("GET", "/_cat/indices").getStatusLine().getStatusCode()
+                    == 200) {
+                    return;
+                }
+            } catch (Exception e) {
+                Exceptions.ignore(e);
+            }
+            Elastic.LOG.INFO("Sleeping two seconds to wait until Elasticsearch is ready...");
+            Wait.seconds(2);
         }
     }
 
@@ -158,7 +173,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     @Override
     protected <E extends ElasticEntity> void createEnity(E entity, EntityDescriptor ed) throws Exception {
         JSONObject data = new JSONObject();
-        toJSON(entity, ed, data);
+        toJSON(ed, entity, data);
 
         String id = determineId(entity);
         JSONObject response = getLowLevelClient().index(determineIndex(ed, entity),
@@ -173,7 +188,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         }
     }
 
-    public String determineRouting(EntityDescriptor ed, ElasticEntity entity) {
+    /**
+     * Determines the routing value to be used for the given entity.
+     *
+     * @param ed     the entity descriptor of the entity
+     * @param entity the entity to fetch the routing value from
+     * @return the routing value to use
+     */
+    @Nullable
+    protected String determineRouting(EntityDescriptor ed, ElasticEntity entity) {
         Property property = routeTable.get(ed);
 
         if (property == null) {
@@ -187,7 +210,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     protected <E extends ElasticEntity> void updateEntity(E entity, boolean force, EntityDescriptor ed)
             throws Exception {
         JSONObject data = new JSONObject();
-        boolean changed = toJSON(entity, ed, data);
+        boolean changed = toJSON(ed, entity, data);
 
         if (!changed) {
             return;
@@ -205,7 +228,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         }
     }
 
-    public boolean toJSON(ElasticEntity entity, EntityDescriptor ed, JSONObject data) {
+    /**
+     * Transforms the given entity to JSON.
+     *
+     * @param entity the entity to transform
+     * @param ed     the descriptor of the entity
+     * @param data   the target JSON to fill
+     * @return <tt>true</tt> if at least on property has changed, <tt>false</tt> otherwise
+     */
+    protected boolean toJSON(EntityDescriptor ed, ElasticEntity entity, JSONObject data) {
         boolean changed = false;
         for (Property p : ed.getProperties()) {
             if (!ElasticEntity.ID.getName().equals(p.getName())) {
@@ -216,7 +247,17 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         return changed;
     }
 
-    public String determineId(ElasticEntity entity) {
+    /**
+     * Determines the id of the entity.
+     * <p>
+     * This will either return the stored ID or create a new one, if the entity is still new. If the entity is
+     * {@link sirius.db.es.annotations.StorePerYear stored per year}, the year will be prepended to the ID itself
+     * to determine the index in {@link #determineIndex(EntityDescriptor, ElasticEntity)}.
+     *
+     * @param entity the entity to determine the id for
+     * @return the id to use for this entity
+     */
+    protected String determineId(ElasticEntity entity) {
         if (entity.isNew()) {
             EntityDescriptor ed = entity.getDescriptor();
             Property discriminator = discriminatorTable.get(ed);
@@ -232,7 +273,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         return entity.getId();
     }
 
-    public String determineIndex(EntityDescriptor ed, ElasticEntity entity) {
+    /**
+     * Determines the index to use for the given entity.
+     * <p>
+     * This will either be the {@link EntityDescriptor#getRelationName() relation name} or if the entity is
+     * {@link sirius.db.es.annotations.StorePerYear stored per year}, it will be determined by
+     * {@link #determineYearIndex(EntityDescriptor, Object)}.
+     *
+     * @param ed     the descriptor of the entity
+     * @param entity the entity to determine the index for
+     * @return the index name to use for the given entity.
+     */
+    protected String determineIndex(EntityDescriptor ed, ElasticEntity entity) {
         Property discriminator = discriminatorTable.get(ed);
         if (discriminator == null) {
             return ed.getRelationName();
@@ -242,14 +294,37 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         return determineYearIndex(ed, year);
     }
 
-    public String determineYearIndex(EntityDescriptor ed, Object year) {
+    /**
+     * Computes the effective index name for the given descriptor and year.
+     * <p>
+     * This will be {@code ed.getRelationName() + "-" + year}
+     *
+     * @param ed   the descriptor of the entity
+     * @param year the year of the index
+     * @return the index name for the given descriptor and year
+     */
+    protected String determineYearIndex(EntityDescriptor ed, Object year) {
         return ed.getRelationName() + "-" + year;
     }
 
-    public String determineTypeName(EntityDescriptor ed) {
+    /**
+     * Determines the type name used for a given entity type.
+     *
+     * @param ed the descriptor of the entity
+     * @return the type name to use
+     */
+    protected String determineTypeName(EntityDescriptor ed) {
         return ed.getRelationName();
     }
 
+    /**
+     * Determines the version value to use for a given entity.
+     *
+     * @param force  <tt>true</tt> if an update should be forced
+     * @param entity the entity to determine the version from
+     * @return <tt>null</tt> if an update is forced or if the entity isn't {@link VersionedEntity versioned},
+     * the actual entity version otherwise.
+     */
     private Integer determineVersion(boolean force, ElasticEntity entity) {
         if (entity instanceof VersionedEntity && !force) {
             return ((VersionedEntity) entity).getVersion();
@@ -268,7 +343,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
                                    determineVersion(force, entity));
     }
 
-    public static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
+    /**
+     * Creates a new instance of the given entity type for the given data.
+     *
+     * @param ed  the descriptor of the entity type
+     * @param obj the JSON data to transform
+     * @return a new entity based on the given data
+     */
+    protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
         try {
             JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
             ElasticEntity result = (ElasticEntity) ed.make(null, key -> Value.of(source.get(key)));
@@ -284,6 +366,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         }
     }
 
+    /**
+     * Provides a "routed by" context for {@link #find(Class, Object, ContextInfo...)}.
+     *
+     * @param value the routing value to use
+     * @return the value wrapped as context info
+     */
     public static ContextInfo routedBy(String value) {
         return new ContextInfo(CONTEXT_ROUTING, Value.of(value));
     }
@@ -327,14 +415,30 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
                     routedBy(determineRouting(entity.getDescriptor(), entity)));
     }
 
+    /**
+     * Creates a {@link BatchContext batch context} used for bulk updates.
+     *
+     * @return a new batch context
+     */
     public BatchContext batch() {
         return new BatchContext(getLowLevelClient());
     }
 
+    /**
+     * Determines if an appropriate configuration is available (e.g. a host to connect to).
+     *
+     * @return <tt>true</tt> if a configuration is present, <tt>false</tt> otherwise
+     */
     public boolean isConfigured() {
         return !hosts.isEmpty();
     }
 
+    /**
+     * Determines if the given entity type is {@link sirius.db.es.annotations.StorePerYear stored per year}.
+     *
+     * @param descriptor the descriptor of the entity type
+     * @return <tt>true</tt> if it is stored per year, <tt>false</tt> otherwise
+     */
     public boolean isStoredPerYear(EntityDescriptor descriptor) {
         return discriminatorTable.containsKey(descriptor);
     }

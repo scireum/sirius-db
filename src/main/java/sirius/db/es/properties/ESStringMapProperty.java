@@ -20,7 +20,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.StringList;
 import sirius.db.mixing.StringMap;
 import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.kernel.commons.Value;
@@ -36,7 +35,11 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Represents an {@link StringList} field within a {@link Mixable}.
+ * Represents an {@link StringMap } field within a {@link Mixable}.
+ * <p>
+ * Note that maps are stored as a list of nested objects which contain a <tt>key</tt> and
+ * a <tt>value</tt>. This is used to prevent a mapping explosion within ES. whil still permitting to
+ * search and filter using nested queries.
  */
 public class ESStringMapProperty extends BaseMapProperty implements ESPropertyInfo {
 
@@ -51,7 +54,8 @@ public class ESStringMapProperty extends BaseMapProperty implements ESPropertyIn
 
         @Override
         public boolean accepts(Field field) {
-            return ElasticEntity.class.isAssignableFrom(field.getDeclaringClass()) && StringMap.class.equals(field.getType());
+            return ElasticEntity.class.isAssignableFrom(field.getDeclaringClass())
+                   && StringMap.class.equals(field.getType());
         }
 
         @Override

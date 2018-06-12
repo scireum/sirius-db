@@ -6,15 +6,13 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import sirius.db.es.Elastic;
-import sirius.db.es.ElasticEntity;
-import sirius.db.es.IndexMappings;
-import sirius.db.es.LowLevelClient;
-import sirius.db.es.VersionedEntity;
+import sirius.db.es.filter.BoolQueryBuilder;
+import sirius.db.es.filter.FieldEqual;
+import sirius.db.es.filter.Filter;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Query;
@@ -34,6 +32,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Provides a fluent query API for Elasticsearch.
+ *
+ * @param <E> the type of entities to be queried
+ */
 public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E> {
 
     private static final int SCROLL_TTL_SECONDS = 60 * 5;
@@ -66,15 +69,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private String routing;
     private boolean unrouted;
 
+    /**
+     * Creates a new query for the given type using the given client.
+     *
+     * @param descriptor the descriptor of the entity type to query
+     * @param client     the client to use
+     * @see Elastic#select(Class)
+     */
     public ElasticQuery(EntityDescriptor descriptor, LowLevelClient client) {
         super(descriptor);
         this.client = client;
-    }
-
-    public ElasticQuery<E> years(int... years) {
-        this.years = autoinit(this.years);
-        Arrays.stream(years).forEach(this.years::add);
-        return this;
     }
 
     private <X> List<X> autoinit(List<X> list) {
@@ -85,6 +89,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return list;
     }
 
+    /**
+     * Specifies which years to query for entities which are {@link sirius.db.es.annotations.StorePerYear stored per year}.
+     *
+     * @param years a list of years to search in. Note that years for which no index exists will be filtered automatically
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> years(int... years) {
+        this.years = autoinit(this.years);
+        Arrays.stream(years).forEach(this.years::add);
+        return this;
+    }
+
+    /**
+     * Specifies a range of years to query for entities which are {@link sirius.db.es.annotations.StorePerYear stored per year}.
+     * <p>
+     * Note that years for which no index exists will be filtered automatically
+     *
+     * @param from the first year to search in
+     * @param to   the last year to search in
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> yearsFromTo(int from, int to) {
         this.years = autoinit(this.years);
         for (int year = from; year <= to; year++) {
@@ -93,6 +118,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    /**
+     * Adds a MUST filter to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> must(JSONObject filter) {
         if (filter != null) {
             if (queryBuilder == null) {
@@ -103,10 +134,22 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    /**
+     * Adds a MUST filter to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> must(Filter filter) {
         return must(filter.toJSON());
     }
 
+    /**
+     * Adds a MUST NOT filter to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> mustNot(JSONObject filter) {
         if (filter != null) {
             if (queryBuilder == null) {
@@ -117,10 +160,24 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    /**
+     * Adds a MUST NOT filter to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
+
     public ElasticQuery<E> mustNot(Filter filter) {
         return mustNot(filter.toJSON());
     }
 
+    /**
+     * Adds a FILTER constraint to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     * @see BoolQueryBuilder#filter(JSONObject)
+     */
     public ElasticQuery<E> filter(JSONObject filter) {
         if (filter != null) {
             if (queryBuilder == null) {
@@ -131,60 +188,130 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    /**
+     * Adds a FILTER constraint to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     * @see BoolQueryBuilder#filter(Filter)
+     */
     public ElasticQuery<E> filter(Filter filter) {
         return filter(filter.toJSON());
     }
 
+    /**
+     * Adds a {@link FieldEqual} filter for the given field and value as FILTER to the query.
+     *
+     * @param field the field to filter on
+     * @param value the value to filter on
+     * @return the query itself for fluent method calls
+     */
     @Override
     public ElasticQuery<E> eq(Mapping field, Object value) {
         return filter(new FieldEqual(field, value));
     }
 
+    /**
+     * Adds a {@link FieldEqual} filter for the given field and value as FILTER to the query.
+     * <p>
+     * If the given <tt>value</tt> if <tt>null</tt>, no filter will be added.
+     *
+     * @param field the field to filter on
+     * @param value the value to filter on
+     * @return the query itself for fluent method calls
+     */
     @Override
     public ElasticQuery<E> eqIgnoreNull(Mapping field, Object value) {
         return filter(new FieldEqual(field, value).ignoreNull());
     }
 
+    /**
+     * Adds a sort statement to the query.
+     *
+     * @param sortSpec a JSON object describing a sort requirement
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> sort(JSONObject sortSpec) {
         this.sorts = autoinit(this.sorts);
         sorts.add(sortSpec);
         return this;
     }
 
+    /**
+     * Adds a sort statement for the given field to the query.
+     *
+     * @param field    the field to sort by
+     * @param sortSpec a JSON object describing a sort requirement
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> sort(Mapping field, JSONObject sortSpec) {
         return sort(new JSONObject().fluentPut(field.toString(), sortSpec));
     }
 
+    /**
+     * Adds an ascending sort by the given field to the query.
+     *
+     * @param field the field to order by
+     * @return the query itself for fluent method calls
+     */
     @Override
     public ElasticQuery<E> orderAsc(Mapping field) {
         return sort(field, new JSONObject().fluentPut("order", "asc"));
     }
 
+    /**
+     * Adds a descending sort by the given field to the query.
+     *
+     * @param field the field to order by
+     * @return the query itself for fluent method calls
+     */
     @Override
     public ElasticQuery<E> orderDesc(Mapping field) {
         return sort(field, new JSONObject().fluentPut("order", "desc"));
     }
 
+    // TODO
     public ElasticQuery<E> collapse(Mapping field) {
         this.collapseBy = field.toString();
         return this;
     }
 
+    // TODO
     public ElasticQuery<E> collapse(String field) {
         this.collapseBy = field;
         return this;
     }
 
+    /**
+     * Specifies the routing value to use.
+     * <p>
+     * For routed entities it is highly recommended to supply a routing value as it greatly improves the
+     * search performance. If no routing value is available, use {@link #deliberatelyUnrouted()} to signal
+     * the the value was deliberately skipped. Otherwise a warning will be emitted to support error tracing.
+     *
+     * @param value the value to use for routing
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> routing(String value) {
         this.routing = value;
         return this;
     }
 
+    /**
+     * Signals the the routing is deliberately skipped as no routing value is available.
+     *
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> deliberatelyUnrouted() {
         this.unrouted = true;
         return this;
     }
 
+    /**
+     * Builds the acutal JSON query for <tt>_search</tt>
+     *
+     * @return the query as JSON
+     */
     private JSONObject buildPayload() {
         JSONObject payload = new JSONObject();
         if (VersionedEntity.class.isAssignableFrom(descriptor.getType())) {
@@ -202,6 +329,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return payload;
     }
 
+    /**
+     * Builds a simplified JSON query for count and exists calls.
+     *
+     * @return the query as JSON
+     */
     private JSONObject buildSimplePayload() {
         JSONObject payload = new JSONObject();
 
@@ -218,11 +350,22 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("COUNT queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
+        List<String> indices = determineIndices();
+
+        if (indices.isEmpty()) {
+            return 0;
+        }
+
         JSONObject response =
-                client.count(determineIndices(), elastic.determineTypeName(descriptor), routing, buildSimplePayload());
+                client.count(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
         return response.getLong("count");
     }
 
+    /**
+     * Determines which indices top search in.
+     *
+     * @return the list of indices to search in
+     */
     private List<String> determineIndices() {
         if (!elastic.isStoredPerYear(descriptor)) {
             if (years != null && !years.isEmpty()) {
@@ -260,8 +403,14 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("EXISTS queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
+        List<String> indices = determineIndices();
+
+        if (indices.isEmpty()) {
+            return false;
+        }
+
         JSONObject response =
-                client.exists(determineIndices(), elastic.determineTypeName(descriptor), routing, buildSimplePayload());
+                client.exists(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
         return response.getJSONObject("hits").getInteger("total") >= 1;
     }
 
@@ -273,12 +422,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return;
         }
 
-        JSONObject response = client.search(determineIndices(),
-                                            elastic.determineTypeName(descriptor),
-                                            routing,
-                                            skip,
-                                            limit,
-                                            buildPayload());
+        List<String> indices = determineIndices();
+        if (indices.isEmpty()) {
+            return;
+        }
+
+        JSONObject response =
+                client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
         for (Object obj : response.getJSONObject("hits").getJSONArray("hits")) {
             if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
@@ -286,6 +436,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
     }
 
+    /**
+     * For larger queries, we use a scroll query in Elasticsearch, which provides kind of a
+     * cursor to fetch the results blockwise.
+     *
+     * @param handler the result handler as passed to {@link #iterate(Function)}
+     */
     private void scroll(Function<E, Boolean> handler) {
         try {
             if (sorts == null || sorts.isEmpty()) {
@@ -294,7 +450,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 orderAsc(Mapping.named(KEY_DOC_ID));
             }
 
-            JSONObject response = client.createScroll(determineIndices(),
+            List<String> indices = determineIndices();
+            if (indices.isEmpty()) {
+                return;
+            }
+
+            JSONObject response = client.createScroll(indices,
                                                       elastic.determineTypeName(descriptor),
                                                       routing,
                                                       0,
@@ -334,9 +495,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
     }
 
+    /**
+     * Loops over the scroll cursor until either processing is aborted or all entities have been read.
+     *
+     * @param handler       the handler which processes the entity and determines if we should continue
+     * @param firstResponse the first response we received when creating the scroll query.
+     * @return the last response we received when iterating over the scroll query
+     */
     @SuppressWarnings("unchecked")
-    private JSONObject executeScroll(Function<E, Boolean> handler, JSONObject response) {
+    private JSONObject executeScroll(Function<E, Boolean> handler, JSONObject firstResponse) {
         long lastScroll = 0;
+        JSONObject response = firstResponse;
         while (true) {
             // we keep ob executing queries until es returns an empty list of results...
             JSONArray hits = response.getJSONObject("hits").getJSONArray("hits");
@@ -355,6 +524,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
     }
 
+    /**
+     * As a scroll cursor can timeout, we monitor the call interval and emit a warning if a timeout might have occurred.
+     *
+     * @param lastScroll the timestamp when the last scoll was executed
+     * @return the next timestamp
+     */
     private long performScrollMonitoring(long lastScroll) {
         long now = System.currentTimeMillis();
         if (lastScroll > 0) {

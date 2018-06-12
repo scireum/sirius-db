@@ -6,11 +6,12 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -31,8 +32,11 @@ public class FieldEqual extends BaseFilter {
     private boolean ignoreNull = false;
     private Float boost = null;
 
-    /*
-     * Use the #on(String, Object) factory method
+    /**
+     * Creates a new filter for the given field and value.
+     *
+     * @param field the field to filter on
+     * @param value the value to filter by
      */
     public FieldEqual(String field, Object value) {
         // In search queries the id field must be referenced via "_id" not "id..
@@ -44,8 +48,14 @@ public class FieldEqual extends BaseFilter {
         this.value = transformFilterValue(value);
     }
 
-    public FieldEqual(Mapping key, Object value) {
-        this(key.toString(), value);
+    /**
+     * Creates a new filter for the given field and value.
+     *
+     * @param field the field to filter on
+     * @param value the value to filter by
+     */
+    public FieldEqual(Mapping field, Object value) {
+        this(field.toString(), value);
     }
 
     /**
@@ -63,10 +73,9 @@ public class FieldEqual extends BaseFilter {
         if (value instanceof ElasticEntity) {
             return ((ElasticEntity) value).getId();
         }
-        //TODO
-//        if (value instanceof EntityRef) {
-//            return ((EntityRef<?>) value).getId();
-//        }
+        if (value instanceof BaseEntity<?>) {
+            return ((BaseEntity<?>) value).getId();
+        }
         if (value instanceof Value) {
             return ((Value) value).asString();
         }

@@ -6,10 +6,13 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
 
+/**
+ * Represents a base implementation for all constraints.
+ */
 public abstract class BaseFilter implements Filter {
 
     @Override

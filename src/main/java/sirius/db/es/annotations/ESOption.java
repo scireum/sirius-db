@@ -8,6 +8,10 @@
 
 package sirius.db.es.annotations;
 
+/**
+ * Used to describe a tri-state property which is either <tt>true</tt>, <tt>false</tt> or <tt>default</tt>, which
+ * will use the default value used by Elasticsearch.
+ */
 public enum ESOption {
 
     /**

@@ -15,7 +15,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.StringList;
 import sirius.db.mixing.StringListMap;
 import sirius.kernel.di.std.Register;
 
@@ -24,7 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringList} field within a {@link Mixable}.
+ * Represents an {@link StringListMap } field within a {@link Mixable}.
  */
 public class ESStringListMapProperty extends ESStringMapProperty {
 
@@ -58,5 +57,4 @@ public class ESStringListMapProperty extends ESStringMapProperty {
     ESStringListMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
-
 }

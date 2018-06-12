@@ -16,25 +16,52 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.kernel.Lifecycle;
+import sirius.kernel.Sirius;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.settings.Extension;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Creates the mappings for all available {@link ElasticEntity Elasticsearch entities}.
+ */
 @Register(classes = {IndexMappings.class, Lifecycle.class})
 public class IndexMappings implements Lifecycle {
 
-    public static String MAPPING_STORED = "stored";
-    public static String MAPPING_INDEXED = "indexed";
-    public static String MAPPING_DOC_VALUES = "doc_values";
-    public static String MAPPING_NORMS = "norms";
-    public static String MAPPING_TYPE = "type";
+    /**
+     * Mapping key used to tell ES if and how a property is stored
+     */
+    public static final String MAPPING_STORED = "stored";
 
-    public static String MAPPING_TYPE_KEWORD = "keyword";
+    /**
+     * Mapping key used to tell ES if and how a indexed is stored
+     */
+    public static final String MAPPING_INDEXED = "indexed";
+
+    /**
+     * Mapping key used to tell ES about the doc_values setting.
+     */
+    public static final String MAPPING_DOC_VALUES = "doc_values";
+
+    /**
+     * Mapping key used to tell ES if and how to store norms.
+     */
+    public static final String MAPPING_NORMS = "norms";
+
+    /**
+     * Mapping key used to tell ES the mapping type of a field.
+     */
+    public static final String MAPPING_TYPE = "type";
+
+    /**
+     * Mapping value used to mark a field as "keywors" meaning that it is indexed but not analyzed.
+     */
+    public static final String MAPPING_TYPE_KEWORD = "keyword";
 
     @Part
     private Mixing mixing;
@@ -129,11 +156,13 @@ public class IndexMappings implements Lifecycle {
             }
         }
 
-        elastic.getLowLevelClient().createIndex(indexName, 5, 5);
+        Extension realmConfig = Sirius.getSettings().getExtension("mixing.es.settings", ed.getRealm());
+        elastic.getLowLevelClient()
+               .createIndex(indexName, realmConfig.getInt("numberOfShards"), realmConfig.getInt("numberOfReplicas"));
         elastic.getLowLevelClient().putMapping(indexName, ed.getRelationName(), mapping);
     }
 
-    private Boolean isExcludeFromSource(Property p) {
+    private boolean isExcludeFromSource(Property p) {
         return p.getAnnotation(IndexMode.class).map(IndexMode::excludeFromSource).orElse(false);
     }
 
@@ -152,6 +181,14 @@ public class IndexMappings implements Lifecycle {
         return "index-mappings";
     }
 
+    /**
+     * Determines if the given yearly index exists.
+     * <p>
+     * As we might check this frequently (for queries against entities stored per year) the result is cached.
+     *
+     * @param name the name of the index to check.
+     * @return <tt>true</tt> if an index exists, <tt>false</tt> if it hasn't been created yet
+     */
     public boolean yearlyIndexExists(String name) {
         if (!checkedIndices.containsKey(name)) {
             checkedIndices.put(name, elastic.getLowLevelClient().indexExists(name));
@@ -160,6 +197,12 @@ public class IndexMappings implements Lifecycle {
         return checkedIndices.get(name);
     }
 
+    /**
+     * Ensures that the index for the given entity type and year exists and contains the appropriate mappings.
+     *
+     * @param ed   the descriptor of the entity type
+     * @param year the year to create the index for
+     */
     public void ensureYearlyIndexExists(EntityDescriptor ed, int year) {
         String name = elastic.determineYearIndex(ed, year);
         if (yearlyIndexExists(name)) {

@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
 
@@ -17,8 +17,8 @@ public class Not extends BaseFilter {
 
     private Filter inner;
 
-    /*
-     * Use the #on(Constraint) factory method
+    /**
+     * Inverts the given inner filter.
      */
     public Not(Filter inner) {
         this.inner = inner;

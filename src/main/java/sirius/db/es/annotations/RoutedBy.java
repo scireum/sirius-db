@@ -15,6 +15,8 @@ import java.lang.annotation.Target;
 
 /**
  * Marks the field / property which is used as routing info for an Elasticsearch index.
+ * <p>
+ * Note that this shouldn't be <tt>null</tt> and also be an non analyzed field.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

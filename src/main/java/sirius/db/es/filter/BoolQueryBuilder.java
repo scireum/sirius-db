@@ -6,13 +6,17 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.kernel.commons.Explain;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a boolean query which is the actual work horse of Elasticsearch queries.
+ */
 public class BoolQueryBuilder extends BaseFilter {
 
     private List<JSONObject> must;
@@ -28,6 +32,12 @@ public class BoolQueryBuilder extends BaseFilter {
         return list;
     }
 
+    /**
+     * Adds a MUST constraint for the given query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder must(JSONObject filter) {
         if (filter != null) {
             this.must = autoinit(this.must);
@@ -37,10 +47,22 @@ public class BoolQueryBuilder extends BaseFilter {
         return this;
     }
 
+    /**
+     * Adds a MUST constraint for the given query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder must(Filter filter) {
         return must(filter.toJSON());
     }
 
+    /**
+     * Adds a MUST NOT constraint for the given query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder mustNot(JSONObject filter) {
         if (filter != null) {
             this.mustNot = autoinit(this.mustNot);
@@ -50,10 +72,22 @@ public class BoolQueryBuilder extends BaseFilter {
         return this;
     }
 
+    /**
+     * Adds a MUST NOT constraint for the given query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder mustNot(Filter filter) {
         return mustNot(filter.toJSON());
     }
 
+    /**
+     * Adds a SHOULD constraint for the given query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder should(JSONObject filter) {
         if (filter != null) {
             this.should = autoinit(this.should);
@@ -63,10 +97,24 @@ public class BoolQueryBuilder extends BaseFilter {
         return this;
     }
 
+    /**
+     * Adds a SHOULD constraint for the given query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder should(Filter filter) {
         return should(filter.toJSON());
     }
 
+    /**
+     * Adds a FILTER constraint for the given query.
+     * <p>
+     * A filter is like a MUST clause but without scoring.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder filter(JSONObject filter) {
         if (filter != null) {
             this.filter = autoinit(this.filter);
@@ -76,10 +124,20 @@ public class BoolQueryBuilder extends BaseFilter {
         return this;
     }
 
+    /**
+     * Adds a FILTER constraint for the given query.
+     * <p>
+     * A filter is like a MUST clause but without scoring.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
     public BoolQueryBuilder filter(Filter filter) {
         return filter(filter.toJSON());
     }
 
+    @SuppressWarnings("squid:MethodCyclomaticComplexity")
+    @Explain("Splitting this method would most probably increase the complexity")
     @Override
     public JSONObject toJSON() {
         int filters = filter == null ? 0 : filter.size();

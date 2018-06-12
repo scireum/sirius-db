@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
 
@@ -22,6 +22,11 @@ public class Or extends BaseFilter {
 
     private Filter[] filters;
 
+    /**
+     * Constructs a new constraint which requires one of the filters to be fulfilled.
+     *
+     * @param filters the filters to be fulfilled.
+     */
     public Or(Filter... filters) {
         this.filters = filters;
     }

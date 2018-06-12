@@ -31,7 +31,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class RequestBuilder {
+/**
+ * Internal fluent builder used to create, execute and handle requests via the given REST client.
+ */
+class RequestBuilder {
     private String method;
     private RestClient restClient;
     private Map<String, String> params;
@@ -45,12 +48,12 @@ public class RequestBuilder {
     @Part
     private static Elastic elastic;
 
-    public RequestBuilder(String method, RestClient restClient) {
+    protected RequestBuilder(String method, RestClient restClient) {
         this.method = method;
         this.restClient = restClient;
     }
 
-    public RequestBuilder withParam(String param, Object value) {
+    protected RequestBuilder withParam(String param, Object value) {
         if (value != null) {
             if (params == null) {
                 params = new HashMap<>();
@@ -62,44 +65,36 @@ public class RequestBuilder {
         return this;
     }
 
-    public RequestBuilder data(JSONObject data) {
+    protected RequestBuilder data(JSONObject data) {
         this.data = data;
         return this;
     }
 
-    public RequestBuilder rawData(String data, String contentType) {
+    protected RequestBuilder rawData(String data, String contentType) {
         this.rawData = data;
         this.contentType = contentType;
         return this;
     }
 
-    public RequestBuilder withCustomErrorHandler(Function<ResponseException, HttpEntity> errorHandler) {
+    protected RequestBuilder withCustomErrorHandler(Function<ResponseException, HttpEntity> errorHandler) {
         this.customExceptionHandler = errorHandler;
         return this;
     }
 
-    public RequestBuilder routing(Object routing) {
+    protected RequestBuilder routing(Object routing) {
         return withParam("routing", routing);
     }
 
-    public RequestBuilder version(Object version) {
+    protected RequestBuilder version(Object version) {
         return withParam("version", version);
     }
 
     @SuppressWarnings("squid:S2095")
     @Explain("False positive")
-    public RequestBuilder tryExecute(String uri) throws OptimisticLockException {
+    protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
         Watch w = Watch.start();
         try (Operation op = new Operation(() -> "Elastic: " + method + " " + uri, Duration.ofSeconds(30))) {
-            HttpEntity entity = null;
-            if (data != null) {
-                entity = new NStringEntity(data.toJSONString(), ContentType.APPLICATION_JSON);
-            }
-            if (rawData != null) {
-                entity = new NStringEntity(rawData, ContentType.create(contentType));
-            }
-            Response response =
-                    restClient.performRequest(method, uri, params == null ? Collections.emptyMap() : params, entity);
+            Response response = restClient.performRequest(method, uri, determineParams(), buildEntity());
             responseEntity = response.getEntity();
             return this;
         } catch (ResponseException e) {
@@ -136,9 +131,24 @@ public class RequestBuilder {
         }
     }
 
+    private Map<String, String> determineParams() {
+        return params == null ? Collections.emptyMap() : params;
+    }
+
+    private HttpEntity buildEntity() {
+        if (data != null) {
+            return new NStringEntity(data.toJSONString(), ContentType.APPLICATION_JSON);
+        }
+        if (rawData != null) {
+            return new NStringEntity(rawData, ContentType.create(contentType));
+        }
+
+        return null;
+    }
+
     @SuppressWarnings("squid:S2095")
     @Explain("False positive")
-    public RequestBuilder execute(String uri) {
+    protected RequestBuilder execute(String uri) {
         try {
             return tryExecute(uri);
         } catch (OptimisticLockException e) {
@@ -165,7 +175,7 @@ public class RequestBuilder {
         }
     }
 
-    public JSONObject response() {
+    protected JSONObject response() {
         try {
             if (responseObject == null) {
                 if (responseEntity == null) {
@@ -185,11 +195,11 @@ public class RequestBuilder {
         }
     }
 
-    public RequestBuilder toggle(String param, boolean toggle) {
+    protected RequestBuilder toggle(String param, boolean toggle) {
         return withParam(param, String.valueOf(toggle));
     }
 
-    public RequestBuilder enable(String param, boolean flag) {
+    protected RequestBuilder enable(String param, boolean flag) {
         if (!flag) {
             return this;
         }
@@ -197,7 +207,7 @@ public class RequestBuilder {
         return withParam(param, "true");
     }
 
-    public RequestBuilder disable(String param, boolean flag) {
+    protected RequestBuilder disable(String param, boolean flag) {
         if (flag) {
             return this;
         }

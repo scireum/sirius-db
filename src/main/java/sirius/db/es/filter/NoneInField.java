@@ -6,9 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.mixing.Mapping;
 
 import java.util.Collection;
 
@@ -20,12 +21,26 @@ public class NoneInField extends BaseFilter {
     private final Collection<?> values;
     private final String field;
 
-    /*
-     * Use the #on(List, String) factory method
+    /**
+     * Creates a filter which ensures that none of the given values is in the given field.
+     *
+     * @param field  the field to filter on
+     * @param values the values to exclude
      */
     public NoneInField(Collection<?> values, String field) {
         this.values = values;
         this.field = field;
+    }
+
+    /**
+     * Creates a filter which ensures that none of the given values is in the given field.
+     *
+     * @param field  the field to filter on
+     * @param values the values to exclude
+     */
+    public NoneInField(Mapping field, Collection<?> values) {
+        this.values = values;
+        this.field = field.toString();
     }
 
     @Override

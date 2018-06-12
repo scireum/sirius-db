@@ -8,8 +8,8 @@
 
 package sirius.db.es
 
-import sirius.db.es.query.FieldEqual
-import sirius.db.es.query.Or
+import sirius.db.es.filter.FieldEqual
+import sirius.db.es.filter.Or
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part

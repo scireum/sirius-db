@@ -6,11 +6,12 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.query;
+package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
+import sirius.db.mixing.Mapping;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -26,10 +27,23 @@ public class OneInField extends BaseFilter {
     private boolean orEmpty = false;
     private boolean forceEmpty = false;
 
-    /*
-     * Use the #on(List, String) factory method
+    /**
+     * Creates a filter which ensures that none of the given values is in the given field.
+     *
+     * @param field  the field to filter on
+     * @param values the values to exclude
      */
-    private OneInField(Collection<?> values, String field) {
+    public OneInField(Mapping field, Collection<?> values) {
+        this(values, field.toString());
+    }
+
+    /**
+     * Creates a filter which ensures that at least one of the given values is in the given field.
+     *
+     * @param field  the field to filter on
+     * @param values the values to exclude
+     */
+    public OneInField(Collection<?> values, String field) {
         if (values != null) {
             this.values = values.stream().filter(Objects::nonNull).collect(Collectors.<Object>toList());
         } else {

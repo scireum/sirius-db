@@ -14,7 +14,7 @@ import sirius.kernel.health.metrics.MetricProvider;
 import sirius.kernel.health.metrics.MetricsCollector;
 
 /**
- * Provides metrics for Mongo DB (if configured).
+ * Provides metrics for Elasticsearch (if configured).
  */
 @Register
 public class ElasticMetricsProvider implements MetricProvider {

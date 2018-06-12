@@ -9,15 +9,24 @@
 package sirius.db.es;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Simplifies batch updates and deletes against Elasticsearch.
+ * <p>
+ * Permits to execute an arbitrary number of requests. Which will internally executed as blocks using the bulk API of Elasticsearch.
+ * <p>
+ * Note that this instance isn't threadsafe.
+ */
+@NotThreadSafe
 public class BatchContext implements Closeable {
 
     private static final int DEFAULT_BATCH_SIZE = 256;
@@ -37,27 +46,57 @@ public class BatchContext implements Closeable {
     @Part
     private static Elastic elastic;
 
+    /**
+     * Creates a new instance using the given client.
+     *
+     * @param client the client used to execute the bulk requests
+     * @see Elastic#batch()
+     */
     protected BatchContext(LowLevelClient client) {
         this.maxBatchSize = DEFAULT_BATCH_SIZE;
         this.client = client;
         this.commands = new ArrayList<>();
     }
 
+    /**
+     * Queues an {@link Elastic#tryUpdate(BaseEntity)} in the batch context.
+     *
+     * @param entity the entity to create or update
+     * @return the batch context itself for fluent method calls
+     */
     public BatchContext tryUpdate(ElasticEntity entity) {
         update(entity, false);
         return this;
     }
 
+    /**
+     * Queues an {@link Elastic#override(BaseEntity)} in the batch context.
+     *
+     * @param entity the entity to create or update
+     * @return the batch context itself for fluent method calls
+     */
     public BatchContext overwrite(ElasticEntity entity) {
         update(entity, true);
         return this;
     }
 
+    /**
+     * Queues an {@link Elastic#tryDelete(BaseEntity)} in the batch context.
+     *
+     * @param entity the entity to delete
+     * @return the batch context itself for fluent method calls
+     */
     public BatchContext tryDelete(ElasticEntity entity) {
         delete(entity, false);
         return this;
     }
 
+    /**
+     * Queues an {@link Elastic#forceDelete(BaseEntity)} in the batch context.
+     *
+     * @param entity the entity to delete
+     * @return the batch context itself for fluent method calls
+     */
     public BatchContext forceDelete(ElasticEntity entity) {
         delete(entity, true);
         return this;
@@ -80,7 +119,7 @@ public class BatchContext implements Closeable {
         }
 
         JSONObject data = new JSONObject();
-        boolean changed = elastic.toJSON(entity, ed, data);
+        boolean changed = elastic.toJSON(ed, entity, data);
 
         if (!changed) {
             return;
@@ -119,6 +158,11 @@ public class BatchContext implements Closeable {
         }
     }
 
+    /**
+     * Forces the execution of a bulk update (if statements are queued).
+     *
+     * @return <tt>true</tt> if errors occurred, <tt>false</tt> otherwise
+     */
     public boolean commit() {
         if (commands.isEmpty()) {
             return false;
@@ -143,8 +187,11 @@ public class BatchContext implements Closeable {
         }
     }
 
+    /**
+     * Closes the batch context and executes all statements which are still queued.
+     */
     @Override
-    public void close() throws IOException {
+    public void close() {
         commit();
     }
 }

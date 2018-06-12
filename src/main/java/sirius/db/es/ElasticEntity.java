@@ -8,8 +8,7 @@
 
 package sirius.db.es;
 
-import sirius.db.es.query.ElasticQuery;
-import sirius.db.es.query.FieldNotEqual;
+import sirius.db.es.filter.FieldNotEqual;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
@@ -19,15 +18,22 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+/**
+ * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
+ */
 public abstract class ElasticEntity extends BaseEntity<String> {
 
     @Part
     protected static Elastic elastic;
 
+    /**
+     * Contains the ID which is auto-generated when inserting a new entity into Elasticsearch.
+     * <p>
+     * It is {@link NullAllowed} as it is filled during the update but after the save checkes have completed.
+     */
     public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     private String id;
-
 
     @Override
     protected void assertUnique(Mapping field, Object value, Mapping... within) {
@@ -50,7 +56,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     @SuppressWarnings("unchecked")
     @Override
     public <E extends BaseEntity<?>, Q extends Query<Q, E>> BaseMapper<E, Q> getMapper() {
-        return (BaseMapper<E, Q>)elastic;
+        return (BaseMapper<E, Q>) elastic;
     }
 
     @Override
@@ -58,6 +64,11 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         return id;
     }
 
+    /**
+     * Note that only the framework must use this to specify the ID of the entity.
+     *
+     * @param id the id of this entity
+     */
     protected void setId(String id) {
         this.id = id;
     }
