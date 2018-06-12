@@ -20,14 +20,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Simplifies batch updates and deletes against Elasticsearch.
+ * Simplifies bulk inserts, updates and deletes against Elasticsearch.
  * <p>
- * Permits to execute an arbitrary number of requests. Which will internally executed as blocks using the bulk API of Elasticsearch.
+ * Permits to execute an arbitrary number of requests. Which will internally executed as blocks using the bulk API
+ * of Elasticsearch.
  * <p>
  * Note that this instance isn't threadsafe.
  */
 @NotThreadSafe
-public class BatchContext implements Closeable {
+public class BulkContext implements Closeable {
 
     private static final int DEFAULT_BATCH_SIZE = 256;
 
@@ -52,7 +53,7 @@ public class BatchContext implements Closeable {
      * @param client the client used to execute the bulk requests
      * @see Elastic#batch()
      */
-    protected BatchContext(LowLevelClient client) {
+    protected BulkContext(LowLevelClient client) {
         this.maxBatchSize = DEFAULT_BATCH_SIZE;
         this.client = client;
         this.commands = new ArrayList<>();
@@ -64,7 +65,7 @@ public class BatchContext implements Closeable {
      * @param entity the entity to create or update
      * @return the batch context itself for fluent method calls
      */
-    public BatchContext tryUpdate(ElasticEntity entity) {
+    public BulkContext tryUpdate(ElasticEntity entity) {
         update(entity, false);
         return this;
     }
@@ -75,7 +76,7 @@ public class BatchContext implements Closeable {
      * @param entity the entity to create or update
      * @return the batch context itself for fluent method calls
      */
-    public BatchContext overwrite(ElasticEntity entity) {
+    public BulkContext overwrite(ElasticEntity entity) {
         update(entity, true);
         return this;
     }
@@ -86,7 +87,7 @@ public class BatchContext implements Closeable {
      * @param entity the entity to delete
      * @return the batch context itself for fluent method calls
      */
-    public BatchContext tryDelete(ElasticEntity entity) {
+    public BulkContext tryDelete(ElasticEntity entity) {
         delete(entity, false);
         return this;
     }
@@ -97,7 +98,7 @@ public class BatchContext implements Closeable {
      * @param entity the entity to delete
      * @return the batch context itself for fluent method calls
      */
-    public BatchContext forceDelete(ElasticEntity entity) {
+    public BulkContext forceDelete(ElasticEntity entity) {
         delete(entity, true);
         return this;
     }
@@ -188,7 +189,7 @@ public class BatchContext implements Closeable {
     }
 
     /**
-     * Closes the batch context and executes all statements which are still queued.
+     * Closes the bulk context and executes all statements which are still queued.
      */
     @Override
     public void close() {

@@ -171,7 +171,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     }
 
     @Override
-    protected <E extends ElasticEntity> void createEnity(E entity, EntityDescriptor ed) throws Exception {
+    protected void createEnity(ElasticEntity entity, EntityDescriptor ed) throws Exception {
         JSONObject data = new JSONObject();
         toJSON(ed, entity, data);
 
@@ -207,8 +207,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     }
 
     @Override
-    protected <E extends ElasticEntity> void updateEntity(E entity, boolean force, EntityDescriptor ed)
-            throws Exception {
+    protected void updateEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         JSONObject data = new JSONObject();
         boolean changed = toJSON(ed, entity, data);
 
@@ -334,8 +333,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     }
 
     @Override
-    protected <E extends ElasticEntity> void deleteEntity(E entity, boolean force, EntityDescriptor ed)
-            throws Exception {
+    protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         getLowLevelClient().delete(determineIndex(ed, entity),
                                    determineTypeName(ed),
                                    entity.getId(),
@@ -416,12 +414,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     }
 
     /**
-     * Creates a {@link BatchContext batch context} used for bulk updates.
+     * Creates a {@link BulkContext batch context} used for bulk updates.
      *
      * @return a new batch context
      */
-    public BatchContext batch() {
-        return new BatchContext(getLowLevelClient());
+    public BulkContext batch() {
+        return new BulkContext(getLowLevelClient());
     }
 
     /**

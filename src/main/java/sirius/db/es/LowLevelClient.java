@@ -271,7 +271,7 @@ public class LowLevelClient {
      *
      * @param bulkData the statements to execute.
      * @return the response of the call
-     * @see BatchContext
+     * @see BulkContext
      */
     @SuppressWarnings("squid:S1612")
     @Explain("Due to method overloading the compiler cannot deduce which method to pick")
