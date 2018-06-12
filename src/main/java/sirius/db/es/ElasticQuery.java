@@ -20,6 +20,7 @@ import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.RateLimit;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -350,6 +351,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("COUNT queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
+        checkRouting();
+
         List<String> indices = determineIndices();
 
         if (indices.isEmpty()) {
@@ -359,6 +362,24 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject response =
                 client.count(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
         return response.getLong("count");
+    }
+
+    private void checkRouting() {
+        if (elastic.isRouted(descriptor)) {
+            if (Strings.isEmpty(routing) && !unrouted) {
+                Elastic.LOG.WARN(
+                        "Trying query an entity of type '%s' without providing a routing! This will most probably return an invalid result!\n%s\n",
+                        descriptor.getType().getName(),
+                        this,
+                        ExecutionPoint.snapshot());
+            }
+        } else if (Strings.isFilled(routing)) {
+            Elastic.LOG.WARN(
+                    "Trying query an entity of type '%s' while providing a routing! This entity is unrouted! This will most probably return an invalid result!\n%s\n",
+                    descriptor.getType().getName(),
+                    this,
+                    ExecutionPoint.snapshot());
+        }
     }
 
     /**
@@ -403,6 +424,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("EXISTS queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
+        checkRouting();
+
         List<String> indices = determineIndices();
 
         if (indices.isEmpty()) {
@@ -421,6 +444,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             scroll(handler);
             return;
         }
+
+        checkRouting();
 
         List<String> indices = determineIndices();
         if (indices.isEmpty()) {
@@ -449,6 +474,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 // according to the Elasticsearch documentation.
                 orderAsc(Mapping.named(KEY_DOC_ID));
             }
+
+            checkRouting();
 
             List<String> indices = determineIndices();
             if (indices.isEmpty()) {
