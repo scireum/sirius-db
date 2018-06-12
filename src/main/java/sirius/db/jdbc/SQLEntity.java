@@ -20,6 +20,8 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+import java.util.Objects;
+
 /**
  * Represents a data object stored into the database.
  * <p>
@@ -111,6 +113,25 @@ public abstract class SQLEntity extends BaseEntity<Long> {
     }
 
     @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null) {
+            return false;
+        }
+        if (!(other.getClass().equals(getClass()))) {
+            return false;
+        }
+        SQLEntity otherEntity = (SQLEntity) other;
+        if (isNew()) {
+            return otherEntity.isNew() && super.equals(other);
+        }
+
+        return Objects.equals(getId(), otherEntity.getId());
+    }
+
+    @Override
     protected void assertUnique(Mapping field, Object value, Mapping... within) {
         SmartQuery<? extends SQLEntity> qry = oma.select(getClass()).eq(field, value);
         for (Mapping withinField : within) {
@@ -128,6 +149,12 @@ public abstract class SQLEntity extends BaseEntity<Long> {
         }
     }
 
+    /**
+     * If the entity was created as the result of a {@link TransformedQuery}, the original {@link Row} is
+     * accessible via this method.
+     *
+     * @return the original row from which the entity was loaded.
+     */
     public Row getFetchRow() {
         return fetchRow;
     }

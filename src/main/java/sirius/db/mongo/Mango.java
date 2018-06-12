@@ -38,7 +38,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     private KeyGenerator keyGen;
 
     @Override
-    protected <E extends MongoEntity> void createEnity(E entity, EntityDescriptor ed) throws Exception {
+    protected void createEnity(MongoEntity entity, EntityDescriptor ed) throws Exception {
         Inserter insert = mongo.insert();
         String generateId = keyGen.generateId();
         insert.set(MongoEntity.ID, generateId);
@@ -53,7 +53,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     }
 
     @Override
-    protected <E extends MongoEntity> void updateEntity(E entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void updateEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         Updater updater = mongo.update();
         boolean changed = false;
         for (Property p : ed.getProperties()) {
@@ -110,7 +110,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     }
 
     @Override
-    protected <E extends MongoEntity> void deleteEntity(E entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         Deleter deleter = mongo.delete().where(MongoEntity.ID, entity.getId());
         boolean versioned = !force && entity instanceof VersionedEntity;
         if (versioned) {
@@ -126,9 +126,13 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     }
 
     @Override
-    protected <E extends MongoEntity> Optional<E> findEntity(Object id, EntityDescriptor ed, Function<String, Value> context)
-            throws Exception {
-        return mongo.find().where(MongoEntity.ID, id.toString()).singleIn(ed.getRelationName()).map(doc -> make(ed, doc));
+    protected <E extends MongoEntity> Optional<E> findEntity(Object id,
+                                                             EntityDescriptor ed,
+                                                             Function<String, Value> context) throws Exception {
+        return mongo.find()
+                    .where(MongoEntity.ID, id.toString())
+                    .singleIn(ed.getRelationName())
+                    .map(doc -> make(ed, doc));
     }
 
     @SuppressWarnings("unchecked")

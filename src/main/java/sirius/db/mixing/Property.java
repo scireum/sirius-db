@@ -520,6 +520,11 @@ public abstract class Property {
         return length;
     }
 
+    /**
+     * Returns the default value to use.
+     *
+     * @return the default value of this property
+     */
     public String getDefaultValue() {
         return defaultValue;
     }

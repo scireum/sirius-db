@@ -8,8 +8,8 @@
 
 package sirius.db.mixing.properties;
 
-import sirius.db.jdbc.SQLEntityRef;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.SQLEntityRef;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseEntityRef;
@@ -23,6 +23,13 @@ import sirius.kernel.health.Exceptions;
 import java.lang.reflect.Field;
 import java.util.Optional;
 
+/**
+ * Base implementation for handling properties of type {@link BaseEntityRef}.
+ *
+ * @param <I> the type of the primary key
+ * @param <E> the type of entities being referenced
+ * @param <R> the type of the reference itself
+ */
 public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extends BaseEntityRef<I, E>>
         extends Property {
 

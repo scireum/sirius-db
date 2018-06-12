@@ -20,11 +20,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
+/**
+ * Represents an {@link BaseSQLQuery sql query} which can be used within a {@link BatchContext} by creating a {@link CustomQuery}.
+ */
 public class BatchSQLQuery extends BaseSQLQuery {
 
     protected CustomQuery query;
 
-    public BatchSQLQuery(CustomQuery customQuery) {
+    protected BatchSQLQuery(CustomQuery customQuery) {
         this.query = customQuery;
     }
 

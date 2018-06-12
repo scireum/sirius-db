@@ -26,18 +26,19 @@ public class OptimisticLockException extends Exception {
 
     private static final long serialVersionUID = -834083199170415643L;
 
+    /**
+     * Creates a new instance without any reference to another error.
+     */
     public OptimisticLockException() {
     }
 
-    public OptimisticLockException(String message) {
-        super(message);
-    }
-
+    /**
+     * Creates a new instance with a reference to the given cause.
+     *
+     * @param message the message to show
+     * @param cause   the cuase of this error
+     */
     public OptimisticLockException(String message, Throwable cause) {
         super(message, cause);
-    }
-
-    public OptimisticLockException(Throwable cause) {
-        super(cause);
     }
 }

@@ -9,9 +9,9 @@
 package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.BaseSQLQuery;
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Row;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
@@ -25,6 +25,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a batch query which inserts an entity into the database.
+ *
+ * @param <E> the generic type of entities to insert with this query
+ */
 public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     private boolean fetchId;
@@ -34,6 +39,14 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
         this.fetchId = fetchId;
     }
 
+    /**
+     * Inserts an entity into the database.
+     *
+     * @param entity       the entity to insert
+     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or skipped (<tt>false</tt>)
+     * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
+     *                     batch update (<tt>true</tt>).
+     */
     @SuppressWarnings("unchecked")
     public void insert(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
         try {

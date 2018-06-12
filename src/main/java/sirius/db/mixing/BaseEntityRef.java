@@ -9,6 +9,7 @@
 package sirius.db.mixing;
 
 import sirius.db.jdbc.SQLEntity;
+import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -20,6 +21,7 @@ import java.util.Optional;
  * Instead of directly keeping the entity in a Java field, it is wrapped in an <tt>EntityRef</tt>. This leads to clean
  * semantics for lazy loading as both the ID and (if fetched) the value are stored in this wrapper.
  *
+ * @param <I> the generic type of the primary key / id used by the entity
  * @param <E> the generic type of the referenced entity
  */
 public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
@@ -53,6 +55,9 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     protected OnDelete deleteHandler;
     protected I id;
     protected E value;
+
+    @Part
+    private static Mixing mixing;
 
     protected BaseEntityRef(Class<E> type, OnDelete deleteHandler) {
         this.type = type;
@@ -117,7 +122,7 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
             return null;
         }
 
-        return Mixing.getUniqueName(type, id);
+        return mixing.getUniqueName(type, id);
     }
 
     /**
@@ -140,6 +145,13 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
         return value;
     }
 
+    /**
+     * Performs the lookup of the entity with the given id.
+     *
+     * @param type the type to search for
+     * @param id   the id to lookup
+     * @return the matching entity wrapped as optional or an empty optional of the entity doesn't exist
+     */
     protected abstract Optional<E> find(Class<E> type, I id);
 
     /**

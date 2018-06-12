@@ -14,7 +14,7 @@ import sirius.kernel.di.std.Part
 
 import java.time.Duration
 
-class BatchContextSpec extends BaseSpecification {
+class BulkContextSpec extends BaseSpecification {
 
     @Part
     private static Elastic elastic
@@ -25,7 +25,7 @@ class BatchContextSpec extends BaseSpecification {
 
     def "batch insert works"() {
         setup:
-        BatchContext btx = elastic.batch()
+        BulkContext btx = elastic.batch()
         when:
         btx.tryUpdate(new BatchTestEntity().withValue(1))
         btx.tryUpdate(new BatchTestEntity().withValue(2))
@@ -38,7 +38,7 @@ class BatchContextSpec extends BaseSpecification {
 
     def "optimistic locking with batchcontext works"() {
         setup:
-        BatchContext btx = elastic.batch()
+        BulkContext btx = elastic.batch()
         when:
         BatchTestEntity modified = new BatchTestEntity().withValue(100)
         elastic.update(modified)
@@ -55,7 +55,7 @@ class BatchContextSpec extends BaseSpecification {
 
     def "overwriting with batchcontext works"() {
         setup:
-        BatchContext btx = elastic.batch()
+        BulkContext btx = elastic.batch()
         when:
         BatchTestEntity modified = new BatchTestEntity().withValue(100)
         elastic.update(modified)
@@ -72,7 +72,7 @@ class BatchContextSpec extends BaseSpecification {
 
     def "delete with batchcontext works"() {
         setup:
-        BatchContext btx = elastic.batch()
+        BulkContext btx = elastic.batch()
         when:
         BatchTestEntity test = new BatchTestEntity().withValue(100)
         elastic.update(test)

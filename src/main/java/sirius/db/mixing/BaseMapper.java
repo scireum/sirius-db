@@ -22,7 +22,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-public abstract class BaseMapper<B extends BaseEntity, Q extends Query<?,? extends B>> {
+/**
+ * Declares the common functionality of a mapper which is responsible for storing and loading entities to and from a database.
+ *
+ * @param <B> the type of entities supported by this mapper
+ * @param <Q> the type of queries supported by this mapper
+ */
+public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? extends B>> {
 
     private static final Function<String, Value> EMPTY_CONTEXT = key -> Value.EMPTY;
 
@@ -62,7 +68,7 @@ public abstract class BaseMapper<B extends BaseEntity, Q extends Query<?,? exten
      * @throws OptimisticLockException in case of a concurrent modification
      */
     public <E extends B> void tryUpdate(E entity) throws OptimisticLockException {
-         performUpdate(entity, false);
+        performUpdate(entity, false);
     }
 
     /**
@@ -110,9 +116,24 @@ public abstract class BaseMapper<B extends BaseEntity, Q extends Query<?,? exten
         }
     }
 
-    protected abstract <E extends B> void createEnity(E entity, EntityDescriptor ed) throws Exception;
+    /**
+     * Creates a new entity in the underlying database.
+     *
+     * @param entity the entity to create
+     * @param ed     the descriptor of the entity
+     * @throws Exception in case of an database error
+     */
+    protected abstract void createEnity(B entity, EntityDescriptor ed) throws Exception;
 
-    protected abstract <E extends B> void updateEntity(E entity, boolean force, EntityDescriptor ed) throws Exception;
+    /**
+     * Updates an existing entity in the underlying database.
+     *
+     * @param entity the entity to update
+     * @param force  <tt>ture</tt> if the update is forced and optimistic locking must be disabled
+     * @param ed     the descriptor of the entity
+     * @throws Exception in case of an database error
+     */
+    protected abstract void updateEntity(B entity, boolean force, EntityDescriptor ed) throws Exception;
 
     /**
      * Deletes the given entity from the database.
@@ -184,7 +205,15 @@ public abstract class BaseMapper<B extends BaseEntity, Q extends Query<?,? exten
         }
     }
 
-    protected abstract <E extends B> void deleteEntity(E entity, boolean force, EntityDescriptor ed) throws Exception;
+    /**
+     * Deletes the give entity from the database.
+     *
+     * @param entity the entity to delete
+     * @param force  <tt>true</tt> if the delete is forced and optimistic locking must be disabled
+     * @param ed     the descriptor of the entity
+     * @throws Exception in case of an database error
+     */
+    protected abstract void deleteEntity(B entity, boolean force, EntityDescriptor ed) throws Exception;
 
     /**
      * Determines if the given entity has validation warnings.
@@ -258,6 +287,17 @@ public abstract class BaseMapper<B extends BaseEntity, Q extends Query<?,? exten
         };
     }
 
+    /**
+     * Tries to find the entity with the given id.
+     *
+     * @param id      the id of the entity to find
+     * @param ed      the descriptor of the entity to find
+     * @param context the advanced search context which can be populated using {@link ContextInfo} in
+     *                {@link #find(Class, Object, ContextInfo...)}
+     * @param <E>     the effective type of the entity
+     * @return the entity wrapped as optional or an empty optional if the entity was not found
+     * @throws Exception in case of a database error
+     */
     protected abstract <E extends B> Optional<E> findEntity(Object id,
                                                             EntityDescriptor ed,
                                                             Function<String, Value> context) throws Exception;
@@ -378,5 +418,12 @@ public abstract class BaseMapper<B extends BaseEntity, Q extends Query<?,? exten
         }
     }
 
+    /**
+     * Creates a query for the given type.
+     *
+     * @param type the type of entities to query for.
+     * @param <E>  the generic type of entities to be returned
+     * @return a query used to search for entities of the given type
+     */
     public abstract <E extends B> Q select(Class<E> type);
 }

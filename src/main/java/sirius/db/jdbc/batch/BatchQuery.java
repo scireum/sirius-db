@@ -8,11 +8,11 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
-import sirius.db.jdbc.SQLEntity;
-import sirius.db.jdbc.OMA;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Average;
@@ -28,8 +28,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link BatchContext}.
+ *
+ * @param <E> the type of entities being processed by this query.
+ */
 public abstract class BatchQuery<E extends SQLEntity> {
 
+    /**
+     * Defines the default batch size used by a query.
+     */
     public static final int MAX_BATCH_BACKLOG = 250;
 
     protected BatchContext context;
@@ -49,12 +57,24 @@ public abstract class BatchQuery<E extends SQLEntity> {
     @Part
     protected static Mixing mixing;
 
+    /**
+     * Creates a new instance for the given context, type and mappings.
+     *
+     * @param context  the batch context to participate in
+     * @param type     the type of entities being processed
+     * @param mappings the mappings to process
+     */
     protected BatchQuery(BatchContext context, Class<E> type, String[] mappings) {
         this.context = context;
         this.type = type;
         this.mappings = mappings;
     }
 
+    /**
+     * Specifies a custom batch size for this query.
+     *
+     * @param maxBacklog the max. batch size to process
+     */
     public void withCustomBatchLimit(int maxBacklog) {
         this.batchBacklogLimit = maxBacklog;
     }
@@ -83,10 +103,18 @@ public abstract class BatchQuery<E extends SQLEntity> {
         }
     }
 
+    /**
+     * Forces a batch to be processed (independent of it size, as long as it isn't empty).
+     */
     public void commit() {
         tryCommit(true);
     }
 
+    /**
+     * Adds the current parameter set as batch.
+     *
+     * @throws SQLException in case of a database error
+     */
     protected void addBatch() throws SQLException {
         prepareStmt().addBatch();
         batchBacklog++;
@@ -95,6 +123,13 @@ public abstract class BatchQuery<E extends SQLEntity> {
         }
     }
 
+    /**
+     * Prepares a new statement for the given sql and options.
+     *
+     * @param sql                 the statement to prepare
+     * @param returnGeneratedKeys determines if generated key should be returned or not
+     * @throws SQLException in case of a database error
+     */
     protected void createStmt(String sql, boolean returnGeneratedKeys) throws SQLException {
         if (stmt != null) {
             throw new IllegalStateException("A statement has already been prepared!");
@@ -109,6 +144,12 @@ public abstract class BatchQuery<E extends SQLEntity> {
                       .prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
     }
 
+    /**
+     * Prepares a new statement if not done already.
+     *
+     * @return the prepared statment
+     * @throws SQLException in case of a database error
+     */
     protected PreparedStatement prepareStmt() throws SQLException {
         if (stmt == null) {
             buildSQL();
@@ -117,8 +158,18 @@ public abstract class BatchQuery<E extends SQLEntity> {
         return stmt;
     }
 
+    /**
+     * Determines the SQL statement to prepare in {@link #prepareStmt()}.
+     *
+     * @throws SQLException in case of a database error
+     */
     protected abstract void buildSQL() throws SQLException;
 
+    /**
+     * Determines the descriptor for the our entity type.
+     *
+     * @return the descriptor for the type of entities this query can process
+     */
     protected EntityDescriptor getDescriptor() {
         if (descriptor == null) {
             descriptor = mixing.getDescriptor(type);
@@ -126,6 +177,11 @@ public abstract class BatchQuery<E extends SQLEntity> {
         return descriptor;
     }
 
+    /**
+     * Transforms the mappings into a list of properties.
+     *
+     * @return the list of properties defined by the given list of mappings
+     */
     protected List<Property> getProperties() {
         if (properties == null) {
             EntityDescriptor ed = getDescriptor();
@@ -135,6 +191,9 @@ public abstract class BatchQuery<E extends SQLEntity> {
         return properties;
     }
 
+    /**
+     * Closes the query by executing the last batch and releasing all resources.
+     */
     public void close() {
         if (stmt == null) {
             return;
@@ -150,6 +209,9 @@ public abstract class BatchQuery<E extends SQLEntity> {
         context.unregister(this);
     }
 
+    /**
+     * Releases all resources with graceful error handling
+     */
     protected void safeClose() {
         try {
             if (stmt != null) {

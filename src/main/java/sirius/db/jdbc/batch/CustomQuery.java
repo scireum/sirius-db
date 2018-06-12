@@ -17,6 +17,9 @@ import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+/**
+ * Wraps a SQL statement as {@link BatchSQLQuery}.
+ */
 public class CustomQuery extends BatchQuery<SQLEntity> {
 
     private final boolean fetchId;
@@ -32,16 +35,34 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
         this.sqlQuery = new BatchSQLQuery(this);
     }
 
+    /**
+     * Resets all previously set parameters.
+     *
+     * @throws SQLException in case of a database error
+     */
     public void clearParameters() throws SQLException {
         PreparedStatement stmt = prepareStmt();
         stmt.clearParameters();
     }
 
+    /**
+     * Sets the given parameter to the given value.
+     *
+     * @param oneBasedIndex the one-based index of the parameter to set
+     * @param value         the parameter value to set
+     * @throws SQLException in case of a database error
+     */
     public void setParameter(int oneBasedIndex, Object value) throws SQLException {
         PreparedStatement stmt = prepareStmt();
         stmt.setObject(oneBasedIndex, Databases.convertValue(value));
     }
 
+    /**
+     * Executes the prepared statement as update (or delete).
+     *
+     * @return a row containing the generated keys or <tt>null</tt>if fetching is disabled
+     * @throws SQLException in case of a database error
+     */
     @Nullable
     public Row executeUpdate() throws SQLException {
         prepareStmt().executeUpdate();
@@ -52,10 +73,20 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
         }
     }
 
+    /**
+     * Executes the statement as batched update.
+     *
+     * @throws SQLException in case of a database error
+     */
     public void executeBatchUpdate() throws SQLException {
         addBatch();
     }
 
+    /**
+     * Executes the statement as query.
+     *
+     * @return the statement as query
+     */
     public BatchSQLQuery query() {
         return sqlQuery;
     }

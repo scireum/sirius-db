@@ -33,6 +33,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+/**
+ * Provides the {@link BaseMapper mapper} used to communicate with JDBC / SQL databases.
+ */
 @Register(classes = OMA.class)
 public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> {
 
@@ -84,7 +87,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     }
 
     @Override
-    protected <E extends SQLEntity> void createEnity(E entity, EntityDescriptor ed) throws Exception {
+    protected void createEnity(SQLEntity entity, EntityDescriptor ed) throws Exception {
         Context insertData = Context.create();
         for (Property p : ed.getProperties()) {
             if (!SQLEntity.ID.getName().equals(p.getName())) {
@@ -110,7 +113,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     }
 
     @Override
-    protected <E extends SQLEntity> void updateEntity(E entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void updateEntity(SQLEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         StringBuilder sql = new StringBuilder("UPDATE ");
         sql.append(ed.getRelationName());
         sql.append(" SET ");
@@ -159,12 +162,12 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         return data;
     }
 
-    private <E extends SQLEntity> void executeUPDATE(E entity,
-                                                     EntityDescriptor ed,
-                                                     boolean force,
-                                                     boolean versioned,
-                                                     String sql,
-                                                     List<Object> data) throws SQLException, OptimisticLockException {
+    private void executeUPDATE(SQLEntity entity,
+                               EntityDescriptor ed,
+                               boolean force,
+                               boolean versioned,
+                               String sql,
+                               List<Object> data) throws SQLException, OptimisticLockException {
         try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
             try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 int index = 1;
@@ -188,8 +191,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         }
     }
 
-    private <E extends SQLEntity> void enforceUpdate(E entity, boolean force, int updatedRows)
-            throws OptimisticLockException {
+    private void enforceUpdate(SQLEntity entity, boolean force, int updatedRows) throws OptimisticLockException {
         if (force || updatedRows > 0) {
             return;
         }
@@ -207,7 +209,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     }
 
     @Override
-    protected <E extends SQLEntity> void deleteEntity(E entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void deleteEntity(SQLEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         StringBuilder sb = new StringBuilder("DELETE FROM ");
         sb.append(ed.getRelationName());
         sb.append(SQL_WHERE_ID);
@@ -265,8 +267,9 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     }
 
     @Override
-    protected <E extends SQLEntity> Optional<E> findEntity(Object id, EntityDescriptor ed, Function<String, Value> context)
-            throws Exception {
+    protected <E extends SQLEntity> Optional<E> findEntity(Object id,
+                                                           EntityDescriptor ed,
+                                                           Function<String, Value> context) throws Exception {
         try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
             return execFind(id, ed, c);
         }
@@ -290,7 +293,8 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     }
 
     @SuppressWarnings("unchecked")
-    protected <E extends SQLEntity> Optional<E> execFind(Object id, EntityDescriptor ed, Connection c) throws Exception {
+    protected <E extends SQLEntity> Optional<E> execFind(Object id, EntityDescriptor ed, Connection c)
+            throws Exception {
         try (PreparedStatement stmt = c.prepareStatement("SELECT * FROM " + ed.getRelationName() + SQL_WHERE_ID,
                                                          ResultSet.TYPE_FORWARD_ONLY,
                                                          ResultSet.CONCUR_READ_ONLY)) {

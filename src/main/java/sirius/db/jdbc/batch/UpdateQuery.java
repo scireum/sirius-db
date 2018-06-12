@@ -8,8 +8,8 @@
 
 package sirius.db.jdbc.batch;
 
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
@@ -24,6 +24,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a batch query which updates an entity in the database.
+ *
+ * @param <E> the generic type of entities to update with this query
+ */
 public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     private String[] mappingsToUpdate;
@@ -33,11 +38,27 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
         super(context, type, mappings);
     }
 
+    /**
+     * Specifies the list of mappings to update.
+     * <p>
+     * Note that this must be called once before this first entity is updated and cannot be changed later.
+     *
+     * @param mappingsToUpdate a list of mappings to update
+     * @return the query itself for fluent method calls
+     */
     public UpdateQuery<E> withUpdatedMappings(Mapping... mappingsToUpdate) {
         this.mappingsToUpdate = BatchContext.simplifyMappings(mappingsToUpdate);
         return this;
     }
 
+    /**
+     * Specifies the list of mappings to update.
+     * <p>
+     * Note that this must be called once before this first entity is updated and cannot be changed later.
+     *
+     * @param mappingsToUpdate a list of mappings to update
+     * @return the query itself for fluent method calls
+     */
     public UpdateQuery<E> withUpdatedMappings(String... mappingsToUpdate) {
         this.mappingsToUpdate = mappingsToUpdate;
         return this;
@@ -55,6 +76,14 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
         return propertiesToUpdate;
     }
 
+    /**
+     * Updates the given entity in the database by comparing the mappings to compare and updating the mappings to update.
+     *
+     * @param entity       the entity to update
+     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or skipped (<tt>false</tt>)
+     * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
+     *                     batch update (<tt>true</tt>).
+     */
     @SuppressWarnings("unchecked")
     public void update(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
         try {

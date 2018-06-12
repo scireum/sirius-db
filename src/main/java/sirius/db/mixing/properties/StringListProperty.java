@@ -68,7 +68,7 @@ public class StringListProperty extends Property implements ESPropertyInfo {
 
     @Override
     public Object getValueAsCopy(BaseEntity<?> entity) {
-        return ((StringList) super.getValueFromField(entity)).copy();
+        return ((StringList) super.getValueFromField(entity)).copyValue();
     }
 
     @SuppressWarnings("unchecked")

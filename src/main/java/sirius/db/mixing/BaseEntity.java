@@ -14,12 +14,18 @@ import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
+/**
+ * Represents the base class for all entities which can be managed using {@link Mixing}.
+ *
+ * @param <I> the type of the ID used by subclasses
+ */
 public abstract class BaseEntity<I> extends Mixable {
 
     @Part
-    private static Mixing mixing;
+    protected static Mixing mixing;
 
     @Transient
     protected Map<Property, Object> persistedData = Maps.newHashMap();
@@ -38,6 +44,12 @@ public abstract class BaseEntity<I> extends Mixable {
         return mixing.getDescriptor(getClass());
     }
 
+    /**
+     * Returns the id of the entity.
+     *
+     * @return the id of the entity
+     */
+    @Nullable
     public abstract I getId();
 
     /**
@@ -57,7 +69,7 @@ public abstract class BaseEntity<I> extends Mixable {
      * @see #getUniqueName()
      */
     public String getTypeName() {
-        return Mixing.getNameForType(getClass());
+        return mixing.getNameForType(getClass());
     }
 
     /**
@@ -72,12 +84,26 @@ public abstract class BaseEntity<I> extends Mixable {
         if (isNew()) {
             return "";
         }
-        return Mixing.getUniqueName(getTypeName(), getId());
+        return mixing.getUniqueName(getTypeName(), getId());
     }
 
+    /**
+     * Provides the {@link BaseMapper mapper} which is used to actually manage the entity.
+     *
+     * @param <E> the entity type of the mapper
+     * @param <Q> the query type of the mapper
+     * @return the mapper which is in charge of this entity.
+     */
     public abstract <E extends BaseEntity<?>, Q extends Query<Q, E>> BaseMapper<E, Q> getMapper();
 
-    //TODO javadoc
+    /**
+     * Ensures that the given value in the given field is unique within the given side constraints.
+     *
+     * @param field  the field to check
+     * @param value  the value to be unique
+     * @param within the side constraints within the value must be unique
+     * @throws sirius.kernel.health.HandledException if the value isn't unique
+     */
     protected abstract void assertUnique(Mapping field, Object value, Mapping... within);
 
     /**

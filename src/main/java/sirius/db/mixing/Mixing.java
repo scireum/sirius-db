@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Provides a lookup facility to the {@link EntityDescriptor descriptor} for an entity.
+ */
 @Register(classes = {Mixing.class, Initializable.class})
 public class Mixing implements Initializable {
 
@@ -82,7 +85,7 @@ public class Mixing implements Initializable {
      * @return the type name of the given type
      */
     @Nonnull
-    public static String getNameForType(@Nonnull Class<?> type) {
+    public String getNameForType(@Nonnull Class<?> type) {
         return type.getSimpleName().toUpperCase();
     }
 
@@ -94,7 +97,7 @@ public class Mixing implements Initializable {
      * @return a unique name consisting of the typeName and id
      */
     @Nonnull
-    public static String getUniqueName(@Nonnull String typeName, Object id) {
+    public String getUniqueName(@Nonnull String typeName, Object id) {
         return typeName + "-" + id;
     }
 
@@ -106,8 +109,8 @@ public class Mixing implements Initializable {
      * @return a unique name consisting of the typeName and id
      */
     @Nonnull
-    public static String getUniqueName(@Nonnull Class<?> type, Object id) {
-        return Mixing.getNameForType(type) + "-" + id;
+    public String getUniqueName(@Nonnull Class<?> type, Object id) {
+        return getNameForType(type) + "-" + id;
     }
 
     /**

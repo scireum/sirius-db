@@ -8,7 +8,11 @@
 
 package sirius.db.mixing;
 
+/**
+ * Provides a simple list of strings as property value.
+ */
 public class StringList extends SafeList<String> {
+
     @Override
     protected boolean valueNeedsCopy() {
         return false;

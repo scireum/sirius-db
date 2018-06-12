@@ -8,6 +8,9 @@
 
 package sirius.db.mixing;
 
+/**
+ * Provides a simple string-string map as property value.
+ */
 public class StringMap extends SafeMap<String, String> {
 
     @Override

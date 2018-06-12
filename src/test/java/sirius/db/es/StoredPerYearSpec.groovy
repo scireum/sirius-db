@@ -46,7 +46,7 @@ class StoredPerYearSpec extends BaseSpecification {
 
     def "autocreating an index and index determination works for batches"() {
         setup:
-        BatchContext btx = elastic.batch()
+        BulkContext btx = elastic.batch()
         LocalDateTime testTimestamp = LocalDateTime.of(2008, 10, 01, 8, 0)
         when:
         YearlyTestEntity test = new YearlyTestEntity()
@@ -82,7 +82,7 @@ class StoredPerYearSpec extends BaseSpecification {
 
     def "queries select the appropriate indices"() {
         setup:
-        BatchContext btx = elastic.batch()
+        BulkContext btx = elastic.batch()
         LocalDateTime testTimestamp1 = LocalDateTime.of(2011, 10, 01, 8, 0)
         LocalDateTime testTimestamp2 = LocalDateTime.of(2012, 10, 01, 8, 0)
         when:
