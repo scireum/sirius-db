@@ -34,7 +34,6 @@ import java.util.function.Consumer;
  */
 public class IntegerProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
 
-
     /**
      * Factory for generating properties based on their field type
      */
@@ -78,7 +77,6 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.INTEGER));
     }
-
 
     @Override
     public void describeProperty(JSONObject description) {

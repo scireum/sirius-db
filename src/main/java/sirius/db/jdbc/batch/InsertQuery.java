@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc.batch;
 
-import sirius.db.jdbc.BaseSQLQuery;
+import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Row;
 import sirius.db.jdbc.SQLEntity;
@@ -16,6 +16,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
@@ -34,6 +35,9 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     private boolean fetchId;
 
+    @Part
+    private static Databases dbs;
+
     protected InsertQuery(BatchContext context, Class<E> type, boolean fetchId, String[] mappings) {
         super(context, type, mappings);
         this.fetchId = fetchId;
@@ -43,7 +47,8 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
      * Inserts an entity into the database.
      *
      * @param entity       the entity to insert
-     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or skipped (<tt>false</tt>)
+     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or
+     *                     skipped (<tt>false</tt>)
      * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
      *                     batch update (<tt>true</tt>).
      */
@@ -70,7 +75,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             } else {
                 stmt.executeUpdate();
                 if (fetchId) {
-                    Row keys = BaseSQLQuery.fetchGeneratedKeys(stmt);
+                    Row keys = dbs.fetchGeneratedKeys(stmt);
                     OMA.loadCreatedId(entity, keys);
                 }
             }
@@ -87,14 +92,16 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage(
-                                    "A database error occured while executing an InsertQuery for %s: %s (%s)",
+                                    "A database error occured while executing an InsertQuery"
+                                    + " for %s: %s (%s)",
                                     type.getName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
-                            .withSystemErrorMessage("An error occured while executing an InsertQuery for %s: %s (%s)",
+                            .withSystemErrorMessage("An error occured while executing an InsertQuery"
+                                                    + " for %s: %s (%s)",
                                                     type.getName())
                             .handle();
         }

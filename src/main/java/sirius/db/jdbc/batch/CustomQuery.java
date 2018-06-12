@@ -8,10 +8,10 @@
 
 package sirius.db.jdbc.batch;
 
-import sirius.db.jdbc.BaseSQLQuery;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.Row;
 import sirius.db.jdbc.SQLEntity;
+import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
@@ -25,6 +25,9 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
     private final boolean fetchId;
     private final String sql;
     private final BatchSQLQuery sqlQuery;
+
+    @Part
+    private static Databases dbs;
 
     @SuppressWarnings("unchecked")
     protected CustomQuery(BatchContext context, Class<? extends SQLEntity> type, boolean fetchId, String sql) {
@@ -67,7 +70,7 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
     public Row executeUpdate() throws SQLException {
         prepareStmt().executeUpdate();
         if (fetchId) {
-            return BaseSQLQuery.fetchGeneratedKeys(stmt);
+            return dbs.fetchGeneratedKeys(stmt);
         } else {
             return null;
         }

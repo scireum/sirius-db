@@ -13,11 +13,11 @@ import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
-import sirius.db.jdbc.SQLEntity;
 import sirius.kernel.Lifecycle;
 import sirius.kernel.Sirius;
 import sirius.kernel.async.Future;
@@ -47,6 +47,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Creates the database schemata for all databases managed via {@link Mixing} and {@link OMA}.
+ */
 @Register(classes = {Schema.class, Lifecycle.class, Initializable.class})
 public class Schema implements Lifecycle, Initializable {
 
@@ -106,8 +109,8 @@ public class Schema implements Lifecycle, Initializable {
                 action.execute(getDatabase(action.getRealm()));
                 if (action.isFailed()) {
                     OMA.LOG.WARN("Failed schema change action -  reason: %s - error: %s",
-                                    action.getReason(),
-                                    action.getError());
+                                 action.getReason(),
+                                 action.getError());
                     failed++;
                 }
             } else {
@@ -169,9 +172,9 @@ public class Schema implements Lifecycle, Initializable {
         if (getDatabase(ed.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)) {
             if (!Strings.areEqual(ed.getRelationName(), ed.getRelationName().toLowerCase())) {
                 OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
-                                + " This might lead to trouble with the type of DBMS you are using!",
-                                ed.getType().getName(),
-                                ed.getRelationName());
+                             + " This might lead to trouble with the type of DBMS you are using!",
+                             ed.getType().getName(),
+                             ed.getRelationName());
             }
         }
 
@@ -207,10 +210,10 @@ public class Schema implements Lifecycle, Initializable {
                     name = property.getPropertyName();
                 } else {
                     OMA.LOG.WARN("The index %s for type %s (%s) references an unknown column: %s",
-                                    index.name(),
-                                    ed.getType().getName(),
-                                    ed.getRelationName(),
-                                    name);
+                                 index.name(),
+                                 ed.getType().getName(),
+                                 ed.getRelationName(),
+                                 name);
                 }
                 key.addColumn(i, name);
             }

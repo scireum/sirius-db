@@ -10,7 +10,6 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import sirius.db.jdbc.constraints.FieldOperator;
 import sirius.db.jdbc.properties.SQLEntityRefProperty;
 import sirius.db.mixing.EntityDescriptor;
@@ -52,6 +51,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
     @Part
     private static OMA oma;
 
+    @Part
+    private static Databases dbs;
+
     protected List<Mapping> fields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Mapping, Boolean>> orderBys = Lists.newArrayList();
@@ -63,7 +65,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
      * <p>
      * Use {@link OMA#select(Class)} to create a new query.
      *
-     * @param db   the database to operate on
+     * @param descriptor the descriptor of the type to query
+     * @param db         the database to operate on
      */
     protected SmartQuery(EntityDescriptor descriptor, Database db) {
         super(descriptor);
@@ -190,15 +193,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
         iterateAll(oma::delete);
     }
 
-    protected static Set<String> readColumns(ResultSet rs) throws SQLException {
-        Set<String> result = Sets.newHashSet();
-        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-            result.add(rs.getMetaData().getColumnLabel(col).toUpperCase());
-        }
-
-        return result;
-    }
-
     /**
      * Converts this query into a plain {@link SQLQuery} which will return rows instead of entities.
      *
@@ -264,7 +258,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
                                boolean nativeLimit,
                                ResultSet rs) throws Exception {
         TaskContext tc = TaskContext.get();
-        Set<String> columns = readColumns(rs);
+        Set<String> columns = dbs.readColumns(rs);
         while (rs.next() && tc.isActive()) {
             if (nativeLimit || limit.nextRow()) {
                 SQLEntity e = makeEntity(descriptor, null, columns, rs);
@@ -370,6 +364,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
          * <p>
          * To restore the state, {@link #restoreTranslationState(TranslationState)} can be used.
          *
+         * @param newDefaultAlias      specifies the new default alias to use
+         * @param newDefaultDescriptor specifies the new main / default descriptor to use
          * @return the currently active translation state
          */
         public TranslationState captureAndReplaceTranslationState(String newDefaultAlias,
@@ -395,6 +391,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
 
         /**
          * Restores a previously captured translation state.
+         *
+         * @param state the original state to restore
          */
         public void restoreTranslationState(TranslationState state) {
             this.defaultAlias = state.getDefaultAlias();
@@ -413,7 +411,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
                 return result;
             }
             Tuple<String, EntityDescriptor> parentAlias = determineAlias(parent.getParent());
-            SQLEntityRefProperty refProperty = (SQLEntityRefProperty) parentAlias.getSecond().getProperty(parent.getName());
+            SQLEntityRefProperty refProperty =
+                    (SQLEntityRefProperty) parentAlias.getSecond().getProperty(parent.getName());
             EntityDescriptor other = refProperty.getReferencedDescriptor();
 
             String tableAlias = generateTableAlias();

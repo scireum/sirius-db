@@ -9,8 +9,10 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
@@ -24,6 +26,9 @@ import sirius.kernel.settings.Extension;
 
 import javax.annotation.Nullable;
 import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.time.DateTimeException;
 import java.time.Duration;
@@ -34,6 +39,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -283,5 +289,41 @@ public class Databases implements Initializable {
         }
 
         return value;
+    }
+
+    /**
+     * Reads and returns all available columns of the given result set as upper case.
+     *
+     * @param rs the result set to parse
+     * @return a set of columns within the given result set
+     * @throws SQLException in case of a database error
+     */
+    public Set<String> readColumns(ResultSet rs) throws SQLException {
+        Set<String> result = Sets.newHashSet();
+        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+            result.add(rs.getMetaData().getColumnLabel(col).toUpperCase());
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns all generated keys wrapped as row
+     *
+     * @param stmt the statement which was used to perform an update or insert
+     * @return a row containing all generated keys
+     * @throws SQLException in case of an error thrown by the database or driver
+     */
+    public Row fetchGeneratedKeys(PreparedStatement stmt) throws SQLException {
+        try (ResultSet rs = stmt.getGeneratedKeys()) {
+            Row row = new Row();
+            if (rs != null && rs.next()) {
+                for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+                    row.fields.put(rs.getMetaData().getColumnLabel(col).toUpperCase(),
+                                   Tuple.create(rs.getMetaData().getColumnLabel(col), rs.getObject(col)));
+                }
+            }
+            return row;
+        }
     }
 }

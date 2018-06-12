@@ -8,11 +8,14 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
@@ -20,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Represents a batch query which finds and entity in the database.
@@ -30,6 +34,9 @@ import java.util.Optional;
  * @param <E> the generic type of entities to find with this query
  */
 public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
+
+    @Part
+    private static Databases dbs;
 
     protected FindQuery(BatchContext context, Class<E> type, String[] mappings) {
         super(context, type, mappings);
@@ -61,7 +68,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
                     return Optional.empty();
                 }
 
-                return Optional.of(oma.make(getDescriptor(), rs));
+                return Optional.of((E) make(rs));
             } finally {
                 avarage.addValue(w.elapsedMillis());
             }
@@ -82,6 +89,22 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
                                                     type.getName())
                             .handle();
         }
+    }
+
+    private SQLEntity make(ResultSet rs) throws Exception {
+        Set<String> columns = dbs.readColumns(rs);
+        return (SQLEntity) descriptor.make(null, key -> {
+            String effeciveKey = key.toUpperCase();
+            if (!columns.contains(effeciveKey)) {
+                return null;
+            }
+
+            try {
+                return Value.of(rs.getObject(effeciveKey));
+            } catch (SQLException e) {
+                throw Exceptions.handle(OMA.LOG, e);
+            }
+        });
     }
 
     @Override

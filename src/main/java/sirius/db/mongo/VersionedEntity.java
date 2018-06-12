@@ -21,6 +21,11 @@ import sirius.db.mixing.OptimisticLockException;
  */
 public abstract class VersionedEntity extends MongoEntity {
 
+    /**
+     * Stores the entity version in the database.
+     * <p>
+     * This must not be modified outside of the framework.
+     */
     public static final Mapping VERSION = Mapping.named("version");
     protected int version = 0;
 

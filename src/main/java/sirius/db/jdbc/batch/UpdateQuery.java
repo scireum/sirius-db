@@ -80,7 +80,8 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      * Updates the given entity in the database by comparing the mappings to compare and updating the mappings to update.
      *
      * @param entity       the entity to update
-     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or skipped (<tt>false</tt>)
+     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>)
+     *                     or skipped (<tt>false</tt>)
      * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
      *                     batch update (<tt>true</tt>).
      */

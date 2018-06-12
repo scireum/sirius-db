@@ -21,6 +21,11 @@ import sirius.db.mixing.OptimisticLockException;
  */
 public abstract class VersionedEntity extends SQLEntity {
 
+    /**
+     * Stores the entity version in the database.
+     * <p>
+     * This must not be modified outside of the framework.
+     */
     public static final Mapping VERSION = Mapping.named("version");
     protected int version = 0;
 
@@ -28,7 +33,7 @@ public abstract class VersionedEntity extends SQLEntity {
         return version;
     }
 
-    public void setVersion(int version) {
+    protected void setVersion(int version) {
         this.version = version;
     }
 }

@@ -18,9 +18,17 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+/**
+ * Represents the base class for all entities which are managed via {@link Mango} and stored in MongoDB.
+ */
 @Index(name = "id", columns = "id", columnSettings = Mango.INDEX_ASCENDING)
 public abstract class MongoEntity extends BaseEntity<String> {
 
+    /**
+     * Contains the id of the entity.
+     * <p>
+     * This is declared as null allowed, as the id is generated after the before save checks have been executed.
+     */
     public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     protected String id;

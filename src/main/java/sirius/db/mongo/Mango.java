@@ -24,11 +24,20 @@ import sirius.kernel.health.Exceptions;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ * Provides the {@link BaseMapper mapper} used to communicate with <tt>MongoDB</tt>.
+ */
 @Register(classes = {Mango.class, IndexDescription.class})
 public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements IndexDescription {
 
+    /**
+     * Defines the value used to desclare an index as sorted in ascending order.
+     */
     public static final String INDEX_ASCENDING = "1";
 
+    /**
+     * Defines the value used to desclare an index as sorted in descending order.
+     */
     public static final String INDEX_DESCENDING = "-1";
 
     @Part
@@ -135,6 +144,14 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
                     .map(doc -> make(ed, doc));
     }
 
+    /**
+     * Creates a new entity for the given descriptor based on the given doc.
+     *
+     * @param ed  the descriptor of the entity to create
+     * @param doc the document to read the values from
+     * @param <E> the effective type of the generated entity
+     * @return the generated entity
+     */
     @SuppressWarnings("unchecked")
     public static <E extends MongoEntity> E make(EntityDescriptor ed, Doc doc) {
         try {

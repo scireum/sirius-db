@@ -38,7 +38,7 @@ import java.util.function.Function;
  */
 public class SQLQuery extends BaseSQLQuery {
 
-    public static final String MICROTIMING_KEY = "SQL-QUERY";
+    private static final String MICROTIMING_KEY = "SQL-QUERY";
     private final Database ds;
     private final String sql;
     private Context params = Context.create();
@@ -192,7 +192,7 @@ public class SQLQuery extends BaseSQLQuery {
                     return new Row();
                 }
                 stmt.executeUpdate();
-                return fetchGeneratedKeys(stmt);
+                return dbs.fetchGeneratedKeys(stmt);
             }
         } finally {
             w.submitMicroTiming(MICROTIMING_KEY, sql);

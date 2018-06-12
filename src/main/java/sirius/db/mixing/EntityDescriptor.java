@@ -201,7 +201,8 @@ public class EntityDescriptor {
     /**
      * Returns the realm of entities of this type.
      * <p>
-     * Depending on the mapper and database, this can control the effective target database or storage settings used for this entity.
+     * Depending on the mapper and database, this can control the effective target database or storage settings used
+     * for this entity.
      *
      * @return the realm of this type
      */
@@ -602,6 +603,7 @@ public class EntityDescriptor {
      * @param alias    the field alias used to generate unique column names
      * @param supplier used to provide values for a given column name
      * @return an entity containing the values of the given result row
+     * @throws Exception in case of an error while building the entity
      */
     public BaseEntity<?> make(String alias, ValueSupplier<String> supplier) throws Exception {
         BaseEntity<?> entity = type.newInstance();

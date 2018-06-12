@@ -47,6 +47,9 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     @Part
     private Schema schema;
 
+    @Part
+    private Databases dbs;
+
     private Boolean ready;
 
     /**
@@ -99,6 +102,12 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         loadCreatedId(entity, keys);
     }
 
+    /**
+     * Loads an auto generated id from the given row.
+     *
+     * @param entity the target entity to write the id to
+     * @param keys   the row to read the id from
+     */
     public static void loadCreatedId(SQLEntity entity, Row keys) {
         if (keys.hasValue("id")) {
             // Normally the name of the generated column is reported
@@ -266,6 +275,17 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         return new TransformedQuery<>(mixing.getDescriptor(type), alias, qry);
     }
 
+    /**
+     * Tries to find the entity with the given id
+     *
+     * @param id      the id of the entity to find
+     * @param ed      the descriptor of the entity to find
+     * @param context the advanced search context which can be populated using
+     *                {@link sirius.db.mixing.ContextInfo context info elements}.
+     * @param <E>     the generic type of the entity tp find
+     * @return the entity wrapped as optional or an empty optional if no entity was found
+     * @throws Exception in case of a database or system error
+     */
     @Override
     protected <E extends SQLEntity> Optional<E> findEntity(Object id,
                                                            EntityDescriptor ed,
@@ -273,23 +293,6 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
             return execFind(id, ed, c);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    public <E extends SQLEntity> E make(EntityDescriptor ed, ResultSet rs) throws Exception {
-        Set<String> columns = SmartQuery.readColumns(rs);
-        return (E) ed.make(null, key -> {
-            String effeciveKey = key.toUpperCase();
-            if (!columns.contains(effeciveKey)) {
-                return null;
-            }
-
-            try {
-                return Value.of(rs.getObject(effeciveKey));
-            } catch (SQLException e) {
-                throw Exceptions.handle(OMA.LOG, e);
-            }
-        });
     }
 
     @SuppressWarnings("unchecked")
@@ -304,7 +307,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
                     return Optional.empty();
                 }
 
-                Set<String> columns = SmartQuery.readColumns(rs);
+                Set<String> columns = dbs.readColumns(rs);
                 BaseEntity<?> entity = ed.make(null, key -> {
                     String effeciveKey = key.toUpperCase();
                     if (!columns.contains(effeciveKey)) {

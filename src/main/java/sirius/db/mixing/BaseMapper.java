@@ -250,6 +250,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
      *
      * @param type the type of entity to select
      * @param id   the id (which can be either a long, Long or String) to select
+     * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @param <E>  the generic type of the entity to select
      * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given id exists
      */
@@ -309,6 +310,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
      *
      * @param type the type of entity to select
      * @param id   the id (which can be either a long, Long or String) to select
+     * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @param <E>  the generic type of the entity to select
      * @return the entity with the given id
      * @throws HandledException if no entity with the given ID was present
@@ -329,6 +331,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
      * Tries to resolve the {@link SQLEntity#getUniqueName()} into an entity.
      *
      * @param name the name of the entity to resolve
+     * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @param <E>  the generic parameter of the entity to resolve
      * @return the resolved entity wrapped as <tt>Optional</tt> or an empty optional if no such entity exists
      */
@@ -351,6 +354,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
      * Tries to {@link #resolve(String, ContextInfo...)} the given name into an entity.
      *
      * @param name the name of the entity to resolve
+     * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @return the resolved entity
      * @throws HandledException if the given name cannot be resolved into an entity
      */

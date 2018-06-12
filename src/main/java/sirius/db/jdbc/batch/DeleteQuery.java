@@ -38,7 +38,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
      *
      * @param example      the example entity used to determine which other entities to delete
      * @param invokeChecks <tt>true</tt> to signal that before- and after delete checks should be executed,
-     *                     <tt>false<tt> otherwise
+     *                     <tt>false</tt> otherwise
      * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
      *                     batch update (<tt>true</tt>).
      */

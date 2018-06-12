@@ -71,7 +71,7 @@ public class MongoStringListMapProperty extends BaseMapProperty {
         }
 
         Document doc = new Document();
-        doc.putAll(((Map<String, List<String>>) object));
+        doc.putAll((Map<String, List<String>>) object);
         return doc;
     }
 }

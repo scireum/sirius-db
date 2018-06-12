@@ -19,6 +19,18 @@ import java.util.Map;
 
 /**
  * Represents the base class for all entities which can be managed using {@link Mixing}.
+ * <p>
+ * Each field will become a property, unless it is annotated with {@link Transient}.
+ * <p>
+ * The framework highly encourages composition over inheritance. Therefore {@link Composite} fields will directly
+ * result in the equivalent properties required to store the fields declared there. Still inheritance might be
+ * useful and is fully supported for both, entities and composites.
+ * <p>
+ * What is not supported, is merging distinct subclasses into one table or other weired inheritance methods. Therefore
+ * all superclasses should be abstract.
+ * <p>
+ * Additionally all <tt>Mixins</tt> {@link sirius.db.mixing.annotations.Mixin} will be used to add properties to the
+ * entity. This is especially useful to extend existing entities from within customizations.
  *
  * @param <I> the type of the ID used by subclasses
  */

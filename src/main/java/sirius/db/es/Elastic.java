@@ -45,6 +45,9 @@ import java.util.function.Function;
 @Register(classes = Elastic.class)
 public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends ElasticEntity>> {
 
+    /**
+     * Contains the logger used by everything related to Elasticsearch
+     */
     public static final Log LOG = Log.get("es");
 
     private static final String CONTEXT_ROUTING = "routing";
@@ -52,6 +55,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     private static final String RESPONSE_VERSION = "_version";
     private static final String RESPONSE_FOUND = "found";
     private static final String RESPONSE_SOURCE = "_source";
+
+    /**
+     * Contains the name of the ID field used by Elasticsearch
+     */
     public static final String ID_FIELD = "_id";
 
     private static final int DEFAULT_HTTP_PORT = 9200;
@@ -382,11 +389,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         String routing = context.apply(CONTEXT_ROUTING).getString();
 
         if (routing == null && isRouted(ed)) {
-            LOG.WARN(
-                    "Trying to FIND an entity of type '%s' with id '%s' without providing a routing! This will most probably return an invalid result!\n",
-                    ed.getType().getName(),
-                    id,
-                    ExecutionPoint.snapshot());
+            LOG.WARN("Trying to FIND an entity of type '%s' with id '%s' without providing a routing! "
+                     + "This will most probably return an invalid result!\n",
+                     ed.getType().getName(),
+                     id,
+                     ExecutionPoint.snapshot());
         }
 
         String index =

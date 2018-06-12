@@ -38,7 +38,8 @@ public class MongoStringMapProperty extends BaseMapProperty {
 
         @Override
         public boolean accepts(Field field) {
-            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass()) && StringMap.class.equals(field.getType());
+            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass())
+                   && StringMap.class.equals(field.getType());
         }
 
         @Override
@@ -68,7 +69,7 @@ public class MongoStringMapProperty extends BaseMapProperty {
         }
 
         Document doc = new Document();
-        doc.putAll(((Map<String, String>) object));
+        doc.putAll((Map<String, String>) object);
         return doc;
     }
 }

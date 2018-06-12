@@ -11,10 +11,8 @@ package sirius.db.jdbc;
 import sirius.db.jdbc.constraints.FieldOperator;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
-import sirius.db.mixing.Composite;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Query;
-import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -23,23 +21,8 @@ import sirius.kernel.nls.NLS;
 import java.util.Objects;
 
 /**
- * Represents a data object stored into the database.
- * <p>
- * Each non-abstract subclass of <tt>Entity</tt> will become a table in the target database. Each field
- * will become a column, unless it is annotated with {@link Transient}.
- * <p>
- * The framework highly encourages composition over inheritance. Therefore {@link Composite} fields will directly
- * result in the equivalent columns required to store the fields declared there. Still inheritance might be
- * useful and is fully supported for both, entities and composites.
- * <p>
- * What is not supported, is merging distinct subclasses into one table or other weired inheritance methods. Therefore
- * all superclasses should be abstract.
- * <p>
- * Additionally all <tt>Mixins</tt> {@link Mixin} will be used to add columns to the
- * target table. This is especially useful to extend existing entities from within customizations.
- * <p>
- * It also provides a {@link #getIdAsString()} method which returns
- * the database ID as string. However, for new entities (not yet persisted), it returns "new"
+ * Represents the base class for all entities which are managed via {@link sirius.db.jdbc.OMA} and stored in
+ * a JDBC / SQL database.
  */
 public abstract class SQLEntity extends BaseEntity<Long> {
 

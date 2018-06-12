@@ -23,10 +23,16 @@ import java.util.function.Function;
 /**
  * Base class for queries within mixing.
  *
+ * @param <Q> the generic parameter of the effective query class
  * @param <E> the generic type of the entity being queried
  */
 public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
 
+    /**
+     * Contains the maximal number of elements to be returned in {@link #queryList()}.
+     * <p>
+     * For larger results {@link #iterate(Function)} mit be used as it can be more efficient
+     */
     public static final int MAX_LIST_SIZE = 1000;
 
     /**
@@ -45,7 +51,9 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     protected final EntityDescriptor descriptor;
 
     /**
-     * Creates a new query for entities of the given type
+     * Creates a new query for entities of the given type.
+     *
+     * @param descriptor the descriptor of the entity type to query
      */
     protected BaseQuery(EntityDescriptor descriptor) {
         this.descriptor = descriptor;
@@ -122,10 +130,10 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
         if (limit > MAX_LIST_SIZE) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage(
-                                    "When using 'queryList' as most %s items can be selected. Use 'iterate' for larger results. Query: %s",
-                                    MAX_LIST_SIZE,
-                                    this)
+                            .withSystemErrorMessage("When using 'queryList' as most %s items can be selected. "
+                                                    + "Use 'iterate' for larger results. Query: %s",
+                                                    MAX_LIST_SIZE,
+                                                    this)
                             .handle();
         }
 
@@ -146,10 +154,9 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
         if (result.size() >= MAX_LIST_SIZE) {
             throw Exceptions.handle()
                             .to(Mongo.LOG)
-                            .withSystemErrorMessage(
-                                    "More than %s results were loaded into a list by executing: %s",
-                                    MAX_LIST_SIZE,
-                                    this)
+                            .withSystemErrorMessage("More than %s results were loaded into a list by executing: %s",
+                                                    MAX_LIST_SIZE,
+                                                    this)
                             .handle();
         }
     }

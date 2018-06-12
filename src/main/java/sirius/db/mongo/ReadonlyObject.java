@@ -17,6 +17,9 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * Represents an empty and readonly document.
+ */
 class ReadonlyObject extends Document {
 
     protected static final Document EMPTY_OBJECT = new ReadonlyObject();
@@ -24,7 +27,6 @@ class ReadonlyObject extends Document {
     private static final long serialVersionUID = -1079350674050338133L;
 
     private ReadonlyObject() {
-
     }
 
     @Override

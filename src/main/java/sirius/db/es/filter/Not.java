@@ -19,6 +19,8 @@ public class Not extends BaseFilter {
 
     /**
      * Inverts the given inner filter.
+     *
+     * @param inner the inner filter to invert
      */
     public Not(Filter inner) {
         this.inner = inner;

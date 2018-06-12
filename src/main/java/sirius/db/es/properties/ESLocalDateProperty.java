@@ -82,7 +82,7 @@ public class ESLocalDateProperty extends Property implements ESPropertyInfo {
             return null;
         }
 
-        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(((LocalDate) object));
+        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format((LocalDate) object);
     }
 
     @Override

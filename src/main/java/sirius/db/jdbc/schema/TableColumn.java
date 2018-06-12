@@ -12,6 +12,8 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Numeric;
 import sirius.kernel.commons.Strings;
 
+import javax.annotation.Nullable;
+
 /**
  * Represents a column of a database table.
  */
@@ -27,10 +29,18 @@ public class TableColumn {
     private String defaultValue;
     private Property source;
 
+    /**
+     * Creates a new table column.
+     */
     public TableColumn() {
-
     }
 
+    /**
+     * Creates a new table column which is pre-initialized with the given property and type.
+     *
+     * @param property the property used to determine common parameters (nullability, length, default value ..)
+     * @param sqlType  the type of the column based on {@link java.sql.Types}
+     */
     public TableColumn(Property property, int sqlType) {
         this.source = property;
         this.name = property.getPropertyName();
@@ -45,6 +55,12 @@ public class TableColumn {
         });
     }
 
+    /**
+     * Returns the underlying property if available
+     *
+     * @return the underlying property
+     */
+    @Nullable
     public Property getSource() {
         return source;
     }

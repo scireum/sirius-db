@@ -15,6 +15,11 @@ import sirius.kernel.di.std.Part;
 
 import java.util.function.Function;
 
+/**
+ * Creates a new query against MongoDB.
+ *
+ * @param <E> the type of entities being queried.
+ */
 public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
 
     private Finder finder;
@@ -25,7 +30,12 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
     @Part
     private static Mongo mongo;
 
-    public MongoQuery(EntityDescriptor descriptor) {
+    /**
+     * Creates a new query for the given descriptor.
+     *
+     * @param descriptor the descriptor of the entities being queried
+     */
+    protected MongoQuery(EntityDescriptor descriptor) {
         super(descriptor);
         this.finder = mongo.find();
     }
@@ -121,6 +131,9 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
         return finder.selectFields(MongoEntity.ID).singleIn(descriptor.getRelationName()).isPresent();
     }
 
+    /**
+     * Deletes all entities which are matched by the query.
+     */
     public void delete() {
         iterateAll(mango::delete);
     }

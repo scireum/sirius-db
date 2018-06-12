@@ -14,6 +14,7 @@ import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.Formatter;
 import sirius.kernel.settings.Extension;
@@ -41,6 +42,9 @@ import java.util.regex.Pattern;
  * Use {@link #getConnection()} to obtain a regular JDBC connection (which has to be handled with some caution).
  */
 public class Database {
+
+    @Part
+    private static Databases dbs;
 
     private static final String KEY_DRIVER = "driver";
     private static final String KEY_URL = "url";
@@ -166,6 +170,14 @@ public class Database {
         }
     }
 
+    /**
+     * Tries to obtain a host connection which is not bound to a specific database or schema.
+     * <p>
+     * This is used to setup test databases by executing an initial statement like <tt>CREATE DATABASE test</tt>.
+     *
+     * @return the host connection
+     * @throws SQLException in case of a database or configuration error
+     */
     public Connection getHostConnection() throws SQLException {
         if (Strings.isEmpty(hostUrl)) {
             return getConnection();
@@ -239,7 +251,7 @@ public class Database {
                                           c.prepareStatement(sql)) {
                 fillValues(valueList, sql, stmt);
                 stmt.executeUpdate();
-                return SQLQuery.fetchGeneratedKeys(stmt);
+                return dbs.fetchGeneratedKeys(stmt);
             }
         }
     }

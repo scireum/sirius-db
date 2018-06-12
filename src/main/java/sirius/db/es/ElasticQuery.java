@@ -368,14 +368,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (elastic.isRouted(descriptor)) {
             if (Strings.isEmpty(routing) && !unrouted) {
                 Elastic.LOG.WARN(
-                        "Trying query an entity of type '%s' without providing a routing! This will most probably return an invalid result!\n%s\n",
+                        "Trying query an entity of type '%s' without providing a routing!"
+                        + " This will most probably return an invalid result!\n%s\n",
                         descriptor.getType().getName(),
                         this,
                         ExecutionPoint.snapshot());
             }
         } else if (Strings.isFilled(routing)) {
             Elastic.LOG.WARN(
-                    "Trying query an entity of type '%s' while providing a routing! This entity is unrouted! This will most probably return an invalid result!\n%s\n",
+                    "Trying query an entity of type '%s' while providing a routing! This entity is unrouted!"
+                    + " This will most probably return an invalid result!\n%s\n",
                     descriptor.getType().getName(),
                     this,
                     ExecutionPoint.snapshot());

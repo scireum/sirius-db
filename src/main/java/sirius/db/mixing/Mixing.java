@@ -31,6 +31,9 @@ import java.util.Optional;
 @Register(classes = {Mixing.class, Initializable.class})
 public class Mixing implements Initializable {
 
+    /**
+     * Contains the name of the default realm.
+     */
     public static final String DEFAULT_REALM = "mixing";
 
     @SuppressWarnings("squid:S1192")

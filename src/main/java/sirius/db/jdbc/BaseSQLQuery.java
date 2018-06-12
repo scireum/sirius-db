@@ -13,12 +13,12 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.ValueHolder;
+import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.OutputStream;
 import java.sql.Blob;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -27,29 +27,15 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * Abstract class to provide common functionality when executing a query and iterating over its result set.
+ */
 public abstract class BaseSQLQuery {
 
-    protected List<String> fieldNames;
+    @Part
+    protected static Databases dbs;
 
-    /**
-     * Returns all generated keys wrapped as row
-     *
-     * @param stmt the statement which was used to perform an update or insert
-     * @return a row containing all generated keys
-     * @throws SQLException in case of an error thrown by the database or driver
-     */
-    public static Row fetchGeneratedKeys(PreparedStatement stmt) throws SQLException {
-        try (ResultSet rs = stmt.getGeneratedKeys()) {
-            Row row = new Row();
-            if (rs != null && rs.next()) {
-                for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-                    row.fields.put(rs.getMetaData().getColumnLabel(col).toUpperCase(),
-                                   Tuple.create(rs.getMetaData().getColumnLabel(col), rs.getObject(col)));
-                }
-            }
-            return row;
-        }
-    }
+    protected List<String> fieldNames;
 
     /**
      * Executes the given query returning the result as list
