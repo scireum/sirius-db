@@ -28,20 +28,20 @@ public class EntityLoadAction implements ClassLoadAction {
     private static List<Class<? extends BaseEntity<?>>> mappableClasses = new ArrayList<>();
 
     /**
+     * Once a new instance is created - which only happens during framework initialization, we reset the list of known
+     * entities as a new discrovery run will start.
+     */
+    public EntityLoadAction() {
+        mappableClasses.clear();
+    }
+
+    /**
      * Contains a list of all known entity types.
      *
      * @return all known entities as discovered by the {@link sirius.kernel.Classpath}.
      */
     protected static List<Class<? extends BaseEntity<?>>> getMappableClasses() {
         return Collections.unmodifiableList(mappableClasses);
-    }
-
-    /**
-     * Once a new instance is created - which only happens during framework initialization, we reset the list of known
-     * entities as a new discrovery run will start.
-     */
-    public EntityLoadAction() {
-        mappableClasses.clear();
     }
 
     @Nullable

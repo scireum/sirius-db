@@ -9,20 +9,15 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.ValueHolder;
-import sirius.kernel.commons.Watch;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -196,5 +191,4 @@ public abstract class BaseSQLQuery {
      * the data to.
      */
     protected abstract void writeBlobToParameter(String name, Blob blob) throws SQLException;
-
 }

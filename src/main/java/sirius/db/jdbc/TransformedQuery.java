@@ -28,7 +28,7 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     protected final String alias;
     protected final SQLQuery qry;
 
-    protected TransformedQuery(Class<E> type, EntityDescriptor descriptor, String alias, SQLQuery qry) {
+    protected TransformedQuery(EntityDescriptor descriptor, String alias, SQLQuery qry) {
         super(descriptor);
         this.alias = alias;
         this.qry = qry;

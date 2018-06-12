@@ -248,7 +248,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
      * @return a transformed query which returns entities instead of result rows.
      */
     public <E extends SQLEntity> TransformedQuery<E> transform(Class<E> type, SQLQuery qry) {
-        return new TransformedQuery<>(type, mixing.getDescriptor(type), null, qry);
+        return new TransformedQuery<>(mixing.getDescriptor(type), null, qry);
     }
 
     /**
@@ -263,7 +263,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
      * @return a transformed query which returns entities instead of result rows.
      */
     public <E extends SQLEntity> TransformedQuery<E> transform(Class<E> type, String alias, SQLQuery qry) {
-        return new TransformedQuery<>(type, mixing.getDescriptor(type), alias, qry);
+        return new TransformedQuery<>(mixing.getDescriptor(type), alias, qry);
     }
 
     @Override
