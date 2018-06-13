@@ -139,11 +139,13 @@ class BatchContextSpec extends BaseSpecification {
         notFound.setFirstname("BatchContextFind2")
         found.setLastname("Test")
         then:
-        find.find(found) == e
+        find.find(found).get() == e
         and:
-        !find.find(found).isNew()
+        find.find(found).isPresent()
         and:
-        find.find(notFound).isNew()
+        !find.find(found).get().isNew()
+        and:
+        !find.find(notFound).isPresent()
         cleanup:
         OMA.LOG.INFO(ctx)
         ctx.close()

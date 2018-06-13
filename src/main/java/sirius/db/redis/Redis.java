@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
  * otherwise).
  */
 @Register(classes = {Redis.class, Startable.class, Stoppable.class})
-public class Redis implements Startable,Stoppable {
+public class Redis implements Startable, Stoppable {
 
     private static final String SERVICE_NAME = "redis";
 
@@ -154,7 +154,6 @@ public class Redis implements Startable,Stoppable {
         }
         LOG.INFO("Terminated subscription for: %s", subscriber.getTopic());
     }
-
 
     @Override
     public int getPriority() {
