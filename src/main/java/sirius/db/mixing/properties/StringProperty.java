@@ -10,6 +10,10 @@ package sirius.db.mixing.properties;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.IndexMappings;
+import sirius.db.es.annotations.Analyzed;
+import sirius.db.es.annotations.ESOption;
+import sirius.db.es.annotations.IndexMode;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -149,7 +153,22 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
     @Override
     public void describeProperty(JSONObject description) {
-        //TODO analysis stuff
         description.put("type", "keyword");
+        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_NORMS, IndexMode::normsEnabled, ESOption.FALSE, description);
+
+        getAnnotation(Analyzed.class).ifPresent(analyzed -> {
+            description.put("type", "text");
+
+            if (analyzed.indexOptions() != Analyzed.IndexOption.DEFAULT) {
+                description.put("index_options", analyzed.indexOptions().toString().toLowerCase());
+            }
+
+            if (Strings.isFilled(analyzed.analyzer())) {
+                description.put("analyzer", analyzed.analyzer());
+            }
+        });
     }
 }
