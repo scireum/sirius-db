@@ -14,7 +14,8 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.JedisSentinelPool;
-import sirius.kernel.Lifecycle;
+import sirius.kernel.Startable;
+import sirius.kernel.Stoppable;
 import sirius.kernel.async.CallContext;
 import sirius.kernel.async.Operation;
 import sirius.kernel.async.Tasks;
@@ -58,8 +59,8 @@ import java.util.stream.Collectors;
  * so that they can run in parallel with a test system (which uses the default database 0 - unless configured
  * otherwise).
  */
-@Register(classes = {Redis.class, Lifecycle.class})
-public class Redis implements Lifecycle {
+@Register(classes = {Redis.class, Startable.class, Stoppable.class})
+public class Redis implements Startable,Stoppable {
 
     private static final String SERVICE_NAME = "redis";
 
@@ -115,22 +116,6 @@ public class Redis implements Lifecycle {
      */
     public static final String INFO_USED_MEMORY = "used_memory";
 
-    @Override
-    @SuppressWarnings("squid:S2250")
-    @Explain("There aren't that many subscriptions, so there is no performance hotspot")
-    public void started() {
-        for (Subscriber subscriber : subscribers) {
-            JedisPubSub subscription = new JedisPubSub() {
-                @Override
-                public void onMessage(String channel, String message) {
-                    handlePubSubMessage(channel, message, subscriber);
-                }
-            };
-            subscriptions.add(subscription);
-            new Thread(() -> subscribe(subscriber, subscription), "redis-subscriber-" + subscriber.getTopic()).start();
-        }
-    }
-
     protected void handlePubSubMessage(String channel, String message, Subscriber subscriber) {
         tasks.executor("redis-pubsub").start(() -> {
             Watch w = Watch.start();
@@ -170,6 +155,28 @@ public class Redis implements Lifecycle {
         LOG.INFO("Terminated subscription for: %s", subscriber.getTopic());
     }
 
+
+    @Override
+    public int getPriority() {
+        return 50;
+    }
+
+    @Override
+    @SuppressWarnings("squid:S2250")
+    @Explain("There aren't that many subscriptions, so there is no performance hotspot")
+    public void started() {
+        for (Subscriber subscriber : subscribers) {
+            JedisPubSub subscription = new JedisPubSub() {
+                @Override
+                public void onMessage(String channel, String message) {
+                    handlePubSubMessage(channel, message, subscriber);
+                }
+            };
+            subscriptions.add(subscription);
+            new Thread(() -> subscribe(subscriber, subscription), "redis-subscriber-" + subscriber.getTopic()).start();
+        }
+    }
+
     @Override
     public void stopped() {
         subscriptionsActive.set(false);
@@ -184,21 +191,13 @@ public class Redis implements Lifecycle {
                           .handle();
             }
         }
-    }
 
-    @Override
-    public void awaitTermination() {
         if (sentinelPool != null) {
             sentinelPool.close();
         }
         if (jedis != null) {
             jedis.close();
         }
-    }
-
-    @Override
-    public String getName() {
-        return NAME_REDIS;
     }
 
     /**

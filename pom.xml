@@ -14,16 +14,12 @@
 
     <name>SIRIUS DB</name>
     <description>
-        Provides a modern and highly flexible ORM for relational databases. Also contains a thin layer above JDBC to
-        effectively and safely query relational databases. It also provides a simple wrapper for executing Redis
-        queries (while monitoring the call and system health and utilizing the system configuration). Finally a
-        thin but smart wrapper for MongoDB is provided which helps to access MongoDB databases while monitoring the
-        call duration and system health.
+        Provides a modern and highly flexible ORM and lightweight connectivity for JDBC, MongoDB, Redis, Elasticsearch.
     </description>
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>9.11</sirius.kernel>
+        <sirius.kernel>10.0</sirius.kernel>
     </properties>
 
     <dependencies>

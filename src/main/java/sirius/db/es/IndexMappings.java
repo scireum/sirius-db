@@ -15,8 +15,8 @@ import sirius.db.es.annotations.StorePerYear;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
-import sirius.kernel.Lifecycle;
 import sirius.kernel.Sirius;
+import sirius.kernel.Startable;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 /**
  * Creates the mappings for all available {@link ElasticEntity Elasticsearch entities}.
  */
-@Register(classes = {IndexMappings.class, Lifecycle.class})
-public class IndexMappings implements Lifecycle {
+@Register(classes = {IndexMappings.class, Startable.class})
+public class IndexMappings implements Startable {
 
     /**
      * Mapping key used to tell ES if and how a property is stored
@@ -164,21 +164,6 @@ public class IndexMappings implements Lifecycle {
 
     private boolean isExcludeFromSource(Property p) {
         return p.getAnnotation(IndexMode.class).map(IndexMode::excludeFromSource).orElse(false);
-    }
-
-    @Override
-    public void stopped() {
-        // NOOP
-    }
-
-    @Override
-    public void awaitTermination() {
-        // NOOP
-    }
-
-    @Override
-    public String getName() {
-        return "index-mappings";
     }
 
     /**

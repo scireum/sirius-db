@@ -18,8 +18,8 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
-import sirius.kernel.Lifecycle;
 import sirius.kernel.Sirius;
+import sirius.kernel.Startable;
 import sirius.kernel.async.Future;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
 /**
  * Creates the database schemata for all databases managed via {@link Mixing} and {@link OMA}.
  */
-@Register(classes = {Schema.class, Lifecycle.class, Initializable.class})
-public class Schema implements Lifecycle, Initializable {
+@Register(classes = {Schema.class, Startable.class, Initializable.class})
+public class Schema implements Startable, Initializable {
 
     private static final String EXTENSION_MIXING_JDBC = "mixing.jdbc";
     private static final String KEY_DATABASE = "database";
@@ -345,21 +345,6 @@ public class Schema implements Lifecycle, Initializable {
                               initSql)
                       .handle();
         }
-    }
-
-    @Override
-    public void stopped() {
-        // Nothing to stop...
-    }
-
-    @Override
-    public void awaitTermination() {
-        // Nothing to wait for...
-    }
-
-    @Override
-    public String getName() {
-        return "mixing-schema";
     }
 
     @Override

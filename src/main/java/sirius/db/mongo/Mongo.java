@@ -12,6 +12,8 @@ import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
+import sirius.kernel.Startable;
+import sirius.kernel.Stoppable;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -32,8 +34,8 @@ import java.util.stream.Collectors;
 /**
  * Provides a thin layer above Mongo DB with fluent APIs for CRUD operations.
  */
-@Register(classes = Mongo.class)
-public class Mongo {
+@Register(classes = {Mongo.class, Startable.class, Stoppable.class})
+public class Mongo implements Startable, Stoppable {
 
     private static final String SERVICE_NAME = "mongo";
 
@@ -116,10 +118,21 @@ public class Mongo {
         }
     }
 
-    /**
-     * Closes the connection
-     */
-    protected void close() {
+    @Override
+    public int getPriority() {
+        return 75;
+    }
+
+    @Override
+    public void started() {
+        if (isConfigured()) {
+            // Force the creation of indices and the initialization of the database connection...
+            db();
+        }
+    }
+
+    @Override
+    public void stopped() {
         if (mongoClient != null) {
             mongoClient.close();
         }
