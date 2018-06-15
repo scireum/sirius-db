@@ -390,7 +390,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
 
         if (routing == null && isRouted(ed)) {
             LOG.WARN("Trying to FIND an entity of type '%s' with id '%s' without providing a routing! "
-                     + "This will most probably return an invalid result!\n",
+                     + "This will most probably return an invalid result!\n%s",
                      ed.getType().getName(),
                      id,
                      ExecutionPoint.snapshot());
