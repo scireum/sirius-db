@@ -15,22 +15,20 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.types.StringList;
-import sirius.db.mixing.types.StringListMap;
 import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mongo.MongoEntity;
+import sirius.db.mongo.types.StringIntMap;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringList} field within a {@link Mixable}.
+ * Represents an {@link StringIntMap} field within a {@link Mixable}.
  */
-public class MongoStringListMapProperty extends BaseMapProperty {
+public class MongoStringIntMapProperty extends BaseMapProperty {
 
     /**
      * Factory for generating properties based on their field type
@@ -41,7 +39,7 @@ public class MongoStringListMapProperty extends BaseMapProperty {
         @Override
         public boolean accepts(Field field) {
             return MongoEntity.class.isAssignableFrom(field.getDeclaringClass())
-                   && StringListMap.class.equals(field.getType());
+                   && StringIntMap.class.equals(field.getType());
         }
 
         @Override
@@ -55,11 +53,11 @@ public class MongoStringListMapProperty extends BaseMapProperty {
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new MongoStringListMapProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new MongoStringIntMapProperty(descriptor, accessPath, field));
         }
     }
 
-    MongoStringListMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    MongoStringIntMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
@@ -71,7 +69,7 @@ public class MongoStringListMapProperty extends BaseMapProperty {
         }
 
         Document doc = new Document();
-        doc.putAll((Map<String, List<String>>) object);
+        doc.putAll((Map<String, Integer>) object);
         return doc;
     }
 }

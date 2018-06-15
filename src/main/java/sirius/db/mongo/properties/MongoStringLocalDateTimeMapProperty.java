@@ -15,22 +15,23 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.types.StringList;
-import sirius.db.mixing.types.StringListMap;
 import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mongo.MongoEntity;
+import sirius.db.mongo.QueryBuilder;
+import sirius.db.mongo.types.StringLocalDateTimeMap;
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringList} field within a {@link Mixable}.
+ * Represents an {@link StringLocalDateTimeMap} field within a {@link Mixable}.
  */
-public class MongoStringListMapProperty extends BaseMapProperty {
+public class MongoStringLocalDateTimeMapProperty extends BaseMapProperty {
 
     /**
      * Factory for generating properties based on their field type
@@ -40,8 +41,8 @@ public class MongoStringListMapProperty extends BaseMapProperty {
 
         @Override
         public boolean accepts(Field field) {
-            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass())
-                   && StringListMap.class.equals(field.getType());
+            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass()) && StringLocalDateTimeMap.class.equals(
+                    field.getType());
         }
 
         @Override
@@ -55,23 +56,39 @@ public class MongoStringListMapProperty extends BaseMapProperty {
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new MongoStringListMapProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new MongoStringLocalDateTimeMapProperty(descriptor, accessPath, field));
         }
     }
 
-    MongoStringListMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    MongoStringLocalDateTimeMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     protected Object transformToDatasource(Object object) {
-        if (object instanceof Document) {
-            return object;
-        }
-
         Document doc = new Document();
-        doc.putAll((Map<String, List<String>>) object);
+        ((Map<String, StringLocalDateTimeMap>) object).forEach((k, v) -> doc.put(k, QueryBuilder.transformValue(v)));
         return doc;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void setValueToField(Object value, Object target) {
+        try {
+            StringLocalDateTimeMap map = (StringLocalDateTimeMap) field.get(target);
+            map.clear();
+            if (value instanceof Document) {
+                ((Document) value).forEach((k, v) -> map.put(k, Value.of(v).asLocalDateTime(null)));
+            }
+        } catch (IllegalAccessException e) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
+                                                    getName(),
+                                                    getDefinition())
+                            .handle();
+        }
     }
 }

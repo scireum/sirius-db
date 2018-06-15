@@ -25,7 +25,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mongo.MongoEntity;
 import sirius.db.mongo.Mango;
-import sirius.db.mongo.MongoRef;
+import sirius.db.mongo.types.MongoRef;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;

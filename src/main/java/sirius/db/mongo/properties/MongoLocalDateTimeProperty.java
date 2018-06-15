@@ -8,27 +8,24 @@
 
 package sirius.db.mongo.properties;
 
-import org.bson.Document;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mixable;
-import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.types.StringMap;
-import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mongo.MongoEntity;
+import sirius.db.mongo.QueryBuilder;
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringMap} field within a {@link Mixable}.
+ * Represents a timestamp property which contains a date along with a time value. This is used to represents fields of
+ * type {@link LocalDateTime}.
  */
-public class MongoStringMapProperty extends BaseMapProperty {
+public class MongoLocalDateTimeProperty extends Property {
 
     /**
      * Factory for generating properties based on their field type
@@ -39,7 +36,7 @@ public class MongoStringMapProperty extends BaseMapProperty {
         @Override
         public boolean accepts(Field field) {
             return MongoEntity.class.isAssignableFrom(field.getDeclaringClass())
-                   && StringMap.class.equals(field.getType());
+                   && LocalDateTime.class.equals(field.getType());
         }
 
         @Override
@@ -47,29 +44,30 @@ public class MongoStringMapProperty extends BaseMapProperty {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            if (!Modifier.isFinal(field.getModifiers())) {
-                Mixing.LOG.WARN("Field %s in %s is not final! This will probably result in errors.",
-                                field.getName(),
-                                field.getDeclaringClass().getName());
-            }
-
-            propertyConsumer.accept(new MongoStringMapProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new MongoLocalDateTimeProperty(descriptor, accessPath, field));
         }
     }
 
-    MongoStringMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    protected MongoLocalDateTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
+    public Object transformValue(Value value) {
+        return value.asLocalDateTime(null);
+    }
+
+    @Override
+    protected Object transformFromDatasource(Value object) {
+        return object.asLocalDateTime(null);
+    }
+
     @Override
     protected Object transformToDatasource(Object object) {
-        if (object instanceof Document) {
-            return object;
+        if (!(object instanceof LocalDateTime)) {
+            return null;
         }
 
-        Document doc = new Document();
-        doc.putAll((Map<String, String>) object);
-        return doc;
+        return QueryBuilder.transformValue(object);
     }
 }

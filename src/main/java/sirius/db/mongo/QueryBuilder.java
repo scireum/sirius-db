@@ -146,6 +146,10 @@ public abstract class QueryBuilder<S> {
         return value;
     }
 
+    protected static String getRelationName(Class<?> type) {
+        return mixing.getDescriptor(type).getRelationName();
+    }
+
     @Override
     public String toString() {
         return filterObject.toString();

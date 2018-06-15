@@ -172,6 +172,10 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
         return new MongoQuery<>(mixing.getDescriptor(type));
     }
 
+    public String getCollection(Class<? extends MongoEntity> type) {
+        return mixing.getDescriptor(type).getRelationName();
+    }
+
     @Override
     public void createIndices(MongoDatabase client) {
         mixing.getDesciptors()

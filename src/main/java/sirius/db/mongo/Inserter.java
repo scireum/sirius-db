@@ -79,6 +79,16 @@ public class Inserter {
     /**
      * Executes the insert statement into the given collection.
      *
+     * @param type the type to insert into
+     * @return the inserted document
+     */
+    public Doc into(Class<?> type) {
+        return into(QueryBuilder.getRelationName(type));
+    }
+
+    /**
+     * Executes the insert statement into the given collection.
+     *
      * @param collection the collection to insert the document into
      * @return the inserted document
      */

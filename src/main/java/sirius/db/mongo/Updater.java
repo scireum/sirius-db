@@ -265,7 +265,7 @@ public class Updater extends QueryBuilder<Updater> {
      * @return the result of the update
      */
     public UpdateResult executeFor(Class<?> type) {
-        return executeFor(mixing.getDescriptor(type).getRelationName());
+        return executeFor(getRelationName(type));
     }
 
     /**

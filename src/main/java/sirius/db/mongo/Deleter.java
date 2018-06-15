@@ -24,6 +24,16 @@ public class Deleter extends QueryBuilder<Deleter> {
     /**
      * Executes the delete statement on the given collection.
      *
+     * @param type the type of entities to delete
+     * @return the result of the delete operation
+     */
+    public DeleteResult singleFrom(Class<?> type) {
+        return singleFrom(getRelationName(type));
+    }
+
+    /**
+     * Executes the delete statement on the given collection.
+     *
      * @param collection the name of the collection to delete documents from
      * @return the result of the delete operation
      */
@@ -38,6 +48,16 @@ public class Deleter extends QueryBuilder<Deleter> {
             }
             traceIfRequired(collection, w);
         }
+    }
+
+    /**
+     * Executes the delete statement on the given collection.
+     *
+     * @param type the type of entities to delete
+     * @return the result of the delete operation
+     */
+    public DeleteResult manyFrom(Class<?> type) {
+        return manyFrom(getRelationName(type));
     }
 
     /**

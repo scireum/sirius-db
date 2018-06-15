@@ -159,6 +159,16 @@ public class Finder extends QueryBuilder<Finder> {
     /**
      * Executes the query for the given collection and returns a single document.
      *
+     * @param type the type of entities to search
+     * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
+     */
+    public Optional<Doc> singleIn(Class<?> type) {
+        return singleIn(getRelationName(type));
+    }
+
+    /**
+     * Executes the query for the given collection and returns a single document.
+     *
      * @param collection the collection to search in
      * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
      */
@@ -188,6 +198,17 @@ public class Finder extends QueryBuilder<Finder> {
             }
             traceIfRequired(collection, w);
         }
+    }
+
+    /**
+     * Executes the query for the given collection and calls the given processor for each document as long as it
+     * returns <tt>true</tt>.
+     *
+     * @param type      the type of entities to search
+     * @param processor the processor to handle matches, which also controls if further results should be processed
+     */
+    public void eachIn(Class<?> type, Function<Doc, Boolean> processor) {
+        eachIn(getRelationName(type), processor);
     }
 
     /**
@@ -239,6 +260,16 @@ public class Finder extends QueryBuilder<Finder> {
     /**
      * Executes the query for the given collection and calls the given processor for each document.
      *
+     * @param type      the type of entities to search
+     * @param processor the processor to handle matches
+     */
+    public void allIn(Class<?> type, Consumer<Doc> processor) {
+        allIn(getRelationName(type), processor);
+    }
+
+    /**
+     * Executes the query for the given collection and calls the given processor for each document.
+     *
      * @param collection the collection to search in
      * @param processor  the processor to handle matches
      */
@@ -247,6 +278,18 @@ public class Finder extends QueryBuilder<Finder> {
             processor.accept(d);
             return true;
         });
+    }
+
+    /**
+     * Counts the number of documents in the result of the given query.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param type the type of entities to search
+     * @return the number of documents found
+     */
+    public long countIn(Class<?> type) {
+        return countIn(getRelationName(type));
     }
 
     /**

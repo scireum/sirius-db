@@ -9,6 +9,7 @@
 package sirius.db.mongo;
 
 import org.bson.Document;
+import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 
@@ -52,6 +53,16 @@ public class Doc {
     }
 
     /**
+     * Returns the value of the requested field wrapped as {@link Value}.
+     *
+     * @param field the field to fetch
+     * @return the value for the given field
+     */
+    public Value get(Mapping field) {
+        return Value.of(obj.get(field.toString()));
+    }
+
+    /**
      * Returns the string contents of the given field
      *
      * @param field the field to fetch
@@ -59,6 +70,17 @@ public class Doc {
      */
     @Nonnull
     public String getString(String field) {
+        return get(field).asString();
+    }
+
+    /**
+     * Returns the string contents of the given field
+     *
+     * @param field the field to fetch
+     * @return the string contents or "" if the field is empty
+     */
+    @Nonnull
+    public String getString(Mapping field) {
         return get(field).asString();
     }
 
@@ -75,6 +97,16 @@ public class Doc {
     }
 
     /**
+     * Returns the list contained in the given field
+     *
+     * @param field the field to fetch
+     * @return the list contained in the given field or an empty list, if the field was empty
+     */
+    public List<Object> getList(Mapping field) {
+        return getList(field.toString());
+    }
+
+    /**
      * Returns the list of strings contained in the given field
      *
      * @param field the field to fetch
@@ -83,6 +115,16 @@ public class Doc {
     @SuppressWarnings("unchecked")
     public List<String> getStringList(String field) {
         return (List<String>) (Object) getList(field);
+    }
+
+    /**
+     * Returns the list of strings contained in the given field
+     *
+     * @param field the field to fetch
+     * @return the list contained in the given field or an empty list, if the field was empty
+     */
+    public List<String> getStringList(Mapping field) {
+        return getStringList(field.toString());
     }
 
     /**
@@ -103,6 +145,18 @@ public class Doc {
     }
 
     /**
+     * Returns the object stored for the given field.
+     * <p>
+     * If there is no object present or the given field doesn't contain an object, an empty readonly instance is returned.
+     *
+     * @param field the field to read
+     * @return the object stored for the field
+     */
+    public Document getObject(Mapping field) {
+        return getObject(field.toString());
+    }
+
+    /**
      * Returns the inner value stored in the object in the given field.
      *
      * @param field the field to read the object from
@@ -118,6 +172,17 @@ public class Doc {
     }
 
     /**
+     * Returns the inner value stored in the object in the given field.
+     *
+     * @param field the field to read the object from
+     * @param key   the key to read from the object
+     * @return the value within the inner object wrapped as {@link Value}
+     */
+    public Value getValueInObject(Mapping field, String key) {
+        return getValueInObject(field.toString(), key);
+    }
+
+    /**
      * Updates the underlying object, without updating the database.
      * <p>
      * This can be used to enhance an existing object after an update for further consumers. This is not intended to
@@ -128,6 +193,19 @@ public class Doc {
      */
     public void put(String key, Object value) {
         obj.put(key, value);
+    }
+
+    /**
+     * Updates the underlying object, without updating the database.
+     * <p>
+     * This can be used to enhance an existing object after an update for further consumers. This is not intended to
+     * update or modify the database in any way. Use {@link Mongo#update()} instead.
+     *
+     * @param key   the field to update
+     * @param value the new value for the field
+     */
+    public void put(Mapping key, Object value) {
+        obj.put(key.toString(), value);
     }
 
     @Override
