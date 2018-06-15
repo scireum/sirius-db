@@ -10,7 +10,7 @@ package sirius.db.es.properties;
 
 import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.StringList;
+import sirius.db.mixing.types.StringList;
 
 public class ESStringListEntity extends ElasticEntity {
 

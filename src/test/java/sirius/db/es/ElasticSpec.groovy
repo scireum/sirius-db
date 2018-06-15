@@ -77,7 +77,8 @@ class ElasticSpec extends BaseSpecification {
         elastic.delete(entity)
         and:
         Wait.seconds(2)
-        RoutedTestEntity notFound = elastic.find(RoutedTestEntity.class, entity.getId()).orElse(null)
+        RoutedTestEntity notFound = elastic.find(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World")).
+                orElse(null)
         then:
         notFound == null
     }

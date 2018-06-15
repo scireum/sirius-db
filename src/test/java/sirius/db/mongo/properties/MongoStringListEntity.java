@@ -9,7 +9,7 @@
 package sirius.db.mongo.properties;
 
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.StringList;
+import sirius.db.mixing.types.StringList;
 import sirius.db.mongo.MongoEntity;
 
 public class MongoStringListEntity extends MongoEntity {

@@ -11,7 +11,8 @@ package sirius.db.mixing;
 import sirius.db.es.ElasticRef;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.NullAllowed;
-import sirius.db.mongo.MongoRef;
+import sirius.db.mixing.types.BaseEntityRef;
+import sirius.db.mongo.types.MongoRef;
 
 public class RefEntity extends SQLEntity {
 
