@@ -13,7 +13,7 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
-import sirius.db.mixing.SafeMap;
+import sirius.db.mixing.types.SafeMap;
 import sirius.kernel.commons.Value;
 
 import java.lang.reflect.Field;
@@ -30,11 +30,11 @@ public abstract class BaseMapProperty extends Property {
 
     @Override
     protected Object getValueFromField(Object target) {
-        return ((SafeMap<?, ?>) super.getValueFromField(target)).copyValue();
+        return ((SafeMap<?, ?>) super.getValueFromField(target)).data();
     }
 
     @Override
-    public Object getValueAsCopy(BaseEntity<?> entity) {
+    public Object getValueAsCopy(Object entity) {
         return ((SafeMap<?, ?>) super.getValueFromField(entity)).copyValue();
     }
 

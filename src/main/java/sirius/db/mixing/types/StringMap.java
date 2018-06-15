@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.mixing.types;
 
 /**
  * Provides a simple string-string map as property value.

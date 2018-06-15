@@ -12,10 +12,10 @@ import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntityRef;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseEntity;
-import sirius.db.mixing.BaseEntityRef;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -131,7 +131,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     }
 
     @Override
-    protected void onBeforeSaveChecks(BaseEntity<?> entity) {
+    protected void onBeforeSaveChecks(Object entity) {
         R ref = getEntityRef(accessPath.apply(entity));
         if (ref.containsNonpersistentValue()) {
             throw Exceptions.handle()
@@ -152,42 +152,53 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         super.link();
 
         SQLEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
+        if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
+            if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
+                Mixing.LOG.WARN(
+                        "Error in property % for %s is not a subclass of BaseEntity. The only supported DeleteHandler is IGNORE!.",
+                        this,
+                        getDescriptor());
+                return;
+            }
+        }
+
         if (deleteHandler == SQLEntityRef.OnDelete.CASCADE) {
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
         } else if (deleteHandler == SQLEntityRef.OnDelete.SET_NULL) {
+            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
         } else if (deleteHandler == SQLEntityRef.OnDelete.REJECT) {
             getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
         }
     }
 
-    protected void onDeleteSetNull(BaseEntity<?> e) {
-        getDescriptor().getReferenceInstance()
-                       .getMapper()
-                       .select(getDescriptor().getType())
-                       .eq(nameAsMapping, e.getId())
-                       .iterateAll(other -> {
-                           setValue(other, null);
-                           other.getMapper().update(other);
-                       });
+    protected void onDeleteSetNull(Object e) {
+        BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
+        referenceInstance.getMapper()
+                         .select(referenceInstance.getClass())
+                         .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                         .iterateAll(other -> {
+                             setValue(other, null);
+                             other.getMapper().update(other);
+                         });
     }
 
-    protected void onDeleteCascade(BaseEntity<?> e) {
-        getDescriptor().getReferenceInstance()
-                       .getMapper()
-                       .select(getDescriptor().getType())
-                       .eq(nameAsMapping, e.getId())
-                       .iterateAll(other -> {
-                           other.getMapper().delete(other);
-                       });
+    protected void onDeleteCascade(Object e) {
+        BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
+        referenceInstance.getMapper()
+                         .select(referenceInstance.getClass())
+                         .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                         .iterateAll(other -> {
+                             other.getMapper().delete(other);
+                         });
     }
 
-    protected void onDeleteReject(BaseEntity<?> e) {
-        long count = getDescriptor().getReferenceInstance()
-                                    .getMapper()
-                                    .select(getDescriptor().getType())
-                                    .eq(nameAsMapping, e.getId())
-                                    .count();
+    protected void onDeleteReject(Object e) {
+        BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
+        long count = referenceInstance.getMapper()
+                                      .select(referenceInstance.getClass())
+                                      .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                                      .count();
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")

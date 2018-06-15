@@ -15,7 +15,7 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.StringListMap;
+import sirius.db.mixing.types.StringListMap;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;

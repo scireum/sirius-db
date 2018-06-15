@@ -237,7 +237,7 @@ public abstract class Property {
      * @param entity the entity to write to
      * @param object the value to write to the field
      */
-    protected void setValue(BaseEntity<?> entity, Object object) {
+    protected void setValue(Object entity, Object object) {
         Object target = accessPath.apply(entity);
         setValueToField(object, target);
     }
@@ -274,7 +274,7 @@ public abstract class Property {
      * @param entity the entity to write to
      * @param data   the database value to store
      */
-    protected void setValueFromDatasource(BaseEntity<?> entity, Value data) {
+    protected void setValueFromDatasource(Object entity, Value data) {
         Object effectiveValue = transformFromDatasource(data);
         if (field.getType().isPrimitive() && effectiveValue == null) {
             return;
@@ -301,7 +301,7 @@ public abstract class Property {
      * @param entity the entity to fetch the value from
      * @return the value which is currently stored in the field
      */
-    public Object getValue(BaseEntity<?> entity) {
+    public Object getValue(Object entity) {
         Object target = accessPath.apply(entity);
         return getValueFromField(target);
     }
@@ -313,7 +313,7 @@ public abstract class Property {
      * @param entity the entity to fetch the value from
      * @return the as compy of the value which is currently stored in the field
      */
-    public Object getValueAsCopy(BaseEntity<?> entity) {
+    public Object getValueAsCopy(Object entity) {
         return getValue(entity);
     }
 
@@ -345,7 +345,7 @@ public abstract class Property {
      * @param entity the entity to write to
      * @return the database value to store in the db
      */
-    public Object getValueForDatasource(BaseEntity<?> entity) {
+    public Object getValueForDatasource(Object entity) {
         return transformToDatasource(getValue(entity));
     }
 
@@ -366,7 +366,7 @@ public abstract class Property {
      * @param e     the entity to receive the parsed value
      * @param value the value to parse and apply
      */
-    public void parseValue(BaseEntity<?> e, Value value) {
+    public void parseValue(Object e, Value value) {
         try {
             setValue(e, transformValue(value));
         } catch (IllegalArgumentException exception) {
@@ -418,14 +418,16 @@ public abstract class Property {
      *
      * @param entity the entity to check
      */
-    protected final void onBeforeSave(BaseEntity<?> entity) {
+    protected final void onBeforeSave(Object entity) {
         onBeforeSaveChecks(entity);
         Object propertyValue = getValue(entity);
         checkNullability(propertyValue);
 
-        if (entity.isNew() || entity.isChanged(nameAsMapping)) {
-            // Only enforce uniqueness if the value actually changed...
-            checkUniqueness(entity, propertyValue);
+        if (entity instanceof BaseEntity<?>) {
+            if (((BaseEntity<?>) entity).isNew() || ((BaseEntity<?>) entity).isChanged(nameAsMapping)) {
+                // Only enforce uniqueness if the value actually changed...
+                checkUniqueness(entity, propertyValue);
+            }
         }
     }
 
@@ -436,7 +438,7 @@ public abstract class Property {
      *
      * @param entity the entity to check
      */
-    protected void onBeforeSaveChecks(BaseEntity<?> entity) {
+    protected void onBeforeSaveChecks(Object entity) {
     }
 
     /**
@@ -456,7 +458,7 @@ public abstract class Property {
      * @param entity        the entity to check
      * @param propertyValue the value to check
      */
-    protected void checkUniqueness(BaseEntity<?> entity, Object propertyValue) {
+    protected void checkUniqueness(Object entity, Object propertyValue) {
         Unique unique = field.getAnnotation(Unique.class);
         if (unique == null) {
             return;
@@ -465,8 +467,12 @@ public abstract class Property {
             return;
         }
 
+        if (!(entity instanceof BaseEntity<?>)) {
+            throw new IllegalArgumentException("Only subcalsses of BaseEntity can have unique fields!");
+        }
+
         Mapping[] withinColumns = Arrays.stream(unique.within()).map(Mapping::named).toArray(Mapping[]::new);
-        entity.assertUnique(nameAsMapping, propertyValue, withinColumns);
+        ((BaseEntity<?>) entity).assertUnique(nameAsMapping, propertyValue, withinColumns);
     }
 
     /**
@@ -474,7 +480,7 @@ public abstract class Property {
      *
      * @param entity the entity which was written to the database
      */
-    protected void onAfterSave(BaseEntity<?> entity) {
+    protected void onAfterSave(Object entity) {
     }
 
     /**
@@ -482,7 +488,7 @@ public abstract class Property {
      *
      * @param entity the entity to be deleted
      */
-    protected void onBeforeDelete(BaseEntity<?> entity) {
+    protected void onBeforeDelete(Object entity) {
     }
 
     /**
@@ -490,7 +496,7 @@ public abstract class Property {
      *
      * @param entity the entity which was deleted
      */
-    protected void onAfterDelete(BaseEntity<?> entity) {
+    protected void onAfterDelete(Object entity) {
     }
 
     /**

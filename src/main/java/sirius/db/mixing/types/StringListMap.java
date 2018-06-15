@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.mixing.types;
 
 import java.util.ArrayList;
 import java.util.Collections;

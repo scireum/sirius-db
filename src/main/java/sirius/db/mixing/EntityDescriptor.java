@@ -18,6 +18,7 @@ import sirius.db.mixing.annotations.BeforeSave;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Realm;
+import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
@@ -68,12 +69,12 @@ public class EntityDescriptor {
     /**
      * Contains the entity class
      */
-    protected final Class<? extends BaseEntity<?>> type;
+    protected final Class<?> type;
 
     /**
      * Contains a reference instance required by runtime inspections.
      */
-    private BaseEntity<?> referenceInstance;
+    private Object referenceInstance;
 
     /**
      * Contains all properties (defined via fields, composites or mixins)
@@ -93,22 +94,22 @@ public class EntityDescriptor {
     /**
      * A list of all additional handlers to be executed once an entity was deleted
      */
-    protected final List<Consumer<BaseEntity<?>>> cascadeDeleteHandlers = new ArrayList<>();
+    protected final List<Consumer<Object>> cascadeDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity is about to be deleted
      */
-    protected final List<Consumer<BaseEntity<?>>> beforeDeleteHandlers = new ArrayList<>();
+    protected final List<Consumer<Object>> beforeDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity was successfully deleted
      */
-    protected final List<Consumer<BaseEntity<?>>> afterDeleteHandlers = new ArrayList<>();
+    protected final List<Consumer<Object>> afterDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity is about to be saved
      */
-    protected List<Consumer<BaseEntity<?>>> sortedBeforeSaveHandlers;
+    protected List<Consumer<Object>> sortedBeforeSaveHandlers;
 
     /**
      * Collects handlers which are executed before entity is saved, need to be in order (some checks might depend on others),
@@ -116,26 +117,26 @@ public class EntityDescriptor {
      *
      * <tt>sortedBeforeSaveHandlers</tt> will be filled when first accessed and provide a properly sorted list
      */
-    protected PriorityCollector<Consumer<BaseEntity<?>>> beforeSaveHandlerCollector = PriorityCollector.create();
+    protected PriorityCollector<Consumer<Object>> beforeSaveHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all additional handlers to be executed once an entity is was saved
      */
-    protected final List<Consumer<BaseEntity<?>>> afterSaveHandlers = new ArrayList<>();
+    protected final List<Consumer<Object>> afterSaveHandlers = new ArrayList<>();
 
     /**
      * A list of all handlers to be executed once an entity is validated
      */
-    protected final List<BiConsumer<BaseEntity<?>, Consumer<String>>> validateHandlers = new ArrayList<>();
+    protected final List<BiConsumer<Object, Consumer<String>>> validateHandlers = new ArrayList<>();
 
-    /*
+    /**
      * Contains all known property factories. These are used to transform fields defined by entity classes to
      * properties
      */
     @PriorityParts(PropertyFactory.class)
     protected static List<PropertyFactory> factories;
 
-    /*
+    /**
      * Contains all mixins known to the system
      */
     private static MultiMap<Class<? extends Mixable>, Class<?>> allMixins;
@@ -148,9 +149,11 @@ public class EntityDescriptor {
      *
      * @param type the type from which the descriptor is filled
      */
-    protected EntityDescriptor(Class<? extends BaseEntity<?>> type) {
+    protected EntityDescriptor(Class<?> type) {
         this.type = type;
-        this.relationName = type.getSimpleName().toLowerCase();
+        RelationName relationNameAnnotation = type.getAnnotation(RelationName.class);
+        this.relationName =
+                relationNameAnnotation != null ? relationNameAnnotation.value() : type.getSimpleName().toLowerCase();
         Realm realmAnnotation = type.getAnnotation(Realm.class);
         this.realm = realmAnnotation != null ? realmAnnotation.value() : Mixing.DEFAULT_REALM;
 
@@ -168,7 +171,7 @@ public class EntityDescriptor {
         loadLegacyInfo(type);
     }
 
-    private void loadLegacyInfo(Class<? extends BaseEntity<?>> type) {
+    private void loadLegacyInfo(Class<?> type) {
         String configKey = "mixing.legacy." + type.getSimpleName();
         this.legacyInfo = Sirius.getSettings().getConfig().hasPath(configKey) ?
                           Sirius.getSettings().getConfig().getConfig(configKey) :
@@ -289,8 +292,8 @@ public class EntityDescriptor {
      *
      * @param entity the entity to perform the handlers on
      */
-    public final void beforeSave(BaseEntity<?> entity) {
-        for (Consumer<BaseEntity<?>> c : getSortedBeforeSaveHandlers()) {
+    public final void beforeSave(Object entity) {
+        for (Consumer<Object> c : getSortedBeforeSaveHandlers()) {
             c.accept(entity);
         }
         for (Property property : properties.values()) {
@@ -298,7 +301,7 @@ public class EntityDescriptor {
         }
     }
 
-    private List<Consumer<BaseEntity<?>>> getSortedBeforeSaveHandlers() {
+    private List<Consumer<Object>> getSortedBeforeSaveHandlers() {
         if (sortedBeforeSaveHandlers == null) {
             sortedBeforeSaveHandlers = beforeSaveHandlerCollector.getData();
             beforeSaveHandlerCollector = null;
@@ -312,19 +315,29 @@ public class EntityDescriptor {
      *
      * @param entity the entity which was saved
      */
-    public void afterSave(BaseEntity<?> entity) {
-        for (Consumer<BaseEntity<?>> c : afterSaveHandlers) {
+    public void afterSave(Object entity) {
+        for (Consumer<Object> c : afterSaveHandlers) {
             c.accept(entity);
         }
         for (Property property : properties.values()) {
             property.onAfterSave(entity);
         }
 
-        // Reset persisted data
-        entity.persistedData.clear();
-        for (Property p : getProperties()) {
-            entity.persistedData.put(p, p.getValueAsCopy(entity));
+        if (isBaseEntity(entity)) {
+            // Reset persisted data
+            asBaseEntity(entity).persistedData.clear();
+            for (Property p : getProperties()) {
+                asBaseEntity(entity).persistedData.put(p, p.getValueAsCopy(entity));
+            }
         }
+    }
+
+    private BaseEntity<?> asBaseEntity(Object entity) {
+        return (BaseEntity<?>) entity;
+    }
+
+    private boolean isBaseEntity(Object entity) {
+        return entity instanceof BaseEntity<?>;
     }
 
     /**
@@ -333,9 +346,9 @@ public class EntityDescriptor {
      * @param entity the entity to validate
      * @return a list of all validation warnings
      */
-    public List<String> validate(BaseEntity<?> entity) {
+    public List<String> validate(Object entity) {
         List<String> warnings = new ArrayList<>();
-        for (BiConsumer<BaseEntity<?>, Consumer<String>> validator : validateHandlers) {
+        for (BiConsumer<Object, Consumer<String>> validator : validateHandlers) {
             validator.accept(entity, warnings::add);
         }
 
@@ -348,8 +361,8 @@ public class EntityDescriptor {
      * @param entity the entity to check
      * @return <tt>true</tt> if there are validation warnings, <tt>false</tt> otherwise
      */
-    public boolean hasValidationWarnings(BaseEntity<?> entity) {
-        for (BiConsumer<BaseEntity<?>, Consumer<String>> validator : validateHandlers) {
+    public boolean hasValidationWarnings(Object entity) {
+        for (BiConsumer<Object, Consumer<String>> validator : validateHandlers) {
             ValueHolder<Boolean> hasWarnings = ValueHolder.of(false);
             validator.accept(entity, warning -> hasWarnings.accept(true));
             if (hasWarnings.get()) {
@@ -365,14 +378,14 @@ public class EntityDescriptor {
      *
      * @param entity the entity which is about to be deleted
      */
-    public void beforeDelete(BaseEntity<?> entity) {
+    public void beforeDelete(Object entity) {
         for (Property property : properties.values()) {
             property.onBeforeDelete(entity);
         }
-        for (Consumer<BaseEntity<?>> handler : beforeDeleteHandlers) {
+        for (Consumer<Object> handler : beforeDeleteHandlers) {
             handler.accept(entity);
         }
-        for (Consumer<BaseEntity<?>> handler : cascadeDeleteHandlers) {
+        for (Consumer<Object> handler : cascadeDeleteHandlers) {
             handler.accept(entity);
         }
     }
@@ -382,7 +395,7 @@ public class EntityDescriptor {
      *
      * @param handler the handler to add
      */
-    public void addCascadeDeleteHandler(Consumer<BaseEntity<?>> handler) {
+    public void addCascadeDeleteHandler(Consumer<Object> handler) {
         cascadeDeleteHandlers.add(handler);
     }
 
@@ -391,7 +404,7 @@ public class EntityDescriptor {
      *
      * @param handler the handler to add
      */
-    public void addBeforeDeleteHandler(Consumer<BaseEntity<?>> handler) {
+    public void addBeforeDeleteHandler(Consumer<Object> handler) {
         beforeDeleteHandlers.add(handler);
     }
 
@@ -400,7 +413,7 @@ public class EntityDescriptor {
      *
      * @param handler the handler to add
      */
-    public void addValidationHandler(BiConsumer<BaseEntity<?>, Consumer<String>> handler) {
+    public void addValidationHandler(BiConsumer<Object, Consumer<String>> handler) {
         validateHandlers.add(handler);
     }
 
@@ -413,7 +426,7 @@ public class EntityDescriptor {
         for (Property property : properties.values()) {
             property.onAfterDelete(entity);
         }
-        for (Consumer<BaseEntity<?>> handler : afterDeleteHandlers) {
+        for (Consumer<Object> handler : afterDeleteHandlers) {
             handler.accept(entity);
         }
     }
@@ -557,7 +570,7 @@ public class EntityDescriptor {
         }
     }
 
-    private static void invokeHandler(AccessPath accessPath, Method m, BaseEntity<?> entity, Object... params) {
+    private static void invokeHandler(AccessPath accessPath, Method m, Object entity, Object... params) {
         try {
             m.setAccessible(true);
             if (m.getParameterCount() == 0) {
@@ -605,15 +618,17 @@ public class EntityDescriptor {
      * @return an entity containing the values of the given result row
      * @throws Exception in case of an error while building the entity
      */
-    public BaseEntity<?> make(String alias, ValueSupplier<String> supplier) throws Exception {
-        BaseEntity<?> entity = type.newInstance();
+    public Object make(String alias, ValueSupplier<String> supplier) throws Exception {
+        Object entity = type.newInstance();
 
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getPropertyName() : alias + "_" + p.getPropertyName();
             Value data = supplier.apply(columnName);
             if (data != null) {
                 p.setValueFromDatasource(entity, data);
-                entity.persistedData.put(p, p.getValueAsCopy(entity));
+                if (isBaseEntity(entity)) {
+                    asBaseEntity(entity).persistedData.put(p, p.getValueAsCopy(entity));
+                }
             }
         }
 
@@ -636,7 +651,7 @@ public class EntityDescriptor {
 
     @Override
     public String toString() {
-        return "Mapping [" + type.getName() + "]";
+        return "EntityDescriptor [" + type.getName() + "]";
     }
 
     @Override
@@ -664,7 +679,7 @@ public class EntityDescriptor {
      *
      * @return the entity class
      */
-    public Class<? extends BaseEntity<?>> getType() {
+    public Class<?> getType() {
         return type;
     }
 
@@ -724,7 +739,7 @@ public class EntityDescriptor {
      *
      * @return the default instance
      */
-    public BaseEntity<?> getReferenceInstance() {
+    public Object getReferenceInstance() {
         return referenceInstance;
     }
 

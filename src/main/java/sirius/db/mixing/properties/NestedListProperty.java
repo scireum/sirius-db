@@ -16,8 +16,10 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.types.NestedList;
 import sirius.db.mixing.types.StringList;
 import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
@@ -28,7 +30,11 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link StringList} field within a {@link Mixable}.
  */
-public class StringListProperty extends Property implements ESPropertyInfo {
+public class NestedListProperty extends Property implements ESPropertyInfo {
+
+    @Part
+    private static Mixing mixing;
+    private EntityDescriptor nestedDescriptor;
 
     /**
      * Factory for generating properties based on their field type
@@ -38,7 +44,7 @@ public class StringListProperty extends Property implements ESPropertyInfo {
 
         @Override
         public boolean accepts(Field field) {
-            return StringList.class.equals(field.getType());
+            return NestedList.class.equals(field.getType());
         }
 
         @Override
@@ -52,22 +58,22 @@ public class StringListProperty extends Property implements ESPropertyInfo {
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new StringListProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new NestedListProperty(descriptor, accessPath, field));
         }
     }
 
-    StringListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    NestedListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
     @Override
     protected Object getValueFromField(Object target) {
-        return ((StringList) super.getValueFromField(target)).data();
+        return ((NestedList<?>) super.getValueFromField(target)).data();
     }
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((StringList) super.getValueFromField(entity)).copyValue();
+        return ((NestedList<?>) super.getValueFromField(entity)).copyValue();
     }
 
     @SuppressWarnings("unchecked")
@@ -87,7 +93,24 @@ public class StringListProperty extends Property implements ESPropertyInfo {
     }
 
     @Override
+    protected void onBeforeSaveChecks(Object entity) {
+        NestedList<?> list = (NestedList<?>) getValueFromField(entity);
+        list.forEach(value -> getNestedDescriptor().beforeSave(value));
+    }
+
+    private EntityDescriptor getNestedDescriptor() {
+        if (nestedDescriptor == null) {
+            nestedDescriptor =
+                    mixing.getDescriptor(((NestedList<?>) super.getValueFromField(descriptor.getReferenceInstance())).getNestedType());
+        }
+
+        return nestedDescriptor;
+    }
+
+    @Override
     public void describeProperty(JSONObject description) {
+
+        //TODO
         description.put("type", "keyword");
     }
 }

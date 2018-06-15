@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.mixing.types;
 
 /**
  * Provides a simple list of strings as property value.

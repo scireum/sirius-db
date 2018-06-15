@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import sirius.db.mixing.BaseEntityRef;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.di.std.Part;
 
 import java.util.Optional;

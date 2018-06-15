@@ -308,7 +308,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
                 }
 
                 Set<String> columns = dbs.readColumns(rs);
-                BaseEntity<?> entity = ed.make(null, key -> {
+                E entity = (E)ed.make(null, key -> {
                     String effeciveKey = key.toUpperCase();
                     if (!columns.contains(effeciveKey)) {
                         return null;
@@ -320,7 +320,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
                         throw Exceptions.handle(OMA.LOG, e);
                     }
                 });
-                return Optional.of((E) entity);
+                return Optional.of(entity);
             }
         }
     }

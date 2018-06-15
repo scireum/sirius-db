@@ -6,9 +6,11 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.mixing.types;
 
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseEntity;
+import sirius.db.mixing.Mixing;
 import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nullable;

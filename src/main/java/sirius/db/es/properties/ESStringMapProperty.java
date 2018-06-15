@@ -20,7 +20,7 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.StringMap;
+import sirius.db.mixing.types.StringMap;
 import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;

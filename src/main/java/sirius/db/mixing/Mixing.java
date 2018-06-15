@@ -80,6 +80,14 @@ public class Mixing implements Initializable {
         }
     }
 
+    private void loadNesteds() {
+        for (Class<? extends Nested> mappableType : NestedLoadAction.getMappableClasses()) {
+            EntityDescriptor descriptor = new EntityDescriptor(mappableType);
+            descriptor.initialize();
+            descriptorsByType.put(mappableType, descriptor);
+        }
+    }
+
     /**
      * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
      * case.

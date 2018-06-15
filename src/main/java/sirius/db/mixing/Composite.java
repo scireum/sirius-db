@@ -8,12 +8,10 @@
 
 package sirius.db.mixing;
 
-import sirius.db.jdbc.SQLEntity;
-
 /**
  * Base class for all composites.
  * <p>
- * A composite can be embed in an {@link SQLEntity}. All fields declared here will be mapped to properties
+ * A composite can be embed in an {@link BaseEntity}. All fields declared here will be mapped to properties
  * (and therefore columns of the entity).
  * <p>
  * As the field name containing the composite is prepended to all fields here, the same composite can be

@@ -86,7 +86,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected void setValueFromDatasource(BaseEntity<?> entity, Value data) {
+    protected void setValueFromDatasource(Object entity, Value data) {
         Object effectiveValue = data.get();
         if (effectiveValue instanceof Clob) {
             try {
@@ -132,7 +132,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    public void onBeforeSaveChecks(BaseEntity<?> entity) {
+    public void onBeforeSaveChecks(Object entity) {
         if (trim) {
             String value = (String) getValue(entity);
             if (value != null) {
