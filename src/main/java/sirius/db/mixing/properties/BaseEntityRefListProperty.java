@@ -156,10 +156,8 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRefList().getDeleteHandler();
         if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
             if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
-                Mixing.LOG.WARN(
-                        "Error in property % for %s is not a subclass of BaseEntity. The only supported DeleteHandler is IGNORE!.",
-                        this,
-                        getDescriptor());
+                Mixing.LOG.WARN("Error in property % for %s is not a subclass of BaseEntity."
+                                + " The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
                 return;
             }
         }

@@ -337,7 +337,7 @@ public class EntityDescriptor {
     }
 
     private boolean isBaseEntity(Object entity) {
-        return entity instanceof BaseEntity<?>;
+        return entity instanceof BaseEntity;
     }
 
     /**

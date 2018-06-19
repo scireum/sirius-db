@@ -29,6 +29,13 @@ public class Nested extends Mixable {
     @Part
     private static Mixing mixing;
 
+    /**
+     * Creates a copy of this object.
+     * <p>
+     * Note that this will only copy known {@link Property properties} and skip transient ones.
+     *
+     * @return a copy of this object
+     */
     public Nested copy() {
         try {
             EntityDescriptor descriptor = mixing.getDescriptor(getClass());

@@ -10,7 +10,6 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
 import sirius.db.jdbc.schema.Schema;
-import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
@@ -308,7 +307,7 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
                 }
 
                 Set<String> columns = dbs.readColumns(rs);
-                E entity = (E)ed.make(null, key -> {
+                E entity = (E) ed.make(null, key -> {
                     String effeciveKey = key.toUpperCase();
                     if (!columns.contains(effeciveKey)) {
                         return null;

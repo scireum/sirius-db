@@ -8,10 +8,8 @@
 
 package sirius.db.mixing.types;
 
-import sirius.db.mixing.types.SafeMap;
-
 /**
- * Represents map of <tt>String</tt> pointing to <tt>int</tt> values.
+ * Provides a map of <tt>String</tt> to <tt>int</tt> as property value.
  */
 public class StringIntMap extends SafeMap<String, Integer> {
 

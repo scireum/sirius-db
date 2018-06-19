@@ -127,13 +127,13 @@ public class ESNestedListProperty extends BaseNestedListProperty implements ESPr
             if (!(property instanceof ESPropertyInfo)) {
                 Exceptions.handle()
                           .to(Elastic.LOG)
-                          .withSystemErrorMessage(
-                                  "The nested %s in %s of %s (%s) contains an unmappable property %s - ESPropertyInfo is not available!",
-                                  getNestedDescriptor().getType().getName(),
-                                  getName(),
-                                  getDescriptor().getType().getName(),
-                                  getDescriptor().getRelationName(),
-                                  property.getName())
+                          .withSystemErrorMessage("The nested %s in %s of %s (%s) contains an unmappable property"
+                                                  + " %s - ESPropertyInfo is not available!",
+                                                  getNestedDescriptor().getType().getName(),
+                                                  getName(),
+                                                  getDescriptor().getType().getName(),
+                                                  getDescriptor().getRelationName(),
+                                                  property.getName())
                           .handle();
             } else {
                 JSONObject propertyInfo = new JSONObject();

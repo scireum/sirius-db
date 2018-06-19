@@ -8,8 +8,6 @@
 
 package sirius.db.mixing.types;
 
-import sirius.db.mixing.types.SafeMap;
-
 import java.time.LocalDateTime;
 
 /**

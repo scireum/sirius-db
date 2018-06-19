@@ -21,6 +21,7 @@ import java.util.stream.Stream;
  * {@link sirius.db.mixing.types.BaseEntityRef.OnDelete delete handler}.
  *
  * @param <E> the type of entities being stored in this list
+ * @param <L> the effective subclass used as fluent return type
  */
 public abstract class BaseEntityRefList<E extends BaseEntity<String>, L extends BaseEntityRefList<E, L>>
         extends SafeList<String> {

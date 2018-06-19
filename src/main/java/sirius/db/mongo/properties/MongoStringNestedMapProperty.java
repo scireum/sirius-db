@@ -39,7 +39,6 @@ import java.util.function.Consumer;
  */
 public class MongoStringNestedMapProperty extends BaseStringNestedMapProperty {
 
-
     /**
      * Factory for generating properties based on their field type
      */
