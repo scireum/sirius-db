@@ -12,6 +12,8 @@ import sirius.db.mixing.Nested;
 
 /**
  * Represents map of <tt>String</tt> pointing to {@link Nested} values.
+ *
+ * @param <N> specifies the type of nested objects within this map
  */
 public class StringNestedMap<N extends Nested> extends SafeMap<String, N> {
 
