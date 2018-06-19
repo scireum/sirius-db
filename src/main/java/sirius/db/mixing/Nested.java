@@ -55,7 +55,7 @@ public class Nested extends Mixable {
             return true;
         }
 
-        if (getClass().isInstance(obj)) {
+        if (!getClass().isInstance(obj)) {
             return false;
         }
 

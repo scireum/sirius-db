@@ -32,6 +32,11 @@ public class Mapping {
     public static final String SUBFIELD_SEPARATOR = "_";
 
     /**
+     * Used to join several field names (e.g. for nesteds).
+     */
+    public static final String NESTED_SEPARATOR = ".";
+
+    /**
      * Contains the name of the represented field
      */
     private final String name;
@@ -79,6 +84,30 @@ public class Mapping {
      */
     public Mapping inner(Mapping inner) {
         return new Mapping(name + SUBFIELD_SEPARATOR + inner.name, null);
+    }
+
+    /**
+     * References a field of a nested list or map represented by this mapping.
+     * <p>
+     * This is the equivalent of {@link #join(Mapping)} for NOSQL databases like Elasticsearch or Mongo DB.
+     *
+     * @param inner the inner field of the nested represented by this mapping
+     * @return a mapping representing the combined path of this mapping and inner field
+     */
+    public Mapping nested(Mapping inner) {
+        return new Mapping(name + NESTED_SEPARATOR + inner.name, null);
+    }
+
+    /**
+     * References a dynamic inner property of a nested map represented by this mapping.
+     * <p>
+     * This is the equivalent of {@link #join(Mapping)} for NOSQL databases like Elasticsearch or Mongo DB.
+     *
+     * @param inner the inner field of the nested represented by this mapping
+     * @return a mapping representing the combined path of this mapping and inner field
+     */
+    public Mapping nested(String inner) {
+        return new Mapping(name + NESTED_SEPARATOR + inner, null);
     }
 
     /**

@@ -20,8 +20,8 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.types.StringMap;
 import sirius.db.mixing.properties.BaseMapProperty;
+import sirius.db.mixing.types.StringMap;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -35,16 +35,24 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Represents an {@link StringMap } field within a {@link Mixable}.
+ * Represents an {@link StringMap} field within an {@link ElasticEntity}.
  * <p>
  * Note that maps are stored as a list of nested objects which contain a <tt>key</tt> and
- * a <tt>value</tt>. This is used to prevent a mapping explosion within ES. whil still permitting to
- * search and filter using nested queries.
+ * a <tt>value</tt>. This is used to prevent a mapping explosion within ES while still permitting to
+ * search and filter using nested queries. Use {@link IndexMode#indexed()} (set to FALSE) to
+ * set the type to <tt>object</tt> - which will still create key/value pairs but stored as objects.
  */
 public class ESStringMapProperty extends BaseMapProperty implements ESPropertyInfo {
 
-    protected static final String KEY = "key";
-    protected static final String VALUE = "value";
+    /**
+     * Contains the name of the field used to store the map key
+     */
+    public static final String KEY = "key";
+
+    /**
+     * Contains the name of the field used to store the map value
+     */
+    public static final String VALUE = "value";
 
     /**
      * Factory for generating properties based on their field type

@@ -51,6 +51,7 @@ public class Mixing implements Initializable {
         descriptorsByType.clear();
         descriptorsByName.clear();
         loadEntities();
+        loadNesteds();
         linkSchema();
     }
 
