@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.filter.BoolQueryBuilder;
 import sirius.db.es.filter.FieldEqual;
 import sirius.db.es.filter.Filter;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Query;
@@ -315,8 +316,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     private JSONObject buildPayload() {
         JSONObject payload = new JSONObject();
-        if (VersionedEntity.class.isAssignableFrom(descriptor.getType())) {
-            payload.put("version", true);
+        if (descriptor.isVersioned()) {
+            payload.put(BaseMapper.VERSION, true);
         }
 
         if (queryBuilder != null) {
@@ -367,20 +368,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private void checkRouting() {
         if (elastic.isRouted(descriptor)) {
             if (Strings.isEmpty(routing) && !unrouted) {
-                Elastic.LOG.WARN(
-                        "Trying query an entity of type '%s' without providing a routing!"
-                        + " This will most probably return an invalid result!\n%s\n",
-                        descriptor.getType().getName(),
-                        this,
-                        ExecutionPoint.snapshot());
+                Elastic.LOG.WARN("Trying query an entity of type '%s' without providing a routing!"
+                                 + " This will most probably return an invalid result!\n%s\n",
+                                 descriptor.getType().getName(),
+                                 this,
+                                 ExecutionPoint.snapshot());
             }
         } else if (Strings.isFilled(routing)) {
-            Elastic.LOG.WARN(
-                    "Trying query an entity of type '%s' while providing a routing! This entity is unrouted!"
-                    + " This will most probably return an invalid result!\n%s\n",
-                    descriptor.getType().getName(),
-                    this,
-                    ExecutionPoint.snapshot());
+            Elastic.LOG.WARN("Trying query an entity of type '%s' while providing a routing! This entity is unrouted!"
+                             + " This will most probably return an invalid result!\n%s\n",
+                             descriptor.getType().getName(),
+                             this,
+                             ExecutionPoint.snapshot());
         }
     }
 

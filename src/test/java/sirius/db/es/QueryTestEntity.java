@@ -8,10 +8,11 @@
 
 package sirius.db.es;
 
-import sirius.db.es.VersionedEntity;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.Versioned;
 
-public class QueryTestEntity extends VersionedEntity {
+@Versioned
+public class QueryTestEntity extends ElasticEntity {
 
     public static final Mapping VALUE = Mapping.named("value");
     private String value;

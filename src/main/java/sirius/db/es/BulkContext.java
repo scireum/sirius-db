@@ -115,8 +115,8 @@ public class BulkContext implements Closeable {
             meta.put(KEY_ROUTING, routing);
         }
 
-        if (!force && !entity.isNew() && entity instanceof VersionedEntity) {
-            meta.put(KEY_VERSION, ((VersionedEntity) entity).getVersion());
+        if (!force && !entity.isNew() && ed.isVersioned()) {
+            meta.put(KEY_VERSION, entity.getVersion());
         }
 
         JSONObject data = new JSONObject();
@@ -146,8 +146,8 @@ public class BulkContext implements Closeable {
             meta.put(KEY_ROUTING, routing);
         }
 
-        if (!force && entity instanceof VersionedEntity) {
-            meta.put(KEY_VERSION, ((VersionedEntity) entity).getVersion());
+        if (!force && ed.isVersioned()) {
+            meta.put(KEY_VERSION, entity.getVersion());
         }
 
         commands.add(new JSONObject().fluentPut(COMMAND_DELETE, meta));

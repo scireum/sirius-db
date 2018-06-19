@@ -97,8 +97,13 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
             }
         }
 
+        if (ed.isVersioned()) {
+            insertData.set(VERSION, 1);
+        }
+
         Row keys = getDatabase(ed.getRealm()).insertRow(ed.getRelationName(), insertData);
         loadCreatedId(entity, keys);
+        entity.setVersion(1);
     }
 
     /**
@@ -131,20 +136,18 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
             return;
         }
 
-        boolean versioned = entity instanceof VersionedEntity;
-        if (versioned) {
+        if (ed.isVersioned()) {
             if (!data.isEmpty()) {
                 sql.append(",");
             }
-            sql.append(VersionedEntity.VERSION.getName());
-            sql.append(" = ? ");
+            sql.append("version = ? ");
         }
 
         sql.append(SQL_WHERE_ID);
-        if (versioned && !force) {
+        if (ed.isVersioned() && !force) {
             sql.append(SQL_AND_VERSION);
         }
-        executeUPDATE(entity, ed, force, versioned, sql.toString(), data);
+        executeUPDATE(entity, ed, force, sql.toString(), data);
     }
 
     private List<Object> buildUpdateStatement(SQLEntity entity, EntityDescriptor ed, StringBuilder sql) {
@@ -153,9 +156,6 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
             if (ed.isChanged(entity, p)) {
                 if (SQLEntity.ID.getName().equals(p.getName())) {
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
-                }
-                if (VersionedEntity.VERSION.getName().equals(p.getName())) {
-                    throw new IllegalStateException("The version column of an entity must not be modified manually!");
                 }
                 if (!data.isEmpty()) {
                     sql.append(", ");
@@ -170,30 +170,26 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         return data;
     }
 
-    private void executeUPDATE(SQLEntity entity,
-                               EntityDescriptor ed,
-                               boolean force,
-                               boolean versioned,
-                               String sql,
-                               List<Object> data) throws SQLException, OptimisticLockException {
+    private void executeUPDATE(SQLEntity entity, EntityDescriptor ed, boolean force, String sql, List<Object> data)
+            throws SQLException, OptimisticLockException {
         try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
             try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 int index = 1;
                 for (Object o : data) {
                     stmt.setObject(index++, o);
                 }
-                if (versioned) {
-                    stmt.setInt(index++, ((VersionedEntity) entity).getVersion() + 1);
+                if (ed.isVersioned()) {
+                    stmt.setInt(index++, entity.getVersion() + 1);
                 }
                 stmt.setLong(index++, entity.getId());
-                if (versioned && !force) {
-                    stmt.setInt(index++, ((VersionedEntity) entity).getVersion());
+                if (ed.isVersioned() && !force) {
+                    stmt.setInt(index++, entity.getVersion());
                 }
                 int updatedRows = stmt.executeUpdate();
                 enforceUpdate(entity, force, updatedRows);
 
-                if (versioned) {
-                    ((VersionedEntity) entity).setVersion(((VersionedEntity) entity).getVersion() + 1);
+                if (ed.isVersioned()) {
+                    entity.setVersion(entity.getVersion() + 1);
                 }
             }
         }
@@ -222,16 +218,15 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
         sb.append(ed.getRelationName());
         sb.append(SQL_WHERE_ID);
 
-        boolean versioned = entity instanceof VersionedEntity;
-        if (versioned && !force) {
+        if (ed.isVersioned() && !force) {
             sb.append(SQL_AND_VERSION);
         }
 
         try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
             try (PreparedStatement stmt = c.prepareStatement(sb.toString())) {
                 stmt.setLong(1, entity.getId());
-                if (versioned && !force) {
-                    stmt.setInt(2, ((VersionedEntity) entity).getVersion());
+                if (ed.isVersioned() && !force) {
+                    stmt.setInt(2, entity.getVersion());
                 }
                 int updatedRows = stmt.executeUpdate();
                 if (updatedRows == 0 && find(entity.getClass(), entity.getId()).isPresent()) {
@@ -319,6 +314,11 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
                         throw Exceptions.handle(OMA.LOG, e);
                     }
                 });
+
+                if (ed.isVersioned()) {
+                    entity.setVersion(rs.getInt(BaseMapper.VERSION.toUpperCase()));
+                }
+
                 return Optional.of(entity);
             }
         }

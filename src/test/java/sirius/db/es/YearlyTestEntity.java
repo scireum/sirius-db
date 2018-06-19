@@ -10,11 +10,13 @@ package sirius.db.es;
 
 import sirius.db.es.annotations.StorePerYear;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.Versioned;
 
 import java.time.LocalDateTime;
 
 @StorePerYear("timestamp")
-public class YearlyTestEntity extends VersionedEntity {
+@Versioned
+public class YearlyTestEntity extends ElasticEntity {
 
     public static final Mapping TIMESTAMP = Mapping.named("timestamp");
     private LocalDateTime timestamp;

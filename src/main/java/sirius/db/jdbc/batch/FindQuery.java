@@ -11,6 +11,7 @@ package sirius.db.jdbc.batch;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
@@ -93,7 +94,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     private SQLEntity make(ResultSet rs) throws Exception {
         Set<String> columns = dbs.readColumns(rs);
-        return (SQLEntity) descriptor.make(null, key -> {
+        SQLEntity result = (SQLEntity) descriptor.make(null, key -> {
             String effeciveKey = key.toUpperCase();
             if (!columns.contains(effeciveKey)) {
                 return null;
@@ -105,6 +106,12 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
                 throw Exceptions.handle(OMA.LOG, e);
             }
         });
+
+        if (descriptor.isVersioned()) {
+            result.setVersion(rs.getInt(BaseMapper.VERSION.toUpperCase()));
+        }
+
+        return result;
     }
 
     @Override

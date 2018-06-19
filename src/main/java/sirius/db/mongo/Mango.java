@@ -16,6 +16,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
+import sirius.db.mixing.annotations.Versioned;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -51,6 +52,10 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
         Inserter insert = mongo.insert();
         String generateId = keyGen.generateId();
         insert.set(MongoEntity.ID, generateId);
+        if (ed.isVersioned()) {
+            insert.set(VERSION, 1);
+        }
+
         for (Property p : ed.getProperties()) {
             if (!MongoEntity.ID.getName().equals(p.getName())) {
                 insert.set(p.getPropertyName(), p.getValueForDatasource(entity));
@@ -59,6 +64,9 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
 
         insert.into(ed.getRelationName());
         entity.setId(generateId);
+        if (ed.isVersioned()) {
+            entity.setVersion(1);
+        }
     }
 
     @Override
@@ -69,9 +77,6 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
             if (ed.isChanged(entity, p)) {
                 if (MongoEntity.ID.getName().equals(p.getName())) {
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
-                }
-                if (VersionedEntity.VERSION.getName().equals(p.getName())) {
-                    throw new IllegalStateException("The version column of an entity must not be modified manually!");
                 }
 
                 updater.set(p.getPropertyName(), p.getValueForDatasource(entity));
@@ -84,19 +89,18 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
         }
 
         updater.where(MongoEntity.ID, entity.getId());
-        boolean versioned = entity instanceof VersionedEntity;
-        if (versioned) {
-            updater.set(VersionedEntity.VERSION, ((VersionedEntity) entity).getVersion() + 1);
+        if (ed.isVersioned()) {
+            updater.set(VERSION, entity.getVersion() + 1);
             if (!force) {
-                updater.where(VersionedEntity.VERSION, ((VersionedEntity) entity).getVersion());
+                updater.where(VERSION, entity.getVersion());
             }
         }
 
         long updatedRows = updater.executeFor(ed.getRelationName()).getModifiedCount();
         enforceUpdate(entity, force, updatedRows);
 
-        if (versioned) {
-            ((VersionedEntity) entity).setVersion(((VersionedEntity) entity).getVersion() + 1);
+        if (ed.isVersioned()) {
+            entity.setVersion(entity.getVersion() + 1);
         }
     }
 
@@ -121,13 +125,12 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     @Override
     protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         Deleter deleter = mongo.delete().where(MongoEntity.ID, entity.getId());
-        boolean versioned = !force && entity instanceof VersionedEntity;
-        if (versioned) {
-            deleter.where(VersionedEntity.VERSION, ((VersionedEntity) entity).getVersion());
+        if (!force && ed.isVersioned()) {
+            deleter.where(VERSION, entity.getVersion());
         }
 
         long numDeleted = deleter.singleFrom(ed.getRelationName()).getDeletedCount();
-        if (numDeleted == 0 && versioned) {
+        if (numDeleted == 0 && !force && ed.isVersioned()) {
             if (mongo.find().where(MongoEntity.ID, entity.getId()).countIn(ed.getRelationName()) > 0) {
                 throw new OptimisticLockException();
             }
@@ -155,7 +158,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     @SuppressWarnings("unchecked")
     public static <E extends MongoEntity> E make(EntityDescriptor ed, Doc doc) {
         try {
-            return (E) ed.make(null, doc::get);
+            E result = (E) ed.make(null, doc::get);
+            if (ed.isVersioned()) {
+                result.setVersion(doc.get(VERSION).asInt(0));
+            }
+            return result;
         } catch (Exception e) {
             throw Exceptions.handle(Mongo.LOG, e);
         }

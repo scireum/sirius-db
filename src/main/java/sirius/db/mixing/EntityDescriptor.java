@@ -20,6 +20,7 @@ import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Realm;
 import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
+import sirius.db.mixing.annotations.Versioned;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.PriorityCollector;
@@ -143,6 +144,7 @@ public class EntityDescriptor {
 
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
+    private boolean versioned;
 
     /**
      * Creates a new entity for the given reference instance.
@@ -156,6 +158,7 @@ public class EntityDescriptor {
                 relationNameAnnotation != null ? relationNameAnnotation.value() : type.getSimpleName().toLowerCase();
         Realm realmAnnotation = type.getAnnotation(Realm.class);
         this.realm = realmAnnotation != null ? realmAnnotation.value() : Mixing.DEFAULT_REALM;
+        this.versioned = type.isAnnotationPresent(Versioned.class);
 
         try {
             this.referenceInstance = type.newInstance();
@@ -781,5 +784,9 @@ public class EntityDescriptor {
      */
     public Config getLegacyInfo() {
         return legacyInfo;
+    }
+
+    public boolean isVersioned() {
+        return versioned;
     }
 }

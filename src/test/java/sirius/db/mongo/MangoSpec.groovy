@@ -8,6 +8,8 @@
 
 package sirius.db.mongo
 
+import sirius.db.jdbc.SQLLockedTestEntity
+import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
@@ -59,6 +61,35 @@ class MangoSpec extends BaseSpecification {
         and:
         // The second refresh failed as expected
         thrown(HandledException)
+    }
+
+    def "optimistic locking works"() {
+        when:
+        MongoLockedTestEntity entity = new MongoLockedTestEntity()
+        entity.setValue("Test")
+        mango.update(entity)
+        and:
+        MongoLockedTestEntity copyOfOriginal = mango.refreshOrFail(entity)
+        and:
+        entity.setValue("Test2")
+        mango.update(entity)
+        and:
+        entity.setValue("Test3")
+        mango.update(entity)
+        and:
+        copyOfOriginal.setValue("Test2")
+        mango.tryUpdate(copyOfOriginal)
+        then:
+        thrown(OptimisticLockException)
+        when:
+        mango.tryDelete(copyOfOriginal)
+        then:
+        thrown(OptimisticLockException)
+        when:
+        mango.forceDelete(copyOfOriginal)
+        MongoLockedTestEntity notFound = mango.find(MongoLockedTestEntity.class, entity.getId()).orElse(null)
+        then:
+        notFound == null
     }
 
 }

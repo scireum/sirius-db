@@ -9,8 +9,10 @@
 package sirius.db.es;
 
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.Versioned;
 
-public class LockedTestEntity extends VersionedEntity {
+@Versioned
+public class LockedTestEntity extends ElasticEntity {
 
     public static final Mapping VALUE = Mapping.named("value");
     private String value;

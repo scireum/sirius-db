@@ -14,6 +14,7 @@ import sirius.db.jdbc.Database;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -230,6 +231,14 @@ public class Schema implements Startable, Initializable {
         idColumn.setLength(20);
         table.getColumns().add(idColumn);
         table.getPrimaryKey().add(idColumn.getName());
+
+        if (ed.isVersioned()) {
+            TableColumn versionColumn = new TableColumn();
+            versionColumn.setName(BaseMapper.VERSION);
+            versionColumn.setType(Types.INTEGER);
+            versionColumn.setLength(8);
+            table.getColumns().add(versionColumn);
+        }
 
         for (Property p : ed.getProperties()) {
             if (!(p instanceof SQLPropertyInfo)) {

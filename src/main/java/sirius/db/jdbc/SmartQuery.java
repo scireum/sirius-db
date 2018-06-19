@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.constraints.FieldOperator;
 import sirius.db.jdbc.properties.SQLEntityRefProperty;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Query;
@@ -275,13 +276,19 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
 
     private static SQLEntity makeEntity(EntityDescriptor descriptor, String alias, Set<String> columns, ResultSet rs)
             throws Exception {
-        return (SQLEntity) descriptor.make(alias, key -> {
+        SQLEntity result = (SQLEntity) descriptor.make(alias, key -> {
             try {
                 return columns.contains(key.toUpperCase()) ? Value.of(rs.getObject(key)) : null;
             } catch (SQLException e) {
                 throw Exceptions.handle(OMA.LOG, e);
             }
         });
+
+        if (descriptor.isVersioned()) {
+            result.setVersion(rs.getInt(BaseMapper.VERSION));
+        }
+
+        return result;
     }
 
     protected void tuneStatement(PreparedStatement stmt, Limit limit, boolean nativeLimit) throws SQLException {

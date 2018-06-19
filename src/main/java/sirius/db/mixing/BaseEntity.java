@@ -40,6 +40,9 @@ public abstract class BaseEntity<I> extends Mixable {
     protected static Mixing mixing;
 
     @Transient
+    protected int version = 0;
+
+    @Transient
     protected Map<Property, Object> persistedData = Maps.newHashMap();
 
     /**
@@ -155,6 +158,24 @@ public abstract class BaseEntity<I> extends Mixable {
      */
     public boolean isAnyMappingChanged() {
         return getDescriptor().getProperties().stream().anyMatch(property -> getDescriptor().isChanged(this, property));
+    }
+
+    /**
+     * Returns the version of the entity.
+     *
+     * @return the version of the entity
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Note that only the framework must use this to specify the version of the entity.
+     *
+     * @param version the version of this entity
+     */
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     /**

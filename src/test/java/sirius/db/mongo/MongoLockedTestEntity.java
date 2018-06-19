@@ -6,23 +6,22 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es;
+package sirius.db.mongo;
 
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Versioned;
 
 @Versioned
-public class BatchTestEntity extends ElasticEntity {
+public class MongoLockedTestEntity extends MongoEntity {
 
     public static final Mapping VALUE = Mapping.named("value");
-    private int value;
+    private String value;
 
-    public int getValue() {
+    public String getValue() {
         return value;
     }
 
-    public BatchTestEntity withValue(int value) {
+    public void setValue(String value) {
         this.value = value;
-        return this;
     }
 }

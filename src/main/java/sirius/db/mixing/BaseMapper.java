@@ -9,7 +9,7 @@
 package sirius.db.mixing;
 
 import sirius.db.jdbc.SQLEntity;
-import sirius.db.jdbc.VersionedEntity;
+import sirius.db.mixing.annotations.Versioned;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -32,6 +32,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
 
     private static final Function<String, Value> EMPTY_CONTEXT = key -> Value.EMPTY;
 
+    /**
+     * Contains the name of the version column used for optimistic locking.
+     */
+    public static final String VERSION = "version";
+
     @Part
     protected Mixing mixing;
 
@@ -42,9 +47,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
      * update those fields, which were changed since they were last read from the database.
      * <p>
      * While this provides the best performance and circumvents update conflicts, it does not guarantee strong
-     * consistency as the fields in the database might have partially changes. If this behaviour is unwanted, the
-     * entity subclass {@link VersionedEntity} which will turn on <tt>Optimistic Locking</tt> and prevent these
-     * conditions.
+     * consistency as the fields in the database might have partially changes. If this behaviour is unwanted,
+     * {@link Versioned} can be used which will turn on <tt>Optimistic Locking</tt> and
+     * prevent these conditions.
      *
      * @param entity the entity to write to the database
      * @param <E>    the generic type of the entity
@@ -60,7 +65,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
     /**
      * Tries to perform an {@link #update(BaseEntity)} of the given entity.
      * <p>
-     * If the entity is a {@link VersionedEntity} and the entity was modified already elsewhere, an
+     * If the entity is {@link Versioned} and the entity was modified already elsewhere, an
      * {@link OptimisticLockException} will be thrown, which can be used to trigger a retry.
      *
      * @param entity the entity to update
@@ -138,7 +143,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
     /**
      * Deletes the given entity from the database.
      * <p>
-     * If the entity is a {@link VersionedEntity} and concurrently modified elsewhere,
+     * If the entity is {@link Versioned} and concurrently modified elsewhere,
      * an exception is thrown.
      *
      * @param entity the entity to delete
@@ -155,7 +160,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
     /**
      * Tries to delete the entity from the database.
      * <p>
-     * If the entity is a {@link VersionedEntity} and concurrently modified elsewhere,
+     * If the entity is {@link Versioned} and concurrently modified elsewhere,
      * an {@link OptimisticLockException} is thrown.
      *
      * @param entity the entity to delete
@@ -167,7 +172,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
     }
 
     /**
-     * Deletes the given entity from the database even if it is a {@link VersionedEntity} and was
+     * Deletes the given entity from the database even if it is {@link Versioned} and was
      * concurrently modified.
      *
      * @param entity the entity to delete

@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc
 
+import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
@@ -129,6 +130,35 @@ class OMASpec extends BaseSpecification {
         then:
         e.isAnyMappingChanged()
         e.isChanged(TestMixin.MIDDLE_NAME.inMixin(TestMixin.class))
+    }
+
+    def "optimistic locking works"() {
+        when:
+        SQLLockedTestEntity entity = new SQLLockedTestEntity()
+        entity.setValue("Test")
+        oma.update(entity)
+        and:
+        SQLLockedTestEntity copyOfOriginal = oma.refreshOrFail(entity)
+        and:
+        entity.setValue("Test2")
+        oma.update(entity)
+        and:
+        entity.setValue("Test3")
+        oma.update(entity)
+        and:
+        copyOfOriginal.setValue("Test2")
+        oma.tryUpdate(copyOfOriginal)
+        then:
+        thrown(OptimisticLockException)
+        when:
+        oma.tryDelete(copyOfOriginal)
+        then:
+        thrown(OptimisticLockException)
+        when:
+        oma.forceDelete(copyOfOriginal)
+        SQLLockedTestEntity notFound = oma.find(SQLLockedTestEntity.class, entity.getId()).orElse(null)
+        then:
+        notFound == null
     }
 
 }

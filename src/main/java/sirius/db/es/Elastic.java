@@ -190,8 +190,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
                                                         null,
                                                         data);
         entity.setId(id);
-        if (entity instanceof VersionedEntity) {
-            ((VersionedEntity) entity).setVersion(response.getInteger(RESPONSE_VERSION));
+        if (ed.isVersioned()) {
+            entity.setVersion(response.getInteger(RESPONSE_VERSION));
         }
     }
 
@@ -226,11 +226,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
                                                         determineTypeName(ed),
                                                         determineId(entity),
                                                         determineRouting(ed, entity),
-                                                        determineVersion(force, entity),
+                                                        determineVersion(force, ed, entity),
                                                         data);
 
-        if (entity instanceof VersionedEntity) {
-            ((VersionedEntity) entity).setVersion(response.getInteger(RESPONSE_VERSION));
+        if (ed.isVersioned()) {
+            entity.setVersion(response.getInteger(RESPONSE_VERSION));
         }
     }
 
@@ -328,12 +328,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
      *
      * @param force  <tt>true</tt> if an update should be forced
      * @param entity the entity to determine the version from
-     * @return <tt>null</tt> if an update is forced or if the entity isn't {@link VersionedEntity versioned},
-     * the actual entity version otherwise.
+     * @return <tt>null</tt> if an update is forced or if the entity isn't
+     * {@link sirius.db.mixing.annotations.Versioned}, the actual entity version otherwise.
      */
-    private Integer determineVersion(boolean force, ElasticEntity entity) {
-        if (entity instanceof VersionedEntity && !force) {
-            return ((VersionedEntity) entity).getVersion();
+    private Integer determineVersion(boolean force, EntityDescriptor ed, ElasticEntity entity) {
+        if (ed.isVersioned() && !force) {
+            return entity.getVersion();
         }
 
         return null;
@@ -345,7 +345,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
                                    determineTypeName(ed),
                                    entity.getId(),
                                    determineRouting(ed, entity),
-                                   determineVersion(force, entity));
+                                   determineVersion(force, ed, entity));
     }
 
     /**
@@ -361,8 +361,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
             ElasticEntity result = (ElasticEntity) ed.make(null, key -> Value.of(source.get(key)));
             result.setId(obj.getString(ID_FIELD));
 
-            if (result instanceof VersionedEntity) {
-                ((VersionedEntity) result).setVersion(obj.getInteger(RESPONSE_VERSION));
+            if (ed.isVersioned()) {
+                result.setVersion(obj.getInteger(RESPONSE_VERSION));
             }
 
             return result;
