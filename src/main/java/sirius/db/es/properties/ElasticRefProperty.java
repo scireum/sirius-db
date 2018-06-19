@@ -12,7 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
-import sirius.db.es.ElasticRef;
+import sirius.db.es.types.ElasticRef;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;

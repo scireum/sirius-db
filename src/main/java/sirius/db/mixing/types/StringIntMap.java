@@ -6,16 +6,14 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo.types;
+package sirius.db.mixing.types;
 
 import sirius.db.mixing.types.SafeMap;
 
-import java.time.LocalDateTime;
-
 /**
- * Represents map of <tt>String</tt> pointing to <tt>LocalDateTime</tt> values.
+ * Represents map of <tt>String</tt> pointing to <tt>int</tt> values.
  */
-public class StringLocalDateTimeMap extends SafeMap<String, LocalDateTime> {
+public class StringIntMap extends SafeMap<String, Integer> {
 
     @Override
     protected boolean valueNeedsCopy() {
@@ -23,7 +21,7 @@ public class StringLocalDateTimeMap extends SafeMap<String, LocalDateTime> {
     }
 
     @Override
-    protected LocalDateTime copyValue(LocalDateTime value) {
+    protected Integer copyValue(Integer value) {
         return value;
     }
 }

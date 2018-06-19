@@ -18,7 +18,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mongo.MongoEntity;
 import sirius.db.mongo.QueryBuilder;
-import sirius.db.mongo.types.StringLocalDateTimeMap;
+import sirius.db.mixing.types.StringLocalDateTimeMap;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;

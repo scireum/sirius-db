@@ -6,8 +6,10 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es;
+package sirius.db.es.types;
 
+import sirius.db.es.Elastic;
+import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.di.std.Part;
 
