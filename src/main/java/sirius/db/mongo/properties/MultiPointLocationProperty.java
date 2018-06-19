@@ -129,6 +129,6 @@ public class MultiPointLocationProperty extends Property {
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((MultiPointLocation) super.getValueFromField(entity)).copyValue();
+        return ((MultiPointLocation) super.getValueFromField(entity)).copyList();
     }
 }

@@ -8,11 +8,14 @@
 
 package sirius.db.mongo.types;
 
+import sirius.db.mixing.Mapping;
 import sirius.db.mixing.types.SafeList;
 import sirius.kernel.commons.Tuple;
 
 /**
  * Represents a list of 2D locations which can be stored in MongoDB for geo queries.
+ * <p>
+ * Such fields can be queried using {@link sirius.db.mongo.Filter#nearSphere(Mapping, double, double, int)}
  */
 public class MultiPointLocation extends SafeList<Tuple<Double, Double>> {
 
