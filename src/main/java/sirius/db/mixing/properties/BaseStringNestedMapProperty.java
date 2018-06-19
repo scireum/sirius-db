@@ -14,7 +14,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.types.StringNestedMap;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 
@@ -33,18 +32,8 @@ public class BaseStringNestedMapProperty extends BaseMapProperty {
 
     protected EntityDescriptor getNestedDescriptor() {
         if (nestedDescriptor == null) {
-            try {
-                nestedDescriptor =
-                        mixing.getDescriptor(((StringNestedMap<?>) field.get(descriptor.getReferenceInstance())).getNestedType());
-            } catch (IllegalAccessException e) {
-                throw Exceptions.handle()
-                                .to(Mixing.LOG)
-                                .error(e)
-                                .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
-                                                        getName(),
-                                                        getDefinition())
-                                .handle();
-            }
+            nestedDescriptor =
+                    mixing.getDescriptor(((StringNestedMap<?>) getMap(descriptor.getReferenceInstance())).getNestedType());
         }
 
         return nestedDescriptor;

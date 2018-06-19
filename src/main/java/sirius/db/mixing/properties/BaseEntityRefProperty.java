@@ -9,7 +9,6 @@
 package sirius.db.mixing.properties;
 
 import sirius.db.jdbc.OMA;
-import sirius.db.jdbc.SQLEntityRef;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
@@ -151,7 +150,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     public void link() {
         super.link();
 
-        SQLEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
+        BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
         if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
             if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
                 Mixing.LOG.WARN(
@@ -162,12 +161,11 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
             }
         }
 
-        if (deleteHandler == SQLEntityRef.OnDelete.CASCADE) {
+        if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
-        } else if (deleteHandler == SQLEntityRef.OnDelete.SET_NULL) {
-            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
+        } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
-        } else if (deleteHandler == SQLEntityRef.OnDelete.REJECT) {
+        } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
             getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
         }
     }

@@ -11,9 +11,11 @@ package sirius.db.mixing.properties;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.types.SafeMap;
 import sirius.kernel.commons.Value;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -27,14 +29,29 @@ public abstract class BaseMapProperty extends Property {
         super(descriptor, accessPath, field);
     }
 
+    protected SafeMap<?, ?> getMap(Object entity) {
+        try {
+            return (SafeMap<?, ?>) super.getValueFromField(entity);
+        } catch (Exception e) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage(
+                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
+                                    getName(),
+                                    descriptor.getType().getName())
+                            .handle();
+        }
+    }
+
     @Override
     protected Object getValueFromField(Object target) {
-        return ((SafeMap<?, ?>) super.getValueFromField(target)).data();
+        return getMap(target).data();
     }
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((SafeMap<?, ?>) super.getValueFromField(entity)).copyMap();
+        return getMap(entity).copyMap();
     }
 
     @SuppressWarnings("unchecked")
@@ -50,6 +67,6 @@ public abstract class BaseMapProperty extends Property {
     @SuppressWarnings("unchecked")
     @Override
     protected void setValueToField(Object value, Object target) {
-        ((SafeMap<Object, Object>) super.getValueFromField(target)).setData((Map<Object, Object>) value);
+        ((SafeMap<Object, Object>) getMap(target)).setData((Map<Object, Object>) value);
     }
 }

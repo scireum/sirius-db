@@ -17,6 +17,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.types.NestedList;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -34,14 +35,29 @@ public class BaseNestedListProperty extends Property {
         super(descriptor, accessPath, field);
     }
 
+    protected NestedList<?> getNestedList(Object entity) {
+        try {
+            return (NestedList<?>) super.getValueFromField(entity);
+        } catch (Exception e) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage(
+                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
+                                    getName(),
+                                    descriptor.getType().getName())
+                            .handle();
+        }
+    }
+
     @Override
     protected Object getValueFromField(Object target) {
-        return ((NestedList<?>) super.getValueFromField(target)).data();
+        return getNestedList(target).data();
     }
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((NestedList<?>) super.getValueFromField(entity)).copyList();
+        return getNestedList(entity).copyList();
     }
 
     @SuppressWarnings("unchecked")
@@ -57,7 +73,7 @@ public class BaseNestedListProperty extends Property {
     @SuppressWarnings("unchecked")
     @Override
     protected void setValueToField(Object value, Object target) {
-        ((NestedList<Nested>) super.getValueFromField(target)).setData((List<Nested>) value);
+        ((NestedList<Nested>) getNestedList(target)).setData((List<Nested>) value);
     }
 
     @Override
@@ -68,11 +84,9 @@ public class BaseNestedListProperty extends Property {
 
     protected EntityDescriptor getNestedDescriptor() {
         if (nestedDescriptor == null) {
-            nestedDescriptor =
-                    mixing.getDescriptor(((NestedList<?>) super.getValueFromField(descriptor.getReferenceInstance())).getNestedType());
+            nestedDescriptor = mixing.getDescriptor(getNestedList(descriptor.getReferenceInstance()).getNestedType());
         }
 
         return nestedDescriptor;
     }
-
 }

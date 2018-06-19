@@ -10,6 +10,9 @@ package sirius.db.mixing.properties;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.IndexMappings;
+import sirius.db.es.annotations.ESOption;
+import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
@@ -56,7 +59,7 @@ public class StringListProperty extends Property implements ESPropertyInfo {
         }
     }
 
-    StringListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    protected StringListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
@@ -89,5 +92,8 @@ public class StringListProperty extends Property implements ESPropertyInfo {
     @Override
     public void describeProperty(JSONObject description) {
         description.put("type", "keyword");
+        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
     }
 }
