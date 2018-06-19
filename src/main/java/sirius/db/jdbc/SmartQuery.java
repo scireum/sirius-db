@@ -209,9 +209,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
     }
 
     /**
-     * Creates a full copyValue of the query which can be modified without modifying this query.
+     * Creates a full copy of the query which can be modified without modifying this query.
      *
-     * @return a copyValue of this query
+     * @return a copy of this query
      */
     public SmartQuery<E> copy() {
         SmartQuery<E> copy = new SmartQuery<>(descriptor, db);

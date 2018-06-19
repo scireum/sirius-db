@@ -99,7 +99,7 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
      *
      * @return a copy of the internally stored map
      */
-    public Map<K, V> copyValue() {
+    public Map<K, V> copyMap() {
         if (data == null) {
             return Collections.emptyMap();
         }
@@ -190,7 +190,7 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
      * @param key the key to check for
      * @return <tt>true</tt> if the map contains the key, <tt>false</tt> otherwise
      */
-    public boolean containKey(K key) {
+    public boolean containsKey(K key) {
         return data().containsKey(key);
     }
 

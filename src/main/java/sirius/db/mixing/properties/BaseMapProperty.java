@@ -9,7 +9,6 @@
 package sirius.db.mixing.properties;
 
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
@@ -20,7 +19,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
- * Represents an {@link SafeMap} field within a {@link Mixable}.
+ * Represents a {@link SafeMap} field within a {@link Mixable}.
  */
 public abstract class BaseMapProperty extends Property {
 
@@ -35,7 +34,7 @@ public abstract class BaseMapProperty extends Property {
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((SafeMap<?, ?>) super.getValueFromField(entity)).copyValue();
+        return ((SafeMap<?, ?>) super.getValueFromField(entity)).copyMap();
     }
 
     @SuppressWarnings("unchecked")

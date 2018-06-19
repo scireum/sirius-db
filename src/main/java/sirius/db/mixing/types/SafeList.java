@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Describes a list of objects which can be stored in an entity as property value.
@@ -209,11 +210,15 @@ public abstract class SafeList<T> implements Iterable<T> {
      *
      * @return a copy of the internally stored list
      */
-    public List<T> copyValue() {
+    public List<T> copyList() {
         if (data == null) {
             return Collections.emptyList();
         }
 
-        return new ArrayList<>(data);
+        if (valueNeedsCopy()) {
+            return data.stream().map(this::copyValue).collect(Collectors.toList());
+        } else {
+            return new ArrayList<>(data);
+        }
     }
 }

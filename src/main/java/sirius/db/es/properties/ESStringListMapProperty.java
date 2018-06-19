@@ -23,7 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringListMap } field within a {@link Mixable}.
+ * Represents an {@link StringListMap} field within an {@link ElasticEntity}.
  */
 public class ESStringListMapProperty extends ESStringMapProperty {
 

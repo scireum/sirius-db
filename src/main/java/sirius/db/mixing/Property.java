@@ -307,7 +307,7 @@ public abstract class Property {
     }
 
     /**
-     * For modifyable datatypes like collections, this returns the value as copyValue so that further modifications
+     * For modifyable datatypes like collections, this returns the value as copy so that further modifications
      * will not change the returned value.
      *
      * @param entity the entity to fetch the value from

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringList} field within a {@link Mixable}.
+ * Represents a {@link StringList} field within a {@link Mixable}.
  */
 public class StringListProperty extends Property implements ESPropertyInfo {
 
@@ -67,7 +67,7 @@ public class StringListProperty extends Property implements ESPropertyInfo {
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((StringList) super.getValueFromField(entity)).copyValue();
+        return ((StringList) super.getValueFromField(entity)).copyList();
     }
 
     @SuppressWarnings("unchecked")
