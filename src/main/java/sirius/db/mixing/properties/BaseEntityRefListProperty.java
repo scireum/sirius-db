@@ -55,7 +55,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return BaseEntityRefList.class.isAssignableFrom(field.getType());
         }
 

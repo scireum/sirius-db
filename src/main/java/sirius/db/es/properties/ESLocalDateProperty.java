@@ -40,8 +40,8 @@ public class ESLocalDateProperty extends Property implements ESPropertyInfo {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return ElasticEntity.class.isAssignableFrom(field.getDeclaringClass()) && LocalDate.class.equals(field.getType());
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return ElasticEntity.class.isAssignableFrom(descriptor.getType()) && LocalDate.class.equals(field.getType());
         }
 
         @Override

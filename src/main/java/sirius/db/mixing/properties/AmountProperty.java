@@ -41,7 +41,7 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return Amount.class.equals(field.getType());
         }
 

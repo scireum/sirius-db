@@ -18,7 +18,6 @@ import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
@@ -51,7 +50,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return String.class.equals(field.getType());
         }
 

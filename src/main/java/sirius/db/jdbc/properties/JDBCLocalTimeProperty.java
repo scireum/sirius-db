@@ -8,15 +8,15 @@
 
 package sirius.db.jdbc.properties;
 
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.jdbc.SQLEntity;
-import sirius.db.jdbc.schema.SQLPropertyInfo;
-import sirius.db.jdbc.schema.Table;
-import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
@@ -39,8 +39,8 @@ public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return SQLEntity.class.isAssignableFrom(field.getDeclaringClass()) && LocalTime.class.equals(field.getType());
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return SQLEntity.class.isAssignableFrom(descriptor.getType()) && LocalTime.class.equals(field.getType());
         }
 
         @Override

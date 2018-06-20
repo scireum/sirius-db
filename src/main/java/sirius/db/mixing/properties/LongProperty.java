@@ -41,7 +41,7 @@ public class LongProperty extends Property implements SQLPropertyInfo, ESPropert
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return Long.class.equals(field.getType()) || long.class.equals(field.getType());
         }
 

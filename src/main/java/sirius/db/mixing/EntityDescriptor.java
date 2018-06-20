@@ -144,7 +144,8 @@ public class EntityDescriptor {
 
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
-    private boolean versioned;
+    protected boolean versioned;
+    protected BaseMapper<?, ?> mapper;
 
     /**
      * Creates a new entity for the given reference instance.
@@ -601,7 +602,7 @@ public class EntityDescriptor {
                                  Consumer<Property> propertyConsumer) {
         if (!field.isAnnotationPresent(Transient.class) && !Modifier.isStatic(field.getModifiers())) {
             for (PropertyFactory f : factories) {
-                if (f.accepts(field)) {
+                if (f.accepts(descriptor, field)) {
                     f.create(descriptor, accessPath, field, propertyConsumer);
                     return;
                 }
@@ -744,6 +745,28 @@ public class EntityDescriptor {
      */
     public Object getReferenceInstance() {
         return referenceInstance;
+    }
+
+    /**
+     * Returns the {@link BaseMapper mapper} in charge of managing entities of this type.
+     *
+     * @return the mapper responsible for entities of this descriptor
+     */
+    public BaseMapper<?, ?> getMapper() {
+        if (mapper == null) {
+            try {
+                mapper = ((BaseEntity<?>) getReferenceInstance()).getMapper();
+            } catch (ClassCastException e) {
+                throw Exceptions.handle()
+                                .to(Mixing.LOG)
+                                .error(e)
+                                .withSystemErrorMessage("A mapper was requested for a non-entity descriptor: %s",
+                                                        toString())
+                                .handle();
+            }
+        }
+
+        return mapper;
     }
 
     /**

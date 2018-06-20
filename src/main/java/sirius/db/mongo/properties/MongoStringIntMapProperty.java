@@ -16,8 +16,8 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.properties.BaseMapProperty;
-import sirius.db.mongo.MongoEntity;
 import sirius.db.mixing.types.StringIntMap;
+import sirius.db.mongo.MongoEntity;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
@@ -37,8 +37,8 @@ public class MongoStringIntMapProperty extends BaseMapProperty {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass())
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return MongoEntity.class.isAssignableFrom(descriptor.getType())
                    && StringIntMap.class.equals(field.getType());
         }
 

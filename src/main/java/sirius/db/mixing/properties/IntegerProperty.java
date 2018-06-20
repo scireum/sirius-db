@@ -41,7 +41,7 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return Integer.class.equals(field.getType()) || int.class.equals(field.getType());
         }
 

@@ -67,6 +67,16 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
         }
     }
 
+    @Override
+    public MongoQuery<E> greaterOrEqual(Mapping field, Object value) {
+        return where(Filter.gte(field, value));
+    }
+
+    @Override
+    public MongoQuery<E> lessOrEqual(Mapping field, Object value) {
+        return where(Filter.lte(field, value));
+    }
+
     /**
      * Adds a complex filter which determines which documents should be selected.
      *

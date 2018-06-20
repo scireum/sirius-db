@@ -44,7 +44,7 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return field.getType().isEnum();
         }
 

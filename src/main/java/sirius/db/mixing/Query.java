@@ -41,6 +41,24 @@ public abstract class Query<Q, E extends BaseEntity<?>> extends BaseQuery<Q, E> 
     public abstract Q eqIgnoreNull(Mapping field, Object value);
 
     /**
+     * Adds a condition which ensures, that the database value in field is greater or equal to the given value.
+     *
+     * @param field the name of the field to filter on
+     * @param value the value to filter on
+     * @return the query itself for fluent method calls
+     */
+    public abstract Q greaterOrEqual(Mapping field, Object value);
+
+    /**
+     * Adds a condition which ensures, that the database value in field is less or equal to the given value.
+     *
+     * @param field the name of the field to filter on
+     * @param value the value to filter on
+     * @return the query itself for fluent method calls
+     */
+    public abstract Q lessOrEqual(Mapping field, Object value);
+
+    /**
      * Adds a sort constraint to order by the given field ascending.
      *
      * @param field the field to order by.

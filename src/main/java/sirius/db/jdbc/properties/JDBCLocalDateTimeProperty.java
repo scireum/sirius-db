@@ -39,8 +39,8 @@ public class JDBCLocalDateTimeProperty extends Property implements SQLPropertyIn
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return SQLEntity.class.isAssignableFrom(field.getDeclaringClass())
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return SQLEntity.class.isAssignableFrom(descriptor.getType())
                    && LocalDateTime.class.equals(field.getType());
         }
 

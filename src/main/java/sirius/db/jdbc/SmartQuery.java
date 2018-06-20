@@ -108,6 +108,16 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
     }
 
     @Override
+    public SmartQuery<E> greaterOrEqual(Mapping field, Object value) {
+        return where(FieldOperator.on(field).greaterOrEqual(value));
+    }
+
+    @Override
+    public SmartQuery<E> lessOrEqual(Mapping field, Object value) {
+        return where(FieldOperator.on(field).lessOrEqual(value));
+    }
+
+    @Override
     public SmartQuery<E> orderAsc(Mapping field) {
         orderBys.add(Tuple.create(field, true));
         return this;

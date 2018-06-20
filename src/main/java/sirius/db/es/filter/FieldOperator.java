@@ -9,6 +9,7 @@
 package sirius.db.es.filter;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.mixing.Mapping;
 
 /**
  * Represents a relational filter which can be used to filter &lt; or &lt;=, along with &gt; or &gt;=
@@ -49,12 +50,34 @@ public class FieldOperator extends BaseFilter {
      * @param value the value to compare to
      * @return the newly constructed constraint
      */
+    public static FieldOperator less(Mapping field, Object value) {
+        return less(field.toString(), value);
+    }
+
+    /**
+     * Creates a new constraint representing <tt>field &lt; value</tt>
+     *
+     * @param field the field to check
+     * @param value the value to compare to
+     * @return the newly constructed constraint
+     */
     public static FieldOperator less(String field, Object value) {
         FieldOperator result = new FieldOperator(field);
         result.bound = Bound.LT;
         result.value = FieldEqual.transformFilterValue(value);
 
         return result;
+    }
+
+    /**
+     * Creates a new constraint representing <tt>field &gt; value</tt>
+     *
+     * @param field the field to check
+     * @param value the value to compare to
+     * @return the newly constructed constraint
+     */
+    public static FieldOperator greater(Mapping field, Object value) {
+        return greater(field.toString(), value);
     }
 
     /**

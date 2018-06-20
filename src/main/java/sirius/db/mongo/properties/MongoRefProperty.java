@@ -52,7 +52,7 @@ public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity,
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return MongoRef.class.equals(field.getType());
         }
 

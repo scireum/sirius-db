@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  * <p>
  * When scanning a class to compute its {@link EntityDescriptor}, for each field each
  * <tt>PropertyFactory</tt> is queried. The first to return <tt>true</tt> as result of
- * {@link #accepts(java.lang.reflect.Field)} will be used to compute the property for a field by calling
+ * {@link #accepts(EntityDescriptor, Field)} will be used to compute the property for a field by calling
  * {@link #create(EntityDescriptor, AccessPath, Field, Consumer)}.
  */
 public interface PropertyFactory extends Priorized {
@@ -32,10 +32,11 @@ public interface PropertyFactory extends Priorized {
     /**
      * Determines if the given field is handled by this property factory.
      *
-     * @param field the field to create a property from
+     * @param descriptor the current descriptor
+     * @param field      the field to create a property from
      * @return <tt>true</tt> if the factory can create a property for the given field, <tt>false</tt> otherwise
      */
-    boolean accepts(@Nonnull Field field);
+    boolean accepts(EntityDescriptor descriptor, @Nonnull Field field);
 
     /**
      * Computes a {@link Property} for the given field.

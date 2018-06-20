@@ -51,8 +51,8 @@ public class ESNestedListProperty extends BaseNestedListProperty implements ESPr
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return ElasticEntity.class.isAssignableFrom(field.getDeclaringClass())
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return ElasticEntity.class.isAssignableFrom(descriptor.getType())
                    && NestedList.class.equals(field.getType());
         }
 

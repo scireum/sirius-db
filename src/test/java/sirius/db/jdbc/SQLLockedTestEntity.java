@@ -9,12 +9,14 @@
 package sirius.db.jdbc;
 
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.Versioned;
 
 @Versioned
 public class SQLLockedTestEntity extends SQLEntity {
 
     public static final Mapping VALUE = Mapping.named("value");
+    @Length(50)
     private String value;
 
     public String getValue() {

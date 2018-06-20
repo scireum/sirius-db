@@ -37,7 +37,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return Boolean.class.equals(field.getType()) || boolean.class.equals(field.getType());
         }
 

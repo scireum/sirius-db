@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.filter.BoolQueryBuilder;
 import sirius.db.es.filter.FieldEqual;
+import sirius.db.es.filter.FieldOperator;
 import sirius.db.es.filter.Filter;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
@@ -225,6 +226,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @Override
     public ElasticQuery<E> eqIgnoreNull(Mapping field, Object value) {
         return filter(new FieldEqual(field, value).ignoreNull());
+    }
+
+    @Override
+    public ElasticQuery<E> greaterOrEqual(Mapping field, Object value) {
+        return filter(FieldOperator.greater(field, value).including());
+    }
+
+    @Override
+    public ElasticQuery<E> lessOrEqual(Mapping field, Object value) {
+        return filter(FieldOperator.less(field, value).including());
     }
 
     /**

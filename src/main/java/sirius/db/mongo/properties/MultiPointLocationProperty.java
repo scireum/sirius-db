@@ -43,9 +43,9 @@ public class MultiPointLocationProperty extends Property {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass()) && MultiPointLocation.class.equals(
-                    field.getType());
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return MongoEntity.class.isAssignableFrom(descriptor.getType())
+                   && MultiPointLocation.class.equals(field.getType());
         }
 
         @Override

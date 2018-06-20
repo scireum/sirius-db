@@ -16,7 +16,6 @@ import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
@@ -61,8 +60,8 @@ public class ESStringMapProperty extends BaseMapProperty implements ESPropertyIn
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return ElasticEntity.class.isAssignableFrom(field.getDeclaringClass())
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return ElasticEntity.class.isAssignableFrom(descriptor.getType())
                    && StringMap.class.equals(field.getType());
         }
 

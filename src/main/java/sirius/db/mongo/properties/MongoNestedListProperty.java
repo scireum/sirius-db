@@ -11,14 +11,12 @@ package sirius.db.mongo.properties;
 import org.bson.Document;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Nested;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.properties.BaseNestedListProperty;
 import sirius.db.mixing.types.NestedList;
-import sirius.db.mixing.types.StringList;
 import sirius.db.mongo.Doc;
 import sirius.db.mongo.Mongo;
 import sirius.db.mongo.MongoEntity;
@@ -44,8 +42,8 @@ public class MongoNestedListProperty extends BaseNestedListProperty {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass())
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return MongoEntity.class.isAssignableFrom(descriptor.getType())
                    && NestedList.class.equals(field.getType());
         }
 

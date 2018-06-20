@@ -40,7 +40,7 @@ public class StringListProperty extends Property implements ESPropertyInfo {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return StringList.class.equals(field.getType());
         }
 

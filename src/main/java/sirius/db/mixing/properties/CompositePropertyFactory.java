@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 public class CompositePropertyFactory implements PropertyFactory {
 
     @Override
-    public boolean accepts(Field field) {
+    public boolean accepts(EntityDescriptor descriptor, Field field) {
         return Composite.class.isAssignableFrom(field.getType());
     }
 

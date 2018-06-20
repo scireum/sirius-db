@@ -40,8 +40,8 @@ public class MongoStringLocalDateTimeMapProperty extends BaseMapProperty {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return MongoEntity.class.isAssignableFrom(field.getDeclaringClass()) && StringLocalDateTimeMap.class.equals(
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return MongoEntity.class.isAssignableFrom(descriptor.getType()) && StringLocalDateTimeMap.class.equals(
                     field.getType());
         }
 

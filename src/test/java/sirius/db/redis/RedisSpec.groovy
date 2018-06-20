@@ -18,7 +18,7 @@ class RedisSpec extends BaseSpecification {
 
     def "basic GET/SET works"() {
         given:
-        def testString = String.valueOf(System.currentTimeMillis());
+        def testString = String.valueOf(System.currentTimeMillis())
         when:
         redis.exec({ -> "Setting a test value" }, { db -> db.set("TEST", testString) })
         then:

@@ -41,8 +41,8 @@ public class ESLocalDateTimeProperty extends Property implements ESPropertyInfo 
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
-            return ElasticEntity.class.isAssignableFrom(field.getDeclaringClass())
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
+            return ElasticEntity.class.isAssignableFrom(descriptor.getType())
                    && LocalDateTime.class.equals(field.getType());
         }
 

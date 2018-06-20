@@ -52,7 +52,7 @@ public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEnt
     public static class Factory implements PropertyFactory {
 
         @Override
-        public boolean accepts(Field field) {
+        public boolean accepts(EntityDescriptor descriptor, Field field) {
             return ElasticRef.class.equals(field.getType());
         }
 
