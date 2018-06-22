@@ -107,7 +107,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
             }
         });
 
-        if (descriptor.isVersioned()) {
+        if (descriptor.isVersioned() && columns.contains(BaseMapper.VERSION.toUpperCase())) {
             result.setVersion(rs.getInt(BaseMapper.VERSION.toUpperCase()));
         }
 
