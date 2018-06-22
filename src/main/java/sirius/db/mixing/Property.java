@@ -118,7 +118,7 @@ public abstract class Property {
         this.field.setAccessible(true);
         this.name = accessPath.prefix() + field.getName();
         this.propertyName = descriptor.rewritePropertyName(name);
-        this.nameAsMapping = Mapping.named(propertyName);
+        this.nameAsMapping = Mapping.named(name);
 
         determineNullability();
         determineLengths();
