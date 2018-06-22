@@ -86,6 +86,16 @@ public class Schema implements Startable, Initializable {
     }
 
     /**
+     * Determines if a JDBC database is configured for the given realm
+     *
+     * @param realm the realm to check for
+     * @return <tt>true</tt> if a database is configured, <tt>false</tt> otherwise
+     */
+    public boolean isConfigured(String realm) {
+        return databases.containsKey(realm);
+    }
+
+    /**
      * Provides a {@link Future} which is fullfilled when then schema is fully initialized
      *
      * @return the future which is fullfilled if the framework is ready
