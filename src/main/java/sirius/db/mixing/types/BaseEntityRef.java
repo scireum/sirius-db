@@ -11,6 +11,7 @@ package sirius.db.mixing.types;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixing;
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nullable;
@@ -92,6 +93,16 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     @Nullable
     public I getId() {
         return id;
+    }
+
+    /**
+     * Returns the id of the referenced entity as {@link String}.
+     *
+     * @return the id of the referenced entity as {@link String} or <tt>null</tt> if no entity is referenced.
+     */
+    @Nullable
+    public String getIdAsString() {
+        return Value.of(id).getString();
     }
 
     /**
