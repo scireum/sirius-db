@@ -9,6 +9,7 @@
 package sirius.db.mongo;
 
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
 import sirius.db.KeyGenerator;
 import sirius.db.mixing.BaseMapper;
@@ -221,7 +222,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
             }
 
             Mongo.LOG.INFO("Creating MongoDB index %s for: %s...", index.name(), ed.getRelationName());
-            client.getCollection(ed.getRelationName()).createIndex(document);
+            client.getCollection(ed.getRelationName()).createIndex(document, new IndexOptions().unique(index.unique()));
         } catch (Exception e) {
             Exceptions.handle()
                       .error(e)
