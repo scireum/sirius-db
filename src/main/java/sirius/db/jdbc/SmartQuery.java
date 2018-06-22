@@ -294,8 +294,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
             }
         });
 
-        if (descriptor.isVersioned()) {
-            result.setVersion(rs.getInt(BaseMapper.VERSION));
+        if (descriptor.isVersioned() && columns.contains(BaseMapper.VERSION.toUpperCase())) {
+            result.setVersion(rs.getInt(BaseMapper.VERSION.toUpperCase()));
         }
 
         return result;
