@@ -53,4 +53,23 @@ class LegacySpec extends BaseSpecification {
                 isPresent()
     }
 
+    def "updating and change tracking on an entity with aliased columns works"() {
+        given:
+        LegacyEntity e = new LegacyEntity()
+        when:
+        e.setFirstname("Test2")
+        e.setLastname("Entity2")
+        e.getComposite().setStreet("Streeet2")
+        e.getComposite().setCity("Test-City2")
+        e.getComposite().setZip("12452")
+        oma.update(e)
+        and:
+        e.getComposite().setStreet("Street3")
+        oma.update(e)
+        and:
+        e = oma.refreshOrFail(e)
+        then:
+        e.getComposite().getStreet() == "Street3"
+    }
+
 }
