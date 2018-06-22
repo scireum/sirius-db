@@ -53,4 +53,33 @@ class LegacySpec extends BaseSpecification {
                 isPresent()
     }
 
+    def "check if aliasing for named columns work"() {
+        given:
+        LegacyEntityWithNamedComposite e = new LegacyEntityWithNamedComposite()
+        when:
+        e.setFirstname("Test")
+        e.setLastname("Entity")
+        e.getComposite().setStreet("Street")
+        e.getComposite().setCity("Test-City")
+        e.getComposite().setZip("1245")
+        oma.update(e)
+        LegacyEntityWithNamedComposite fromDB = oma.select(LegacyEntityWithNamedComposite.class)
+                                                   .eq(LegacyEntityWithNamedComposite.FIRSTNAME, "Test")
+                                                   .orderAsc(LegacyEntityWithNamedComposite.ADDRESSDATA.inner(Mapping.named("street")))
+                                                   .queryFirst()
+        then:
+        !e.isNew()
+        and:
+        fromDB != null
+        and:
+        fromDB.getFirstname() == "Test"
+        and:
+        fromDB.getComposite().getStreet() == "Street"
+        and:
+        oma.getDatabase(Mixing.DEFAULT_REALM).
+                createQuery("SELECT * FROM apple WHERE name1 = 'Test' and street = 'Street'").
+                first().
+                isPresent()
+    }
+
 }
