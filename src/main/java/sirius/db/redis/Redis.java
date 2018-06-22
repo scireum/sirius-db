@@ -231,7 +231,8 @@ public class Redis implements Startable, Stoppable {
 
         if (jedis == null) {
             if (Strings.isEmpty(host)) {
-                LOG.SEVERE("Missing a Redis host! This might lead to undefined behaviour. Please specify redis.host or redis.sentinels!");
+                LOG.SEVERE(
+                        "Missing a Redis host! This might lead to undefined behaviour. Please specify redis.host or redis.sentinels!");
             }
 
             JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
@@ -448,11 +449,7 @@ public class Redis implements Startable, Stoppable {
                     String response =
                             redis.set(key, CallContext.getNodeName(), "NX", "EX", (int) lockTimeout.getSeconds());
                     if ("OK".equals(response)) {
-                        redis.set(key + SUFFIX_DATE,
-                                  LocalDateTime.now().toString(),
-                                  "NX",
-                                  "EX",
-                                  (int) lockTimeout.getSeconds());
+                        redis.setex(key + SUFFIX_DATE, (int) lockTimeout.getSeconds(), LocalDateTime.now().toString());
                         return true;
                     }
 
