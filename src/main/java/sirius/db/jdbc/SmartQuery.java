@@ -442,7 +442,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
                  .append(".id = ")
                  .append(parentAlias.getFirst())
                  .append(".")
-                 .append(parent.getName());
+                 .append(parentAlias.getSecond().rewritePropertyName(parent.getName()));
             result = Tuple.create(tableAlias, other);
             joinTable.put(path, result);
             return result;
