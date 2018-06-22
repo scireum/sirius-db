@@ -64,25 +64,12 @@ class LegacySpec extends BaseSpecification {
         e.getComposite().setZip("12452")
         oma.update(e)
         and:
-        e.getComposite().setStreet("Street2")
+        e.getComposite().setStreet("Street3")
         oma.update(e)
-        LegacyEntity fromDB = oma.select(LegacyEntity.class)
-                                 .eq(Mapping.named("firstname"), "Test2")
-                                 .orderAsc(Mapping.named("composite").inner(Mapping.named("street")))
-                                 .queryFirst()
+        and:
+        e = oma.refreshOrFail(e)
         then:
-        !e.isNew()
-        and:
-        fromDB != null
-        and:
-        fromDB.getFirstname() == "Test2"
-        and:
-        fromDB.getComposite().getStreet() == "Street2"
-        and:
-        oma.getDatabase(Mixing.DEFAULT_REALM).
-                createQuery("SELECT * FROM banana WHERE name1 = 'Test2' and street = 'Street2'").
-                first().
-                isPresent()
+        e.getComposite().getStreet() == "Street3"
     }
 
 }
