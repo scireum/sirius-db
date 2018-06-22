@@ -21,7 +21,7 @@ public class LegacyEntityWithNamedComposite extends SQLEntity {
     @Length(50)
     private String lastname;
 
-    public static final Mapping ADDRESSDATA = Mapping.named("addressdata");
+    public static final Mapping COMPOSITE = Mapping.named("composite");
     private final TestComposite composite = new TestComposite();
 
     public TestComposite getComposite() {

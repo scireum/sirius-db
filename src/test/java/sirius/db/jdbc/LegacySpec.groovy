@@ -65,7 +65,7 @@ class LegacySpec extends BaseSpecification {
         oma.update(e)
         LegacyEntityWithNamedComposite fromDB = oma.select(LegacyEntityWithNamedComposite.class)
                                                    .eq(LegacyEntityWithNamedComposite.FIRSTNAME, "Test")
-                                                   .orderAsc(LegacyEntityWithNamedComposite.ADDRESSDATA.inner(Mapping.named("street")))
+                                                   .orderAsc(LegacyEntityWithNamedComposite.COMPOSITE.inner(Mapping.named("street")))
                                                    .queryFirst()
         then:
         !e.isNew()
