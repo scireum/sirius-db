@@ -8,8 +8,8 @@
 
 package sirius.db.mixing.types;
 
-import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -216,7 +216,7 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
         return data().hashCode();
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Iterator<Map.Entry<K, V>> iterator() {
         return data().entrySet().iterator();

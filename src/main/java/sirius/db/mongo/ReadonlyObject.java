@@ -9,8 +9,8 @@
 package sirius.db.mongo;
 
 import org.bson.Document;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
