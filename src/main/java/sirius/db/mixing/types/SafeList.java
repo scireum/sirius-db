@@ -8,8 +8,7 @@
 
 package sirius.db.mixing.types;
 
-import org.jetbrains.annotations.NotNull;
-
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -158,8 +157,7 @@ public abstract class SafeList<T> implements Iterable<T> {
         return data().contains(item);
     }
 
-    @NotNull
-    @Override
+    @Nonnull
     public Iterator<T> iterator() {
         return data().iterator();
     }

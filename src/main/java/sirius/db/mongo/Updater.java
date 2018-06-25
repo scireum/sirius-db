@@ -13,11 +13,12 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
-import org.jetbrains.annotations.NotNull;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
+
+import javax.annotation.Nonnull;
 
 /**
  * Fluent builder to build an update statement.
@@ -305,7 +306,7 @@ public class Updater extends QueryBuilder<Updater> {
         }
     }
 
-    @NotNull
+    @Nonnull
     protected Document prepareUpdate(String collection) {
         Document updateObject = new Document();
         if (setObject != null) {
