@@ -57,20 +57,17 @@ public class Prefix extends BaseFilter {
 
     @Override
     public JSONObject toJSON() {
-        if (Strings.isFilled(value)) {
-            if (boost == null) {
-                return new JSONObject().fluentPut("prefix",
-                                                  new JSONObject().fluentPut(field, value)
-                                                                  .fluentPut("rewrite", "top_terms_256"));
-            } else {
-                return new JSONObject().fluentPut("prefix",
-                                                  new JSONObject().fluentPut(field,
-                                                                             new JSONObject().fluentPut("value", value)
-                                                                                             .fluentPut("boost", boost))
-                                                                  .fluentPut("rewrite", "top_terms_256"));
-            }
+        if (Strings.isEmpty(value)) {
+            return null;
         }
 
-        return null;
+        JSONObject innerQuery = new JSONObject().fluentPut(field,
+                                                           new JSONObject().fluentPut("value", this.value)
+                                                                           .fluentPut("rewrite", "top_terms_256"));
+        if (boost != null) {
+            innerQuery = innerQuery.fluentPut("boost", boost);
+        }
+
+        return new JSONObject().fluentPut("prefix", innerQuery);
     }
 }

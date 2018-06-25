@@ -8,6 +8,7 @@
 
 package sirius.db.es
 
+import sirius.db.es.filter.Prefix
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Wait
@@ -57,6 +58,28 @@ class ElasticQuerySpec extends BaseSpecification {
         entities.get(9).getCounter() == 19
     }
 
+    def "aggregations work"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("AGG" + (i % 10))
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        def query = elastic.select(QueryTestEntity.class).
+                addTermAggregation(QueryTestEntity.VALUE).
+                filter(new Prefix(QueryTestEntity.VALUE, "AGG"))
+        def entities = query.queryList()
+        def buckets = query.getAggregationBuckets(QueryTestEntity.VALUE.toString())
+        then:
+        entities.size() == 100
+        and:
+        buckets.size() == 10
+        and:
+        buckets.get(0).getSecond() == 10
+    }
+
     def "count works"() {
         when:
         for (int i = 0; i < 100; i++) {
@@ -92,7 +115,9 @@ class ElasticQuerySpec extends BaseSpecification {
         Wait.seconds(2)
         and:
         int sum = 0
-        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "SCROLL").iterateAll({e -> sum += e.getCounter()})
+        elastic.select(QueryTestEntity.class).
+                eq(QueryTestEntity.VALUE, "SCROLL").
+                iterateAll({ e -> sum += e.getCounter() })
         then:
         sum == (1500 * 1501) / 2
     }

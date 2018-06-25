@@ -15,6 +15,7 @@ import sirius.db.es.filter.FieldEqual;
 import sirius.db.es.filter.FieldOperator;
 import sirius.db.es.filter.Filter;
 import sirius.db.mixing.BaseMapper;
+import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Query;
@@ -27,6 +28,7 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,6 +49,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final int MAX_SCROLL_RESULTS_PER_SHARD = 10;
     private static final String RESPONSE_SCROLL_ID = "_scroll_id";
     private static final String KEY_DOC_ID = "_doc";
+    private static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
 
     @Part
     private static Elastic elastic;
@@ -58,7 +61,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private BoolQueryBuilder queryBuilder;
 
-    private List<Tuple<String, JSONObject>> aggregations;
+    private JSONObject aggregations;
 
     private List<JSONObject> postFilters;
 
@@ -71,6 +74,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private String routing;
     private boolean unrouted;
+
+    private JSONObject response;
 
     /**
      * Creates a new query for the given type using the given client.
@@ -295,6 +300,45 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    public ElasticQuery<E> addAggregation(String name, JSONObject aggregation) {
+        if (aggregations == null) {
+            aggregations = new JSONObject();
+        }
+        aggregations.put(name, aggregation);
+
+        return this;
+    }
+
+    public ElasticQuery<E> addTermAggregation(Mapping field) {
+        return addTermAggregation(field.toString(), field, DEFAULT_TERM_AGGREGATION_BUCKET_COUNT);
+    }
+
+    public ElasticQuery<E> addTermAggregation(String name, Mapping field, int size) {
+        return addAggregation(name,
+                              new JSONObject().fluentPut("terms",
+                                                         new JSONObject().fluentPut("field", field.toString())
+                                                                         .fluentPut("size", size)));
+    }
+
+    public ElasticQuery<E> addDateAggregation(String name, Mapping field, List<DateRange> ranges) {
+        List<JSONObject> transformedRanges = ranges.stream().map(range -> {
+            JSONObject result = new JSONObject().fluentPut("key", range.getKey());
+            if (range.getFrom() != null) {
+                result.fluentPut("from", DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getFrom()));
+            }
+            if (range.getUntil() != null) {
+                result.fluentPut("to", DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
+            }
+            return result;
+        }).collect(Collectors.toList());
+
+        return addAggregation(name,
+                              new JSONObject().fluentPut("date_range",
+                                                         new JSONObject().fluentPut("field", field.toString())
+                                                                         .fluentPut("keyed", true)
+                                                                         .fluentPut("ranges", transformedRanges)));
+    }
+
     /**
      * Specifies the routing value to use.
      * <p>
@@ -339,6 +383,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             payload.put("sort", sorts);
         }
 
+        if (aggregations != null) {
+            payload.put("aggs", aggregations);
+        }
+
         return payload;
     }
 
@@ -371,9 +419,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return 0;
         }
 
-        JSONObject response =
+        JSONObject countResponse =
                 client.count(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
-        return response.getLong("count");
+        return countResponse.getLong("count");
     }
 
     private void checkRouting() {
@@ -444,9 +492,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return false;
         }
 
-        JSONObject response =
+        JSONObject existsResponse =
                 client.exists(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
-        return response.getJSONObject("hits").getInteger("total") >= 1;
+        return existsResponse.getJSONObject("hits").getInteger("total") >= 1;
     }
 
     @SuppressWarnings("unchecked")
@@ -464,13 +512,30 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return;
         }
 
-        JSONObject response =
+        this.response =
                 client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
-        for (Object obj : response.getJSONObject("hits").getJSONArray("hits")) {
+        for (Object obj : this.response.getJSONObject("hits").getJSONArray("hits")) {
             if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
             }
         }
+    }
+
+    public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
+        List<Tuple<String, Integer>> result = new ArrayList<>();
+        JSONObject responseAggregations = response.getJSONObject("aggregations");
+        if (responseAggregations != null) {
+            JSONObject aggregation = responseAggregations.getJSONObject(name);
+            if (aggregation != null) {
+                JSONArray buckets = aggregation.getJSONArray("buckets");
+                for (Object bucket : buckets) {
+                    result.add(Tuple.create(((JSONObject) bucket).getString("key"),
+                                            ((JSONObject) bucket).getInteger("doc_count")));
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
