@@ -206,7 +206,7 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
      * @return <tt>true</tt> if the entities are the same (based on their id), <tt>false</tt> otherwise.
      */
     public boolean is(E entity) {
-        return entity == null ? isEmpty() : id != null && entity.getId() == id;
+        return entity == null ? isEmpty() : is(entity.getId());
     }
 
     /**
