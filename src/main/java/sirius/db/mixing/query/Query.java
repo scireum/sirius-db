@@ -74,6 +74,18 @@ public abstract class Query<Q, E extends BaseEntity<?>, C extends Constraint> ex
     }
 
     /**
+     * Adds a query string filter to the given query.
+     *
+     * @param query  the query to search for
+     * @param fields the fields to search in
+     * @return the query itself for fluent method calls
+     * @see FilterFactory#queryString(EntityDescriptor, String, QueryField...)
+     */
+    public Q queryString(String query, QueryField... fields) {
+        return where(filters().queryString(descriptor, query, fields));
+    }
+
+    /**
      * Adds a sort constraint to order by the given field ascending.
      *
      * @param field the field to order by.
