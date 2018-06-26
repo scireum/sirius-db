@@ -16,9 +16,9 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.properties.BaseMapProperty;
+import sirius.db.mixing.types.StringLocalDateTimeMap;
 import sirius.db.mongo.MongoEntity;
 import sirius.db.mongo.QueryBuilder;
-import sirius.db.mixing.types.StringLocalDateTimeMap;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -41,8 +41,8 @@ public class MongoStringLocalDateTimeMapProperty extends BaseMapProperty {
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return MongoEntity.class.isAssignableFrom(descriptor.getType()) && StringLocalDateTimeMap.class.equals(
-                    field.getType());
+            return MongoEntity.class.isAssignableFrom(descriptor.getType())
+                   && StringLocalDateTimeMap.class.equals(field.getType());
         }
 
         @Override
@@ -68,7 +68,7 @@ public class MongoStringLocalDateTimeMapProperty extends BaseMapProperty {
     @Override
     protected Object transformToDatasource(Object object) {
         Document doc = new Document();
-        ((Map<String, StringLocalDateTimeMap>) object).forEach((k, v) -> doc.put(k, QueryBuilder.transformValue(v)));
+        ((Map<String, StringLocalDateTimeMap>) object).forEach((k, v) -> doc.put(k, QueryBuilder.FILTERS.transform(v)));
         return doc;
     }
 

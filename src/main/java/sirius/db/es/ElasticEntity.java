@@ -8,12 +8,12 @@
 
 package sirius.db.es;
 
-import sirius.db.es.filter.FieldNotEqual;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.Query;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -42,7 +42,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
         }
         if (!isNew()) {
-            qry.filter(new FieldNotEqual(ID, getId()));
+            qry.ne(ID, getId());
         }
         if (qry.exists()) {
             throw Exceptions.createHandled()
@@ -55,8 +55,8 @@ public abstract class ElasticEntity extends BaseEntity<String> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <E extends BaseEntity<?>, Q extends Query<Q, E>> BaseMapper<E, Q> getMapper() {
-        return (BaseMapper<E, Q>) elastic;
+    public <E extends BaseEntity<?>, C extends Constraint, Q extends Query<Q, E, C>> BaseMapper<E, C, Q> getMapper() {
+        return (BaseMapper<E, C, Q>) elastic;
     }
 
     @Override

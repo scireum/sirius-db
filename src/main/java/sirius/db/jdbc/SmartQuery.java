@@ -10,12 +10,13 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import sirius.db.jdbc.constraints.FieldOperator;
+import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.jdbc.properties.SQLEntityRefProperty;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.Query;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
@@ -25,6 +26,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nullable;
@@ -47,7 +49,7 @@ import java.util.function.Function;
  *
  * @param <E> the generic type of entities being queried
  */
-public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
+public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQLConstraint> {
 
     @Part
     private static OMA oma;
@@ -58,7 +60,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
     protected List<Mapping> fields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Mapping, Boolean>> orderBys = Lists.newArrayList();
-    protected List<Constraint> constaints = Lists.newArrayList();
+    protected List<SQLConstraint> constaints = Lists.newArrayList();
     protected Database db;
 
     /**
@@ -83,38 +85,18 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
         return descriptor;
     }
 
-    /**
-     * Applies the given contraints to the query.
-     *
-     * @param constraints the constraints which have to be fullfilled
-     * @return the query itself for fluent method calls
-     */
-    public SmartQuery<E> where(Constraint... constraints) {
-        Collections.addAll(this.constaints, constraints);
+    @Override
+    public SmartQuery<E> where(SQLConstraint constraint) {
+        if (constraint != null) {
+            this.constaints.add(constraint);
+        }
 
         return this;
     }
 
     @Override
-    public SmartQuery<E> eq(Mapping field, Object value) {
-        this.constaints.add(FieldOperator.on(field).eq(value));
-        return this;
-    }
-
-    @Override
-    public SmartQuery<E> eqIgnoreNull(Mapping field, Object value) {
-        this.constaints.add(FieldOperator.on(field).eq(value).ignoreNull());
-        return this;
-    }
-
-    @Override
-    public SmartQuery<E> greaterOrEqual(Mapping field, Object value) {
-        return where(FieldOperator.on(field).greaterOrEqual(value));
-    }
-
-    @Override
-    public SmartQuery<E> lessOrEqual(Mapping field, Object value) {
-        return where(FieldOperator.on(field).lessOrEqual(value));
+    public FilterFactory<SQLConstraint> filters() {
+        return oma.filters();
     }
 
     @Override
@@ -167,14 +149,18 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
                 }
             }
         } catch (Exception e) {
-            throw Exceptions.handle()
-                            .to(OMA.LOG)
-                            .error(e)
-                            .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
-                                                    compiler,
-                                                    descriptor.getType().getName())
-                            .handle();
+            throw queryError(compiler, e);
         }
+    }
+
+    protected HandledException queryError(Compiler compiler, Exception e) {
+        return Exceptions.handle()
+                         .to(OMA.LOG)
+                         .error(e)
+                         .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
+                                                compiler,
+                                                descriptor.getType().getName())
+                         .handle();
     }
 
     protected long execCount(Compiler compiler, Connection c) throws SQLException {
@@ -194,14 +180,28 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
         return count() > 0;
     }
 
-    /**
-     * Deletes all entities matching this query.
-     * <p>
-     * Note that this will not generate a <tt>DELETE</tt> statement but rather select the results and invoke
-     * {@link OMA#delete(sirius.db.mixing.BaseEntity)} on each entity to ensure that framework checks are triggered.
-     */
+    @Override
     public void delete() {
         iterateAll(oma::delete);
+    }
+
+    @Override
+    public void truncate() {
+        Watch w = Watch.start();
+        Compiler compiler = compileDELETE();
+        try {
+            try (Connection c = db.getConnection()) {
+                try (PreparedStatement stmt = compiler.prepareStatement(c)) {
+                    stmt.executeUpdate();
+                }
+            } finally {
+                if (Microtiming.isEnabled()) {
+                    w.submitMicroTiming("OMA", compiler.toString());
+                }
+            }
+        } catch (Exception e) {
+            throw queryError(compiler, e);
+        }
     }
 
     /**
@@ -252,13 +252,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
                 }
             }
         } catch (Exception e) {
-            throw Exceptions.handle()
-                            .to(OMA.LOG)
-                            .error(e)
-                            .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
-                                                    compiler.toString(),
-                                                    descriptor.getType().getName())
-                            .handle();
+            throw queryError(compiler, e);
         }
     }
 
@@ -570,6 +564,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
         return compiler;
     }
 
+    private Compiler compileDELETE() {
+        Compiler compiler = createDelete();
+        from(compiler);
+        where(compiler);
+        return compiler;
+    }
+
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
@@ -641,30 +642,27 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E> {
         return c;
     }
 
+    private Compiler createDelete() {
+        Compiler c = new Compiler(descriptor);
+        c.getSELECTBuilder().append("DELETE");
+        return c;
+    }
+
     private void from(Compiler compiler) {
         compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getRelationName()).append(" e");
     }
 
     private void where(Compiler compiler) {
-        boolean hasConstraints = false;
-        for (Constraint c : constaints) {
-            if (c.addsConstraint()) {
-                hasConstraints = true;
-                break;
-            }
-        }
-        if (!hasConstraints) {
+        if (constaints.isEmpty()) {
             return;
         }
         compiler.getWHEREBuilder().append(" WHERE ");
         Monoflop mf = Monoflop.create();
-        for (Constraint c : constaints) {
-            if (c.addsConstraint()) {
-                if (mf.successiveCall()) {
-                    compiler.getWHEREBuilder().append(" AND ");
-                }
-                c.appendSQL(compiler);
+        for (SQLConstraint c : constaints) {
+            if (mf.successiveCall()) {
+                compiler.getWHEREBuilder().append(" AND ");
             }
+            c.appendSQL(compiler);
         }
     }
 

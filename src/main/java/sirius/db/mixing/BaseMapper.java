@@ -10,6 +10,9 @@ package sirius.db.mixing;
 
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
+import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -26,9 +29,10 @@ import java.util.function.Function;
  * Declares the common functionality of a mapper which is responsible for storing and loading entities to and from a database.
  *
  * @param <B> the type of entities supported by this mapper
+ * @param <C> the type of constraints supported by this mapper
  * @param <Q> the type of queries supported by this mapper
  */
-public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? extends B>> {
+public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, Q extends Query<?, ? extends B, C>> {
 
     private static final Function<String, Value> EMPTY_CONTEXT = key -> Value.EMPTY;
 
@@ -435,4 +439,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, Q extends Query<?, ? e
      * @return a query used to search for entities of the given type
      */
     public abstract <E extends B> Q select(Class<E> type);
+
+    /**
+     * Returns the filter factory which is used by this mapper.
+     *
+     * @return the filter factory used by this mapper
+     */
+    public abstract FilterFactory<C> filters();
 }

@@ -8,49 +8,15 @@
 
 package sirius.db.jdbc.constraints;
 
-import sirius.db.jdbc.Constraint;
-
 import java.util.List;
 
 /**
- * Represents an AND operation as {@link Constraint}.
+ * Represents a set of inner constraints combined with <tt>AND</tt>.
  */
-public class And extends CombinedConstraint {
+class And extends CombinedConstraint {
 
-    protected And(List<Constraint> inner) {
+    protected And(List<SQLConstraint> inner) {
         super(inner);
-    }
-
-    protected And(Constraint... inner) {
-        super(inner);
-    }
-
-    /**
-     * Combines the given constraints using an AND operator.
-     *
-     * @param inner the list of constraints which all have to be fullfilled.
-     * @return a constraint representing all the given constraints combined using AND
-     */
-    public static Constraint of(List<Constraint> inner) {
-        if (inner.size() == 1) {
-            return inner.get(0);
-        }
-
-        return new And(inner);
-    }
-
-    /**
-     * Combines the given constraints using an AND operator.
-     *
-     * @param inner the array of constraints which all have to be fullfilled.
-     * @return a constraint representing all the given constraints combined using AND
-     */
-    public static Constraint of(Constraint... inner) {
-        if (inner.length == 1) {
-            return inner[0];
-        }
-
-        return new And(inner);
     }
 
     @Override

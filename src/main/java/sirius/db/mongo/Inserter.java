@@ -45,7 +45,7 @@ public class Inserter {
      * @return the builder itself for fluent method calls
      */
     public Inserter set(String key, Object value) {
-        obj.put(key, QueryBuilder.transformValue(value));
+        obj.put(key, QueryBuilder.FILTERS.transform(value));
         return this;
     }
 
@@ -70,7 +70,7 @@ public class Inserter {
     public Inserter setList(String key, Object... values) {
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
-            list.add(QueryBuilder.transformValue(value));
+            list.add(QueryBuilder.FILTERS.transform(value));
         }
         obj.put(key, list);
         return this;

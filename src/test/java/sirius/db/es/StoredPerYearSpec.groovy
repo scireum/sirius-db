@@ -8,8 +8,6 @@
 
 package sirius.db.es
 
-import sirius.db.es.filter.FieldEqual
-import sirius.db.es.filter.Or
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
@@ -96,24 +94,21 @@ class StoredPerYearSpec extends BaseSpecification {
         then:
         elastic.select(YearlyTestEntity.class).
                 yearsFromTo(2010, 2012).
-                filter(
-                        new Or(
-                                new FieldEqual(YearlyTestEntity.TIMESTAMP, testTimestamp1),
-                                new FieldEqual(YearlyTestEntity.TIMESTAMP, testTimestamp2))).count() == 2
+                where(Elastic.FILTERS.or(
+                        Elastic.FILTERS.eq(YearlyTestEntity.TIMESTAMP, testTimestamp1),
+                        Elastic.FILTERS.eq(YearlyTestEntity.TIMESTAMP, testTimestamp2))).count() == 2
         and:
         elastic.select(YearlyTestEntity.class).
                 years(2011).
-                filter(
-                        new Or(
-                                new FieldEqual(YearlyTestEntity.TIMESTAMP, testTimestamp1),
-                                new FieldEqual(YearlyTestEntity.TIMESTAMP, testTimestamp2))).count() == 1
+                where(Elastic.FILTERS.or(
+                        Elastic.FILTERS.eq(YearlyTestEntity.TIMESTAMP, testTimestamp1),
+                        Elastic.FILTERS.eq(YearlyTestEntity.TIMESTAMP, testTimestamp2))).count() == 1
         and:
         elastic.select(YearlyTestEntity.class).
                 years(2012).
-                filter(
-                        new Or(
-                                new FieldEqual(YearlyTestEntity.TIMESTAMP, testTimestamp1),
-                                new FieldEqual(YearlyTestEntity.TIMESTAMP, testTimestamp2))).count() == 1
+                where(Elastic.FILTERS.or(
+                        Elastic.FILTERS.eq(YearlyTestEntity.TIMESTAMP, testTimestamp1),
+                        Elastic.FILTERS.eq(YearlyTestEntity.TIMESTAMP, testTimestamp2))).count() == 1
     }
 
 }

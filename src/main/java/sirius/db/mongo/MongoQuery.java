@@ -10,7 +10,9 @@ package sirius.db.mongo;
 
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.Query;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.kernel.di.std.Part;
 
 import java.util.function.Function;
@@ -20,7 +22,7 @@ import java.util.function.Function;
  *
  * @param <E> the type of entities being queried.
  */
-public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
+public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, MongoConstraint> {
 
     private Finder finder;
 
@@ -68,23 +70,11 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
     }
 
     @Override
-    public MongoQuery<E> greaterOrEqual(Mapping field, Object value) {
-        return where(Filter.gte(field, value));
-    }
+    public MongoQuery<E> where(MongoConstraint constraint) {
+        if (constraint != null) {
+            finder.where(constraint);
+        }
 
-    @Override
-    public MongoQuery<E> lessOrEqual(Mapping field, Object value) {
-        return where(Filter.lte(field, value));
-    }
-
-    /**
-     * Adds a complex filter which determines which documents should be selected.
-     *
-     * @param filter the filter to apply
-     * @return the builder itself for fluent method calls
-     */
-    public MongoQuery<E> where(Filter filter) {
-        finder.where(filter);
         return this;
     }
 
@@ -141,11 +131,21 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E> {
         return finder.selectFields(MongoEntity.ID).singleIn(descriptor.getRelationName()).isPresent();
     }
 
-    /**
-     * Deletes all entities which are matched by the query.
-     */
+    @Override
     public void delete() {
         iterateAll(mango::delete);
+    }
+
+    @Override
+    public void truncate() {
+        Deleter deleter = mongo.delete();
+        finder.transferFilters(deleter);
+        deleter.manyFrom(descriptor.getRelationName());
+    }
+
+    @Override
+    public FilterFactory<MongoConstraint> filters() {
+        return QueryBuilder.FILTERS;
     }
 
     @Override

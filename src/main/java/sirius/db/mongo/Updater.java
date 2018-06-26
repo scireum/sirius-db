@@ -84,7 +84,7 @@ public class Updater extends QueryBuilder<Updater> {
         if (setObject == null) {
             setObject = new BasicDBObject();
         }
-        setObject.put(field, transformValue(value));
+        setObject.put(field, QueryBuilder.FILTERS.transform(value));
 
         return this;
     }
@@ -139,7 +139,7 @@ public class Updater extends QueryBuilder<Updater> {
 
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
-            list.add(QueryBuilder.transformValue(value));
+            list.add(QueryBuilder.FILTERS.transform(value));
         }
         setObject.put(key, list);
 
@@ -195,7 +195,7 @@ public class Updater extends QueryBuilder<Updater> {
         if (addToSetObject == null) {
             addToSetObject = new BasicDBObject();
         }
-        addToSetObject.put(field, transformValue(value));
+        addToSetObject.put(field, QueryBuilder.FILTERS.transform(value));
 
         return this;
     }
@@ -224,7 +224,7 @@ public class Updater extends QueryBuilder<Updater> {
         }
         BasicDBList valuesToRemove = new BasicDBList();
         for (Object val : values) {
-            valuesToRemove.add(transformValue(val));
+            valuesToRemove.add(QueryBuilder.FILTERS.transform(val));
         }
 
         pullAllObject.put(field, valuesToRemove);
@@ -254,7 +254,7 @@ public class Updater extends QueryBuilder<Updater> {
         if (pullObject == null) {
             pullObject = new BasicDBObject();
         }
-        pullObject.put(field, transformValue(value));
+        pullObject.put(field, QueryBuilder.FILTERS.transform(value));
 
         return this;
     }

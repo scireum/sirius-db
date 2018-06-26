@@ -10,6 +10,8 @@ package sirius.db.jdbc;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import sirius.db.mixing.BaseEntity;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Tuple;
@@ -281,11 +283,11 @@ public class Databases implements Initializable {
         if (value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         }
-        if (value instanceof SQLEntityRef) {
-            return ((SQLEntityRef<?>) value).getId();
+        if (value instanceof BaseEntityRef) {
+            return ((BaseEntityRef<?, ?>) value).getId();
         }
-        if (value instanceof SQLEntity) {
-            return ((SQLEntity) value).getId();
+        if (value instanceof BaseEntity) {
+            return ((BaseEntity<?>) value).getId();
         }
 
         return value;

@@ -9,7 +9,7 @@
 package sirius.db.jdbc;
 
 import sirius.db.mixing.BaseMapper;
-import sirius.db.mixing.BaseQuery;
+import sirius.db.mixing.query.BaseQuery;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.health.Exceptions;
 

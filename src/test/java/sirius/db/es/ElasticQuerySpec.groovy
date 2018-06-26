@@ -8,7 +8,6 @@
 
 package sirius.db.es
 
-import sirius.db.es.filter.Prefix
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Wait
@@ -69,7 +68,7 @@ class ElasticQuerySpec extends BaseSpecification {
         Wait.seconds(2)
         def query = elastic.select(QueryTestEntity.class).
                 addTermAggregation(QueryTestEntity.VALUE).
-                filter(new Prefix(QueryTestEntity.VALUE, "AGG"))
+                where(Elastic.FILTERS.prefix(QueryTestEntity.VALUE, "AGG"))
         def entities = query.queryList()
         def buckets = query.getAggregationBuckets(QueryTestEntity.VALUE.toString())
         then:

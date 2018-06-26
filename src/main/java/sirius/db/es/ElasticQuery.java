@@ -10,15 +10,14 @@ package sirius.db.es;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import sirius.db.es.filter.BoolQueryBuilder;
-import sirius.db.es.filter.FieldEqual;
-import sirius.db.es.filter.FieldOperator;
-import sirius.db.es.filter.Filter;
+import sirius.db.es.constraints.BoolQueryBuilder;
+import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.Query;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
@@ -33,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  *
  * @param <E> the type of entities to be queried
  */
-public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E> {
+public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E, ElasticConstraint> {
 
     private static final int SCROLL_TTL_SECONDS = 60 * 5;
     private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 50;
@@ -148,8 +148,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> must(Filter filter) {
-        return must(filter.toJSON());
+    public ElasticQuery<E> must(ElasticConstraint filter) {
+        if (filter != null) {
+            must(filter.toJSON());
+        }
+
+        return this;
     }
 
     /**
@@ -175,8 +179,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      */
 
-    public ElasticQuery<E> mustNot(Filter filter) {
-        return mustNot(filter.toJSON());
+    public ElasticQuery<E> mustNot(ElasticConstraint filter) {
+        if (filter != null) {
+            mustNot(filter.toJSON());
+        }
+
+        return this;
     }
 
     /**
@@ -196,51 +204,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
-    /**
-     * Adds a FILTER constraint to the query.
-     *
-     * @param filter the filter to add
-     * @return the query itself for fluent method calls
-     * @see BoolQueryBuilder#filter(Filter)
-     */
-    public ElasticQuery<E> filter(Filter filter) {
-        return filter(filter.toJSON());
-    }
-
-    /**
-     * Adds a {@link FieldEqual} filter for the given field and value as FILTER to the query.
-     *
-     * @param field the field to filter on
-     * @param value the value to filter on
-     * @return the query itself for fluent method calls
-     */
     @Override
-    public ElasticQuery<E> eq(Mapping field, Object value) {
-        return filter(new FieldEqual(field, value));
-    }
+    public ElasticQuery<E> where(ElasticConstraint constraint) {
+        if (constraint != null) {
+            return filter(constraint.toJSON());
+        }
 
-    /**
-     * Adds a {@link FieldEqual} filter for the given field and value as FILTER to the query.
-     * <p>
-     * If the given <tt>value</tt> if <tt>null</tt>, no filter will be added.
-     *
-     * @param field the field to filter on
-     * @param value the value to filter on
-     * @return the query itself for fluent method calls
-     */
-    @Override
-    public ElasticQuery<E> eqIgnoreNull(Mapping field, Object value) {
-        return filter(new FieldEqual(field, value).ignoreNull());
-    }
-
-    @Override
-    public ElasticQuery<E> greaterOrEqual(Mapping field, Object value) {
-        return filter(FieldOperator.greater(field, value).including());
-    }
-
-    @Override
-    public ElasticQuery<E> lessOrEqual(Mapping field, Object value) {
-        return filter(FieldOperator.less(field, value).including());
+        return this;
     }
 
     /**
@@ -300,6 +270,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    /**
+     * Adds the given aggregation for the given name.
+     *
+     * @param name        the name of the aggregation
+     * @param aggregation the aggregation itself
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> addAggregation(String name, JSONObject aggregation) {
         if (aggregations == null) {
             aggregations = new JSONObject();
@@ -309,10 +286,26 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return this;
     }
 
+    /**
+     * Adds a term (bucket) aggregation for the given field.
+     *
+     * @param field the field to aggregate
+     * @return the query itself for fluent method calls
+     * @see #getAggregationBuckets(String)
+     */
     public ElasticQuery<E> addTermAggregation(Mapping field) {
         return addTermAggregation(field.toString(), field, DEFAULT_TERM_AGGREGATION_BUCKET_COUNT);
     }
 
+    /**
+     * Adds a term (bucket) aggregation for the given field.
+     *
+     * @param name  the name of the aggregation
+     * @param field the field to aggregate
+     * @param size  the max. number of buckets to return
+     * @return the query itself for fluent method calls
+     * @see #getAggregationBuckets(String)
+     */
     public ElasticQuery<E> addTermAggregation(String name, Mapping field, int size) {
         return addAggregation(name,
                               new JSONObject().fluentPut("terms",
@@ -320,6 +313,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                                          .fluentPut("size", size)));
     }
 
+    /**
+     * Adds a date (bucket) aggregation.
+     *
+     * @param name   the name of the aggregation
+     * @param field  the field to aggregate
+     * @param ranges the ranges / buckets to aggregate
+     * @return the query itself for fluent method calls
+     * @see #getAggregationBuckets(String)
+     */
     public ElasticQuery<E> addDateAggregation(String name, Mapping field, List<DateRange> ranges) {
         List<JSONObject> transformedRanges = ranges.stream().map(range -> {
             JSONObject result = new JSONObject().fluentPut("key", range.getKey());
@@ -376,7 +378,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (queryBuilder != null) {
-            payload.put("query", queryBuilder.toJSON());
+            payload.put("query", queryBuilder.build());
         }
 
         if (sorts != null && !sorts.isEmpty()) {
@@ -399,7 +401,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject payload = new JSONObject();
 
         if (queryBuilder != null) {
-            payload.put("query", queryBuilder.toJSON());
+            payload.put("query", queryBuilder.build());
         }
 
         return payload;
@@ -521,17 +523,36 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
     }
 
+    /**
+     * Returns the buckets which were computed as an aggregation while executing the query.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @param name the aggregation to read
+     * @return the buckets which were computed for the given aggregation
+     */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
         List<Tuple<String, Integer>> result = new ArrayList<>();
+
         JSONObject responseAggregations = response.getJSONObject("aggregations");
-        if (responseAggregations != null) {
-            JSONObject aggregation = responseAggregations.getJSONObject(name);
-            if (aggregation != null) {
-                JSONArray buckets = aggregation.getJSONArray("buckets");
-                for (Object bucket : buckets) {
-                    result.add(Tuple.create(((JSONObject) bucket).getString("key"),
-                                            ((JSONObject) bucket).getInteger("doc_count")));
-                }
+        if (responseAggregations == null) {
+            return result;
+        }
+
+        JSONObject aggregation = responseAggregations.getJSONObject(name);
+        if (aggregation == null) {
+            return result;
+        }
+
+        Object buckets = aggregation.get("buckets");
+        if (buckets instanceof JSONArray) {
+            for (Object bucket : (JSONArray) buckets) {
+                result.add(Tuple.create(((JSONObject) bucket).getString("key"),
+                                        ((JSONObject) bucket).getInteger("doc_count")));
+            }
+        } else if (buckets instanceof JSONObject) {
+            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
+                result.add(Tuple.create(entry.getKey(), ((JSONObject) entry.getValue()).getInteger("doc_count")));
             }
         }
 
@@ -559,20 +580,20 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return;
             }
 
-            JSONObject response = client.createScroll(indices,
-                                                      elastic.determineTypeName(descriptor),
-                                                      routing,
-                                                      0,
-                                                      routing == null ?
-                                                      MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
-                                                      MAX_SCROLL_RESULTS_PER_SHARD,
-                                                      SCROLL_TTL_SECONDS,
-                                                      buildPayload());
+            JSONObject scrollResponse = client.createScroll(indices,
+                                                            elastic.determineTypeName(descriptor),
+                                                            routing,
+                                                            0,
+                                                            routing == null ?
+                                                            MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
+                                                            MAX_SCROLL_RESULTS_PER_SHARD,
+                                                            SCROLL_TTL_SECONDS,
+                                                            buildPayload());
             try {
                 TaskContext ctx = TaskContext.get();
                 RateLimit rateLimit = RateLimit.timeInterval(1, TimeUnit.SECONDS);
                 Limit effectiveLimit = new Limit(skip, limit);
-                response = executeScroll(entity -> {
+                scrollResponse = executeScroll(entity -> {
                     // Check if the user aborted processing...
                     if (rateLimit.check() && !ctx.isActive()) {
                         return false;
@@ -590,9 +611,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
                     // Let the limit deciede if we should continue or not...
                     return effectiveLimit.shouldContinue();
-                }, response);
+                }, scrollResponse);
             } finally {
-                client.closeScroll(response.getString(RESPONSE_SCROLL_ID));
+                client.closeScroll(scrollResponse.getString(RESPONSE_SCROLL_ID));
             }
         } catch (Exception t) {
             throw Exceptions.handle(Elastic.LOG, t);
@@ -609,22 +630,22 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @SuppressWarnings("unchecked")
     private JSONObject executeScroll(Function<E, Boolean> handler, JSONObject firstResponse) {
         long lastScroll = 0;
-        JSONObject response = firstResponse;
+        JSONObject scrollResponse = firstResponse;
         while (true) {
             // we keep ob executing queries until es returns an empty list of results...
-            JSONArray hits = response.getJSONObject("hits").getJSONArray("hits");
+            JSONArray hits = scrollResponse.getJSONObject("hits").getJSONArray("hits");
             if (hits.isEmpty()) {
-                return response;
+                return scrollResponse;
             }
 
             for (Object obj : hits) {
                 if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
-                    return response;
+                    return scrollResponse;
                 }
             }
 
             lastScroll = performScrollMonitoring(lastScroll);
-            response = client.continueScroll(SCROLL_TTL_SECONDS, response.getString(RESPONSE_SCROLL_ID));
+            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.getString(RESPONSE_SCROLL_ID));
         }
     }
 
@@ -651,6 +672,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             }
         }
         return now;
+    }
+
+    @Override
+    public void delete() {
+        iterateAll(elastic::delete);
+    }
+
+    @Override
+    public void truncate() {
+        List<String> indices = determineIndices();
+        if (indices.isEmpty()) {
+            return;
+        }
+
+        elastic.getLowLevelClient()
+               .deleteByQuery(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
+    }
+
+    @Override
+    public FilterFactory<ElasticConstraint> filters() {
+        return Elastic.FILTERS;
     }
 
     @Override

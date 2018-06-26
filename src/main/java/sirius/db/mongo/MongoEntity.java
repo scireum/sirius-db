@@ -11,9 +11,10 @@ package sirius.db.mongo;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.Query;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -43,7 +44,7 @@ public abstract class MongoEntity extends BaseEntity<String> {
     protected void assertUnique(Mapping field, Object value, Mapping... within) {
         Finder finder = mongo.find();
         if (!isNew()) {
-            finder.where(Filter.ne(MongoEntity.ID, getId()));
+            finder.where(QueryBuilder.FILTERS.ne(MongoEntity.ID, getId()));
         }
         for (Mapping withinField : within) {
             finder.where(withinField, getDescriptor().getProperty(withinField).getValue(this));
@@ -59,8 +60,8 @@ public abstract class MongoEntity extends BaseEntity<String> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <E extends BaseEntity<?>, Q extends Query<Q, E>> BaseMapper<E, Q> getMapper() {
-        return (BaseMapper<E, Q>) mango;
+    public <E extends BaseEntity<?>, C extends Constraint, Q extends Query<Q, E, C>> BaseMapper<E, C, Q> getMapper() {
+        return (BaseMapper<E, C, Q>) mango;
     }
 
     @Override

@@ -12,18 +12,13 @@ import com.mongodb.BasicDBObject;
 import org.bson.Document;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
+import sirius.db.mongo.constraints.MongoConstraint;
+import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.Date;
 
 /**
  * Base class for queries providing a filter builder.
@@ -34,6 +29,11 @@ public abstract class QueryBuilder<S> {
 
     protected Mongo mongo;
     protected BasicDBObject filterObject = new BasicDBObject();
+
+    /**
+     * Represents the filter factory used by mong queries.
+     */
+    public static final MongoFilterFactory FILTERS = new MongoFilterFactory();
 
     @Part
     protected static Mixing mixing;
@@ -62,7 +62,7 @@ public abstract class QueryBuilder<S> {
      */
     @SuppressWarnings("unchecked")
     public S where(String key, Object value) {
-        return where(Filter.eq(key, value));
+        return where(FILTERS.eq(Mapping.named(key), value));
     }
 
     /**
@@ -72,16 +72,26 @@ public abstract class QueryBuilder<S> {
      * @return the builder itself for fluent method calls
      */
     @SuppressWarnings("unchecked")
-    public S where(Filter filter) {
-        if (filterObject.containsField(filter.key)) {
+    public S where(MongoConstraint filter) {
+        if (filterObject.containsField(filter.getKey())) {
             throw new IllegalArgumentException(Strings.apply("A constraint for %s was already specified. "
                                                              + "Please use Filter.and to combine multiple constraints "
                                                              + "on one field. Filter: %s",
-                                                             filter.key,
+                                                             filter.getKey(),
                                                              filterObject.toString()));
         }
-        filterObject.put(filter.key, filter.object);
+        filterObject.put(filter.getKey(), filter.getObject());
         return (S) this;
+    }
+
+    /**
+     * Applies all filters of this query to the given target.
+     *
+     * @param target the target to be supplied with the filters of this query
+     */
+    public void transferFilters(QueryBuilder<?> target) {
+        target.filterObject.clear();
+        target.filterObject.putAll(filterObject.toMap());
     }
 
     protected void traceIfRequired(String collection, Watch w) {
@@ -114,36 +124,6 @@ public abstract class QueryBuilder<S> {
 
         // That's the best guess anyway
         return Values.of(stackTrace).at(5).asString("<unknown>");
-    }
-
-    /**
-     * Maps Java 8 APIs to legacy objects used by Mongo DB.
-     * <p>
-     * Most notably these are the java.time classes.
-     *
-     * @param value the value to transform
-     * @return the transformed value
-     */
-    public static Object transformValue(Object value) {
-        if (value instanceof LocalDate) {
-            return Date.from(((LocalDate) value).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
-        }
-        if (value instanceof LocalDateTime) {
-            return Date.from(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant());
-        }
-        if (value instanceof LocalTime) {
-            return Date.from(((LocalTime) value).atDate(LocalDate.now(ZoneId.systemDefault()))
-                                                .atZone(ZoneId.systemDefault())
-                                                .toInstant());
-        }
-        if (value instanceof Instant) {
-            return Date.from((Instant) value);
-        }
-        if (value != null && value.getClass().isEnum()) {
-            return ((Enum<?>) value).name();
-        }
-
-        return value;
     }
 
     protected static String getRelationName(Class<?> type) {

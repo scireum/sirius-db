@@ -145,7 +145,7 @@ public class EntityDescriptor {
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
     protected boolean versioned;
-    protected BaseMapper<?, ?> mapper;
+    protected BaseMapper<?, ?, ?> mapper;
 
     /**
      * Creates a new entity for the given reference instance.
@@ -752,7 +752,7 @@ public class EntityDescriptor {
      *
      * @return the mapper responsible for entities of this descriptor
      */
-    public BaseMapper<?, ?> getMapper() {
+    public BaseMapper<?, ?, ?> getMapper() {
         if (mapper == null) {
             try {
                 mapper = ((BaseEntity<?>) getReferenceInstance()).getMapper();
@@ -809,6 +809,11 @@ public class EntityDescriptor {
         return legacyInfo;
     }
 
+    /**
+     * Determines if the underlying entity uses optimistic locking.
+     *
+     * @return <tt>true</tt> if version based optimistic locking is used, <tt>false</tt> otherwise
+     */
     public boolean isVersioned() {
         return versioned;
     }

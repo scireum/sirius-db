@@ -6,8 +6,11 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mixing;
+package sirius.db.mixing.query;
 
+import sirius.db.mixing.BaseEntity;
+import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mixing;
 import sirius.db.mongo.Mongo;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.ValueHolder;
@@ -48,6 +51,9 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     @Part
     protected static Mixing mixing;
 
+    /**
+     * Contains the descriptor of the entities being queried.
+     */
     protected final EntityDescriptor descriptor;
 
     /**
@@ -64,6 +70,15 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      */
     protected Limit getLimit() {
         return new Limit(skip, limit);
+    }
+
+    /**
+     * Returns the underlying descriptor
+     *
+     * @return the descriptor of the entities being queried.
+     */
+    public EntityDescriptor getDescriptor() {
+        return descriptor;
     }
 
     /**

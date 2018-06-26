@@ -8,68 +8,53 @@
 
 package sirius.db.jdbc.constraints;
 
-import com.google.common.collect.Lists;
-import sirius.db.jdbc.Constraint;
 import sirius.db.jdbc.SmartQuery;
 import sirius.kernel.commons.Monoflop;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Combines a list of constraints into a single constraint using a logical operator.
+ * Base class for combining constraints.
  */
-abstract class CombinedConstraint extends Constraint {
+abstract class CombinedConstraint extends SQLConstraint {
 
-    protected List<Constraint> inner = Lists.newArrayList();
+    protected List<SQLConstraint> inner;
 
-    /**
-     * Creates a new combination for the given list of constraints.
-     *
-     * @param inner the constraints to combine
-     */
-    protected CombinedConstraint(List<Constraint> inner) {
+    protected CombinedConstraint(List<SQLConstraint> inner) {
         this.inner = inner;
-    }
-
-    /**
-     * Creates a new combination for the given array of constraints.
-     *
-     * @param inner the constraints to combine
-     */
-    protected CombinedConstraint(Constraint... inner) {
-        this.inner = Arrays.asList(inner);
-    }
-
-    @Override
-    public boolean addsConstraint() {
-        for (Constraint c : inner) {
-            if (c.addsConstraint()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
     public void appendSQL(SmartQuery.Compiler compiler) {
-        if (addsConstraint()) {
-            Monoflop mf = Monoflop.create();
-            compiler.getWHEREBuilder().append("(");
-            inner.stream().filter(Constraint::addsConstraint).forEach(c -> {
-                if (mf.successiveCall()) {
-                    compiler.getWHEREBuilder().append(getCombiner());
-                }
-                c.appendSQL(compiler);
-            });
-            compiler.getWHEREBuilder().append(")");
-        }
+        Monoflop mf = Monoflop.create();
+        compiler.getWHEREBuilder().append("(");
+        inner.stream().filter(Objects::nonNull).forEach(c -> {
+            if (mf.successiveCall()) {
+                compiler.getWHEREBuilder().append(getCombiner());
+            }
+            c.appendSQL(compiler);
+        });
+        compiler.getWHEREBuilder().append(")");
+    }
+
+    @Override
+    public void asString(StringBuilder builder) {
+        Monoflop mf = Monoflop.create();
+        builder.append("(");
+        inner.stream().filter(Objects::nonNull).forEach(c -> {
+            if (mf.successiveCall()) {
+                builder.append(getCombiner());
+            }
+            c.asString(builder);
+        });
+        builder.append(")");
     }
 
     /**
-     * Returns the logical operator used to combine the constraints.
+     * Returns the operator used to combine the inner constraints
      *
-     * @return the logical operator used to combine the constraints.
+     * @return the operator to use
      */
     protected abstract String getCombiner();
 }

@@ -11,6 +11,8 @@ package sirius.db.mixing;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Transient;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 
@@ -109,7 +111,7 @@ public abstract class BaseEntity<I> extends Mixable {
      * @param <Q> the query type of the mapper
      * @return the mapper which is in charge of this entity.
      */
-    public abstract <E extends BaseEntity<?>, Q extends Query<Q, E>> BaseMapper<E, Q> getMapper();
+    public abstract <E extends BaseEntity<?>, C extends Constraint, Q extends Query<Q, E, C>> BaseMapper<E, C, Q> getMapper();
 
     /**
      * Ensures that the given value in the given field is unique within the given side constraints.

@@ -8,12 +8,12 @@
 
 package sirius.db.jdbc;
 
-import sirius.db.jdbc.constraints.FieldOperator;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.Query;
 import sirius.db.mixing.annotations.Transient;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -51,8 +51,8 @@ public abstract class SQLEntity extends BaseEntity<Long> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <E extends BaseEntity<?>, Q extends Query<Q, E>> BaseMapper<E, Q> getMapper() {
-        return (BaseMapper<E, Q>) oma;
+    public <E extends BaseEntity<?>, C extends Constraint, Q extends Query<Q, E, C>> BaseMapper<E, C, Q> getMapper() {
+        return (BaseMapper<E, C, Q>) oma;
     }
 
     /**
@@ -121,7 +121,7 @@ public abstract class SQLEntity extends BaseEntity<Long> {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
         }
         if (!isNew()) {
-            qry.where(FieldOperator.on(ID).notEqual(getId()));
+            qry.ne(ID, getId());
         }
         if (qry.exists()) {
             throw Exceptions.createHandled()

@@ -14,8 +14,8 @@ import sirius.kernel.commons.Tuple;
 
 /**
  * Represents a list of 2D locations which can be stored in MongoDB for geo queries.
- * <p>
- * Such fields can be queried using {@link sirius.db.mongo.Filter#nearSphere(Mapping, double, double, int)}
+ *
+ * @see sirius.db.mongo.constraints.MongoFilterFactory#nearSphere(Mapping, double, double, int)
  */
 public class MultiPointLocation extends SafeList<Tuple<Double, Double>> {
 

@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class LowLevelClient {
 
     private static final String API_SEARCH = "/_search";
+    private static final String API_DELETE_BY_QUERY = "/_delete_by_query";
     private RestClient restClient;
 
     /**
@@ -151,6 +152,22 @@ public class LowLevelClient {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Deletes all documents matched by the given query.
+     *
+     * @param indices the indices to search in
+     * @param type    the document type to search
+     * @param routing the routing to use
+     * @param query   the query to execute
+     * @return the response of the call
+     */
+    public JSONObject deleteByQuery(List<String> indices, String type, @Nullable String routing, JSONObject query) {
+        return performGet().routing(routing)
+                           .data(query)
+                           .execute(Strings.join(indices, ",") + "/" + type + API_DELETE_BY_QUERY)
+                           .response();
     }
 
     /**

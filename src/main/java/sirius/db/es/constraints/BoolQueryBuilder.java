@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.filter;
+package sirius.db.es.constraints;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.kernel.commons.Explain;
@@ -17,14 +17,14 @@ import java.util.List;
 /**
  * Represents a boolean query which is the actual work horse of Elasticsearch queries.
  */
-public class BoolQueryBuilder extends BaseFilter {
+public class BoolQueryBuilder {
 
     private List<JSONObject> must;
     private List<JSONObject> mustNot;
     private List<JSONObject> should;
     private List<JSONObject> filter;
 
-    private <X> List<X> autoinit(List<X> list) {
+    private List<JSONObject> autoinit(List<JSONObject> list) {
         if (list == null) {
             return new ArrayList<>();
         }
@@ -53,7 +53,7 @@ public class BoolQueryBuilder extends BaseFilter {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder must(Filter filter) {
+    public BoolQueryBuilder must(ElasticConstraint filter) {
         return must(filter.toJSON());
     }
 
@@ -78,7 +78,7 @@ public class BoolQueryBuilder extends BaseFilter {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder mustNot(Filter filter) {
+    public BoolQueryBuilder mustNot(ElasticConstraint filter) {
         return mustNot(filter.toJSON());
     }
 
@@ -103,7 +103,7 @@ public class BoolQueryBuilder extends BaseFilter {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder should(Filter filter) {
+    public BoolQueryBuilder should(ElasticConstraint filter) {
         return should(filter.toJSON());
     }
 
@@ -132,14 +132,18 @@ public class BoolQueryBuilder extends BaseFilter {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder filter(Filter filter) {
+    public BoolQueryBuilder filter(ElasticConstraint filter) {
         return filter(filter.toJSON());
     }
 
+    /**
+     * Compiles the boolen query into a constraint.
+     *
+     * @return the query as constraint
+     */
     @SuppressWarnings("squid:MethodCyclomaticComplexity")
     @Explain("Splitting this method would most probably increase the complexity")
-    @Override
-    public JSONObject toJSON() {
+    public JSONObject build() {
         int filters = filter == null ? 0 : filter.size();
         int musts = must == null ? 0 : must.size();
         int mustNots = mustNot == null ? 0 : mustNot.size();

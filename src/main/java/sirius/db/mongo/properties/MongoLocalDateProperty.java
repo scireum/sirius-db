@@ -67,6 +67,6 @@ public class MongoLocalDateProperty extends Property {
             return null;
         }
 
-        return QueryBuilder.transformValue(object);
+        return QueryBuilder.FILTERS.transform(object);
     }
 }

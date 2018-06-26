@@ -9,11 +9,14 @@
 package sirius.db.jdbc;
 
 import com.google.common.collect.Lists;
+import sirius.db.jdbc.constraints.SQLConstraint;
+import sirius.db.jdbc.constraints.SQLFilterFactory;
 import sirius.db.jdbc.schema.Schema;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Value;
@@ -36,9 +39,17 @@ import java.util.function.Function;
  * Provides the {@link BaseMapper mapper} used to communicate with JDBC / SQL databases.
  */
 @Register(classes = OMA.class)
-public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> {
+public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? extends SQLEntity>> {
 
+    /**
+     * Contains the central logger for the OMA facility.
+     */
     public static final Log LOG = Log.get("oma");
+
+    /**
+     * Constains the factory used to generate filters for a {@link SmartQuery}.
+     */
+    public static final SQLFilterFactory FILTERS = new SQLFilterFactory();
 
     private static final String SQL_WHERE_ID = " WHERE id = ?";
     private static final String SQL_AND_VERSION = " AND version = ?";
@@ -240,6 +251,11 @@ public class OMA extends BaseMapper<SQLEntity, SmartQuery<? extends SQLEntity>> 
     public <E extends SQLEntity> SmartQuery<E> select(Class<E> type) {
         EntityDescriptor ed = mixing.getDescriptor(type);
         return new SmartQuery<>(ed, getDatabase(ed.getRealm()));
+    }
+
+    @Override
+    public FilterFactory<SQLConstraint> filters() {
+        return FILTERS;
     }
 
     /**

@@ -17,7 +17,8 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
-import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -30,7 +31,7 @@ import java.util.function.Function;
  * Provides the {@link BaseMapper mapper} used to communicate with <tt>MongoDB</tt>.
  */
 @Register(classes = {Mango.class, IndexDescription.class})
-public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements IndexDescription {
+public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?>> implements IndexDescription {
 
     /**
      * Defines the value used to desclare an index as sorted in ascending order.
@@ -178,6 +179,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoQuery<?>> implements Ind
     @Override
     public <E extends MongoEntity> MongoQuery<E> select(Class<E> type) {
         return new MongoQuery<>(mixing.getDescriptor(type));
+    }
+
+    @Override
+    public FilterFactory<MongoConstraint> filters() {
+        return QueryBuilder.FILTERS;
     }
 
     public String getCollection(Class<? extends MongoEntity> type) {

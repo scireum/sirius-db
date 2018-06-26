@@ -9,10 +9,12 @@
 package sirius.db.mixing;
 
 import com.google.common.collect.Maps;
+import sirius.db.es.Elastic;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.OMA;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.Transient;
+import sirius.db.mongo.Mango;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.transformers.Composable;
 import sirius.kernel.health.Exceptions;
@@ -36,7 +38,16 @@ public class Mixable extends Composable {
     private Map<Class<?>, Object> mixins;
 
     @Part
+    protected static Mixing mixing;
+
+    @Part
     protected static OMA oma;
+
+    @Part
+    protected static Elastic elastic;
+
+    @Part
+    protected static Mango mango;
 
     @Override
     public boolean is(Class<?> type) {

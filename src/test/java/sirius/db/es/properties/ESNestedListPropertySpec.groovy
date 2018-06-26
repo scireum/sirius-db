@@ -9,7 +9,6 @@
 package sirius.db.es.properties
 
 import sirius.db.es.Elastic
-import sirius.db.es.filter.NestedQuery
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
@@ -74,11 +73,11 @@ class ESNestedListPropertySpec extends BaseSpecification {
         elastic.update(test)
         Wait.seconds(2)
         def query = elastic.select(ESNestedListEntity.class).
-                filter(
-                        new NestedQuery(ESNestedListEntity.LIST).eq(
+                where(
+                        Elastic.FILTERS.nested(ESNestedListEntity.LIST).eq(
                                 ESNestedListEntity.LIST.nested(ESNestedListEntity.NestedEntity.VALUE1),
                                 "A").
-                                eq(ESNestedListEntity.LIST.nested(ESNestedListEntity.NestedEntity.VALUE2), "D"));
+                                eq(ESNestedListEntity.LIST.nested(ESNestedListEntity.NestedEntity.VALUE2), "D").build())
         def resolved = query.queryFirst()
         then:
         query.limit(0).count() == 1

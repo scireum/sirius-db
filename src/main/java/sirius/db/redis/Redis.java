@@ -231,8 +231,8 @@ public class Redis implements Startable, Stoppable {
 
         if (jedis == null) {
             if (Strings.isEmpty(host)) {
-                LOG.SEVERE(
-                        "Missing a Redis host! This might lead to undefined behaviour. Please specify redis.host or redis.sentinels!");
+                LOG.SEVERE("Missing a Redis host! This might lead to undefined behaviour."
+                           + " Please specify redis.host or redis.sentinels!");
             }
 
             JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();

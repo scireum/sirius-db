@@ -8,13 +8,11 @@
 
 package sirius.db.jdbc.constraints;
 
-import com.google.common.collect.Lists;
-import sirius.db.mixing.Mapping;
-import sirius.db.jdbc.Constraint;
 import sirius.db.jdbc.SmartQuery;
+import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
 
-import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Represents a LIKE constraint.
@@ -22,7 +20,7 @@ import java.util.List;
  * This can be used to generate queries like {@code x LIKE 'a%'}. Using the helper methods this can also be used to
  * search for occurrences of serveral words in several fields, this can be used as a general table search.
  */
-public class Like extends Constraint {
+public class Like {
 
     private static final String WILDCARD = "*";
     private Mapping field;
@@ -30,40 +28,8 @@ public class Like extends Constraint {
     private boolean ignoreEmpty;
     private boolean ignoreCase;
 
-    private Like(Mapping field) {
+    protected Like(Mapping field) {
         this.field = field;
-    }
-
-    /**
-     * Generates a constraint which ensures that each word in the query occurs at least in one of the given fields.
-     * <p>
-     * Splits the given query at each whitespace and generates a constraint which ensures that each of these words
-     * occures in it least on of the given fields.
-     *
-     * @param query  the query to parse
-     * @param fields the fields to search in
-     * @return a constraint representing the given query in the given fields
-     */
-    public static Constraint allWordsInAnyField(String query, Mapping... fields) {
-        List<Constraint> wordConstraints = Lists.newArrayList();
-        for (String word : query.split("\\s")) {
-            List<Constraint> fieldConstraints = Lists.newArrayList();
-            for (Mapping field : fields) {
-                fieldConstraints.add(Like.on(field).contains(word).ignoreCase().ignoreEmpty());
-            }
-            wordConstraints.add(Or.of(fieldConstraints));
-        }
-        return And.of(wordConstraints);
-    }
-
-    /**
-     * Creates a like constraint for the given field.
-     *
-     * @param field the field to search in
-     * @return a like constraint applied to the given field
-     */
-    public static Like on(Mapping field) {
-        return new Like(field);
     }
 
     /**
@@ -102,6 +68,25 @@ public class Like extends Constraint {
     }
 
     /**
+     * Sepcifies a value with which the target field needs to start.
+     * <p>
+     * This is roughly the same as calling {@code matches(value+"*")}.
+     *
+     * @param value the value to search for
+     * @return the constaint itself
+     */
+    public Like startsWith(String value) {
+        String effectiveValue = value;
+        if (Strings.isFilled(effectiveValue)) {
+            if (!effectiveValue.endsWith(WILDCARD)) {
+                effectiveValue = effectiveValue + WILDCARD;
+            }
+        }
+        this.value = effectiveValue;
+        return this;
+    }
+
+    /**
      * Specifies that upper- and lowercase should not be distinguished.
      *
      * @return the constraint itself
@@ -121,14 +106,38 @@ public class Like extends Constraint {
         return this;
     }
 
-    @Override
-    public boolean addsConstraint() {
-        return !ignoreEmpty || Strings.isFilled(value);
+    /**
+     * Generates a constraint for the given settings
+     *
+     * @return a constraint based on the given settings or <tt>null</tt> if no constraint was generated
+     */
+    @Nullable
+    public SQLConstraint build() {
+        if (Strings.isEmpty(value) && ignoreEmpty) {
+            return null;
+        }
+
+        return new LikeConstraint();
     }
 
-    @Override
-    public void appendSQL(SmartQuery.Compiler compiler) {
-        if (addsConstraint()) {
+    private class LikeConstraint extends SQLConstraint {
+
+        @Override
+        public void asString(StringBuilder builder) {
+            String effectiveValue = value.replace('*', '%');
+            if (ignoreCase) {
+                builder.append("LOWER(")
+                       .append(field.toString())
+                       .append(") LIKE '")
+                       .append(effectiveValue.toLowerCase())
+                       .append("'");
+            } else {
+                builder.append(field.toString()).append(" LIKE '").append(effectiveValue.toLowerCase()).append("'");
+            }
+        }
+
+        @Override
+        public void appendSQL(SmartQuery.Compiler compiler) {
             String effectiveValue = value.replace('*', '%');
             if (ignoreCase) {
                 compiler.getWHEREBuilder()

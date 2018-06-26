@@ -12,10 +12,13 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import sirius.db.KeyGenerator;
+import sirius.db.es.constraints.ElasticConstraint;
+import sirius.db.es.constraints.ElasticFilterFactory;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Strings;
@@ -43,12 +46,17 @@ import java.util.function.Function;
  * Provides the {@link BaseMapper mapper} used to communicate with <tt>Elasticsearch</tt>.
  */
 @Register(classes = Elastic.class)
-public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends ElasticEntity>> {
+public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, ElasticQuery<? extends ElasticEntity>> {
 
     /**
      * Contains the logger used by everything related to Elasticsearch
      */
     public static final Log LOG = Log.get("es");
+
+    /**
+     * Constains the factory used to generate filters for a {@link ElasticQuery}.
+     */
+    public static final ElasticFilterFactory FILTERS = new ElasticFilterFactory();
 
     private static final String CONTEXT_ROUTING = "routing";
 
@@ -408,6 +416,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
         return Optional.of(result);
     }
 
+    /**
+     * Determines if the entity of the given descriptor requires a routing value.
+     *
+     * @param ed the descriptor of the entity to check
+     * @return <tt>true</tt> if a routing is required, <tt>false</tt> otherwise
+     */
     public boolean isRouted(EntityDescriptor ed) {
         return routeTable.containsKey(ed);
     }
@@ -451,5 +465,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticQuery<? extends El
     @Override
     public <E extends ElasticEntity> ElasticQuery<E> select(Class<E> type) {
         return new ElasticQuery<>(mixing.getDescriptor(type), getLowLevelClient());
+    }
+
+    @Override
+    public FilterFactory<ElasticConstraint> filters() {
+        return FILTERS;
     }
 }
