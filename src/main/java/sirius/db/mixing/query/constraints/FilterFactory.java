@@ -126,11 +126,12 @@ public abstract class FilterFactory<C extends Constraint> {
      * @return the generated constraint
      */
     public C ne(Mapping field, @Nullable Object value) {
-        if (value == null) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
             return filled(field);
         }
 
-        return neValue(field, value);
+        return neValue(field, effectiveValue);
     }
 
     /**
