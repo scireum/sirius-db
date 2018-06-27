@@ -105,7 +105,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return eq(field, value);
+        return eqValue(field, effectiveValue);
     }
 
     /**
@@ -160,7 +160,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return gtValue(field, value, false);
+        return gtValue(field, effectiveValue, false);
     }
 
     /**
@@ -190,7 +190,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return or(gtValue(field, value, false), notFilled(field));
+        return or(gtValue(field, effectiveValue, false), notFilled(field));
     }
 
     /**
@@ -209,7 +209,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return gtValue(field, value, true);
+        return gtValue(field, effectiveValue, true);
     }
 
     /**
@@ -228,7 +228,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return or(gtValue(field, value, true), notFilled(field));
+        return or(gtValue(field, effectiveValue, true), notFilled(field));
     }
 
     /**
@@ -247,7 +247,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return ltValue(field, value, false);
+        return ltValue(field, effectiveValue, false);
     }
 
     /**
@@ -277,7 +277,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return or(ltValue(field, value, false), notFilled(field));
+        return or(ltValue(field, effectiveValue, false), notFilled(field));
     }
 
     /**
@@ -296,7 +296,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return ltValue(field, value, true);
+        return ltValue(field, effectiveValue, true);
     }
 
     /**
@@ -315,7 +315,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return or(ltValue(field, value, true), notFilled(field));
+        return or(ltValue(field, effectiveValue, true), notFilled(field));
     }
 
     /**
