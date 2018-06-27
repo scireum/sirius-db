@@ -105,7 +105,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
 
-        return eq(field, effectiveValue);
+        return eqValue(field, effectiveValue);
     }
 
     /**
