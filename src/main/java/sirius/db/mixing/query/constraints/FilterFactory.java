@@ -13,6 +13,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.types.BaseEntityRef;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 
@@ -147,80 +148,174 @@ public abstract class FilterFactory<C extends Constraint> {
      * Represents <tt>field &gt; value</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public abstract C gt(Mapping field, @Nonnull Object value);
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C gt(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return gtValue(field, value, false);
+    }
+
+    /**
+     * Represents <tt>field &gt; value</tt> as constraint
+     *
+     * @param field   the field to filter
+     * @param value   the value to filter with
+     * @param orEqual if <tt>true</tt>, <tt>field &gt;= value</tt> is used as comparator
+     * @return the generated constraint
+     */
+    @Nonnull
+    protected abstract C gtValue(Mapping field, @Nonnull Object value, boolean orEqual);
 
     /**
      * Represents <tt>field &gt; value OR empty(field)</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public C gtOrEmpty(Mapping field, @Nonnull Object value) {
-        return or(gt(field, value), notFilled(field));
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C gtOrEmpty(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return or(gtValue(field, value, false), notFilled(field));
     }
 
     /**
      * Represents <tt>field &gt;= value</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public abstract C gte(Mapping field, @Nonnull Object value);
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C gte(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return gtValue(field, value, true);
+    }
 
     /**
      * Represents <tt>field &gt;= value OR empty(field)</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public C gteOrEmpty(Mapping field, @Nonnull Object value) {
-        return or(gte(field, value), notFilled(field));
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C gteOrEmpty(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return or(gtValue(field, value, true), notFilled(field));
     }
 
     /**
      * Represents <tt>field &lt; value</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public abstract C lt(Mapping field, @Nonnull Object value);
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C lt(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return ltValue(field, value, false);
+    }
+
+    /**
+     * Represents <tt>field &lt; value</tt> as constraint
+     *
+     * @param field   the field to filter
+     * @param value   the value to filter with
+     * @param orEqual if <tt>true</tt>, <tt>field &lt;= value</tt> is used as comparator
+     * @return the generated constraint
+     */
+    @Nonnull
+    protected abstract C ltValue(Mapping field, @Nonnull Object value, boolean orEqual);
 
     /**
      * Represents <tt>field &lt; OR empty(field) value</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public C ltOrEmpty(Mapping field, @Nonnull Object value) {
-        return or(lt(field, value), notFilled(field));
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C ltOrEmpty(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return or(ltValue(field, value, false), notFilled(field));
     }
 
     /**
      * Represents <tt>field &lt;= value</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public abstract C lte(Mapping field, @Nonnull Object value);
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C lte(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return ltValue(field, value, true);
+    }
 
     /**
      * Represents <tt>field &lt;= OR empty(field) value</tt> as constraint
      *
      * @param field the field to filter
-     * @param value the value to filter with
+     * @param value the value to filter with. If <tt>null</tt> is passed in, no constraint is generated
      * @return the generated constraint
      */
-    public C lteOrEmpty(Mapping field, @Nonnull Object value) {
-        return or(lte(field, value), notFilled(field));
+    @Nullable
+    @SuppressWarnings("squid:S2637")
+    @Explain("False positive")
+    public C lteOrEmpty(Mapping field, @Nullable Object value) {
+        Object effectiveValue = transform(value);
+        if (effectiveValue == null) {
+            return null;
+        }
+
+        return or(ltValue(field, value, true), notFilled(field));
     }
 
     /**
@@ -361,6 +456,7 @@ public abstract class FilterFactory<C extends Constraint> {
 
     /**
      * Creates a constraint which ensures that the given field doesn't contain any of the given values.
+     *
      * @param field  the field to filter on
      * @param values the values to check
      * @return the generated constraint
@@ -371,6 +467,7 @@ public abstract class FilterFactory<C extends Constraint> {
 
     /**
      * Creates a constraint which ensures that the given field doesn't contain any of the given values.
+     *
      * @param field  the field to filter on
      * @param values the values to check
      * @return the generated constraint
