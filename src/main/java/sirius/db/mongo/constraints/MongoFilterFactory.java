@@ -10,6 +10,7 @@ package sirius.db.mongo.constraints;
 
 import com.mongodb.BasicDBList;
 import org.bson.Document;
+import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
@@ -63,23 +64,13 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
-    public MongoConstraint gt(Mapping field, Object value) {
-        return new MongoConstraint(field.toString(), new Document("$gt", transform(value)));
+    protected MongoConstraint gtValue(Mapping field, Object value, boolean orEqual) {
+        return new MongoConstraint(field.toString(), new Document(orEqual ? "$gte" : "$gt", value));
     }
 
     @Override
-    public MongoConstraint gte(Mapping field, Object value) {
-        return new MongoConstraint(field.toString(), new Document("$gte", transform(value)));
-    }
-
-    @Override
-    public MongoConstraint lt(Mapping field, Object value) {
-        return new MongoConstraint(field.toString(), new Document("$lt", transform(value)));
-    }
-
-    @Override
-    public MongoConstraint lte(Mapping field, Object value) {
-        return new MongoConstraint(field.toString(), new Document("$lte", transform(value)));
+    protected MongoConstraint ltValue(Mapping field, Object value, boolean orEqual) {
+        return new MongoConstraint(field.toString(), new Document(orEqual ? "$lte" : "$lt", value));
     }
 
     @Override

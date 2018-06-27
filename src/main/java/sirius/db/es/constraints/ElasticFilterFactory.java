@@ -81,23 +81,13 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     @Override
-    public ElasticConstraint gt(Mapping field, Object value) {
-        return rangeFilter(field, "gt", value);
+    protected ElasticConstraint gtValue(Mapping field, Object value, boolean orEqual) {
+        return rangeFilter(field, orEqual ? "gte" : "gt", value);
     }
 
     @Override
-    public ElasticConstraint gte(Mapping field, Object value) {
-        return rangeFilter(field, "gte", value);
-    }
-
-    @Override
-    public ElasticConstraint lt(Mapping field, Object value) {
-        return rangeFilter(field, "lt", value);
-    }
-
-    @Override
-    public ElasticConstraint lte(Mapping field, Object value) {
-        return rangeFilter(field, "lte", value);
+    protected ElasticConstraint ltValue(Mapping field, Object value, boolean orEqual) {
+        return rangeFilter(field, orEqual ? "lte" : "lt", value);
     }
 
     @Override
