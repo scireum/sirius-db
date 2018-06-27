@@ -49,7 +49,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final int MAX_SCROLL_RESULTS_PER_SHARD = 10;
     private static final String RESPONSE_SCROLL_ID = "_scroll_id";
     private static final String KEY_DOC_ID = "_doc";
-    private static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
+
+    /**
+     * Contains the default number of buckets being collected and reported for an aggregation.
+     */
+    public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
 
     @Part
     private static Elastic elastic;
