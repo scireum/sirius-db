@@ -8,14 +8,12 @@
 
 package sirius.db.jdbc.constraints;
 
-import org.bson.Document;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
-import sirius.db.mongo.constraints.MongoConstraint;
 
 import java.util.List;
 

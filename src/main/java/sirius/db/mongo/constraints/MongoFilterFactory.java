@@ -10,7 +10,6 @@ package sirius.db.mongo.constraints;
 
 import com.mongodb.BasicDBList;
 import org.bson.Document;
-import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;

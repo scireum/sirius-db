@@ -14,7 +14,6 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mongo.MongoEntity;
 import sirius.db.mongo.QueryBuilder;
-import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
