@@ -103,6 +103,7 @@ public class IndexMappings implements Startable {
             if (storePerYear != null) {
                 elastic.updateDiscriminatorTable(ed, ed.getProperty(storePerYear.value()));
             } else {
+                Elastic.LOG.INFO("Updating mapping for %s...", ed.getRelationName());
                 createMapping(ed, ed.getRelationName());
             }
             return true;
@@ -157,8 +158,15 @@ public class IndexMappings implements Startable {
         }
 
         Extension realmConfig = Sirius.getSettings().getExtension("mixing.es.settings", ed.getRealm());
-        elastic.getLowLevelClient()
-               .createIndex(indexName, realmConfig.getInt("numberOfShards"), realmConfig.getInt("numberOfReplicas"));
+        if (!elastic.getLowLevelClient().indexExists(indexName)) {
+            Elastic.LOG.INFO("Creating index %s in Elasticsearch....", indexName);
+            elastic.getLowLevelClient()
+                   .createIndex(indexName,
+                                realmConfig.getInt("numberOfShards"),
+                                realmConfig.getInt("numberOfReplicas"));
+        }
+
+        Elastic.LOG.INFO("Creating a mapping for %s in index %s in Elasticsearch....", ed.getRelationName(), indexName);
         elastic.getLowLevelClient().putMapping(indexName, ed.getRelationName(), mapping);
     }
 
