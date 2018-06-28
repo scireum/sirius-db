@@ -91,7 +91,6 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
                        + getPropertyName()
                        + "_"
                        + referencedDescriptor.getRelationName());
-            fk.setName("fk_" + getPropertyName());
             fk.setForeignTable(getReferencedDescriptor().getRelationName());
             fk.addForeignColumn(1, SQLEntity.ID.getName());
             fk.addColumn(1, getPropertyName());
