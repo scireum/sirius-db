@@ -72,7 +72,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     public String generateAddForeignKey(Table table, ForeignKey key) {
         return MessageFormat.format("ALTER TABLE `{0}` ADD CONSTRAINT `{1}` FOREIGN KEY ({2}) REFERENCES `{3}` ({4})",
                                     table.getName(),
-                                    key.getName(),
+                                    Strings.limit(key.getName(), getConstraintCharacterLimit()),
                                     String.join(", ", key.getColumns()),
                                     key.getForeignTable(),
                                     String.join(", ", key.getForeignColumns()));
@@ -128,7 +128,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
 
     @Override
     public String generateDropForeignKey(Table table, ForeignKey key) {
-        return MessageFormat.format("ALTER TABLE `{0}` DROP FOREIGN KEY `{1}`", table.getName(), key.getName());
+        return MessageFormat.format("ALTER TABLE `{0}` DROP FOREIGN KEY `{1}`",
+                                    table.getName(),
+                                    Strings.limit(key.getName(), getConstraintCharacterLimit()));
     }
 
     @Override
@@ -408,5 +410,14 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         }
 
         return Value.of(engine.value());
+    }
+
+    /**
+     * Determines the length a constraint should have.
+     *
+     * @return the maximum allowed length of a constraint
+     */
+    protected int getConstraintCharacterLimit() {
+        return 1024;
     }
 }
