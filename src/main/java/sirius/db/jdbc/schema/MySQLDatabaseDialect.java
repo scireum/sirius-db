@@ -124,4 +124,9 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
     public boolean shouldDropKey(Table targetTable, Table currentTable, Key key) {
         return true;
     }
+
+    @Override
+    protected int getConstraintCharacterLimit() {
+        return 64;
+    }
 }

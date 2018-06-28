@@ -13,9 +13,9 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.SQLEntityRef;
-import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.ForeignKey;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
@@ -85,6 +85,12 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
         if (SQLEntity.class.isAssignableFrom(getReferencedType()) && Strings.areEqual(getDescriptor().getRealm(),
                                                                                       getReferencedDescriptor().getRealm())) {
             ForeignKey fk = new ForeignKey();
+            fk.setName("fk_"
+                       + descriptor.getRelationName()
+                       + "_"
+                       + getPropertyName()
+                       + "_"
+                       + referencedDescriptor.getRelationName());
             fk.setName("fk_" + getPropertyName());
             fk.setForeignTable(getReferencedDescriptor().getRelationName());
             fk.addForeignColumn(1, SQLEntity.ID.getName());
