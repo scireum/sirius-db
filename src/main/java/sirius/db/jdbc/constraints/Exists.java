@@ -87,6 +87,14 @@ public class Exists extends SQLConstraint {
 
     @Override
     public void asString(StringBuilder builder) {
-        //TODO
+        builder.append("EXISTS(SELECT * FROM ").append(mixing.getDescriptor(other).getRelationName());
+        builder.append(" WHERE ").append(outerColumn).append(" = ").append(innerColumn);
+
+        // Applies additional constraints...
+        for (SQLConstraint c : constraints) {
+            builder.append(" AND ");
+            c.asString(builder);
+        }
+        builder.append(")");
     }
 }
