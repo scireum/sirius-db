@@ -44,16 +44,42 @@ import java.util.stream.Collectors;
  */
 public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E, ElasticConstraint> {
 
-    private static final int SCROLL_TTL_SECONDS = 60 * 5;
-    private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 50;
-    private static final int MAX_SCROLL_RESULTS_PER_SHARD = 10;
-    private static final String RESPONSE_SCROLL_ID = "_scroll_id";
-    private static final String KEY_DOC_ID = "_doc";
-
     /**
      * Contains the default number of buckets being collected and reported for an aggregation.
      */
     public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
+
+    private static final int SCROLL_TTL_SECONDS = 60 * 5;
+    private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 50;
+    private static final int MAX_SCROLL_RESULTS_PER_SHARD = 10;
+    private static final String KEY_SCROLL_ID = "_scroll_id";
+    private static final String KEY_DOC_ID = "_doc";
+
+    private static final String KEY_FIELD = "field";
+    private static final String KEY_TERMS = "terms";
+    private static final String KEY_SIZE = "size";
+    private static final String KEY_DATE_RANGE = "date_range";
+    private static final String KEY_KEYED = "keyed";
+    private static final String KEY_RANGES = "ranges";
+    private static final String KEY_QUERY = "query";
+    private static final String KEY_SORT = "sort";
+    private static final String KEY_AGGS = "aggs";
+    private static final String KEY_POST_FILTER = "post_filter";
+    private static final String KEY_INNER_HITS = "inner_hits";
+    private static final String KEY_COLLAPSE = "collapse";
+    private static final String KEY_COUNT = "count";
+    private static final String KEY_HITS = "hits";
+    private static final String KEY_TOTAL = "total";
+    private static final String KEY_AGGREGATIONS = "aggregations";
+    private static final String KEY_BUCKETS = "buckets";
+    private static final String KEY_KEY = "key";
+    private static final String KEY_DOC_COUNT = "doc_count";
+    private static final String KEY_NAME = "name";
+    private static final String KEY_ASC = "asc";
+    private static final String KEY_DESC = "desc";
+    private static final String KEY_ORDER = "order";
+    private static final String KEY_FROM = "from";
+    private static final String KEY_TO = "to";
 
     @Part
     private static Elastic elastic;
@@ -67,7 +93,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private JSONObject aggregations;
 
-    private List<JSONObject> postFilters;
+    private BoolQueryBuilder postFilters;
 
     private String collapseBy;
     private List<JSONObject> collapseByInnerHits;
@@ -80,6 +106,51 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private boolean unrouted;
 
     private JSONObject response;
+
+    /**
+     * Used to describe inner hits which are determine for field collapsing.
+     * <p>
+     * Note that there is no <tt>build()</tt> method, as the constructor already applies the object to the query.
+     */
+    public class InnerHitsBuilder {
+        private JSONObject json;
+        private List<JSONObject> sorts;
+
+        protected InnerHitsBuilder(String name, int size) {
+            this.json = new JSONObject().fluentPut(KEY_NAME, name).fluentPut(KEY_SIZE, size);
+            autoinit(collapseByInnerHits).add(json);
+        }
+
+        /**
+         * Adds a sort criteria for the given field, sorting ascending
+         *
+         * @param field the field to sort by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByAsc(String field) {
+            if (this.sorts == null) {
+                this.sorts = new ArrayList<>();
+                this.json.put(KEY_SORT, sorts);
+            }
+            this.sorts.add(new JSONObject().fluentPut(field, KEY_ASC));
+            return this;
+        }
+
+        /**
+         * Adds a sort criteria for the given field, sorting descending
+         *
+         * @param field the field to sort by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByDesc(String field) {
+            if (this.sorts == null) {
+                this.sorts = new ArrayList<>();
+                this.json.put(KEY_SORT, sorts);
+            }
+            this.sorts.add(new JSONObject().fluentPut(field, KEY_DESC));
+            return this;
+        }
+    }
 
     /**
      * Creates a new query for the given type using the given client.
@@ -218,6 +289,36 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds a post filterto the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> postFilter(JSONObject filter) {
+        if (filter != null) {
+            if (postFilters == null) {
+                postFilters = new BoolQueryBuilder();
+            }
+            postFilters.filter(filter);
+        }
+        return this;
+    }
+
+    /**
+     * Adds a post filter to the query.
+     *
+     * @param filter the filter to add
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> postFilter(ElasticConstraint filter) {
+        if (filter != null) {
+            postFilter(filter.toJSON());
+        }
+
+        return this;
+    }
+
+    /**
      * Adds a sort statement to the query.
      *
      * @param sortSpec a JSON object describing a sort requirement
@@ -248,7 +349,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderAsc(Mapping field) {
-        return sort(field, new JSONObject().fluentPut("order", "asc"));
+        return sort(field, new JSONObject().fluentPut(KEY_ORDER, KEY_ASC));
     }
 
     /**
@@ -259,19 +360,40 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderDesc(Mapping field) {
-        return sort(field, new JSONObject().fluentPut("order", "desc"));
+        return sort(field, new JSONObject().fluentPut(KEY_ORDER, KEY_DESC));
     }
 
-    // TODO
+    /**
+     * Collapses by the given field.
+     *
+     * @param field the field to collapse results by.
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> collapse(Mapping field) {
         this.collapseBy = field.toString();
         return this;
     }
 
-    // TODO
+    /**
+     * Collapses by the given field.
+     *
+     * @param field the field to collapse results by.
+     * @return the query itself for fluent method calls
+     */
     public ElasticQuery<E> collapse(String field) {
         this.collapseBy = field;
         return this;
+    }
+
+    /**
+     * Adds a description to obtain a sublist of collapsed results.
+     *
+     * @param name the name of the list
+     * @param size the number of results
+     * @return the builder which can be used to control sorting
+     */
+    public InnerHitsBuilder addCollapsedInnerHits(String name, int size) {
+        return new InnerHitsBuilder(name, size);
     }
 
     /**
@@ -312,9 +434,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public ElasticQuery<E> addTermAggregation(String name, Mapping field, int size) {
         return addAggregation(name,
-                              new JSONObject().fluentPut("terms",
-                                                         new JSONObject().fluentPut("field", field.toString())
-                                                                         .fluentPut("size", size)));
+                              new JSONObject().fluentPut(KEY_TERMS,
+                                                         new JSONObject().fluentPut(KEY_FIELD, field.toString())
+                                                                         .fluentPut(KEY_SIZE, size)));
     }
 
     /**
@@ -328,21 +450,21 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public ElasticQuery<E> addDateAggregation(String name, Mapping field, List<DateRange> ranges) {
         List<JSONObject> transformedRanges = ranges.stream().map(range -> {
-            JSONObject result = new JSONObject().fluentPut("key", range.getKey());
+            JSONObject result = new JSONObject().fluentPut(KEY_KEY, range.getKey());
             if (range.getFrom() != null) {
-                result.fluentPut("from", DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getFrom()));
+                result.fluentPut(KEY_FROM, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getFrom()));
             }
             if (range.getUntil() != null) {
-                result.fluentPut("to", DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
+                result.fluentPut(KEY_TO, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
             }
             return result;
         }).collect(Collectors.toList());
 
         return addAggregation(name,
-                              new JSONObject().fluentPut("date_range",
-                                                         new JSONObject().fluentPut("field", field.toString())
-                                                                         .fluentPut("keyed", true)
-                                                                         .fluentPut("ranges", transformedRanges)));
+                              new JSONObject().fluentPut(KEY_DATE_RANGE,
+                                                         new JSONObject().fluentPut(KEY_FIELD, field.toString())
+                                                                         .fluentPut(KEY_KEYED, true)
+                                                                         .fluentPut(KEY_RANGES, transformedRanges)));
     }
 
     /**
@@ -382,15 +504,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (queryBuilder != null) {
-            payload.put("query", queryBuilder.build());
+            payload.put(KEY_QUERY, queryBuilder.build());
         }
 
         if (sorts != null && !sorts.isEmpty()) {
-            payload.put("sort", sorts);
+            payload.put(KEY_SORT, sorts);
         }
 
         if (aggregations != null) {
-            payload.put("aggs", aggregations);
+            payload.put(KEY_AGGS, aggregations);
+        }
+
+        if (postFilters != null) {
+            payload.put(KEY_POST_FILTER, postFilters.build());
+        }
+
+        if (Strings.isFilled(collapseBy)) {
+            JSONObject collapse = new JSONObject().fluentPut(KEY_FIELD, collapseBy);
+            if (collapseByInnerHits != null) {
+                collapse.put(KEY_INNER_HITS, collapseByInnerHits);
+            }
+            payload.put(KEY_COLLAPSE, collapse);
         }
 
         return payload;
@@ -405,7 +539,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject payload = new JSONObject();
 
         if (queryBuilder != null) {
-            payload.put("query", queryBuilder.build());
+            payload.put(KEY_QUERY, queryBuilder.build());
         }
 
         return payload;
@@ -427,7 +561,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         JSONObject countResponse =
                 client.count(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
-        return countResponse.getLong("count");
+        return countResponse.getLong(KEY_COUNT);
     }
 
     private void checkRouting() {
@@ -500,7 +634,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         JSONObject existsResponse =
                 client.exists(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
-        return existsResponse.getJSONObject("hits").getInteger("total") >= 1;
+        return existsResponse.getJSONObject(KEY_HITS).getInteger(KEY_TOTAL) >= 1;
     }
 
     @SuppressWarnings("unchecked")
@@ -520,7 +654,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         this.response =
                 client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
-        for (Object obj : this.response.getJSONObject("hits").getJSONArray("hits")) {
+        for (Object obj: this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
             if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
             }
@@ -538,7 +672,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
         List<Tuple<String, Integer>> result = new ArrayList<>();
 
-        JSONObject responseAggregations = response.getJSONObject("aggregations");
+        JSONObject responseAggregations = response.getJSONObject(KEY_AGGREGATIONS);
         if (responseAggregations == null) {
             return result;
         }
@@ -548,15 +682,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return result;
         }
 
-        Object buckets = aggregation.get("buckets");
+        Object buckets = aggregation.get(KEY_BUCKETS);
         if (buckets instanceof JSONArray) {
-            for (Object bucket : (JSONArray) buckets) {
-                result.add(Tuple.create(((JSONObject) bucket).getString("key"),
-                                        ((JSONObject) bucket).getInteger("doc_count")));
+            for (Object bucket: (JSONArray) buckets) {
+                result.add(Tuple.create(((JSONObject) bucket).getString(KEY_KEY),
+                                        ((JSONObject) bucket).getInteger(KEY_DOC_COUNT)));
             }
         } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
-                result.add(Tuple.create(entry.getKey(), ((JSONObject) entry.getValue()).getInteger("doc_count")));
+            for (Map.Entry<String, Object> entry: ((JSONObject) buckets).entrySet()) {
+                result.add(Tuple.create(entry.getKey(), ((JSONObject) entry.getValue()).getInteger(KEY_DOC_COUNT)));
             }
         }
 
@@ -617,7 +751,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                     return effectiveLimit.shouldContinue();
                 }, scrollResponse);
             } finally {
-                client.closeScroll(scrollResponse.getString(RESPONSE_SCROLL_ID));
+                client.closeScroll(scrollResponse.getString(KEY_SCROLL_ID));
             }
         } catch (Exception t) {
             throw Exceptions.handle(Elastic.LOG, t);
@@ -637,19 +771,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject scrollResponse = firstResponse;
         while (true) {
             // we keep ob executing queries until es returns an empty list of results...
-            JSONArray hits = scrollResponse.getJSONObject("hits").getJSONArray("hits");
+            JSONArray hits = scrollResponse.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
             if (hits.isEmpty()) {
                 return scrollResponse;
             }
 
-            for (Object obj : hits) {
+            for (Object obj: hits) {
                 if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                     return scrollResponse;
                 }
             }
 
             lastScroll = performScrollMonitoring(lastScroll);
-            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.getString(RESPONSE_SCROLL_ID));
+            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.getString(KEY_SCROLL_ID));
         }
     }
 
