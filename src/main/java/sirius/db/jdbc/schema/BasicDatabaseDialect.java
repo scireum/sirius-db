@@ -35,6 +35,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
 
     protected static final String KEY_TARGET = "target";
     protected static final String KEY_CURRENT = "current";
+    protected static final int DEFAULT_MAX_CONSTRAINT_NAME_LENGTH = 1024;
 
     @Override
     public int getJDBCType(Class<?> clazz) {
@@ -418,6 +419,6 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
      * @return the maximum allowed length of a constraint
      */
     protected int getConstraintCharacterLimit() {
-        return 1024;
+        return DEFAULT_MAX_CONSTRAINT_NAME_LENGTH;
     }
 }
