@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringLocalDateTimeMap} field within a {@link Mixable}.
@@ -47,8 +48,8 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return ElasticEntity.class.isAssignableFrom(descriptor.getType())
-                   && StringLocalDateTimeMap.class.equals(field.getType());
+            return ElasticEntity.class.isAssignableFrom(descriptor.getType()) && StringLocalDateTimeMap.class.equals(
+                    field.getType());
         }
 
         @Override
@@ -72,15 +73,25 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformFromDatasource(Value object) {
         Map<Object, Object> result = new HashMap<>();
-
-        if (object instanceof Collection) {
-            ((Collection<Map<?, ?>>) object).forEach(entry -> result.put(entry.get(ESStringMapProperty.KEY),
-                                                                         entry.get(ESStringMapProperty.VALUE)));
+        Object value = object.get();
+        if (value instanceof Collection) {
+            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(ESStringMapProperty.KEY),
+                                                                        entry.get(ESStringMapProperty.VALUE)));
         }
 
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected Object transformToDatasource(Object object) {
+        return ((Map<?, ?>) object).entrySet()
+                                   .stream()
+                                   .map(e -> new JSONObject().fluentPut(ESStringMapProperty.KEY, e.getKey())
+                                                             .fluentPut(ESStringMapProperty.VALUE, e.getValue()))
+                                   .collect(Collectors.toList());
     }
 
     @SuppressWarnings("unchecked")
