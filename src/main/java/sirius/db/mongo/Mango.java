@@ -50,7 +50,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     private KeyGenerator keyGen;
 
     @Override
-    protected void createEnity(MongoEntity entity, EntityDescriptor ed) throws Exception {
+    protected void createEntity(MongoEntity entity, EntityDescriptor ed) throws Exception {
         Inserter insert = mongo.insert();
         String generateId = keyGen.generateId();
         insert.set(MongoEntity.ID, generateId);

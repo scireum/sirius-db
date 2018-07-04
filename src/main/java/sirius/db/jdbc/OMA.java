@@ -100,7 +100,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     @Override
-    protected void createEnity(SQLEntity entity, EntityDescriptor ed) throws Exception {
+    protected void createEntity(SQLEntity entity, EntityDescriptor ed) throws Exception {
         Context insertData = Context.create();
         for (Property p : ed.getProperties()) {
             if (!SQLEntity.ID.getName().equals(p.getName())) {
