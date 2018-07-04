@@ -106,7 +106,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             ed.beforeSave(entity);
 
             if (entity.isNew()) {
-                createEnity(entity, ed);
+                createEntity(entity, ed);
             } else {
                 updateEntity(entity, force, ed);
             }
@@ -132,7 +132,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @param ed     the descriptor of the entity
      * @throws Exception in case of an database error
      */
-    protected abstract void createEnity(B entity, EntityDescriptor ed) throws Exception;
+    protected abstract void createEntity(B entity, EntityDescriptor ed) throws Exception;
 
     /**
      * Updates an existing entity in the underlying database.

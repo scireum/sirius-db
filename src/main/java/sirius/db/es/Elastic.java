@@ -186,7 +186,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    protected void createEnity(ElasticEntity entity, EntityDescriptor ed) throws Exception {
+    protected void createEntity(ElasticEntity entity, EntityDescriptor ed) throws Exception {
         JSONObject data = new JSONObject();
         toJSON(ed, entity, data);
 
