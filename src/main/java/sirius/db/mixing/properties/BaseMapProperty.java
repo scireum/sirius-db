@@ -25,6 +25,16 @@ import java.util.Map;
  */
 public abstract class BaseMapProperty extends Property {
 
+    /**
+     * Contains the name of the field used to store the map key
+     */
+    public static final String KEY = "key";
+
+    /**
+     * Contains the name of the field used to store the map value
+     */
+    public static final String VALUE = "value";
+
     protected BaseMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
