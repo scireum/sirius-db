@@ -251,7 +251,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             reader.consume();
             return new FieldValue(result.toString(), true);
         } else {
-            return new FieldValue(readToken(), false);
+            return new FieldValue(readToken().getValue(), false);
         }
     }
 
