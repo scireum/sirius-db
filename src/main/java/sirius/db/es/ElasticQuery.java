@@ -16,6 +16,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
@@ -654,11 +655,34 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         this.response =
                 client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
-        for (Object obj: this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
+        for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
             if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
             }
         }
+    }
+
+    /**
+     * Executes a request which just contains aggregations and will not fetch any search items in the request body.
+     * <p>
+     * The computed aggregations can be read via {@link #getAggregationBuckets(String)}.
+     */
+    public void computeAggregations() {
+        if (limit != 0) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage(
+                                    "When using 'computeAggregations' no search items are fetched, but the limit parameter was set != 0.")
+                            .handle();
+        }
+
+        List<String> indices = determineIndices();
+        if (indices.isEmpty()) {
+            return;
+        }
+
+        this.response =
+                client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
     }
 
     /**
@@ -684,12 +708,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         Object buckets = aggregation.get(KEY_BUCKETS);
         if (buckets instanceof JSONArray) {
-            for (Object bucket: (JSONArray) buckets) {
+            for (Object bucket : (JSONArray) buckets) {
                 result.add(Tuple.create(((JSONObject) bucket).getString(KEY_KEY),
                                         ((JSONObject) bucket).getInteger(KEY_DOC_COUNT)));
             }
         } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry: ((JSONObject) buckets).entrySet()) {
+            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
                 result.add(Tuple.create(entry.getKey(), ((JSONObject) entry.getValue()).getInteger(KEY_DOC_COUNT)));
             }
         }
@@ -776,7 +800,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return scrollResponse;
             }
 
-            for (Object obj: hits) {
+            for (Object obj : hits) {
                 if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                     return scrollResponse;
                 }

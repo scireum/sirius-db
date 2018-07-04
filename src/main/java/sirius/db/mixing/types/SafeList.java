@@ -10,6 +10,7 @@ package sirius.db.mixing.types;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -104,6 +105,17 @@ public abstract class SafeList<T> implements Iterable<T> {
      */
     public SafeList<T> add(T item) {
         modify().add(item);
+        return this;
+    }
+
+    /**
+     * Adds all items to the list.
+     *
+     * @param items the items to add
+     * @return the list itself for fluent method calls
+     */
+    public SafeList<T> addAll(Collection<T> items) {
+        modify().addAll(items);
         return this;
     }
 
