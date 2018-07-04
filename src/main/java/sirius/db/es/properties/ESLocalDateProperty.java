@@ -70,9 +70,9 @@ public class ESLocalDateProperty extends Property implements ESPropertyInfo {
         }
 
         if (valueAsString.contains("+")) {
-            return LocalDate.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString));
+            return LocalDate.from(DateTimeFormatter.ISO_OFFSET_DATE.parse(valueAsString));
         } else {
-            return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString));
+            return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(valueAsString));
         }
     }
 
@@ -82,7 +82,7 @@ public class ESLocalDateProperty extends Property implements ESPropertyInfo {
             return null;
         }
 
-        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format((LocalDate) object);
+        return DateTimeFormatter.ISO_LOCAL_DATE.format((LocalDate) object);
     }
 
     @Override
