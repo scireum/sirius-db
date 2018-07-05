@@ -15,6 +15,8 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -114,6 +116,16 @@ public abstract class BaseEntity<I> extends Mixable {
     public abstract <E extends BaseEntity<?>, C extends Constraint, Q extends Query<Q, E, C>> BaseMapper<E, C, Q> getMapper();
 
     /**
+     * Determines if the given value in the given field is unique within the given side constraints.
+     *
+     * @param field  the field to check
+     * @param value  the value to be unique
+     * @param within the side constraints within the value must be unique
+     * @return <tt>true</tt> if the given field is unique, <tt>false</tt> otherwise
+     */
+    protected abstract boolean isUnique(Mapping field, Object value, Mapping... within);
+
+    /**
      * Ensures that the given value in the given field is unique within the given side constraints.
      *
      * @param field  the field to check
@@ -121,7 +133,15 @@ public abstract class BaseEntity<I> extends Mixable {
      * @param within the side constraints within the value must be unique
      * @throws sirius.kernel.health.HandledException if the value isn't unique
      */
-    protected abstract void assertUnique(Mapping field, Object value, Mapping... within);
+    protected void assertUnique(Mapping field, Object value, Mapping... within) {
+        if (!isUnique(field, value, within)) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("Property.fieldNotUnique")
+                            .set("field", getDescriptor().getProperty(field).getLabel())
+                            .set("value", NLS.toUserString(value))
+                            .handle();
+        }
+    }
 
     /**
      * Returns a string representation of the entity ID.
