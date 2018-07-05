@@ -16,8 +16,6 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.health.Exceptions;
-import sirius.kernel.nls.NLS;
 
 /**
  * Represents the base class for all entities which are managed via {@link Mango} and stored in MongoDB.
@@ -41,7 +39,7 @@ public abstract class MongoEntity extends BaseEntity<String> {
     protected static Mango mango;
 
     @Override
-    protected void assertUnique(Mapping field, Object value, Mapping... within) {
+    protected boolean isUnique(Mapping field, Object value, Mapping... within) {
         Finder finder = mongo.find();
         if (!isNew()) {
             finder.where(QueryBuilder.FILTERS.ne(MongoEntity.ID, getId()));
@@ -49,13 +47,7 @@ public abstract class MongoEntity extends BaseEntity<String> {
         for (Mapping withinField : within) {
             finder.where(withinField, getDescriptor().getProperty(withinField).getValue(this));
         }
-        if (finder.countIn(getDescriptor().getRelationName()) > 0) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getLabel())
-                            .set("value", NLS.toUserString(value))
-                            .handle();
-        }
+        return finder.countIn(getDescriptor().getRelationName()) == 0;
     }
 
     @SuppressWarnings("unchecked")

@@ -15,8 +15,6 @@ import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.health.Exceptions;
-import sirius.kernel.nls.NLS;
 
 import java.util.Objects;
 
@@ -115,7 +113,7 @@ public abstract class SQLEntity extends BaseEntity<Long> {
     }
 
     @Override
-    protected void assertUnique(Mapping field, Object value, Mapping... within) {
+    protected boolean isUnique(Mapping field, Object value, Mapping... within) {
         SmartQuery<? extends SQLEntity> qry = oma.select(getClass()).eq(field, value);
         for (Mapping withinField : within) {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
@@ -123,13 +121,7 @@ public abstract class SQLEntity extends BaseEntity<Long> {
         if (!isNew()) {
             qry.ne(ID, getId());
         }
-        if (qry.exists()) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getLabel())
-                            .set("value", NLS.toUserString(value))
-                            .handle();
-        }
+        return !qry.exists();
     }
 
     /**

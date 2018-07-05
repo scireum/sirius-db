@@ -15,8 +15,6 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.health.Exceptions;
-import sirius.kernel.nls.NLS;
 
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
@@ -36,7 +34,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     private String id;
 
     @Override
-    protected void assertUnique(Mapping field, Object value, Mapping... within) {
+    protected boolean isUnique(Mapping field, Object value, Mapping... within) {
         ElasticQuery<? extends ElasticEntity> qry = elastic.select(getClass()).eq(field, value);
         for (Mapping withinField : within) {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
@@ -44,13 +42,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         if (!isNew()) {
             qry.ne(ID, getId());
         }
-        if (qry.exists()) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getLabel())
-                            .set("value", NLS.toUserString(value))
-                            .handle();
-        }
+        return !qry.exists();
     }
 
     @SuppressWarnings("unchecked")
