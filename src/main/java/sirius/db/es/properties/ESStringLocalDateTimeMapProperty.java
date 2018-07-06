@@ -10,6 +10,7 @@ package sirius.db.es.properties;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
@@ -22,12 +23,15 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mixing.types.StringLocalDateTimeMap;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,14 +78,27 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
     @SuppressWarnings("unchecked")
     @Override
     protected Object transformFromDatasource(Value object) {
-        Map<Object, Object> result = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         Object value = object.get();
         if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(ESStringMapProperty.KEY),
-                                                                        entry.get(ESStringMapProperty.VALUE)));
+            ((Collection<Map<String, Object>>) value).forEach(entry -> result.put((String) entry.get(ESStringMapProperty.KEY),
+                                                                                  readDate((String) entry.get(
+                                                                                          ESStringMapProperty.VALUE))));
         }
 
         return result;
+    }
+
+    private LocalDateTime readDate(String date) {
+        if (Strings.isEmpty(date)) {
+            return null;
+        }
+
+        if (date.contains("+")) {
+            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(date));
+        } else {
+            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(date));
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -90,7 +107,8 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
                                    .map(e -> new JSONObject().fluentPut(ESStringMapProperty.KEY, e.getKey())
-                                                             .fluentPut(ESStringMapProperty.VALUE, e.getValue()))
+                                                             .fluentPut(ESStringMapProperty.VALUE,
+                                                                        Elastic.FILTERS.transform(e.getValue())))
                                    .collect(Collectors.toList());
     }
 
