@@ -13,4 +13,5 @@ pipeline:
     volumes:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
-    branches: [ master, feature/* ]  
+    when:
+      branch: [ master, feature/* ]  
