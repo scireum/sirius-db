@@ -1,0 +1,16 @@
+pipeline:
+  test:
+    image: maven
+    commands:
+      - mvn clean test
+    volumes:
+      - /root/.m2:/root/.m2
+      - /root/.gnupg:/root/.gnupg
+  deploy:
+    image: maven
+    commands:
+      - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar -Dsonar.projectKey=sirius-db -U
+    volumes:
+      - /root/.m2:/root/.m2
+      - /root/.gnupg:/root/.gnupg
+    branches: [ master, feature/* ]  
