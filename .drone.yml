@@ -7,6 +7,8 @@ pipeline:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_HOST=192.168.192.178
   deploy:
     image: scireum/sirius-build
     commands:
