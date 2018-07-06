@@ -219,13 +219,16 @@ public class Redis implements Startable, Stoppable {
         return setupConnection();
     }
 
-    private Jedis setupConnection() {
+    private synchronized Jedis setupConnection() {
         if (sentinelPool == null && !sentinels.isEmpty()) {
             JedisPoolConfig poolConfig = new JedisPoolConfig();
             poolConfig.setMaxTotal(maxActive);
             poolConfig.setMaxIdle(maxIdle);
 
             sentinelPool = new JedisSentinelPool(masterName, new HashSet<>(sentinels), poolConfig);
+            return sentinelPool.getResource();
+        }
+        if (sentinelPool != null) {
             return sentinelPool.getResource();
         }
 
