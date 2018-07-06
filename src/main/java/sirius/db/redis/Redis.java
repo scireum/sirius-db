@@ -228,6 +228,9 @@ public class Redis implements Startable, Stoppable {
             sentinelPool = new JedisSentinelPool(masterName, new HashSet<>(sentinels), poolConfig);
             return sentinelPool.getResource();
         }
+        if (sentinelPool != null) {
+            return sentinelPool.getResource();
+        }
 
         if (jedis == null) {
             if (Strings.isEmpty(host)) {
