@@ -2,7 +2,7 @@ pipeline:
   test:
     image: scireum/sirius-build
     commands:
-      - mvn -DDOCKER_HOST=tcp://192.168.192.178:2376 clean test
+      - mvn clean test
     volumes:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
