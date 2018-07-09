@@ -91,6 +91,42 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "COUNT").count() == 100
     }
 
+    def "delete works"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("DELETE")
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        then:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").count() == 100
+        when:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").delete()
+        and:
+        Wait.seconds(2)
+        then:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").count() == 0
+    }
+
+     def "truncate works"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("TRUNCATE")
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        then:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "TRUNCATE").count() == 100
+        when:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "TRUNCATE").truncate()
+        and:
+        Wait.seconds(2)
+        then:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "TRUNCATE").count() == 0
+    }
+
     def "exists works"() {
         when:
         for (int i = 0; i < 10; i++) {
