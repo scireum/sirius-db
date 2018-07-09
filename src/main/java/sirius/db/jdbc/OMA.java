@@ -104,7 +104,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         Context insertData = Context.create();
         for (Property p : ed.getProperties()) {
             if (!SQLEntity.ID.getName().equals(p.getName())) {
-                insertData.set(p.getPropertyName(), p.getValueForDatasource(entity));
+                insertData.set(p.getPropertyName(), p.getValueForDatasource(OMA.class, entity));
             }
         }
 
@@ -174,7 +174,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
 
                 sql.append(p.getPropertyName());
                 sql.append(" = ? ");
-                data.add(p.getValueForDatasource(entity));
+                data.add(p.getValueForDatasource(OMA.class, entity));
             }
         }
 
@@ -318,7 +318,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
                 }
 
                 Set<String> columns = dbs.readColumns(rs);
-                E entity = (E) ed.make(null, key -> {
+                E entity = (E) ed.make(OMA.class, null, key -> {
                     String effeciveKey = key.toUpperCase();
                     if (!columns.contains(effeciveKey)) {
                         return null;

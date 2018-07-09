@@ -18,6 +18,7 @@ import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
@@ -70,7 +71,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
         if (length > 0 && !lob && object != null && ((String) object).length() > length) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
@@ -85,7 +86,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected void setValueFromDatasource(Object entity, Value data) {
+    protected void setValueFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object entity, Value data) {
         Object effectiveValue = data.get();
         if (effectiveValue instanceof Clob) {
             try {

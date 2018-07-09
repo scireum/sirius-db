@@ -9,8 +9,8 @@
 package sirius.db.jdbc;
 
 import sirius.db.mixing.BaseMapper;
-import sirius.db.mixing.query.BaseQuery;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.query.BaseQuery;
 import sirius.kernel.health.Exceptions;
 
 import java.sql.SQLException;
@@ -55,7 +55,7 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     @SuppressWarnings("unchecked")
     protected Boolean invokeHandlerForRow(Function<E, Boolean> handler, Row row) {
         try {
-            E entity = (E) descriptor.make(alias, key -> row.hasValue(key) ? row.getValue(key) : null);
+            E entity = (E) descriptor.make(OMA.class, alias, key -> row.hasValue(key) ? row.getValue(key) : null);
             if (descriptor.isVersioned()) {
                 entity.setVersion(row.getValue(BaseMapper.VERSION).asInt(0));
             }

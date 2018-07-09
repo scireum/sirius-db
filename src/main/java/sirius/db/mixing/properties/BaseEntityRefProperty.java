@@ -11,6 +11,7 @@ package sirius.db.mixing.properties;
 import sirius.db.jdbc.OMA;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -100,6 +101,23 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         return e.get();
     }
 
+    @Override
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        return object.get();
+    }
+
+    @Override
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+        return object;
+    }
+
+    /**
+     * Actually resolves the the type and value into an entity.
+     *
+     * @param type  the type to resolve
+     * @param value the id to resolve
+     * @return the referenced entity wrapped as optional or an empty optional if no entity was found
+     */
     protected abstract Optional<E> find(Class<E> type, Value value);
 
     @SuppressWarnings("unchecked")

@@ -60,7 +60,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
         for (Property p : ed.getProperties()) {
             if (!MongoEntity.ID.getName().equals(p.getName())) {
-                insert.set(p.getPropertyName(), p.getValueForDatasource(entity));
+                insert.set(p.getPropertyName(), p.getValueForDatasource(Mango.class, entity));
             }
         }
 
@@ -81,7 +81,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
                 }
 
-                updater.set(p.getPropertyName(), p.getValueForDatasource(entity));
+                updater.set(p.getPropertyName(), p.getValueForDatasource(Mango.class, entity));
                 changed = true;
             }
         }
@@ -160,7 +160,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     @SuppressWarnings("unchecked")
     public static <E extends MongoEntity> E make(EntityDescriptor ed, Doc doc) {
         try {
-            E result = (E) ed.make(null, doc::get);
+            E result = (E) ed.make(Mango.class, null, doc::get);
             if (ed.isVersioned()) {
                 result.setVersion(doc.get(VERSION).asInt(0));
             }

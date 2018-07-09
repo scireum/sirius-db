@@ -13,14 +13,15 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.jdbc.schema.SQLPropertyInfo;
-import sirius.db.jdbc.schema.Table;
-import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -71,6 +72,16 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
             return null;
         }
         return Value.of(defaultValue).getInteger();
+    }
+
+    @Override
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        return object.get();
+    }
+
+    @Override
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+        return object;
     }
 
     @Override

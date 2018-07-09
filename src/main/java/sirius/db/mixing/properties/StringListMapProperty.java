@@ -6,17 +6,15 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo.properties;
+package sirius.db.mixing.properties;
 
 import org.bson.Document;
+import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.properties.BaseMapProperty;
-import sirius.db.mixing.types.StringList;
 import sirius.db.mixing.types.StringListMap;
 import sirius.db.mongo.MongoEntity;
 import sirius.kernel.di.std.Register;
@@ -28,9 +26,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringList} field within a {@link Mixable}.
+ * Represents an {@link StringListMap} field within an {@link ElasticEntity} or {@link MongoEntity}.
  */
-public class MongoStringListMapProperty extends BaseMapProperty {
+public class StringListMapProperty extends StringMapProperty {
 
     /**
      * Factory for generating properties based on their field type
@@ -40,8 +38,7 @@ public class MongoStringListMapProperty extends BaseMapProperty {
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return MongoEntity.class.isAssignableFrom(descriptor.getType())
-                   && StringListMap.class.equals(field.getType());
+            return StringListMap.class.equals(field.getType());
         }
 
         @Override
@@ -55,17 +52,17 @@ public class MongoStringListMapProperty extends BaseMapProperty {
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new MongoStringListMapProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new StringListMapProperty(descriptor, accessPath, field));
         }
     }
 
-    MongoStringListMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    StringListMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToMongo(Object object) {
         if (object instanceof Document) {
             return object;
         }

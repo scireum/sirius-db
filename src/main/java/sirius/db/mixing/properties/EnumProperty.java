@@ -14,6 +14,7 @@ import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
@@ -84,7 +85,7 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
 
     @SuppressWarnings({"unchecked", "raw", "rawtypes"})
     @Override
-    protected Object transformFromDatasource(Value data) {
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
         if (data.isNull()) {
             return null;
         }
@@ -98,7 +99,7 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
     }
 
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
         if (object == null) {
             return null;
         }

@@ -9,6 +9,7 @@
 package sirius.db.es.properties
 
 import sirius.db.es.Elastic
+import sirius.db.mixing.properties.StringMapProperty
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
@@ -25,6 +26,8 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         def now = LocalDateTime.now()
         test.getMap().put("a", now)
         elastic.update(test)
+        and:
+        Wait.seconds(2)
         def resolved = elastic.refreshOrFail(test)
         then:
         resolved.getMap().size() == 1
@@ -37,6 +40,7 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         and:
         elastic.update(resolved)
         and:
+        Wait.seconds(2)
         resolved = elastic.refreshOrFail(resolved)
         then:
         resolved.getMap().size() == 1
@@ -49,16 +53,16 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         def test = new ESStringLocalDateTimeMapEntity()
         test.getMap().put("a", LocalDateTime.now().plusDays(2)).put("b", LocalDateTime.now().plusDays(3))
         elastic.update(test)
-        Wait.seconds(1)
+        Wait.seconds(2)
         then:
         elastic.select(ESStringLocalDateTimeMapEntity.class).
                 where(Elastic.FILTERS.nested(ESStringLocalDateTimeMapEntity.MAP).where(Elastic.FILTERS.gt(
-                        ESStringLocalDateTimeMapEntity.MAP.nested(ESStringMapProperty.VALUE),
+                        ESStringLocalDateTimeMapEntity.MAP.nested(StringMapProperty.VALUE),
                         LocalDateTime.now().plusDays(1))).build()).count() == 1
 
         elastic.select(ESStringLocalDateTimeMapEntity.class).
                 where(Elastic.FILTERS.nested(ESStringLocalDateTimeMapEntity.MAP).where(Elastic.FILTERS.gt(
-                        ESStringLocalDateTimeMapEntity.MAP.nested(ESStringMapProperty.VALUE),
+                        ESStringLocalDateTimeMapEntity.MAP.nested(StringMapProperty.VALUE),
                         LocalDateTime.now().plusDays(2))).build()).count() == 1
 
         elastic.select(ESStringLocalDateTimeMapEntity.class).
@@ -66,10 +70,10 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
                               where(Elastic.FILTERS.and(
                                       Elastic.FILTERS.eq(
                                               ESStringLocalDateTimeMapEntity.MAP.nested(
-                                                      ESStringMapProperty.KEY), "a"),
+                                                      StringMapProperty.KEY), "a"),
                                       Elastic.FILTERS.gt(
                                               ESStringLocalDateTimeMapEntity.MAP.nested(
-                                                      ESStringMapProperty.VALUE),
+                                                      StringMapProperty.VALUE),
                                               LocalDateTime.now().plusDays(2)))).build()).count() == 0
 
         elastic.select(ESStringLocalDateTimeMapEntity.class).
@@ -77,15 +81,15 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
                               where(Elastic.FILTERS.and(
                                       Elastic.FILTERS.eq(
                                               ESStringLocalDateTimeMapEntity.MAP.nested(
-                                                      ESStringMapProperty.KEY), "b"),
+                                                      StringMapProperty.KEY), "b"),
                                       Elastic.FILTERS.gt(
                                               ESStringLocalDateTimeMapEntity.MAP.nested(
-                                                      ESStringMapProperty.VALUE),
+                                                      StringMapProperty.VALUE),
                                               LocalDateTime.now().plusDays(2)))).build()).count() == 1
 
         elastic.select(ESStringLocalDateTimeMapEntity.class).
                 where(Elastic.FILTERS.nested(ESStringLocalDateTimeMapEntity.MAP).where(Elastic.FILTERS.gt(
-                        ESStringLocalDateTimeMapEntity.MAP.nested(ESStringMapProperty.VALUE),
+                        ESStringLocalDateTimeMapEntity.MAP.nested(StringMapProperty.VALUE),
                         LocalDateTime.now().plusDays(3))).build()).count() == 0
     }
 }

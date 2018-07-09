@@ -61,7 +61,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : getProperties()) {
-                stmt.setObject(i++, property.getValueForDatasource(example));
+                stmt.setObject(i++, property.getValueForDatasource(OMA.class, example));
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -94,7 +94,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     private SQLEntity make(ResultSet rs) throws Exception {
         Set<String> columns = dbs.readColumns(rs);
-        SQLEntity result = (SQLEntity) descriptor.make(null, key -> {
+        SQLEntity result = (SQLEntity) descriptor.make(OMA.class, null, key -> {
             String effeciveKey = key.toUpperCase();
             if (!columns.contains(effeciveKey)) {
                 return null;

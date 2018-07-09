@@ -6,10 +6,13 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo.properties;
+package sirius.db.mixing.properties;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.Elastic;
+import sirius.db.es.ElasticEntity;
+import sirius.db.es.types.ElasticRef;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
@@ -22,10 +25,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.properties.BaseEntityRefProperty;
-import sirius.db.mongo.MongoEntity;
-import sirius.db.mongo.Mango;
-import sirius.db.mongo.types.MongoRef;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -37,13 +36,13 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Represents a reference to another {@link MongoEntity} field within a {@link Mixable}.
+ * Represents a reference to another {@link ElasticEntity} field within a {@link Mixable}.
  */
-public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity, MongoRef<MongoEntity>>
+public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEntity, ElasticRef<ElasticEntity>>
         implements SQLPropertyInfo, ESPropertyInfo {
 
     @Part
-    private static Mango mango;
+    private static Elastic elastic;
 
     /**
      * Factory for generating properties based on their field type
@@ -53,7 +52,7 @@ public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity,
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return MongoRef.class.equals(field.getType());
+            return ElasticRef.class.equals(field.getType());
         }
 
         @Override
@@ -67,12 +66,12 @@ public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity,
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new MongoRefProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new ElasticRefProperty(descriptor, accessPath, field));
         }
     }
 
     @SuppressWarnings("unchecked")
-    protected MongoRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    protected ElasticRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
@@ -93,7 +92,7 @@ public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity,
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Optional<MongoEntity> find(Class<MongoEntity> type, Value value) {
-        return mango.find(type, value.get());
+    protected Optional<ElasticEntity> find(Class<ElasticEntity> type, Value value) {
+        return elastic.find(type, value.get());
     }
 }
