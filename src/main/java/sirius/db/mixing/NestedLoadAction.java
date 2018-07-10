@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class NestedLoadAction implements ClassLoadAction {
 
-    private static List<Class<? extends Nested>> mappableClasses = new ArrayList<>();
+    private static List<Class<? extends Nested>> mappableClasses = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * Once a new instance is created - which only happens during framework initialization, we reset the list of known
