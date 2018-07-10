@@ -9,6 +9,7 @@
 package sirius.db.mixing.properties;
 
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
@@ -86,12 +87,12 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
     }
 
     @Override
-    protected Object transformFromDatasource(Value data) {
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
         Object object = data.get();
         if (object == null) {
             return Amount.NOTHING;

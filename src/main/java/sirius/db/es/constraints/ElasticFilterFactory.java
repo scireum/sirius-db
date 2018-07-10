@@ -11,7 +11,7 @@ package sirius.db.es.constraints;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
-import sirius.db.es.properties.ESStringMapProperty;
+import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
@@ -161,8 +161,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return the filter
      */
     public ElasticConstraint nestedMapContains(Mapping mapField, String key, String value) {
-        return nested(mapField).eq(mapField.nested(Mapping.named(ESStringMapProperty.KEY)), key)
-                               .eq(mapField.nested(Mapping.named(ESStringMapProperty.VALUE)), value)
+        return nested(mapField).eq(mapField.nested(Mapping.named(StringMapProperty.KEY)), key)
+                               .eq(mapField.nested(Mapping.named(StringMapProperty.VALUE)), value)
                                .build();
     }
 

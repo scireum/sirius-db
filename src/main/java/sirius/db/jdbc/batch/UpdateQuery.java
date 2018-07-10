@@ -96,10 +96,10 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : getPropertiesToUpdate()) {
-                stmt.setObject(i++, property.getValueForDatasource(entity));
+                stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
             }
             for (Property property : getProperties()) {
-                stmt.setObject(i++, property.getValueForDatasource(entity));
+                stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
             }
 
             if (invokeChecks) {

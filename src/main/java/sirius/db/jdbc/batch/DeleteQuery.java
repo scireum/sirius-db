@@ -53,7 +53,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : getProperties()) {
-                stmt.setObject(i++, property.getValueForDatasource(example));
+                stmt.setObject(i++, property.getValueForDatasource(OMA.class, example));
             }
 
             if (invokeChecks) {

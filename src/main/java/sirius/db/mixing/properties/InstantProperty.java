@@ -6,9 +6,8 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.jdbc.properties;
+package sirius.db.mixing.properties;
 
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -22,13 +21,17 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
+import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.function.Consumer;
 
 /**
- * Represents a {@link Boolean} field within a {@link Mixable}.
+ * Represents an {@link Instant} field within a {@link Mixable}.
  */
-public class JDBCBooleanProperty extends Property implements SQLPropertyInfo {
+public class InstantProperty extends Property implements SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -37,14 +40,8 @@ public class JDBCBooleanProperty extends Property implements SQLPropertyInfo {
     public static class Factory implements PropertyFactory {
 
         @Override
-        public int getPriority() {
-            return 99;
-        }
-
-        @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return SQLEntity.class.isAssignableFrom(descriptor.getType()) && (Boolean.class.equals(field.getType())
-                                                                              || boolean.class.equals(field.getType()));
+            return Instant.class.equals(field.getType());
         }
 
         @Override
@@ -52,56 +49,38 @@ public class JDBCBooleanProperty extends Property implements SQLPropertyInfo {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new JDBCBooleanProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new InstantProperty(descriptor, accessPath, field));
         }
     }
 
-    JDBCBooleanProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    InstantProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
     @Override
     public Object transformValue(Value value) {
-        return value.asBoolean(NLS.parseMachineString(Boolean.class, defaultValue));
+        return NLS.parseUserString(LocalDateTime.class, value.asString()).atZone(ZoneId.systemDefault()).toInstant();
     }
 
     @Override
-    protected Object transformFromDatasource(Value data) {
+    protected Object transformFromJDBC(Value data) {
         Object object = data.get();
-        if (object instanceof Boolean) {
-            return object;
-        }
-
-        if (object == null) {
-            if (field.getType().isPrimitive()) {
-                return false;
-            } else {
-                return null;
-            }
-        }
-
-        return ((Integer) object) != 0;
-    }
-
-    @Override
-    protected void determineDefaultValue() {
-        if (field.getType().isPrimitive()) {
-            this.defaultValue = "0";
-        } else {
-            super.determineDefaultValue();
-        }
-    }
-
-    @Override
-    protected Object transformToDatasource(Object object) {
         if (object == null) {
             return null;
         }
-        return ((Boolean) object) ? 1 : 0;
+        return ((Timestamp) object).toInstant();
+    }
+
+    @Override
+    protected Object transformToJDBC(Object object) {
+        if (object == null) {
+            return null;
+        }
+        return new Timestamp(((Instant) object).toEpochMilli());
     }
 
     @Override
     public void contributeToTable(Table table) {
-        table.getColumns().add(new TableColumn(this, Types.BOOLEAN));
+        table.getColumns().add(new TableColumn(this, Types.TIMESTAMP));
     }
 }

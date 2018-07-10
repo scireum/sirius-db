@@ -218,7 +218,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return null;
         }
 
-        return (String) property.getValueForDatasource(entity);
+        return (String) property.getValueForDatasource(Elastic.class, entity);
     }
 
     @Override
@@ -254,7 +254,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         boolean changed = false;
         for (Property p : ed.getProperties()) {
             if (!ElasticEntity.ID.getName().equals(p.getName())) {
-                data.put(p.getPropertyName(), p.getValueForDatasource(entity));
+                data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
                 changed |= ed.isChanged(entity, p);
             }
         }
@@ -366,7 +366,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
         try {
             JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
-            ElasticEntity result = (ElasticEntity) ed.make(null, key -> Value.of(source.get(key)));
+            ElasticEntity result = (ElasticEntity) ed.make(Elastic.class, null, key -> Value.of(source.get(key)));
             result.setId(obj.getString(ID_FIELD));
 
             if (ed.isVersioned()) {

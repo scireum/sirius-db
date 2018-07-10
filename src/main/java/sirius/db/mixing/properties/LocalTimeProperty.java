@@ -6,9 +6,8 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.jdbc.properties;
+package sirius.db.mixing.properties;
 
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -30,7 +29,7 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link LocalTime} field within a {@link Mixable}.
  */
-public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
+public class LocalTimeProperty extends Property implements SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -40,7 +39,7 @@ public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return SQLEntity.class.isAssignableFrom(descriptor.getType()) && LocalTime.class.equals(field.getType());
+            return LocalTime.class.equals(field.getType());
         }
 
         @Override
@@ -48,11 +47,11 @@ public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
                            AccessPath accessPath,
                            Field field,
                            Consumer<Property> propertyConsumer) {
-            propertyConsumer.accept(new JDBCLocalTimeProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new LocalTimeProperty(descriptor, accessPath, field));
         }
     }
 
-    JDBCLocalTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    LocalTimeProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
@@ -62,7 +61,7 @@ public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
-    protected Object transformFromDatasource(Value data) {
+    protected Object transformFromJDBC(Value data) {
         Object object = data.get();
 
         if (object == null) {
@@ -72,7 +71,7 @@ public class JDBCLocalTimeProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToJDBC(Object object) {
         return object == null ? null : Time.valueOf((LocalTime) object);
     }
 

@@ -113,6 +113,26 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         return value.get();
     }
 
+    @Override
+    protected Object transformToElastic(Object object) {
+        return object;
+    }
+
+    @Override
+    protected Object transformToMongo(Object object) {
+        return object;
+    }
+
+    @Override
+    protected Object transformFromElastic(Value object) {
+        return object.get();
+    }
+
+    @Override
+    protected Object transformFromMongo(Value object) {
+        return object.get();
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     protected void setValueToField(Object value, Object target) {

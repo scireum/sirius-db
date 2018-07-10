@@ -8,10 +8,13 @@
 
 package sirius.db.mixing;
 
+import sirius.db.es.Elastic;
+import sirius.db.jdbc.OMA;
 import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Unique;
+import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.health.Exceptions;
@@ -31,7 +34,7 @@ import java.util.Optional;
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
  */
-public abstract class Property {
+public abstract class Property extends Composite {
 
     /**
      * Contains the effective property name. If the field, for which this property was created, resides
@@ -271,11 +274,13 @@ public abstract class Property {
      * <tt>null</tt>, this will be ignored. An scenario like this might happen, if we join-fetch a value, which is not
      * present.
      *
-     * @param entity the entity to write to
-     * @param data   the database value to store
+     * @param mapperType the mapper which is currently active. This can be used to determine which kind of database is
+     *                   active and therefore which data format will be available.
+     * @param entity     the entity to write to
+     * @param data       the database value to store
      */
-    protected void setValueFromDatasource(Object entity, Value data) {
-        Object effectiveValue = transformFromDatasource(data);
+    protected void setValueFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object entity, Value data) {
+        Object effectiveValue = transformFromDatasource(mapperType, data);
         if (field.getType().isPrimitive() && effectiveValue == null) {
             return;
         }
@@ -286,11 +291,53 @@ public abstract class Property {
     /**
      * Converts the database value to the appropriate field value.
      *
+     * @param mapperType the mapper which is currently active. This can be used to determine which kind of database is
+     *                   active and therefore which data format will be available.
+     * @param object     the database value
+     * @return the value which can be stored in the associated field
+     */
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        if (mapperType == OMA.class) {
+            return transformFromJDBC(object);
+        } else if (mapperType == Elastic.class) {
+            return transformFromElastic(object);
+        } else if (mapperType == Mango.class) {
+            return transformFromMongo(object);
+        } else {
+            throw new UnsupportedOperationException(getClass().getName()
+                                                    + " does not yet support: "
+                                                    + mapperType.getName());
+        }
+    }
+
+    /**
+     * Loads a value from a JDBC datasource.
+     *
      * @param object the database value
      * @return the value which can be stored in the associated field
      */
-    protected Object transformFromDatasource(Value object) {
-        return object.get();
+    protected Object transformFromJDBC(Value object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support JDBC!");
+    }
+
+    /**
+     * Loads a value from an Elasticsearch database.
+     *
+     * @param object the database value
+     * @return the value which can be stored in the associated field
+     */
+    protected Object transformFromElastic(Value object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support Elastic!");
+    }
+
+    /**
+     * Loads a value from a MongoDB datasource.
+     *
+     * @param object the database value
+     * @return the value which can be stored in the associated field
+     */
+    protected Object transformFromMongo(Value object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
     }
 
     /**
@@ -342,22 +389,66 @@ public abstract class Property {
      * <p>
      * The internal access path will be used to find the target object which contains the field.
      *
-     * @param entity the entity to write to
+     * @param mapperType the mapper which is currently active. This can be used to determine which kind of database is
+     *                   active and therefore which data format will be required.
+     * @param entity     the entity to write to
      * @return the database value to store in the db
      */
-    public Object getValueForDatasource(Object entity) {
-        return transformToDatasource(getValue(entity));
+    public Object getValueForDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object entity) {
+        return transformToDatasource(mapperType, getValue(entity));
     }
 
     /**
      * Converts the Java object which resides in the associated field to the database value which is to be
      * written into the database.
      *
-     * @param object the current field value
+     * @param mapperType the mapper which is currently active. This can be used to determine which kind of database is
+     *                   active and therefore which data format will be required.
+     * @param object     the current field value
      * @return the value which is to be written to the database
      */
-    protected Object transformToDatasource(Object object) {
-        return object;
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+        if (mapperType == OMA.class) {
+            return transformToJDBC(object);
+        } else if (mapperType == Elastic.class) {
+            return transformToElastic(object);
+        } else if (mapperType == Mango.class) {
+            return transformToMongo(object);
+        } else {
+            throw new UnsupportedOperationException(getClass().getName()
+                                                    + " does not yet support: "
+                                                    + mapperType.getName());
+        }
+    }
+
+    /**
+     * Generates a value for a JDBC datasource.
+     *
+     * @param object the database value
+     * @return the value which can be stored in the associated field
+     */
+    protected Object transformToJDBC(Object object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support JDBC!");
+    }
+
+    /**
+     * Generates a value for an Elasticsearch database.
+     *
+     * @param object the database value
+     * @return the value which can be stored in the associated field
+     */
+    protected Object transformToElastic(Object object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support Elastic!");
+    }
+
+    /**
+     * Generates a value for a MongoDB datasource.
+     *
+     * @param object the database value
+     * @return the value which can be stored in the associated field
+     */
+    protected Object transformToMongo(Object object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
     }
 
     /**

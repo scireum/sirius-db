@@ -14,6 +14,7 @@ import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
@@ -71,6 +72,16 @@ public class LongProperty extends Property implements SQLPropertyInfo, ESPropert
             return null;
         }
         return Value.of(defaultValue).getLong();
+    }
+
+    @Override
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        return object.get();
+    }
+
+    @Override
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+        return object;
     }
 
     @Override

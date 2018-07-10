@@ -164,7 +164,7 @@ public class LowLevelClient {
      * @return the response of the call
      */
     public JSONObject deleteByQuery(List<String> indices, String type, @Nullable String routing, JSONObject query) {
-        return performGet().routing(routing)
+        return performPost().routing(routing)
                            .data(query)
                            .execute(Strings.join(indices, ",") + "/" + type + API_DELETE_BY_QUERY)
                            .response();
