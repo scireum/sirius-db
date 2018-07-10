@@ -14,6 +14,7 @@ import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.Formatter;
@@ -71,7 +72,7 @@ public class Database {
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
     private static final Pattern SANE_COLUMN_NAME = Pattern.compile("[a-zA-Z0-9_]+");
-    private static final Pattern PORT_PATTERN = Pattern.compile(":(\\d+)");
+    private static final Pattern HOST_AND_PORT_PATTERN = Pattern.compile("//([^:]+):(\\d+)");
 
     /*
      * Use the get(name) method to create a new object.
@@ -122,16 +123,26 @@ public class Database {
     }
 
     private void applyPortMapping() {
-        Matcher portMatcher = PORT_PATTERN.matcher(this.url);
-        if (portMatcher.find()) {
-            int effectivePort = PortMapper.mapPort(this.service, Integer.parseInt(portMatcher.group(1)));
-            this.url = portMatcher.replaceFirst(":" + effectivePort);
+        Matcher hostAndPortMatcher = HOST_AND_PORT_PATTERN.matcher(this.url);
+        if (hostAndPortMatcher.find()) {
+            Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(this.service,
+                                                                             hostAndPortMatcher.group(1),
+                                                                             Integer.parseInt(hostAndPortMatcher.group(2)));
+            this.url = hostAndPortMatcher.replaceFirst("//"
+                                                       + effectiveHostAndPort.getFirst()
+                                                       + ":"
+                                                       + effectiveHostAndPort.getSecond());
         }
 
-        portMatcher = PORT_PATTERN.matcher(this.hostUrl);
-        if (portMatcher.find()) {
-            int effectivePort = PortMapper.mapPort(this.service, Integer.parseInt(portMatcher.group(1)));
-            this.hostUrl = portMatcher.replaceFirst(":" + effectivePort);
+        hostAndPortMatcher = HOST_AND_PORT_PATTERN.matcher(this.hostUrl);
+        if (hostAndPortMatcher.find()) {
+            Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(this.service,
+                                                                             hostAndPortMatcher.group(1),
+                                                                             Integer.parseInt(hostAndPortMatcher.group(2)));
+            this.hostUrl = hostAndPortMatcher.replaceFirst("//"
+                                                           + effectiveHostAndPort.getFirst()
+                                                           + ":"
+                                                           + effectiveHostAndPort.getSecond());
         }
     }
 
