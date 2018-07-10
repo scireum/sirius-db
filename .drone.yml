@@ -15,4 +15,5 @@ pipeline:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
     when:
-      branch: [ master, feature/* ]  
+      branch: [ master, feature/* ]
+      event: push
