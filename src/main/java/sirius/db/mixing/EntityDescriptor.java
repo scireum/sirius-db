@@ -622,14 +622,15 @@ public class EntityDescriptor {
      * @return an entity containing the values of the given result row
      * @throws Exception in case of an error while building the entity
      */
-    public Object make(String alias, ValueSupplier<String> supplier) throws Exception {
+    public Object make(Class<? extends BaseMapper<?, ?, ?>> mapperType, String alias, ValueSupplier<String> supplier)
+            throws Exception {
         Object entity = type.newInstance();
 
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getPropertyName() : alias + "_" + p.getPropertyName();
             Value data = supplier.apply(columnName);
             if (data != null) {
-                p.setValueFromDatasource(entity, data);
+                p.setValueFromDatasource(mapperType, entity, data);
                 if (isBaseEntity(entity)) {
                     asBaseEntity(entity).persistedData.put(p, p.getValueAsCopy(entity));
                 }

@@ -15,6 +15,7 @@ import com.mongodb.client.MongoDatabase;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.PartCollection;
@@ -26,6 +27,7 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.settings.PortMapper;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,7 +50,7 @@ public class Mongo implements Startable, Stoppable {
     private volatile MongoClient mongoClient;
 
     @ConfigValue("mongo.hosts")
-    private List<String> dbHosts;
+    private String dbHosts;
 
     @ConfigValue("mongo.db")
     private String dbName;
@@ -68,7 +70,7 @@ public class Mongo implements Startable, Stoppable {
      * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
      */
     public boolean isConfigured() {
-        return !dbHosts.isEmpty();
+        return Strings.isFilled(dbHosts);
     }
 
     /**
@@ -89,12 +91,13 @@ public class Mongo implements Startable, Stoppable {
             return;
         }
 
-        List<ServerAddress> hosts = dbHosts.stream()
-                                           .map(hostname -> new ServerAddress(hostname,
-                                                                              PortMapper.mapPort(SERVICE_NAME,
-                                                                                                 MONGO_PORT)))
-                                           .filter(Objects::nonNull)
-                                           .collect(Collectors.toList());
+        List<ServerAddress> hosts = Arrays.stream(dbHosts.split(","))
+                                          .map(String::trim)
+                                          .map(hostname -> PortMapper.mapPort(SERVICE_NAME, hostname, MONGO_PORT))
+                                          .map(hostAndPort -> new ServerAddress(hostAndPort.getFirst(),
+                                                                                hostAndPort.getSecond()))
+                                          .filter(Objects::nonNull)
+                                          .collect(Collectors.toList());
         mongoClient = new MongoClient(hosts);
 
         createIndices(mongoClient.getDatabase(dbName));

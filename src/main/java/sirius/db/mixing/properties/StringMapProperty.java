@@ -6,25 +6,26 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.es.properties;
+package sirius.db.mixing.properties;
 
 import com.alibaba.fastjson.JSONObject;
+import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.properties.BaseMapProperty;
-import sirius.db.mixing.types.StringLocalDateTimeMap;
+import sirius.db.mixing.types.StringMap;
+import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -36,9 +37,24 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Represents an {@link StringLocalDateTimeMap} field within a {@link Mixable}.
+ * Represents an {@link StringMap} field within an {@link ElasticEntity} or a {@link sirius.db.mongo.MongoEntity}.
+ * <p>
+ * Note that maps are stored as a list of nested objects which contain a <tt>key</tt> and
+ * a <tt>value</tt>. This is used to prevent a mapping explosion within ES while still permitting to
+ * search and filter using nested queries. Use {@link IndexMode#indexed()} (set to FALSE) to
+ * set the type to <tt>object</tt> - which will still create key/value pairs but stored as objects.
  */
-public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements ESPropertyInfo {
+public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo {
+
+    /**
+     * Contains the name of the field used to store the map key
+     */
+    public static final String KEY = "key";
+
+    /**
+     * Contains the name of the field used to store the map value
+     */
+    public static final String VALUE = "value";
 
     /**
      * Factory for generating properties based on their field type
@@ -48,8 +64,7 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return ElasticEntity.class.isAssignableFrom(descriptor.getType()) && StringLocalDateTimeMap.class.equals(
-                    field.getType());
+            return StringMap.class.equals(field.getType());
         }
 
         @Override
@@ -63,55 +78,49 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new ESStringLocalDateTimeMapProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new StringMapProperty(descriptor, accessPath, field));
         }
     }
 
-    ESStringLocalDateTimeMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    StringMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected Object transformFromDatasource(Value object) {
+    @SuppressWarnings("unchecked")
+    protected Object transformFromElastic(Value object) {
         Map<Object, Object> result = new HashMap<>();
         Object value = object.get();
         if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(ESStringMapProperty.KEY),
-                                                                        entry.get(ESStringMapProperty.VALUE)));
+            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
         }
-
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformFromMongo(Value object) {
+        return object.get();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object transformToElastic(Object object) {
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
-                                   .map(e -> new JSONObject().fluentPut(ESStringMapProperty.KEY, e.getKey())
-                                                             .fluentPut(ESStringMapProperty.VALUE, e.getValue()))
+                                   .map(e -> new JSONObject().fluentPut(KEY, e.getKey()).fluentPut(VALUE, e.getValue()))
                                    .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected void setValueToField(Object value, Object target) {
-        try {
-            StringLocalDateTimeMap map = (StringLocalDateTimeMap) field.get(target);
-            map.clear();
-            if (value instanceof Map) {
-                ((Map<String, Object>) value).forEach((k, v) -> map.put(k, Value.of(v).asLocalDateTime(null)));
-            }
-        } catch (IllegalAccessException e) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .error(e)
-                            .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
-                                                    getName(),
-                                                    getDefinition())
-                            .handle();
+    @SuppressWarnings("unchecked")
+    protected Object transformToMongo(Object object) {
+        if (object instanceof Document) {
+            return object;
         }
+
+        Document doc = new Document();
+        doc.putAll((Map<String, String>) object);
+        return doc;
     }
 
     @Override
@@ -128,9 +137,9 @@ public class ESStringLocalDateTimeMapProperty extends BaseMapProperty implements
         transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
 
         JSONObject properties = new JSONObject();
-        properties.put(ESStringMapProperty.KEY,
+        properties.put(KEY, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
+        properties.put(VALUE,
                        new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
-        properties.put(ESStringMapProperty.VALUE, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, "date"));
         description.put("properties", properties);
         description.put("dynamic", false);
     }

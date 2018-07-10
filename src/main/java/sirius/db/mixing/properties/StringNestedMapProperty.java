@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo.properties;
+package sirius.db.mixing.properties;
 
 import org.bson.Document;
 import sirius.db.mixing.AccessPath;
@@ -15,25 +15,27 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Nested;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.properties.BaseNestedListProperty;
-import sirius.db.mixing.types.NestedList;
+import sirius.db.mixing.types.StringList;
+import sirius.db.mixing.types.StringNestedMap;
 import sirius.db.mongo.Doc;
+import sirius.db.mongo.Mango;
 import sirius.db.mongo.Mongo;
 import sirius.db.mongo.MongoEntity;
 import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link NestedList} field within a {@link MongoEntity}.
+ * Represents an {@link StringList} field within a {@link MongoEntity}.
  */
-public class MongoNestedListProperty extends BaseNestedListProperty {
+public class StringNestedMapProperty extends BaseMapProperty {
 
     /**
      * Factory for generating properties based on their field type
@@ -44,7 +46,7 @@ public class MongoNestedListProperty extends BaseNestedListProperty {
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
             return MongoEntity.class.isAssignableFrom(descriptor.getType())
-                   && NestedList.class.equals(field.getType());
+                   && StringNestedMap.class.equals(field.getType());
         }
 
         @Override
@@ -58,25 +60,38 @@ public class MongoNestedListProperty extends BaseNestedListProperty {
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new MongoNestedListProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new StringNestedMapProperty(descriptor, accessPath, field));
         }
     }
 
-    MongoNestedListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    @Part
+    private static Mixing mixing;
+    private EntityDescriptor nestedDescriptor;
+
+    StringNestedMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+    }
+
+    protected EntityDescriptor getNestedDescriptor() {
+        if (nestedDescriptor == null) {
+            nestedDescriptor =
+                    mixing.getDescriptor(((StringNestedMap<?>) getMap(descriptor.getReferenceInstance())).getNestedType());
+        }
+
+        return nestedDescriptor;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Object object) {
-        List<Document> result = new ArrayList<>();
+    protected Object transformToMongo(Object object) {
+        Document result = new Document();
 
-        for (Nested obj : (List<Nested>) object) {
+        for (Map.Entry<String, Nested> entry : ((Map<String, Nested>) object).entrySet()) {
             Document inner = new Document();
             for (Property property : getNestedDescriptor().getProperties()) {
-                inner.put(property.getPropertyName(), property.getValue(obj));
+                inner.put(property.getPropertyName(), property.getValue(entry.getValue()));
             }
-            result.add(inner);
+            result.put(entry.getKey(), inner);
         }
 
         return result;
@@ -84,14 +99,14 @@ public class MongoNestedListProperty extends BaseNestedListProperty {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformFromDatasource(Value object) {
-        List<Nested> result = new ArrayList<>();
+    protected Object transformFromMongo(Value object) {
+        Map<String, Nested> result = new LinkedHashMap<>();
         Object obj = object.get();
-        if (obj instanceof List) {
-            for (Document doc : (List<Document>) obj) {
+        if (obj instanceof Document) {
+            for (Map.Entry<String, Object> entry : ((Document) obj).entrySet()) {
                 try {
-                    Doc innerDoc = new Doc(doc);
-                    result.add((Nested) getNestedDescriptor().make(null, innerDoc::get));
+                    Doc innerDoc = new Doc((Document) entry.getValue());
+                    result.put(entry.getKey(), (Nested) getNestedDescriptor().make(Mango.class, null, innerDoc::get));
                 } catch (Exception e) {
                     throw Exceptions.handle(Mongo.LOG, e);
                 }

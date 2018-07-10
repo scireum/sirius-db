@@ -11,7 +11,7 @@ package sirius.db.jdbc;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import sirius.db.jdbc.constraints.SQLConstraint;
-import sirius.db.jdbc.properties.SQLEntityRefProperty;
+import sirius.db.mixing.properties.SQLEntityRefProperty;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -158,8 +158,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                          .to(OMA.LOG)
                          .error(e)
                          .withSystemErrorMessage("Error executing query '%s' for type '%s': %s (%s)",
-                                                compiler,
-                                                descriptor.getType().getName())
+                                                 compiler,
+                                                 descriptor.getType().getName())
                          .handle();
     }
 
@@ -280,7 +280,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private static SQLEntity makeEntity(EntityDescriptor descriptor, String alias, Set<String> columns, ResultSet rs)
             throws Exception {
-        SQLEntity result = (SQLEntity) descriptor.make(alias, key -> {
+        SQLEntity result = (SQLEntity) descriptor.make(OMA.class, alias, key -> {
             try {
                 return columns.contains(key.toUpperCase()) ? Value.of(rs.getObject(key)) : null;
             } catch (SQLException e) {

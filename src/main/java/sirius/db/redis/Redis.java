@@ -42,7 +42,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -98,7 +97,7 @@ public class Redis implements Startable, Stoppable {
     private String masterName;
 
     @ConfigValue("redis.sentinels")
-    private List<String> sentinels;
+    private String sentinels;
 
     private static final String PREFIX_LOCK = "lock_";
     private static final String SUFFIX_DATE = "_date";
@@ -205,7 +204,7 @@ public class Redis implements Startable, Stoppable {
      * @return <tt>true</tt> if at least a host is given or at least one sentinel is available, <tt>false</tt> otherwise
      */
     public boolean isConfigured() {
-        return Strings.isFilled(host) || !sentinels.isEmpty();
+        return Strings.isFilled(host) || Strings.isFilled(sentinels);
     }
 
     private Jedis getConnection() {
@@ -219,13 +218,20 @@ public class Redis implements Startable, Stoppable {
         return setupConnection();
     }
 
-    private Jedis setupConnection() {
-        if (sentinelPool == null && !sentinels.isEmpty()) {
+    private synchronized Jedis setupConnection() {
+        if (sentinelPool == null && Strings.isFilled(sentinels)) {
             JedisPoolConfig poolConfig = new JedisPoolConfig();
             poolConfig.setMaxTotal(maxActive);
             poolConfig.setMaxIdle(maxIdle);
 
-            sentinelPool = new JedisSentinelPool(masterName, new HashSet<>(sentinels), poolConfig);
+            sentinelPool = new JedisSentinelPool(masterName,
+                                                 Arrays.stream(sentinels.split(","))
+                                                       .map(String::trim)
+                                                       .collect(Collectors.toSet()),
+                                                 poolConfig);
+            return sentinelPool.getResource();
+        }
+        if (sentinelPool != null) {
             return sentinelPool.getResource();
         }
 
@@ -238,9 +244,10 @@ public class Redis implements Startable, Stoppable {
             JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
             jedisPoolConfig.setMaxTotal(maxActive);
             jedisPoolConfig.setMaxIdle(maxIdle);
+            Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(SERVICE_NAME, host, port);
             jedis = new JedisPool(jedisPoolConfig,
-                                  host,
-                                  PortMapper.mapPort(SERVICE_NAME, port),
+                                  effectiveHostAndPort.getFirst(),
+                                  effectiveHostAndPort.getSecond(),
                                   connectTimeout,
                                   Strings.isFilled(password) ? password : null,
                                   db,

@@ -36,9 +36,10 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -81,7 +82,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private IndexMappings indexMappings;
 
     @ConfigValue("elasticsearch.hosts")
-    private List<String> hosts;
+    private String hosts;
 
     private LowLevelClient client;
 
@@ -124,12 +125,13 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private synchronized void initializeClient() {
         if (client == null) {
             Elastic.LOG.INFO("Initializing Elasticsearch client against: %s", hosts);
-            client = new LowLevelClient(RestClient.builder(hosts.stream()
-                                                                .map(host -> Strings.splitAtLast(host, ":"))
-                                                                .map(this::parsePort)
-                                                                .map(this::mapPort)
-                                                                .map(this::makeHttpHost)
-                                                                .toArray(size -> new HttpHost[size])).build());
+            client = new LowLevelClient(RestClient.builder(Arrays.stream(hosts.split(","))
+                                                                 .map(String::trim)
+                                                                 .map(host -> Strings.splitAtLast(host, ":"))
+                                                                 .map(this::parsePort)
+                                                                 .map(this::mapPort)
+                                                                 .map(this::makeHttpHost)
+                                                                 .toArray(size -> new HttpHost[size])).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.
@@ -172,13 +174,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         return Tuple.create(hostnameAndPort.getFirst(), DEFAULT_HTTP_PORT);
     }
 
-    private Tuple<String, Integer> mapPort(Tuple<String, Integer> hostnameAndPort) {
-        int effectivePort = PortMapper.mapPort(SERVICE_ELASTICSEARCH, hostnameAndPort.getSecond());
-        if (effectivePort != hostnameAndPort.getSecond()) {
+    private Tuple<String, Integer> mapPort(Tuple<String, Integer> hostAndPort) {
+        Tuple<String, Integer> effectiveHostAndPort =
+                PortMapper.mapPort(SERVICE_ELASTICSEARCH, hostAndPort.getFirst(), hostAndPort.getSecond());
+        if (!Objects.equals(effectiveHostAndPort.getSecond(), hostAndPort.getSecond())) {
             dockerDetected = true;
         }
 
-        return Tuple.create(hostnameAndPort.getFirst(), effectivePort);
+        return effectiveHostAndPort;
     }
 
     private HttpHost makeHttpHost(Tuple<String, Integer> hostnameAndPort) {
@@ -218,7 +221,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return null;
         }
 
-        return (String) property.getValueForDatasource(entity);
+        return (String) property.getValueForDatasource(Elastic.class, entity);
     }
 
     @Override
@@ -254,7 +257,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         boolean changed = false;
         for (Property p : ed.getProperties()) {
             if (!ElasticEntity.ID.getName().equals(p.getName())) {
-                data.put(p.getPropertyName(), p.getValueForDatasource(entity));
+                data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
                 changed |= ed.isChanged(entity, p);
             }
         }
@@ -366,7 +369,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
         try {
             JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
-            ElasticEntity result = (ElasticEntity) ed.make(null, key -> Value.of(source.get(key)));
+            ElasticEntity result = (ElasticEntity) ed.make(Elastic.class, null, key -> Value.of(source.get(key)));
             result.setId(obj.getString(ID_FIELD));
 
             if (ed.isVersioned()) {
@@ -449,7 +452,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return <tt>true</tt> if a configuration is present, <tt>false</tt> otherwise
      */
     public boolean isConfigured() {
-        return !hosts.isEmpty();
+        return Strings.isFilled(hosts);
     }
 
     /**

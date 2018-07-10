@@ -6,17 +6,18 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo.properties;
+package sirius.db.mixing.properties;
 
 import org.bson.Document;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.types.StringMap;
-import sirius.db.mixing.properties.BaseMapProperty;
+import sirius.db.mixing.types.StringIntMap;
+import sirius.db.mongo.Mango;
 import sirius.db.mongo.MongoEntity;
 import sirius.kernel.di.std.Register;
 
@@ -26,9 +27,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringMap} field within a {@link Mixable}.
+ * Represents an {@link StringIntMap} field within a {@link Mixable}.
  */
-public class MongoStringMapProperty extends BaseMapProperty {
+public class StringIntMapProperty extends BaseMapProperty {
 
     /**
      * Factory for generating properties based on their field type
@@ -38,8 +39,7 @@ public class MongoStringMapProperty extends BaseMapProperty {
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return MongoEntity.class.isAssignableFrom(descriptor.getType())
-                   && StringMap.class.equals(field.getType());
+            return StringIntMap.class.equals(field.getType());
         }
 
         @Override
@@ -53,23 +53,26 @@ public class MongoStringMapProperty extends BaseMapProperty {
                                 field.getDeclaringClass().getName());
             }
 
-            propertyConsumer.accept(new MongoStringMapProperty(descriptor, accessPath, field));
+            propertyConsumer.accept(new StringIntMapProperty(descriptor, accessPath, field));
         }
     }
 
-    MongoStringMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    StringIntMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+        if (mapperType != Mango.class) {
+            throw new UnsupportedOperationException("StringIntMapProperty currently only supports Mango as mapper!");
+        }
         if (object instanceof Document) {
             return object;
         }
 
         Document doc = new Document();
-        doc.putAll((Map<String, String>) object);
+        doc.putAll((Map<String, Integer>) object);
         return doc;
     }
 }

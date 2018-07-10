@@ -13,7 +13,12 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
@@ -23,12 +28,13 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
+import java.sql.Types;
 import java.util.function.Consumer;
 
 /**
  * Represents a {@link Boolean} field within a {@link Mixable}.
  */
-public class BooleanProperty extends Property implements ESPropertyInfo {
+public class BooleanProperty extends Property implements ESPropertyInfo,SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -60,13 +66,56 @@ public class BooleanProperty extends Property implements ESPropertyInfo {
     }
 
     @Override
-    protected Object transformFromDatasource(Value object) {
-        if (isNullable() && !object.isFilled()) {
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
+        Object object = data.get();
+        if (object instanceof Boolean) {
+            return object;
+        }
+
+        if (object == null) {
+            if (field.getType().isPrimitive()) {
+                return false;
+            } else {
+                return null;
+            }
+        }
+
+        return ((Integer) object) != 0;
+    }
+
+    @Override
+    protected void determineDefaultValue() {
+        if (field.getType().isPrimitive()) {
+            this.defaultValue = "0";
+        } else {
+            super.determineDefaultValue();
+        }
+    }
+
+    @Override
+    protected Object transformToJDBC(Object object) {
+        if (object == null) {
             return null;
         }
 
-        return object.asBoolean();
+        return ((Boolean) object) ? 1 : 0;
     }
+
+    @Override
+    protected Object transformToElastic(Object object) {
+        return object;
+    }
+
+    @Override
+    protected Object transformToMongo(Object object) {
+        return object;
+    }
+
+    @Override
+    public void contributeToTable(Table table) {
+        table.getColumns().add(new TableColumn(this, Types.BOOLEAN));
+    }
+
 
     @Override
     public void describeProperty(JSONObject description) {

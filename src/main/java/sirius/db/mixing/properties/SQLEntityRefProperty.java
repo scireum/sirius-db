@@ -6,7 +6,7 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.jdbc.properties;
+package sirius.db.mixing.properties;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
@@ -26,7 +26,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;

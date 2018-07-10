@@ -6,14 +6,16 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo.properties;
+package sirius.db.mixing.properties;
 
 import org.bson.Document;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mongo.Mango;
 import sirius.db.mongo.MongoEntity;
 import sirius.db.mongo.types.MultiPointLocation;
 import sirius.kernel.commons.Lambdas;
@@ -44,8 +46,7 @@ public class MultiPointLocationProperty extends Property {
 
         @Override
         public boolean accepts(EntityDescriptor descriptor, Field field) {
-            return MongoEntity.class.isAssignableFrom(descriptor.getType())
-                   && MultiPointLocation.class.equals(field.getType());
+            return MultiPointLocation.class.equals(field.getType());
         }
 
         @Override
@@ -69,7 +70,11 @@ public class MultiPointLocationProperty extends Property {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Object object) {
+    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+        if (mapperType != Mango.class) {
+            throw new UnsupportedOperationException("MultiPointLocationProperty currently only supports Mango as mapper!");
+        }
+
         List<?> locationList = ((List<Tuple<Double, Double>>) object).stream().map(latLong -> {
             List<Object> coordinates = new ArrayList<>();
             coordinates.add(latLong.getFirst());
@@ -82,7 +87,11 @@ public class MultiPointLocationProperty extends Property {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformFromDatasource(Value object) {
+    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        if (mapperType != Mango.class) {
+            throw new UnsupportedOperationException("MultiPointLocationProperty currently only supports Mango as mapper!");
+        }
+
         List<Tuple<Double, Double>> locations = new ArrayList<>();
 
         Object coordiantes = ((Document) object.get()).get("coordinates");
