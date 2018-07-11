@@ -1,5 +1,5 @@
 workspace:
-  path: /drone/src/github.com/scireum/sirius-db/${DRONE_MACHINE}
+  path: src/github.com/scireum/sirius-db/${DRONE_MACHINE}/${DRONE_BUILD_NUMBER}
 clone:
   git:
     image: plugins/git
