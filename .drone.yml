@@ -7,6 +7,7 @@ pipeline:
   test:
     image: scireum/sirius-build
     commands:
+      - env
       - mvn clean test -U -Dbuild.number=${DRONE_BUILD_NUMBER} -Dbuild.vcs.number=${DRONE_COMMIT}
     volumes:
       - /root/.m2:/root/.m2
