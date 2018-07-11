@@ -7,6 +7,7 @@ pipeline:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
       - /var/run/docker.sock:/var/run/docker.sock
+      - /var/repos/scireum/sirius-db:/drone/src/github.com/scireum/sirius-db
   deploy:
     image: scireum/sirius-build
     commands:
