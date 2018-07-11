@@ -2,7 +2,7 @@ clone:
   git:
     image: plugins/git
     volumes:
-    - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
+    - /var/${DRONE_MACHINE}/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
 pipeline:
   test:
     image: scireum/sirius-build
@@ -12,7 +12,7 @@ pipeline:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
+      - /var/${DRONE_MACHINE}/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
   deploy:
     image: scireum/sirius-build
     commands:
@@ -21,7 +21,7 @@ pipeline:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
+      - /var/${DRONE_MACHINE}/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
     when:
       branch: [ master, feature/* ]
       event: push
