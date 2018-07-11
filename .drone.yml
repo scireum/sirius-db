@@ -1,3 +1,8 @@
+clone:
+  git:
+    image: plugins/git
+    volumes:
+    - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
 pipeline:
   test:
     image: scireum/sirius-build
