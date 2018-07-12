@@ -1,30 +1,28 @@
-workspace:
-  path: src/github.com/scireum/sirius-db/${DRONE_MACHINE}/${DRONE_BUILD_NUMBER}
 clone:
   git:
     image: plugins/git
     volumes:
-    - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
+    - /var/repos/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}:/drone/src/github.com/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}
 pipeline:
   test:
     image: scireum/sirius-build
     commands:
       - env
-      - mvn clean test -U -Dbuild.number=${DRONE_BUILD_NUMBER} -Dbuild.vcs.number=${DRONE_COMMIT}
+      - mvn clean test
     volumes:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
+      - /var/repos/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}:/drone/src/github.com/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}
   deploy:
     image: scireum/sirius-build
     commands:
-      - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar -Dsonar.projectKey=sirius-db -U -Dbuild.number=${DRONE_BUILD_NUMBER} -Dbuild.vcs.number=${DRONE_COMMIT}
+      - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent sonar:sonar -Dsonar.projectKey=sirius-db -Dbuild.version=${DRONE_TAG}
+      - mvn clean deploy -Dbuild.version=${DRONE_TAG}
     volumes:
       - /root/.m2:/root/.m2
       - /root/.gnupg:/root/.gnupg
       - /var/run/docker.sock:/var/run/docker.sock
-      - /var/repos/scireum/siriusdb:/drone/src/github.com/scireum/sirius-db
+      - /var/repos/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}:/drone/src/github.com/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}
     when:
-      branch: [ master, feature/* ]
-      event: push
+      event: tag
