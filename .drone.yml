@@ -7,6 +7,7 @@ pipeline:
   test:
     image: scireum/sirius-build
     commands:
+      - env
       - mvn clean test
     volumes:
       - /root/.m2:/root/.m2
