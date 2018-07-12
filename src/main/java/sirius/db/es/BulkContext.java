@@ -56,6 +56,7 @@ public class BulkContext implements Closeable {
     private JSONObject response;
     private Set<String> failedIds;
     private boolean isUpdateRequest;
+    private String failureMessage;
 
     @Part
     private static Elastic elastic;
@@ -203,6 +204,7 @@ public class BulkContext implements Closeable {
             }
 
             this.response = response;
+            boolean hasErrors = response.getBooleanValue("errors");
 
             entities.stream().filter(entity -> !getFailedIds().contains(entity.getId())).forEach(entity -> {
                 if (isUpdateRequest) {
@@ -212,7 +214,11 @@ public class BulkContext implements Closeable {
                 }
             });
 
-            return response.getBooleanValue("errors");
+            if (hasErrors) {
+                Exceptions.handle().withSystemErrorMessage(failureMessage).handle();
+            }
+
+            return hasErrors;
         } catch (Exception e) {
             Exceptions.handle()
                       .to(Elastic.LOG)
@@ -233,10 +239,10 @@ public class BulkContext implements Closeable {
      * @return a {@link Set} of _ids for which the bulk request failed.
      */
     public Set<String> getFailedIds() {
-        if (failedIds != null) {
+        if (failedIds != null || !response.getBooleanValue("errors")) {
             return Collections.unmodifiableSet(failedIds);
         }
-
+        StringBuilder failureMessageBuilder = new StringBuilder();
         this.failedIds = new HashSet<>();
         JSONArray items = response.getJSONArray(KEY_ITEMS);
 
@@ -245,8 +251,17 @@ public class BulkContext implements Closeable {
             JSONObject error = current.getJSONObject(KEY_ERROR);
             if (error != null) {
                 failedIds.add(current.getString(KEY_ID));
+                failureMessageBuilder.append("index: ")
+                                     .append(error.getString("index"))
+                                     .append(" type: ")
+                                     .append(error.getString("type"))
+                                     .append(" reason: ")
+                                     .append(error.getString("reason"))
+                                     .append("\n");
             }
         }
+
+        failureMessage = failureMessageBuilder.toString();
 
         return Collections.unmodifiableSet(failedIds);
     }
