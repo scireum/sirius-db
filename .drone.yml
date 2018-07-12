@@ -11,6 +11,7 @@ pipeline:
     volumes:
       - /root/.m2:/root/.m2
       - /var/repos/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}:/drone/src/github.com/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}
+      - /var/run/docker.sock:/var/run/docker.sock
   sonar:
     image: scireum/sirius-build
     commands:
