@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
@@ -214,7 +215,7 @@ public class BulkContext implements Closeable {
                 }
             });
 
-            if (hasErrors) {
+            if (hasErrors && Strings.isFilled(failureMessage)) {
                 Exceptions.handle().withSystemErrorMessage(failureMessage).handle();
             }
 
