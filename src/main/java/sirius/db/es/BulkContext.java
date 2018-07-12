@@ -40,9 +40,14 @@ public class BulkContext implements Closeable {
     private static final String KEY_TYPE = "_type";
     private static final String KEY_ID = "_id";
     private static final String KEY_VERSION = "_version";
+    private static final String KEY_ROUTING = "_routing";
+    private static final String KEY_ERROR = "error";
+    private static final String KEY_ITEMS = "items";
+
     private static final String COMMAND_INDEX = "index";
     private static final String COMMAND_DELETE = "delete";
-    private static final String KEY_ROUTING = "_routing";
+    private static final String COMMAND_CREATE = "create";
+    private static final String COMMAND_UPDATE = "update";
 
     private final int maxBatchSize;
     private LowLevelClient client;
@@ -233,13 +238,13 @@ public class BulkContext implements Closeable {
         }
 
         this.failedIds = new HashSet<>();
-        JSONArray items = response.getJSONArray("items");
+        JSONArray items = response.getJSONArray(KEY_ITEMS);
 
         for (int i = 0; i < items.size(); i++) {
             JSONObject current = getObject(items.getJSONObject(i));
-            JSONObject error = current.getJSONObject("error");
+            JSONObject error = current.getJSONObject(KEY_ERROR);
             if (error != null) {
-                failedIds.add(current.getString("_id"));
+                failedIds.add(current.getString(KEY_ID));
             }
         }
 
@@ -247,22 +252,22 @@ public class BulkContext implements Closeable {
     }
 
     private JSONObject getObject(JSONObject currentObject) {
-        JSONObject object = currentObject.getJSONObject("index");
+        JSONObject object = currentObject.getJSONObject(COMMAND_INDEX);
         if (object != null) {
             return object;
         }
 
-        object = currentObject.getJSONObject("delete");
+        object = currentObject.getJSONObject(COMMAND_DELETE);
         if (object != null) {
             return object;
         }
 
-        object = currentObject.getJSONObject("create");
+        object = currentObject.getJSONObject(COMMAND_CREATE);
         if (object != null) {
             return object;
         }
 
-        object = currentObject.getJSONObject("update");
+        object = currentObject.getJSONObject(COMMAND_UPDATE);
         if (object != null) {
             return object;
         }
