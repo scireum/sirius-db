@@ -8,5 +8,3 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     hostname: percona
-    volumes:
-      - ./docker/mysql:/docker-entrypoint-initdb.d/:ro
