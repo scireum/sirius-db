@@ -8,6 +8,7 @@
 
 package sirius.db.es;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
@@ -17,7 +18,10 @@ import sirius.kernel.health.Exceptions;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Simplifies bulk inserts, updates and deletes against Elasticsearch.
@@ -43,6 +47,10 @@ public class BulkContext implements Closeable {
     private final int maxBatchSize;
     private LowLevelClient client;
     private List<JSONObject> commands;
+    private List<ElasticEntity> entities;
+    private JSONObject response;
+    private Set<String> failedIds;
+    private boolean isUpdateRequest;
 
     @Part
     private static Elastic elastic;
@@ -57,6 +65,7 @@ public class BulkContext implements Closeable {
         this.maxBatchSize = DEFAULT_BATCH_SIZE;
         this.client = client;
         this.commands = new ArrayList<>();
+        this.entities = new ArrayList<>();
     }
 
     /**
@@ -104,7 +113,12 @@ public class BulkContext implements Closeable {
     }
 
     private void update(ElasticEntity entity, boolean force) {
+        isUpdateRequest = true;
+        entities.add(entity);
         EntityDescriptor ed = entity.getDescriptor();
+
+        ed.beforeSave(entity);
+
         JSONObject meta = new JSONObject();
         meta.put(KEY_INDEX, elastic.determineIndex(ed, entity));
         meta.put(KEY_TYPE, elastic.determineTypeName(ed));
@@ -135,7 +149,13 @@ public class BulkContext implements Closeable {
             return;
         }
 
+        isUpdateRequest = false;
+
+        entities.add(entity);
         EntityDescriptor ed = entity.getDescriptor();
+
+        ed.beforeDelete(entity);
+
         JSONObject meta = new JSONObject();
         meta.put(KEY_INDEX, elastic.determineIndex(ed, entity));
         meta.put(KEY_TYPE, elastic.determineTypeName(ed));
@@ -170,10 +190,23 @@ public class BulkContext implements Closeable {
         }
 
         try {
+            failedIds = null;
+
             JSONObject response = client.bulk(commands);
             if (Elastic.LOG.isFINE()) {
                 Elastic.LOG.FINE(response);
             }
+
+            this.response = response;
+
+            entities.stream().filter(entity -> !getFailedIds().contains(entity.getId())).forEach(entity -> {
+                if (isUpdateRequest) {
+                    entity.getDescriptor().afterSave(entity);
+                } else {
+                    entity.getDescriptor().afterDelete(entity);
+                }
+            });
+
             return response.getBooleanValue("errors");
         } catch (Exception e) {
             Exceptions.handle()
@@ -185,7 +218,56 @@ public class BulkContext implements Closeable {
             return true;
         } finally {
             commands.clear();
+            entities.clear();
         }
+    }
+
+    /**
+     * Returns all _id-fields of sub-requests which failed within this bulk request.
+     *
+     * @return a {@link Set} of _ids for which the bulk request failed.
+     */
+    public Set<String> getFailedIds() {
+        if (failedIds != null) {
+            return Collections.unmodifiableSet(failedIds);
+        }
+
+        this.failedIds = new HashSet<>();
+        JSONArray items = response.getJSONArray("items");
+
+        for (int i = 0; i < items.size(); i++) {
+            JSONObject current = getObject(items.getJSONObject(i));
+            JSONObject error = current.getJSONObject("error");
+            if (error != null) {
+                failedIds.add(current.getString("_id"));
+            }
+        }
+
+        return Collections.unmodifiableSet(failedIds);
+    }
+
+    private JSONObject getObject(JSONObject currentObject) {
+        JSONObject object = currentObject.getJSONObject("index");
+        if (object != null) {
+            return object;
+        }
+
+        object = currentObject.getJSONObject("delete");
+        if (object != null) {
+            return object;
+        }
+
+        object = currentObject.getJSONObject("create");
+        if (object != null) {
+            return object;
+        }
+
+        object = currentObject.getJSONObject("update");
+        if (object != null) {
+            return object;
+        }
+
+        throw Exceptions.handle().withSystemErrorMessage("Unknown object type within bulk-response!").handle();
     }
 
     /**

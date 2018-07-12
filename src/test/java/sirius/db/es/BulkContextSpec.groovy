@@ -11,6 +11,7 @@ package sirius.db.es
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 import java.time.Duration
 
@@ -84,4 +85,28 @@ class BulkContextSpec extends BaseSpecification {
         !elastic.find(BatchTestEntity.class, test.getId()).isPresent()
     }
 
+    def "beforeSave in bulkContext works"() {
+        setup:
+        BulkContext btx = elastic.batch()
+        ElasticTestEntity test = new ElasticTestEntity()
+        test.setFirstname(null)
+        when:
+        btx.tryUpdate(test)
+        then:
+        thrown(HandledException)
+    }
+
+    def "getFailedIds() works"() {
+        setup:
+        BulkContext btx = elastic.batch()
+        BatchTestEntity test = new BatchTestEntity().withValue(1)
+        BatchTestEntity test2 = new BatchTestEntity().withValue(10)
+        when:
+        elastic.update(test)
+        def refreshed = elastic.refreshOrFail(test)
+        elastic.update(test.withValue(2))
+        def errors = btx.tryUpdate(refreshed.withValue(3)).tryUpdate(test2).commit()
+        then:
+        errors && btx.getFailedIds().size() == 1 && btx.getFailedIds().contains(refreshed.getId())
+    }
 }
