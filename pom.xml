@@ -9,7 +9,7 @@
         <version>4.0</version>
     </parent>
     <artifactId>sirius-db</artifactId>
-    <version>5.0-SNAPSHOT</version>
+    <version>DEVELOPMENT-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>SIRIUS DB</name>
@@ -19,7 +19,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>11.6</sirius.kernel>
+        <sirius.kernel>12.0-rc1</sirius.kernel>
     </properties>
 
     <dependencies>
