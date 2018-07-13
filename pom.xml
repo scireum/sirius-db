@@ -12,7 +12,7 @@
     <version>DEVELOPMENT-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>SIRIUS DB</name>
+    <name>SIRIUS db</name>
     <description>
         Provides a modern and highly flexible ORM and lightweight connectivity for JDBC, MongoDB, Redis, Elasticsearch.
     </description>
