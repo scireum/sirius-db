@@ -165,9 +165,9 @@ public class LowLevelClient {
      */
     public JSONObject deleteByQuery(List<String> indices, String type, @Nullable String routing, JSONObject query) {
         return performPost().routing(routing)
-                           .data(query)
-                           .execute(Strings.join(indices, ",") + "/" + type + API_DELETE_BY_QUERY)
-                           .response();
+                            .data(query)
+                            .execute(Strings.join(indices, ",") + "/" + type + API_DELETE_BY_QUERY)
+                            .response();
     }
 
     /**
@@ -294,7 +294,7 @@ public class LowLevelClient {
     @Explain("Due to method overloading the compiler cannot deduce which method to pick")
     public JSONObject bulk(List<JSONObject> bulkData) {
         return performPost().rawData(bulkData.stream().map(obj -> obj.toJSONString()).collect(Collectors.joining("\n"))
-                                     + "\n", "application/x-ndjson").execute("_bulk").response();
+                                     + "\n").execute("_bulk").response();
     }
 
     /**

@@ -40,7 +40,6 @@ class RequestBuilder {
     private Map<String, String> params;
     private JSONObject data;
     private String rawData;
-    private String contentType;
     private HttpEntity responseEntity;
     private JSONObject responseObject;
     private Function<ResponseException, HttpEntity> customExceptionHandler;
@@ -70,9 +69,8 @@ class RequestBuilder {
         return this;
     }
 
-    protected RequestBuilder rawData(String data, String contentType) {
+    protected RequestBuilder rawData(String data) {
         this.rawData = data;
-        this.contentType = contentType;
         return this;
     }
 
