@@ -25,6 +25,8 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,7 +142,9 @@ class RequestBuilder {
             return new NStringEntity(data.toJSONString(), ContentType.APPLICATION_JSON);
         }
         if (rawData != null) {
-            return new NStringEntity(rawData, ContentType.create(contentType));
+            return new NStringEntity(rawData,
+                                     ContentType.create(contentType)
+                                                .withCharset(Charset.forName(StandardCharsets.UTF_8.name())));
         }
 
         return null;
