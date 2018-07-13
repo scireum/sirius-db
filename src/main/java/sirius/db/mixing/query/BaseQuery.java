@@ -159,14 +159,14 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
 
         iterateAll(entity -> {
             result.add(entity);
-            failIOnOverflow(result);
+            failOnOverflow(result);
         });
 
         return result;
     }
 
-    protected void failIOnOverflow(List<E> result) {
-        if (result.size() >= MAX_LIST_SIZE) {
+    protected void failOnOverflow(List<E> result) {
+        if (result.size() > MAX_LIST_SIZE) {
             throw Exceptions.handle()
                             .to(Mongo.LOG)
                             .withSystemErrorMessage("More than %s results were loaded into a list by executing: %s",
