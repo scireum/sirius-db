@@ -127,17 +127,19 @@ public class BulkContext implements Closeable {
         ed.beforeSave(entity);
 
         JSONObject meta = new JSONObject();
+
+        if (!force && !entity.isNew() && ed.isVersioned()) {
+            meta.put(KEY_VERSION, entity.getVersion());
+        }
+
+        entity.setId(elastic.determineId(entity));
         meta.put(KEY_INDEX, elastic.determineIndex(ed, entity));
         meta.put(KEY_TYPE, elastic.determineTypeName(ed));
-        meta.put(KEY_ID, elastic.determineId(entity));
+        meta.put(KEY_ID, entity.getId());
 
         String routing = elastic.determineRouting(ed, entity);
         if (routing != null) {
             meta.put(KEY_ROUTING, routing);
-        }
-
-        if (!force && !entity.isNew() && ed.isVersioned()) {
-            meta.put(KEY_VERSION, entity.getVersion());
         }
 
         JSONObject data = new JSONObject();
@@ -164,17 +166,19 @@ public class BulkContext implements Closeable {
         ed.beforeDelete(entity);
 
         JSONObject meta = new JSONObject();
+
+        if (!force && ed.isVersioned()) {
+            meta.put(KEY_VERSION, entity.getVersion());
+        }
+
+        entity.setId(elastic.determineId(entity));
         meta.put(KEY_INDEX, elastic.determineIndex(ed, entity));
         meta.put(KEY_TYPE, elastic.determineTypeName(ed));
-        meta.put(KEY_ID, elastic.determineId(entity));
+        meta.put(KEY_ID, entity.getId());
 
         String routing = elastic.determineRouting(ed, entity);
         if (routing != null) {
             meta.put(KEY_ROUTING, routing);
-        }
-
-        if (!force && ed.isVersioned()) {
-            meta.put(KEY_VERSION, entity.getVersion());
         }
 
         commands.add(new JSONObject().fluentPut(COMMAND_DELETE, meta));
@@ -240,9 +244,14 @@ public class BulkContext implements Closeable {
      * @return a {@link Set} of _ids for which the bulk request failed.
      */
     public Set<String> getFailedIds() {
-        if (failedIds != null || !response.getBooleanValue("errors")) {
+        if (response == null || !response.getBooleanValue("errors")) {
+            return Collections.emptySet();
+        }
+
+        if (failedIds != null) {
             return Collections.unmodifiableSet(failedIds);
         }
+
         StringBuilder failureMessageBuilder = new StringBuilder();
         this.failedIds = new HashSet<>();
         JSONArray items = response.getJSONArray(KEY_ITEMS);
@@ -257,8 +266,12 @@ public class BulkContext implements Closeable {
                                      .append(" type: ")
                                      .append(error.getString("type"))
                                      .append(" reason: ")
-                                     .append(error.getString("reason"))
-                                     .append("\n");
+                                     .append(error.getString("reason"));
+                if (error.getJSONObject("caused_by") != null) {
+                    failureMessageBuilder.append(" cause: ")
+                                         .append(error.getJSONObject("caused_by").getString("reason"));
+                }
+                failureMessageBuilder.append("\n");
             }
         }
 
@@ -289,6 +302,15 @@ public class BulkContext implements Closeable {
         }
 
         throw Exceptions.handle().withSystemErrorMessage("Unknown object type within bulk-response!").handle();
+    }
+
+    /**
+     * Returns whether any executable commands are queued.
+     *
+     * @return <tt>true</tt> if executable commands are queued, <tt>false</tt> otherwise.
+     */
+    public boolean isEmpty() {
+        return commands.isEmpty();
     }
 
     /**
