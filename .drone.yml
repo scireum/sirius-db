@@ -7,7 +7,6 @@ pipeline:
   compile:
     image: scireum/sirius-build
     commands:
-      - sed -i 's/DEVELOPMENT-SNAPSHOT/${DRONE_TAG}/g' pom.xml
       - mvn clean compile
     volumes:
       - /root/.m2:/root/.m2
@@ -17,7 +16,6 @@ pipeline:
   test:
     image: scireum/sirius-build
     commands:
-      - sed -i 's/DEVELOPMENT-SNAPSHOT/${DRONE_TAG}/g' pom.xml
       - mvn clean test
     volumes:
       - /root/.m2:/root/.m2
