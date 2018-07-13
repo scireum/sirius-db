@@ -8,5 +8,3 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     hostname: mariadb
-    volumes:
-      - ./docker/mysql:/docker-entrypoint-initdb.d/:ro

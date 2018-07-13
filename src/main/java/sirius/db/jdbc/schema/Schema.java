@@ -330,10 +330,10 @@ public class Schema implements Startable, Initializable {
     /**
      * When executing several scenarios via Docker, we observed, that especially MySQL isn't entirely ready,
      * when then port 3306 is open. Therefore we try to establish a real connection (with up to 5 retries
-     * in a one second interval).
+     * in a one...five second interval).
      */
     private void waitForDatabaseToBecomeReady(String realm, String initSql) {
-        if (!Sirius.isStartedAsTest()) {
+        if (Strings.isEmpty(initSql)) {
             return;
         }
 
