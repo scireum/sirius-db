@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -403,8 +404,7 @@ public class Redis implements Startable, Stoppable {
         exec(() -> "Get List of Locks", redis -> {
             for (String key : redis.keys(PREFIX_LOCK + "*")) {
                 if (!key.endsWith(SUFFIX_DATE)) {
-                    LockInfo info = computeLockInfo(redis, key);
-                    result.add(info);
+                    computeLockInfo(redis, key).ifPresent(result::add);
                 }
             }
         });
@@ -412,20 +412,24 @@ public class Redis implements Startable, Stoppable {
         return result;
     }
 
-    protected LockInfo computeLockInfo(Jedis redis, String key) {
+    protected Optional<LockInfo> computeLockInfo(Jedis redis, String key) {
         String owner = redis.get(key);
         String since = redis.get(key + SUFFIX_DATE);
+
+        if (Strings.isEmpty(since)) {
+            return Optional.empty();
+        }
+
         Long ttl = redis.ttl(key);
 
         String name = key.substring(PREFIX_LOCK.length());
-        LocalDateTime sinceDate = null;
-        if (Strings.isFilled(since)) {
-            sinceDate = LocalDateTime.parse(since);
-        }
+        LocalDateTime sinceDate = LocalDateTime.parse(since);
+
         if (ttl != null && ttl < 0) {
             ttl = null;
         }
-        return new LockInfo(key, name, owner, sinceDate, ttl);
+
+        return Optional.of(new LockInfo(key, name, owner, sinceDate, ttl));
     }
 
     /**
