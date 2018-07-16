@@ -31,6 +31,9 @@ import java.util.Set;
  * of Elasticsearch.
  * <p>
  * Note that this instance isn't threadsafe.
+ * <p>
+ * Note that {@link sirius.db.mixing.annotations.AfterSave} and {@link sirius.db.mixing.types.BaseEntityRef.OnDelete}
+ * handlers are <tt>not</tt> executed!
  */
 @NotThreadSafe
 public class BulkContext implements Closeable {
@@ -53,10 +56,8 @@ public class BulkContext implements Closeable {
     private final int maxBatchSize;
     private LowLevelClient client;
     private List<JSONObject> commands;
-    private List<ElasticEntity> entities;
     private JSONObject response;
     private Set<String> failedIds;
-    private boolean isUpdateRequest;
     private String failureMessage;
 
     @Part
@@ -72,7 +73,6 @@ public class BulkContext implements Closeable {
         this.maxBatchSize = DEFAULT_BATCH_SIZE;
         this.client = client;
         this.commands = new ArrayList<>();
-        this.entities = new ArrayList<>();
     }
 
     /**
@@ -120,8 +120,6 @@ public class BulkContext implements Closeable {
     }
 
     private void update(ElasticEntity entity, boolean force) {
-        isUpdateRequest = true;
-        entities.add(entity);
         EntityDescriptor ed = entity.getDescriptor();
 
         ed.beforeSave(entity);
@@ -158,9 +156,6 @@ public class BulkContext implements Closeable {
             return;
         }
 
-        isUpdateRequest = false;
-
-        entities.add(entity);
         EntityDescriptor ed = entity.getDescriptor();
 
         ed.beforeDelete(entity);
@@ -211,14 +206,6 @@ public class BulkContext implements Closeable {
             this.response = response;
             boolean hasErrors = response.getBooleanValue("errors");
 
-            entities.stream().filter(entity -> !getFailedIds().contains(entity.getId())).forEach(entity -> {
-                if (isUpdateRequest) {
-                    entity.getDescriptor().afterSave(entity);
-                } else {
-                    entity.getDescriptor().afterDelete(entity);
-                }
-            });
-
             if (hasErrors && Strings.isFilled(failureMessage)) {
                 Exceptions.handle().withSystemErrorMessage(failureMessage).handle();
             }
@@ -234,7 +221,6 @@ public class BulkContext implements Closeable {
             return true;
         } finally {
             commands.clear();
-            entities.clear();
         }
     }
 
