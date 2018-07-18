@@ -617,8 +617,9 @@ public class EntityDescriptor {
     /**
      * Creates an entity from the given result row.
      *
-     * @param alias    the field alias used to generate unique column names
-     * @param supplier used to provide values for a given column name
+     * @param mapperType the mapper which is currently active
+     * @param alias      the field alias used to generate unique column names
+     * @param supplier   used to provide values for a given column name
      * @return an entity containing the values of the given result row
      * @throws Exception in case of an error while building the entity
      */

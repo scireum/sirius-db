@@ -671,8 +671,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (limit != 0) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage(
-                                    "When using 'computeAggregations' no search items are fetched, but the limit parameter was set != 0.")
+                            .withSystemErrorMessage("When using 'computeAggregations' no search items are fetched,"
+                                                    + " but the limit parameter was set != 0.")
                             .handle();
         }
 

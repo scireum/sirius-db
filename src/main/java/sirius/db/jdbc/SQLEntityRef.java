@@ -52,7 +52,7 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
     protected Long coerceToId(Object id) {
         try {
             if (id instanceof Long) {
-                return (Long)id;
+                return (Long) id;
             }
             return Long.parseLong(id.toString());
         } catch (NumberFormatException e) {
