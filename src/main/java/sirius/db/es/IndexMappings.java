@@ -157,7 +157,7 @@ public class IndexMappings implements Startable {
             }
         }
 
-        Extension realmConfig = Sirius.getSettings().getExtension("mixing.es.settings", ed.getRealm());
+        Extension realmConfig = Sirius.getSettings().getExtension("elasticsearch.settings", ed.getRealm());
         if (!elastic.getLowLevelClient().indexExists(indexName)) {
             Elastic.LOG.INFO("Creating index %s in Elasticsearch....", indexName);
             elastic.getLowLevelClient()
