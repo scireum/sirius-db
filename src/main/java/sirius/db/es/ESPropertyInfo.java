@@ -28,15 +28,13 @@ public interface ESPropertyInfo {
      * @param key          the mapping key to use
      * @param annotation   the annotation wrapped as optional
      * @param mapper       the lambda which selects the value to transfer
-     * @param defaultValue the default valze to use
      * @param mapping      the target mapping to fill
      */
     default void transferOption(String key,
                                 Optional<IndexMode> annotation,
                                 Function<IndexMode, ESOption> mapper,
-                                ESOption defaultValue,
                                 JSONObject mapping) {
-        ESOption option = annotation.map(mapper).orElse(defaultValue);
+        ESOption option = annotation.map(mapper).orElse(ESOption.ES_DEFAULT);
 
         if (option != ESOption.ES_DEFAULT) {
             mapping.put(key, option.toString());

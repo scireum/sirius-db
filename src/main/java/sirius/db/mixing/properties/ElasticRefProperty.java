@@ -13,7 +13,6 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
 import sirius.db.es.IndexMappings;
-import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.es.types.ElasticRef;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
@@ -88,17 +87,14 @@ public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEnt
         transferOption(IndexMappings.MAPPING_STORED,
                        getAnnotation(IndexMode.class),
                        IndexMode::stored,
-                       ESOption.ES_DEFAULT,
                        description);
-        transferOption(IndexMappings.MAPPING_INDEXED,
+        transferOption(IndexMappings.MAPPING_INDEX,
                        getAnnotation(IndexMode.class),
                        IndexMode::indexed,
-                       ESOption.ES_DEFAULT,
                        description);
         transferOption(IndexMappings.MAPPING_DOC_VALUES,
                        getAnnotation(IndexMode.class),
-                       IndexMode::indexed,
-                       ESOption.ES_DEFAULT,
+                       IndexMode::docValues,
                        description);
     }
 

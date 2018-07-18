@@ -134,7 +134,6 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
         transferOption(IndexMappings.MAPPING_STORED,
                        getAnnotation(IndexMode.class),
                        IndexMode::stored,
-                       ESOption.ES_DEFAULT,
                        description);
 
         JSONObject properties = new JSONObject();

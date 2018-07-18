@@ -46,7 +46,7 @@ public @interface IndexMode {
          * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/norms.html">
          * https://www.elastic.co/guide/en/elasticsearch/reference/current/norms.html</a>
          */
-        ESOption normsEnabled() default ESOption.FALSE;
+        ESOption normsEnabled() default ESOption.ES_DEFAULT;
 
         /**
          * Permits to specify if the contents of this field are stored on disk in a column-stride fashion.

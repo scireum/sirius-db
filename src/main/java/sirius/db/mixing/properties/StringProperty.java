@@ -12,7 +12,6 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.Analyzed;
-import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
@@ -157,22 +156,18 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         transferOption(IndexMappings.MAPPING_STORED,
                        getAnnotation(IndexMode.class),
                        IndexMode::stored,
-                       ESOption.ES_DEFAULT,
                        description);
-        transferOption(IndexMappings.MAPPING_INDEXED,
+        transferOption(IndexMappings.MAPPING_INDEX,
                        getAnnotation(IndexMode.class),
                        IndexMode::indexed,
-                       ESOption.ES_DEFAULT,
                        description);
         transferOption(IndexMappings.MAPPING_DOC_VALUES,
                        getAnnotation(IndexMode.class),
-                       IndexMode::indexed,
-                       ESOption.ES_DEFAULT,
+                       IndexMode::docValues,
                        description);
         transferOption(IndexMappings.MAPPING_NORMS,
                        getAnnotation(IndexMode.class),
                        IndexMode::normsEnabled,
-                       ESOption.FALSE,
                        description);
 
         getAnnotation(Analyzed.class).ifPresent(analyzed -> {

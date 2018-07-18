@@ -151,7 +151,6 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
         transferOption(IndexMappings.MAPPING_STORED,
                        getAnnotation(IndexMode.class),
                        IndexMode::stored,
-                       ESOption.ES_DEFAULT,
                        description);
 
         JSONObject properties = new JSONObject();
