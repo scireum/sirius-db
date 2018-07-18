@@ -11,8 +11,10 @@ package sirius.db.mixing.types;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixing;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
@@ -200,24 +202,30 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     }
 
     /**
-     * Determines if the referenced entity is equal to the given one.
+     * Determines if the referenced entity is equal to the given entity or id.
      *
-     * @param entity the entity to check for
+     * @param entityOrId the entity or id to check for
      * @return <tt>true</tt> if the entities are the same (based on their id), <tt>false</tt> otherwise.
      */
-    public boolean is(E entity) {
-        return entity == null ? isEmpty() : is(entity.getId());
+    public boolean is(Object entityOrId) {
+        if (Strings.isEmpty(entityOrId)) {
+            return isEmpty();
+        }
+
+        if (entityOrId instanceof BaseEntity<?>) {
+            return Objects.equals(((BaseEntity<?>) entityOrId).getId(), id);
+        }
+
+        return Objects.equals(coerceToId(entityOrId), id);
     }
 
     /**
-     * Determines if the referenced entity has the given id.
+     * Converts the given object into an id.
      *
-     * @param otherId the id to check for
-     * @return <tt>true</tt> if the referenced entity has the given id, <tt>false</tt> otherwise.
+     * @param id the value to coerce
+     * @return the value represented in the correct type
      */
-    public boolean is(I otherId) {
-        return otherId == null ? isEmpty() : id != null && Objects.equals(otherId, id);
-    }
+    protected abstract I coerceToId(@Nonnull Object id);
 
     /**
      * Determines if the given entity value was not yet persisted to the database.
