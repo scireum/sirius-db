@@ -11,19 +11,16 @@ package sirius.db.mixing.properties;
 import com.alibaba.fastjson.JSONObject;
 import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
-import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringMap;
-import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -134,7 +131,11 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
         } else {
             description.put(IndexMappings.MAPPING_TYPE, "nested");
         }
-        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_STORED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::stored,
+                       ESOption.ES_DEFAULT,
+                       description);
 
         JSONObject properties = new JSONObject();
         properties.put(KEY, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));

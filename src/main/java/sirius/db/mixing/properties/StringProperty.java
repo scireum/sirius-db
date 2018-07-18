@@ -154,10 +154,26 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void describeProperty(JSONObject description) {
         description.put("type", "keyword");
-        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_NORMS, IndexMode::normsEnabled, ESOption.FALSE, description);
+        transferOption(IndexMappings.MAPPING_STORED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::stored,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_INDEXED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_NORMS,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::normsEnabled,
+                       ESOption.FALSE,
+                       description);
 
         getAnnotation(Analyzed.class).ifPresent(analyzed -> {
             description.put("type", "text");

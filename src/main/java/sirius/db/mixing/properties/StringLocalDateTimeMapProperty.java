@@ -148,7 +148,11 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
         } else {
             description.put(IndexMappings.MAPPING_TYPE, "nested");
         }
-        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_STORED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::stored,
+                       ESOption.ES_DEFAULT,
+                       description);
 
         JSONObject properties = new JSONObject();
         properties.put(StringMapProperty.KEY,

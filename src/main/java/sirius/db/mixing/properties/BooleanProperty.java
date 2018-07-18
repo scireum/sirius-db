@@ -13,7 +13,6 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
-import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -34,7 +33,7 @@ import java.util.function.Consumer;
 /**
  * Represents a {@link Boolean} field within a {@link Mixable}.
  */
-public class BooleanProperty extends Property implements ESPropertyInfo,SQLPropertyInfo {
+public class BooleanProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -116,12 +115,23 @@ public class BooleanProperty extends Property implements ESPropertyInfo,SQLPrope
         table.getColumns().add(new TableColumn(this, Types.BOOLEAN));
     }
 
-
     @Override
     public void describeProperty(JSONObject description) {
         description.put(IndexMappings.MAPPING_TYPE, "boolean");
-        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_STORED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::stored,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_INDEXED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
     }
 }

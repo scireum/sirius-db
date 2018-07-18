@@ -13,15 +13,15 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.jdbc.schema.SQLPropertyInfo;
-import sirius.db.jdbc.schema.Table;
-import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -92,8 +92,20 @@ public class LongProperty extends Property implements SQLPropertyInfo, ESPropert
     @Override
     public void describeProperty(JSONObject description) {
         description.put(IndexMappings.MAPPING_TYPE, "long");
-        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_STORED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::stored,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_INDEXED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
     }
 }
