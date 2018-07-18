@@ -48,4 +48,9 @@ public class ElasticRef<E extends ElasticEntity> extends BaseEntityRef<String, E
     protected Optional<E> find(Class<E> type, String id) {
         return elastic.find(type, id);
     }
+
+    @Override
+    protected String coerceToId(Object id) {
+        return id.toString();
+    }
 }

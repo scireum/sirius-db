@@ -48,20 +48,16 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
         return oma.find(type, id);
     }
 
-    /**
-     * Determines if the referenced entity has the given id.
-     * <p>
-     * This is a boilerplate method for handling ids represented as strings.
-     *
-     * @param otherId the id to check for
-     * @return <tt>true</tt> if the referenced entity has the given id, <tt>false</tt> otherwise.
-     */
-    public boolean is(String otherId) {
+    @Override
+    protected Long coerceToId(Object id) {
         try {
-            return is(Long.parseLong(otherId));
+            if (id instanceof Long) {
+                return (Long)id;
+            }
+            return Long.parseLong(id.toString());
         } catch (NumberFormatException e) {
             Exceptions.ignore(e);
-            return false;
+            return SQLEntity.NON_PERSISTENT_ENTITY_ID;
         }
     }
 }

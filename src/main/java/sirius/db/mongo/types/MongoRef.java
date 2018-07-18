@@ -48,4 +48,9 @@ public class MongoRef<E extends MongoEntity> extends BaseEntityRef<String, E> {
     protected Optional<E> find(Class<E> type, String id) {
         return mango.find(type, id);
     }
+
+    @Override
+    protected String coerceToId(Object id) {
+        return id.toString();
+    }
 }

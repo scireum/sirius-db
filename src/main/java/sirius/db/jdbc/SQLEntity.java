@@ -24,6 +24,11 @@ import java.util.Objects;
  */
 public abstract class SQLEntity extends BaseEntity<Long> {
 
+    /**
+     * Represents the id which signals that the entity was not persisted yet.
+     */
+    public static final long NON_PERSISTENT_ENTITY_ID = -1;
+
     @Part
     protected static OMA oma;
 
@@ -37,7 +42,7 @@ public abstract class SQLEntity extends BaseEntity<Long> {
      * This field is marked as transient as this column is automatically managed by the framework.
      */
     public static final Mapping ID = Mapping.named("id");
-    protected long id = -1;
+    protected long id = NON_PERSISTENT_ENTITY_ID;
 
     @Transient
     protected Row fetchRow;
