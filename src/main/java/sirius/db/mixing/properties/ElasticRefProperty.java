@@ -12,10 +12,10 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
-import sirius.db.es.types.ElasticRef;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.es.types.ElasticRef;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -85,9 +85,21 @@ public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEnt
     @Override
     public void describeProperty(JSONObject description) {
         description.put(IndexMappings.MAPPING_TYPE, "keyword");
-        transferOption(IndexMappings.MAPPING_STORED, IndexMode::stored, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_INDEXED, IndexMode::indexed, ESOption.ES_DEFAULT, description);
-        transferOption(IndexMappings.MAPPING_DOC_VALUES, IndexMode::indexed, ESOption.ES_DEFAULT, description);
+        transferOption(IndexMappings.MAPPING_STORED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::stored,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_INDEXED,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::indexed,
+                       ESOption.ES_DEFAULT,
+                       description);
     }
 
     @SuppressWarnings("unchecked")
