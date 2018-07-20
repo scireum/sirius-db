@@ -36,7 +36,7 @@ public class IndexMappings implements Startable {
     /**
      * Mapping key used to tell ES if and how a property is stored
      */
-    public static final String MAPPING_STORED = "stored";
+    public static final String MAPPING_STORED = "store";
 
     /**
      * Mapping key used to tell ES if a property is indexed (searchable).
