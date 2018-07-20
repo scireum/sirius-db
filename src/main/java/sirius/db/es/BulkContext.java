@@ -206,9 +206,8 @@ public class BulkContext implements Closeable {
             this.response = response;
             boolean hasErrors = response.getBooleanValue("errors");
 
-            if (hasErrors) {
-                this.getFailedIds();
-                Exceptions.handle().withSystemErrorMessage(failureMessage).handle();
+            if (Strings.isFilled(getFailureMessage())) {
+                Exceptions.handle().withSystemErrorMessage(getFailureMessage()).handle();
             }
 
             return hasErrors;
