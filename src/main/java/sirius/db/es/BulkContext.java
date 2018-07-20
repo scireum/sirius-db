@@ -206,7 +206,8 @@ public class BulkContext implements Closeable {
             this.response = response;
             boolean hasErrors = response.getBooleanValue("errors");
 
-            if (hasErrors && Strings.isFilled(failureMessage)) {
+            if (hasErrors) {
+                this.getFailedIds();
                 Exceptions.handle().withSystemErrorMessage(failureMessage).handle();
             }
 
@@ -264,6 +265,23 @@ public class BulkContext implements Closeable {
         failureMessage = failureMessageBuilder.toString();
 
         return Collections.unmodifiableSet(failedIds);
+    }
+
+    /**
+     * Returns the failure message for this bulk request.
+     *
+     * @return the failure message if errors occured. Otherwise an empty string.
+     */
+    public String getFailureMessage() {
+        if (failedIds == null) {
+            getFailedIds();
+        }
+
+        if (Strings.isEmpty(failureMessage)) {
+            return "";
+        }
+
+        return failureMessage;
     }
 
     private JSONObject getObject(JSONObject currentObject) {
