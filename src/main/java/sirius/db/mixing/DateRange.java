@@ -238,10 +238,10 @@ public class DateRange {
      */
     public void applyTo(String field, Query<?, ?, ?> qry) {
         if (from != null) {
-            qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from);
+            ((Query) qry).where(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
         if (until != null) {
-            qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until);
+            ((Query) qry).where(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
     }
 
