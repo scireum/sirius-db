@@ -9,6 +9,7 @@
 package sirius.db.mixing;
 
 import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nullable;
@@ -236,12 +237,12 @@ public class DateRange {
      * @param field the field to filter on
      * @param qry   the query to expand
      */
-    public void applyTo(String field, Query<?, ?, ?> qry) {
+    public <C extends Constraint> void applyTo(String field, Query<?, ?, C> qry) {
         if (from != null) {
-            ((Query) qry).where(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
+            qry.where(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
         if (until != null) {
-            ((Query) qry).where(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
+            qry.where(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
     }
 
