@@ -119,7 +119,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         protected InnerHitsBuilder(String name, int size) {
             this.json = new JSONObject().fluentPut(KEY_NAME, name).fluentPut(KEY_SIZE, size);
-            autoinit(collapseByInnerHits).add(json);
+            ElasticQuery.this.collapseByInnerHits = autoinit(ElasticQuery.this.collapseByInnerHits);
+            ElasticQuery.this.collapseByInnerHits.add(json);
         }
 
         /**

@@ -81,10 +81,10 @@ public abstract class QueryCompiler<C extends Constraint> {
      * @param query        the query to compile
      * @param searchFields the default search fields to query
      */
-    public QueryCompiler(FilterFactory<C> factory,
-                         EntityDescriptor descriptor,
-                         String query,
-                         List<QueryField> searchFields) {
+    protected QueryCompiler(FilterFactory<C> factory,
+                            EntityDescriptor descriptor,
+                            String query,
+                            List<QueryField> searchFields) {
         this.factory = factory;
         this.descriptor = descriptor;
         this.searchFields = searchFields;
@@ -176,6 +176,14 @@ public abstract class QueryCompiler<C extends Constraint> {
             return parseTag();
         }
 
+        while (!reader.current().isEndOfInput() && !continueToken(false)) {
+            reader.consume();
+        }
+
+        if (reader.current().isEndOfInput()) {
+            return null;
+        }
+
         FieldValue token = readToken();
         skipWhitespace(reader);
         if (isAtOperator()) {
@@ -211,6 +219,7 @@ public abstract class QueryCompiler<C extends Constraint> {
 
     protected C parseOperation(String field) {
         String operation = readOp();
+
         FieldValue value = compileValue(field, parseValue());
 
         return compileOperation(Mapping.named(field), operation, value);
@@ -347,7 +356,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             return !reader.current().is('"');
         }
 
-        return !reader.current().is(')') && !reader.current().isWhitepace() && !isAtOperator();
+        return !reader.current().is(')', ':') && !reader.current().isWhitepace() && !isAtOperator();
     }
 
     @SuppressWarnings("unchecked")
@@ -383,7 +392,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     private boolean isAtOperator() {
-        if (reader.current().is('=') || reader.current().is(':')) {
+        if (reader.current().is('=', ':')) {
             return true;
         }
 
@@ -391,6 +400,6 @@ public abstract class QueryCompiler<C extends Constraint> {
             return true;
         }
 
-        return reader.current().is('<') || reader.current().is('>');
+        return reader.current().is('<', '>');
     }
 }
