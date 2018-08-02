@@ -18,7 +18,6 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringIntMap;
 import sirius.db.mongo.Mango;
-import sirius.db.mongo.MongoEntity;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;

@@ -198,13 +198,13 @@ public class BulkContext implements Closeable {
         try {
             failedIds = null;
 
-            JSONObject response = client.bulk(commands);
+            JSONObject bulkResponse = client.bulk(commands);
             if (Elastic.LOG.isFINE()) {
-                Elastic.LOG.FINE(response);
+                Elastic.LOG.FINE(bulkResponse);
             }
 
-            this.response = response;
-            boolean hasErrors = response.getBooleanValue("errors");
+            this.response = bulkResponse;
+            boolean hasErrors = bulkResponse.getBooleanValue("errors");
 
             if (Strings.isFilled(getFailureMessage())) {
                 Exceptions.handle().withSystemErrorMessage(getFailureMessage()).handle();

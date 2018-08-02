@@ -16,7 +16,6 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mongo.Mango;
-import sirius.db.mongo.MongoEntity;
 import sirius.db.mongo.types.MultiPointLocation;
 import sirius.kernel.commons.Lambdas;
 import sirius.kernel.commons.Strings;
@@ -72,7 +71,8 @@ public class MultiPointLocationProperty extends Property {
     @Override
     protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
         if (mapperType != Mango.class) {
-            throw new UnsupportedOperationException("MultiPointLocationProperty currently only supports Mango as mapper!");
+            throw new UnsupportedOperationException(
+                    "MultiPointLocationProperty currently only supports Mango as mapper!");
         }
 
         List<?> locationList = ((List<Tuple<Double, Double>>) object).stream().map(latLong -> {
@@ -89,7 +89,8 @@ public class MultiPointLocationProperty extends Property {
     @Override
     protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         if (mapperType != Mango.class) {
-            throw new UnsupportedOperationException("MultiPointLocationProperty currently only supports Mango as mapper!");
+            throw new UnsupportedOperationException(
+                    "MultiPointLocationProperty currently only supports Mango as mapper!");
         }
 
         List<Tuple<Double, Double>> locations = new ArrayList<>();
