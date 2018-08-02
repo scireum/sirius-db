@@ -97,7 +97,7 @@ public class Mixing implements Initializable {
      * @return the type name of the given type
      */
     @Nonnull
-    public String getNameForType(@Nonnull Class<?> type) {
+    public static String getNameForType(@Nonnull Class<?> type) {
         return type.getSimpleName().toUpperCase();
     }
 
@@ -109,7 +109,7 @@ public class Mixing implements Initializable {
      * @return a unique name consisting of the typeName and id
      */
     @Nonnull
-    public String getUniqueName(@Nonnull String typeName, Object id) {
+    public static String getUniqueName(@Nonnull String typeName, Object id) {
         return typeName + "-" + id;
     }
 
@@ -121,7 +121,7 @@ public class Mixing implements Initializable {
      * @return a unique name consisting of the typeName and id
      */
     @Nonnull
-    public String getUniqueName(@Nonnull Class<?> type, Object id) {
+    public static String getUniqueName(@Nonnull Class<?> type, Object id) {
         return getNameForType(type) + "-" + id;
     }
 

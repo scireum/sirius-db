@@ -126,7 +126,7 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
             return null;
         }
 
-        return mixing.getUniqueName(type, id);
+        return Mixing.getUniqueName(type, id);
     }
 
     /**

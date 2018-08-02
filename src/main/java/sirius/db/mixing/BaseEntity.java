@@ -88,7 +88,7 @@ public abstract class BaseEntity<I> extends Mixable {
      * @see #getUniqueName()
      */
     public String getTypeName() {
-        return mixing.getNameForType(getClass());
+        return Mixing.getNameForType(getClass());
     }
 
     /**
@@ -103,7 +103,7 @@ public abstract class BaseEntity<I> extends Mixable {
         if (isNew()) {
             return "";
         }
-        return mixing.getUniqueName(getTypeName(), getId());
+        return Mixing.getUniqueName(getTypeName(), getId());
     }
 
     /**
