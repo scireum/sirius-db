@@ -29,7 +29,7 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
         if (type == other) {
             return true;
         }
-        if (in(type, other, Types.BOOLEAN, Types.TINYINT, Types.BIT)) {
+        if (in(type, other, Types.BOOLEAN, Types.BIT)) {
             return true;
         }
         if (in(type, other, Types.VARCHAR, Types.CHAR)) {

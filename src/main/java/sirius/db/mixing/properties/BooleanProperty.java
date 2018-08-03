@@ -111,7 +111,9 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
 
     @Override
     public void contributeToTable(Table table) {
-        table.getColumns().add(new TableColumn(this, Types.BOOLEAN));
+        TableColumn tableColumn = new TableColumn(this, Types.BOOLEAN);
+        tableColumn.setLength(1);
+        table.getColumns().add(tableColumn);
     }
 
     @Override
