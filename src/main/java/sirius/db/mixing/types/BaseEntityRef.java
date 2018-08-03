@@ -237,4 +237,15 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     public boolean containsNonpersistentValue() {
         return value != null && (id == null || value.isNew());
     }
+
+    @Override
+    public String toString() {
+        if (value != null) {
+            return value.toString();
+        } else if (isFilled()) {
+            return String.valueOf(id);
+        } else {
+            return "(empty)";
+        }
+    }
 }

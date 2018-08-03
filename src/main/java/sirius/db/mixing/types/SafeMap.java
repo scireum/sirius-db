@@ -216,6 +216,11 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
         return data().hashCode();
     }
 
+    @Override
+    public String toString() {
+        return data().toString();
+    }
+
     @Nonnull
     @Override
     public Iterator<Map.Entry<K, V>> iterator() {
