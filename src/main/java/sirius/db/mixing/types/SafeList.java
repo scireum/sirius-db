@@ -170,6 +170,7 @@ public abstract class SafeList<T> implements Iterable<T> {
     }
 
     @Nonnull
+    @Override
     public Iterator<T> iterator() {
         return data().iterator();
     }
