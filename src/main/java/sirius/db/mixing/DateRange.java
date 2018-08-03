@@ -234,6 +234,7 @@ public class DateRange {
     /**
      * Applies this date range to the given query in the given field.
      *
+     * @param <C>   the constraint type to generate
      * @param field the field to filter on
      * @param qry   the query to expand
      */
