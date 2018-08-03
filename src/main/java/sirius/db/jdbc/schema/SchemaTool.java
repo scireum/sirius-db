@@ -143,7 +143,6 @@ public class SchemaTool {
     }
 
     private void fillColumns(Connection c, Table table) throws SQLException {
-        // Columns
         ResultSet rs = c.getMetaData().getColumns(c.getSchema(), null, table.getName(), null);
         while (rs.next()) {
             TableColumn column = new TableColumn();
