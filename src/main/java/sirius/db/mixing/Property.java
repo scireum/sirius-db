@@ -236,11 +236,14 @@ public abstract class Property extends Composite {
      * Applies the given value to the given entity.
      * <p>
      * The internal access path will be used to find the target object which contains the field.
+     * <p>
+     * Note that no further value conversion will be performed, therefor the given object must match the expected value.
+     * Use {@link #parseValue(Object, Value)} to utilize automatic transformations.
      *
      * @param entity the entity to write to
      * @param object the value to write to the field
      */
-    protected void setValue(Object entity, Object object) {
+    public void setValue(Object entity, Object object) {
         Object target = accessPath.apply(entity);
         setValueToField(object, target);
     }
