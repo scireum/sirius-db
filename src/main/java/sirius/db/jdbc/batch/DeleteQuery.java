@@ -10,6 +10,7 @@ package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
@@ -50,14 +51,26 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
             }
 
             Watch w = Watch.start();
+            if (invokeChecks) {
+                getDescriptor().beforeDelete(example);
+            }
+
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : getProperties()) {
                 stmt.setObject(i++, property.getValueForDatasource(OMA.class, example));
             }
 
-            if (invokeChecks) {
-                getDescriptor().beforeDelete(example);
+            if (descriptor.isVersioned()) {
+                if (example.getVersion() == 0) {
+                    throw Exceptions.handle()
+                                    .to(OMA.LOG)
+                                    .withSystemErrorMessage(
+                                            "Cannot execute a DeleteQuery for the versioned entity %s without a version!",
+                                            descriptor.getType())
+                                    .handle();
+                }
+                stmt.setObject(i, example.getVersion());
             }
 
             if (addBatch) {
@@ -102,6 +115,15 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
             sql.append(p.getPropertyName());
             sql.append(" = ?");
         }
+
+        if (descriptor.isVersioned()) {
+            if (mf.successiveCall()) {
+                sql.append("AND ");
+            }
+            sql.append(BaseMapper.VERSION);
+            sql.append(" = ?");
+        }
+
         createStmt(sql.toString(), false);
     }
 }
