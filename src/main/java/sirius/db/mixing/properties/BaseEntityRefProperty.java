@@ -94,6 +94,11 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         if (value.isEmptyString()) {
             return null;
         }
+
+        if (entityRef.getType().isInstance(value.get())) {
+            return value.get();
+        }
+
         Optional<E> e = find(entityRef.getType(), value);
         if (!e.isPresent()) {
             throw illegalFieldValue(value);

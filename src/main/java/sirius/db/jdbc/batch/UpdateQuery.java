@@ -10,6 +10,7 @@ package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
@@ -93,24 +94,20 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             }
 
             Watch w = Watch.start();
-            PreparedStatement stmt = prepareStmt();
-            int i = 1;
-            for (Property property : getPropertiesToUpdate()) {
-                stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
-            }
-            for (Property property : getProperties()) {
-                stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
-            }
-
             if (invokeChecks) {
                 getDescriptor().beforeSave(entity);
             }
+
+            PreparedStatement stmt = prepareAndFillForUpdate(entity);
 
             if (addBatch) {
                 addBatch();
             } else {
                 stmt.executeUpdate();
                 avarage.addValue(w.elapsedMillis());
+                if (descriptor.isVersioned()) {
+                    entity.setVersion(entity.getVersion() + 1);
+                }
             }
 
             if (invokeChecks) {
@@ -135,6 +132,35 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
         }
     }
 
+    protected PreparedStatement prepareAndFillForUpdate(@Nonnull E entity) throws SQLException {
+        PreparedStatement stmt = prepareStmt();
+        int i = 1;
+        for (Property property : getPropertiesToUpdate()) {
+            stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+        }
+
+        if (descriptor.isVersioned()) {
+            stmt.setObject(i++, entity.getVersion() + 1);
+        }
+
+        for (Property property : getProperties()) {
+            stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+        }
+
+        if (descriptor.isVersioned()) {
+            if (entity.getVersion() == 0) {
+                throw Exceptions.handle()
+                                .to(OMA.LOG)
+                                .withSystemErrorMessage("Cannot execute an UpdateQuery for the versioned entity"
+                                                        + " %s without a version!", descriptor.getType())
+                                .handle();
+            }
+
+            stmt.setObject(i, entity.getVersion());
+        }
+        return stmt;
+    }
+
     @Override
     protected void buildSQL() throws SQLException {
         StringBuilder sql = new StringBuilder("UPDATE ");
@@ -149,6 +175,15 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             sql.append(p.getPropertyName());
             sql.append(" = ?");
         }
+
+        if (descriptor.isVersioned()) {
+            if (mf.successiveCall()) {
+                sql.append(", ");
+            }
+            sql.append(BaseMapper.VERSION);
+            sql.append(" = ?");
+        }
+
         sql.append(" WHERE ");
 
         mf = Monoflop.create();
@@ -159,6 +194,15 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             sql.append(p.getPropertyName());
             sql.append(" = ?");
         }
+
+        if (descriptor.isVersioned()) {
+            if (mf.successiveCall()) {
+                sql.append("AND ");
+            }
+            sql.append(BaseMapper.VERSION);
+            sql.append(" = ?");
+        }
+
         createStmt(sql.toString(), false);
     }
 }

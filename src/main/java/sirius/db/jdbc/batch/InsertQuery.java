@@ -12,6 +12,7 @@ import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Row;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
@@ -60,14 +61,18 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             }
 
             Watch w = Watch.start();
+            if (invokeChecks) {
+                getDescriptor().beforeSave(entity);
+            }
+
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : getProperties()) {
                 stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
             }
 
-            if (invokeChecks) {
-                getDescriptor().beforeSave(entity);
+            if (descriptor.isVersioned()) {
+                stmt.setObject(i, 1);
             }
 
             if (addBatch) {
@@ -78,6 +83,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                     Row keys = dbs.fetchGeneratedKeys(stmt);
                     OMA.loadCreatedId(entity, keys);
                 }
+                entity.setVersion(1);
             }
 
             if (invokeChecks) {
@@ -91,18 +97,15 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
-                            .withSystemErrorMessage(
-                                    "A database error occured while executing an InsertQuery"
-                                    + " for %s: %s (%s)",
-                                    type.getName())
+                            .withSystemErrorMessage("A database error occured while executing an InsertQuery"
+                                                    + " for %s: %s (%s)", type.getName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage("An error occured while executing an InsertQuery"
-                                                    + " for %s: %s (%s)",
-                                                    type.getName())
+                                                    + " for %s: %s (%s)", type.getName())
                             .handle();
         }
     }
@@ -140,6 +143,17 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             }
             sql.append(p.getPropertyName());
         }
+
+        if (descriptor.isVersioned()) {
+            if (mf.successiveCall()) {
+                sql.append(", ");
+                values.append(", ?");
+            } else {
+                values.append("?");
+            }
+            sql.append(BaseMapper.VERSION);
+        }
+
         sql.append(")");
         values.append(")");
         sql.append(values);
