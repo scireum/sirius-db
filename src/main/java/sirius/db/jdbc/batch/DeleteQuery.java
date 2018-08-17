@@ -118,7 +118,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
 
         if (descriptor.isVersioned()) {
             if (mf.successiveCall()) {
-                sql.append("AND ");
+                sql.append(" AND ");
             }
             sql.append(BaseMapper.VERSION);
             sql.append(" = ?");
