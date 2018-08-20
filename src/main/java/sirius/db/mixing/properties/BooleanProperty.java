@@ -64,7 +64,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
         Object object = data.get();
         if (object instanceof Boolean) {
             return object;

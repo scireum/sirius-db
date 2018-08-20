@@ -92,7 +92,7 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
         Object object = data.get();
         if (object == null) {
             return Amount.NOTHING;

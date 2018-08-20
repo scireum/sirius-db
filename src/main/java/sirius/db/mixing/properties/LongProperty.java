@@ -74,7 +74,7 @@ public class LongProperty extends Property implements SQLPropertyInfo, ESPropert
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         return object.get();
     }
 
