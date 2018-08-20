@@ -299,7 +299,7 @@ public abstract class Property extends Composite {
      * @param object     the database value
      * @return the value which can be stored in the associated field
      */
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         if (mapperType == OMA.class) {
             return transformFromJDBC(object);
         } else if (mapperType == Elastic.class) {

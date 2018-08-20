@@ -74,7 +74,7 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         return object.get();
     }
 
