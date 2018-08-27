@@ -75,6 +75,10 @@ public class MultiPointLocationProperty extends Property {
                     "MultiPointLocationProperty currently only supports Mango as mapper!");
         }
 
+        if (object == null) {
+            return null;
+        }
+
         List<?> locationList = ((List<Tuple<Double, Double>>) object).stream().map(latLong -> {
             List<Object> coordinates = new ArrayList<>();
             coordinates.add(latLong.getFirst());
@@ -95,11 +99,13 @@ public class MultiPointLocationProperty extends Property {
 
         List<Tuple<Double, Double>> locations = new ArrayList<>();
 
-        Object coordiantes = ((Document) object.get()).get("coordinates");
-        if (coordiantes instanceof List<?>) {
-            ((List<List<Double>>) coordiantes).stream().map(entry -> {
-                return Tuple.create(entry.get(0), entry.get(1));
-            }).collect(Lambdas.into(locations));
+        if (!object.isNull()) {
+            Object coordinates = ((Document) object.get()).get("coordinates");
+            if (coordinates instanceof List<?>) {
+                ((List<List<Double>>) coordinates).stream()
+                                                  .map(entry -> Tuple.create(entry.get(0), entry.get(1)))
+                                                  .collect(Lambdas.into(locations));
+            }
         }
 
         return locations;
