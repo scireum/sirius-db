@@ -40,7 +40,7 @@ public abstract class MongoEntity extends BaseEntity<String> {
 
     @Override
     protected boolean isUnique(Mapping field, Object value, Mapping... within) {
-        Finder finder = mongo.find();
+        Finder finder = mongo.find().where(field, value);
         if (!isNew()) {
             finder.where(QueryBuilder.FILTERS.ne(MongoEntity.ID, getId()));
         }
