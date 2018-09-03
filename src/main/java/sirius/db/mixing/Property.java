@@ -34,7 +34,7 @@ import java.util.Optional;
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
  */
-public abstract class Property extends Composite {
+public abstract class Property {
 
     /**
      * Contains the effective property name. If the field, for which this property was created, resides
@@ -55,21 +55,30 @@ public abstract class Property extends Composite {
     protected Mapping nameAsMapping;
 
     /**
-     * Contains a used defined name. This is intended to overwrite property names in customizations.
-     *
-     * @see #getLabel()
-     */
-    protected String label;
-
-    /**
      * Contains the i18n key used to determine the label (official name) of the property.
+     * <p>
+     * This is built like <tt>SimpleClassNameDefiningTheField.fieldName</tt>
      *
      * @see #getLabel()
      */
     protected String propertyKey;
 
     /**
+     * Contains a class local i18n key used to determine the label (official name) of the property.
+     * <p>
+     * This is built like <tt>EntityTypeName.compositeOrMixinField_fieldName</tt>
+     * <p>
+     * This can be used to provide different labels for the same field of a composite based on
+     * the class where the composite is included.
+     *
+     * @see #getLabel()
+     */
+    protected String localPropertyKey;
+
+    /**
      * Contains the alternative i18n key used to determine the label (official name) of the property.
+     * <p>
+     * This is built like <tt>Model.fieldName</tt>.
      *
      * @see #getLabel()
      */
@@ -120,6 +129,9 @@ public abstract class Property extends Composite {
         this.alternativePropertyKey = "Model." + field.getName();
         this.field.setAccessible(true);
         this.name = accessPath.prefix() + field.getName();
+        if (Strings.isFilled(accessPath.prefix())) {
+            this.localPropertyKey = descriptor.getType().getSimpleName() + "." + name;
+        }
         this.propertyName = descriptor.rewritePropertyName(name);
         this.nameAsMapping = Mapping.named(name);
 
@@ -205,20 +217,34 @@ public abstract class Property extends Composite {
      * <p>
      * The label can be set in three ways:
      * <ol>
-     * <li>Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaingClass].[field]</tt>.
-     * So for <tt>com.acme.model.Customer.customerNumber</tt> this would be <tt>Customer.customerNumber</tt></li>
-     * <li>Define an i18n value for <tt>alternativePropertyKey</tt>, which is normally <tt>Model.[field]</tt>.
-     * So for <tt>com.acme.model.Customer.customerNumber</tt> this would be <tt>Model.customerNumber</tt>. That
-     * way common names across different entites can share the same translation.</li>
+     * <li>
+     * Define an local i18n value for <tt>propertyKey</tt>, which is normally <tt>[entityClass].[compositeName]_[field]</tt>.
+     * So for <tt>com.acme.model.Address.street</tt> in <tt>com.acme.model.Customer</tt> this would be
+     * <tt>Customer.address_street</tt>. This can be used to give the same composite field different
+     * names of a per-entity basis.
+     * </li>
+     * <li>
+     * Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaingClass].[field]</tt>.
+     * So for <tt>com.acme.model.Address.street</tt> this would be <tt>Address.street</tt>
+     * </li>
+     * <li>
+     * Define an i18n value for <tt>alternativePropertyKey</tt>, which is normally <tt>Model.[field]</tt>.
+     * So for <tt>com.acme.model.Address.street</tt> this would be <tt>Model.street</tt>. That
+     * way common names across different entities can share the same translation.
+     * </li>
      * </ol>
      *
      * @return the effective label of the property.
      */
     public String getLabel() {
-        if (label != null) {
-            return label;
+        String currentLang = NLS.getCurrentLang();
+        if (localPropertyKey != null) {
+            return NLS.getIfExists(localPropertyKey, currentLang)
+                      .orElseGet(() -> NLS.getIfExists(propertyKey, currentLang)
+                                          .orElseGet(() -> NLS.get(alternativePropertyKey)));
+        } else {
+            return NLS.getIfExists(propertyKey, currentLang).orElseGet(() -> NLS.get(alternativePropertyKey));
         }
-        return NLS.getIfExists(propertyKey, NLS.getCurrentLang()).orElseGet(() -> NLS.get(alternativePropertyKey));
     }
 
     /**
