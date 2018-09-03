@@ -250,8 +250,8 @@ public abstract class Property {
         String currentLang = NLS.getCurrentLang();
         if (localPropertyKey != null) {
             return NLS.getIfExists(localPropertyKey, currentLang)
-                    .orElseGet(() -> NLS.getIfExists(propertyKey, currentLang)
-                            .orElseGet(() -> NLS.get(alternativePropertyKey)));
+                      .orElseGet(() -> NLS.getIfExists(propertyKey, currentLang)
+                                          .orElseGet(() -> NLS.get(alternativePropertyKey)));
         } else {
             return NLS.getIfExists(propertyKey, currentLang).orElseGet(() -> NLS.get(alternativePropertyKey));
         }
@@ -295,12 +295,12 @@ public abstract class Property {
             field.set(target, value);
         } catch (IllegalAccessException | IllegalArgumentException e) {
             throw Exceptions.handle()
-                    .to(Mixing.LOG)
-                    .error(e)
-                    .withSystemErrorMessage("Cannot write property '%s' (from '%s'): %s (%s)",
-                            getName(),
-                            getDefinition())
-                    .handle();
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Cannot write property '%s' (from '%s'): %s (%s)",
+                                                    getName(),
+                                                    getDefinition())
+                            .handle();
         }
     }
 
