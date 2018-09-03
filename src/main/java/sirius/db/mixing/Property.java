@@ -34,7 +34,7 @@ import java.util.Optional;
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
  */
-public abstract class Property {
+public abstract class Property extends Composite {
 
     /**
      * Contains the effective property name. If the field, for which this property was created, resides
