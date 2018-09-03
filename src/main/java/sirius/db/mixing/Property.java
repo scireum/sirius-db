@@ -55,13 +55,6 @@ public abstract class Property {
     protected Mapping nameAsMapping;
 
     /**
-     * Contains a used defined name. This is intended to overwrite property names in customizations.
-     *
-     * @see #getLabel()
-     */
-    protected String label;
-
-    /**
      * Contains the i18n key used to determine the label (official name) of the property.
      * <p>
      * This is built like <tt>SimpleClassNameDefiningTheField.fieldName</tt>
@@ -244,9 +237,6 @@ public abstract class Property {
      * @return the effective label of the property.
      */
     public String getLabel() {
-        if (label != null) {
-            return label;
-        }
         String currentLang = NLS.getCurrentLang();
         if (localPropertyKey != null) {
             return NLS.getIfExists(localPropertyKey, currentLang)
