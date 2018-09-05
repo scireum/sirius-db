@@ -31,33 +31,49 @@ class ESFilledSpec extends BaseSpecification {
         elastic.select(ESFilledEntity.class)
                .eq(ESFilledEntity.TEST_FIELD, null)
                .queryFirst()
-               .getIdAsString() == fieldNotFilled.getIdAsString() && elastic.select(ESFilledEntity.class)
-                                                                            .eq(ESFilledEntity.TEST_FIELD, null).count() == 1
+               .getIdAsString() == fieldNotFilled.getIdAsString()
+        elastic.select(ESFilledEntity.class)
+               .eq(ESFilledEntity.TEST_FIELD, null)
+               .count() == 1
+
         elastic.select(ESFilledEntity.class)
                .where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD))
                .queryFirst()
-               .getIdAsString() == fieldNotFilled.getIdAsString() && elastic.select(ESFilledEntity.class)
-                                                                            .where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD)).count() == 1
+               .getIdAsString() == fieldNotFilled.getIdAsString()
+        elastic.select(ESFilledEntity.class)
+               .where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD))
+               .count() == 1
+
         elastic.select(ESFilledEntity.class)
                .where(Elastic.FILTERS.notExists(ESFilledEntity.TEST_FIELD))
                .queryFirst()
-               .getIdAsString() == fieldNotFilled.getIdAsString() && elastic.select(ESFilledEntity.class)
-                                                                            .where(Elastic.FILTERS.notExists(ESFilledEntity.TEST_FIELD)).count() == 1
+               .getIdAsString() == fieldNotFilled.getIdAsString()
+        elastic.select(ESFilledEntity.class)
+               .where(Elastic.FILTERS.notExists(ESFilledEntity.TEST_FIELD))
+               .count() == 1
 
         elastic.select(ESFilledEntity.class)
                .ne(ESFilledEntity.TEST_FIELD, null)
                .queryFirst()
-               .getIdAsString() == fieldFilled.getIdAsString() && elastic.select(ESFilledEntity.class)
-                                                                         .ne(ESFilledEntity.TEST_FIELD, null).count() == 1
+               .getIdAsString() == fieldFilled.getIdAsString()
+        elastic.select(ESFilledEntity.class)
+               .ne(ESFilledEntity.TEST_FIELD, null)
+               .count() == 1
+
         elastic.select(ESFilledEntity.class)
                .where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
                .queryFirst()
-               .getIdAsString() == fieldFilled.getIdAsString() && elastic.select(ESFilledEntity.class)
-                                                                         .where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD)).count() == 1
+               .getIdAsString() == fieldFilled.getIdAsString()
+        elastic.select(ESFilledEntity.class)
+               .where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
+               .count() == 1
+
         elastic.select(ESFilledEntity.class)
                .where(Elastic.FILTERS.exists(ESFilledEntity.TEST_FIELD))
                .queryFirst()
-               .getIdAsString() == fieldFilled.getIdAsString() && elastic.select(ESFilledEntity.class)
-                                                                         .where(Elastic.FILTERS.exists(ESFilledEntity.TEST_FIELD)).count() == 1
+               .getIdAsString() == fieldFilled.getIdAsString()
+        elastic.select(ESFilledEntity.class)
+               .where(Elastic.FILTERS.exists(ESFilledEntity.TEST_FIELD))
+               .count() == 1
     }
 }

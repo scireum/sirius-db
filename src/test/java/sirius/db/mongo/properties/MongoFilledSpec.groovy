@@ -34,28 +34,36 @@ class MongoFilledSpec extends BaseSpecification {
         then:
         mango.select(MongoFilledEntity.class)
              .eq(MongoFilledEntity.TEST_FIELD, null)
-             .queryFirst().getIdAsString() == fieldNotFilled.getIdAsString() && mango.select(MongoFilledEntity.class)
-                                                                                     .eq(MongoFilledEntity.TEST_FIELD, null).count() == 1
+             .queryFirst().getIdAsString() == fieldNotFilled.getIdAsString()
+        mango.select(MongoFilledEntity.class)
+             .eq(MongoFilledEntity.TEST_FIELD, null)
+             .count() == 1
+
         mango.select(MongoFilledEntity.class)
              .ne(MongoFilledEntity.TEST_FIELD, null)
-             .queryFirst().getIdAsString() == fieldFilled.getIdAsString() && mango.select(MongoFilledEntity.class)
-                                                                                  .ne(MongoFilledEntity.TEST_FIELD, null).count() == 1
+             .queryFirst().getIdAsString() == fieldFilled.getIdAsString()
+        mango.select(MongoFilledEntity.class)
+             .ne(MongoFilledEntity.TEST_FIELD, null)
+             .count() == 1
 
         mango.select(MongoFilledEntity.class)
              .where(QueryBuilder.FILTERS.filled(MongoFilledEntity.TEST_FIELD))
-             .queryFirst().getIdAsString() == fieldFilled.getIdAsString() && mango.select(MongoFilledEntity.class)
-                                                                                  .where(QueryBuilder.FILTERS.filled(MongoFilledEntity.TEST_FIELD)).count() == 1
+             .queryFirst().getIdAsString() == fieldFilled.getIdAsString()
+        mango.select(MongoFilledEntity.class)
+             .where(QueryBuilder.FILTERS.filled(MongoFilledEntity.TEST_FIELD))
+             .count() == 1
 
         mango.select(MongoFilledEntity.class)
              .where(QueryBuilder.FILTERS.notFilled(MongoFilledEntity.TEST_FIELD))
-             .queryFirst().getIdAsString() == fieldNotFilled.getIdAsString() && mango.select(MongoFilledEntity.class)
-                                                                                     .where(QueryBuilder.FILTERS.notFilled(MongoFilledEntity.TEST_FIELD)).count() == 1
+             .queryFirst().getIdAsString() == fieldNotFilled.getIdAsString()
+        mango.select(MongoFilledEntity.class)
+             .where(QueryBuilder.FILTERS.notFilled(MongoFilledEntity.TEST_FIELD))
+             .count() == 1
 
         mango.select(MongoFilledEntity.class)
              .where(QueryBuilder.FILTERS.exists(MongoFilledEntity.TEST_FIELD))
              .queryList()
              .every({e -> Strings.areEqual(e.getIdAsString(), fieldNotFilled.getIdAsString()) || Strings.areEqual(e.getIdAsString(), fieldFilled.getIdAsString()) })
-
         mango.select(MongoFilledEntity.class)
              .where(QueryBuilder.FILTERS.notExists(MongoFilledEntity.TEST_FIELD)).count() == 0
     }
