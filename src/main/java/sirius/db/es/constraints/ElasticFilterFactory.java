@@ -11,9 +11,9 @@ package sirius.db.es.constraints;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
-import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.CSVFilter;
 import sirius.db.mixing.query.constraints.FilterFactory;
@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -92,8 +93,11 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     public ElasticConstraint filled(Mapping field) {
-        return wrap(new JSONObject().fluentPut("exists",
-                                               new JSONObject().fluentPut("field", determineFilterField(field))));
+        return effectiveAnd(Arrays.asList(wrap(new JSONObject().fluentPut("exists",
+                                                                         new JSONObject().fluentPut("field",
+                                                                                                    determineFilterField(
+                                                                                                            field)))),
+                                         neValue(field, null)));
     }
 
     @Override
