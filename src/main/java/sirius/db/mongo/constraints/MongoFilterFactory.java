@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,12 +75,14 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     public MongoConstraint filled(Mapping field) {
-        return new MongoConstraint(field.toString(), new Document("$exists", true));
+        return effectiveAnd(Arrays.asList(new MongoConstraint(field.toString(), new Document("$exists", true)),
+                                          neValue(field, null)));
     }
 
     @Override
     public MongoConstraint notFilled(Mapping field) {
-        return new MongoConstraint(field.toString(), new Document("$exists", false));
+        return effectiveOr(Arrays.asList(new MongoConstraint(field.toString(), new Document("$exists", false)),
+                                         eqValue(field, null)));
     }
 
     @Override
