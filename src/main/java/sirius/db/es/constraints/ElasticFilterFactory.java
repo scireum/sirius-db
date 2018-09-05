@@ -92,13 +92,18 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     public ElasticConstraint filled(Mapping field) {
-        return wrap(new JSONObject().fluentPut("exists",
-                                               new JSONObject().fluentPut("field", determineFilterField(field))));
+        return neValue(field, null);
     }
 
     @Override
     public ElasticConstraint notFilled(Mapping field) {
         return not(filled(field));
+    }
+
+    @Override
+    public ElasticConstraint exists(Mapping field) {
+        return wrap(new JSONObject().fluentPut("exists",
+                                               new JSONObject().fluentPut("field", determineFilterField(field))));
     }
 
     @Override
