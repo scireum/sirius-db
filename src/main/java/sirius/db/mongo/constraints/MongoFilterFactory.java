@@ -82,9 +82,12 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         return eqValue(field, null);
     }
 
-    @Override
     public MongoConstraint exists(Mapping field) {
         return new MongoConstraint(field.toString(), new Document("$exists", true));
+    }
+
+    public MongoConstraint notExists(Mapping field) {
+        return new MongoConstraint(field.toString(), new Document("$exists", false));
     }
 
     @Override

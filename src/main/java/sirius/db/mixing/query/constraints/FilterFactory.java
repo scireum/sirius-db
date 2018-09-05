@@ -335,14 +335,6 @@ public abstract class FilterFactory<C extends Constraint> {
     public abstract C notFilled(Mapping field);
 
     /**
-     * Generates a constraint which ensures that the given field exists.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     */
-    public abstract C exists(Mapping field);
-
-    /**
      * Inverts the given constraint.
      *
      * @param constraint the constraint to invert.

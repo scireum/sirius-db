@@ -70,11 +70,6 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
     }
 
     @Override
-    public SQLConstraint exists(Mapping field) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     protected SQLConstraint invert(SQLConstraint constraint) {
         return new Not(constraint);
     }
