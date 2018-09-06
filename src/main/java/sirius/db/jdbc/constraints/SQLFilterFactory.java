@@ -56,6 +56,7 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     /**
      * Ensures that the given field is neither <tt>NULL</tt> nor an empty string.
+     *
      * @param field the field to check
      * @return a constraint which ensures that the given field contains a non-empty string
      */

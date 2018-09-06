@@ -11,9 +11,9 @@ package sirius.db.es.constraints;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
-import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.CSVFilter;
 import sirius.db.mixing.query.constraints.FilterFactory;
@@ -90,15 +90,49 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         return rangeFilter(field, orEqual ? "lte" : "lt", value);
     }
 
+    /**
+     * Checks whether the given field is filled which means whether the given field is present, as elastic doesn't index
+     * null-values by default. The field is just not created.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     */
     @Override
     public ElasticConstraint filled(Mapping field) {
         return wrap(new JSONObject().fluentPut("exists",
                                                new JSONObject().fluentPut("field", determineFilterField(field))));
     }
 
+    /**
+     * Checks whether the given field is not filled which means whether the given field is absent, as elastic doesn't index
+     * null-values by default. The field is just not created.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     */
     @Override
     public ElasticConstraint notFilled(Mapping field) {
         return not(filled(field));
+    }
+
+    /**
+     * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     */
+    public ElasticConstraint exists(Mapping field) {
+        return filled(field);
+    }
+
+    /**
+     * As elastic doesn't index null-values by default a notExists query is basically the same as a {@link #notFilled(Mapping)} query.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     */
+    public ElasticConstraint notExists(Mapping field) {
+        return notFilled(field);
     }
 
     @Override
