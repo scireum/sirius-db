@@ -122,7 +122,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
         Monoflop mf = Monoflop.create();
         for (Property p : getProperties()) {
             if (mf.successiveCall()) {
-                sql.append("AND ");
+                sql.append(" AND ");
             }
             sql.append(p.getPropertyName());
             sql.append(" = ?");
