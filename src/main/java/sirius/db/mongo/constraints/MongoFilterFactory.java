@@ -82,10 +82,22 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         return eqValue(field, null);
     }
 
+    /**
+     * Checks whether the given field is present, independent of the field value (specially 'null').
+     *
+     * @param field the field to filter
+     * @return the generated constraint
+     */
     public MongoConstraint exists(Mapping field) {
         return new MongoConstraint(field.toString(), new Document("$exists", true));
     }
 
+    /**
+     * Checks whether the given field is absent, independent of the field value (specially 'null').
+     *
+     * @param field the field to filter
+     * @return the generated constraint
+     */
     public MongoConstraint notExists(Mapping field) {
         return new MongoConstraint(field.toString(), new Document("$exists", false));
     }

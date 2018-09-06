@@ -13,8 +13,6 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
 
-import java.util.function.Predicate
-
 class MongoFilledSpec extends BaseSpecification {
 
     @Part
