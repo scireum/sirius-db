@@ -31,6 +31,11 @@ public class SchemaUpdateAction {
     private String realm;
     private volatile boolean executed;
 
+    /**
+     * Creates a new schema update action.
+     *
+     * @param realm the realm (database) for which this change is genrated
+     */
     public SchemaUpdateAction(String realm) {
         this.realm = realm;
     }

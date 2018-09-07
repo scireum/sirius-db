@@ -26,10 +26,18 @@ public class Table {
     private List<Key> keys = new ArrayList<>();
     private List<ForeignKey> foreignKeys = new ArrayList<>();
 
+    /**
+     * Creates a new table based on the given entity descriptor.
+     *
+     * @param source the descriptor used to determine most settings from
+     */
     public Table(EntityDescriptor source) {
         this.source = source;
     }
 
+    /**
+     * Creates an empty table description.
+     */
     public Table() {
     }
 

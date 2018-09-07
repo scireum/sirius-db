@@ -19,5 +19,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface DefaultValue {
+    /**
+     * Contains the string representation of the default value.
+     *
+     * @return the default value to use
+     */
     String value();
 }

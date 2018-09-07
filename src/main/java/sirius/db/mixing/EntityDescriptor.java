@@ -472,10 +472,14 @@ public class EntityDescriptor {
         return allMixins.get(forClass);
     }
 
-    /*
+    /**
      * Adds all properties of the given class (and its superclasses)
+     *
+     * @param descriptor       the descriptor to add discovered mixins to
+     * @param accessPath       the access path to apply
+     * @param clazz            the class to scan
+     * @param propertyConsumer the consumer to write the properties to
      */
-    @SuppressWarnings("unchecked")
     public static void addFields(EntityDescriptor descriptor,
                                  AccessPath accessPath,
                                  Class<?> clazz,

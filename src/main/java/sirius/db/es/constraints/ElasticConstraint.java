@@ -47,6 +47,11 @@ public class ElasticConstraint extends Constraint {
         builder.append(constraint);
     }
 
+    /**
+     * Returns the JSON representation of this constraint.
+     *
+     * @return the JSON to send to the Elasticsearch server for this constraint
+     */
     public JSONObject toJSON() {
         return constraint;
     }

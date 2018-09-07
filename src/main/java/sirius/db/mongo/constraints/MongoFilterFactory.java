@@ -83,7 +83,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     /**
-     * Checks whether the given field is present, independent of the field value (specially 'null').
+     * Checks whether the given field is present, independent of the field value (specially <tt>null</tt>).
      *
      * @param field the field to filter
      * @return the generated constraint
@@ -93,7 +93,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     /**
-     * Checks whether the given field is absent, independent of the field value (specially 'null').
+     * Checks whether the given field is absent, independent of the field value (specially <tt>null</tt>).
      *
      * @param field the field to filter
      * @return the generated constraint
