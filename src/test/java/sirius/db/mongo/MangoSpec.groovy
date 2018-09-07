@@ -8,7 +8,7 @@
 
 package sirius.db.mongo
 
-import sirius.db.jdbc.SQLLockedTestEntity
+
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part

@@ -25,10 +25,10 @@ public interface ESPropertyInfo {
     /**
      * Transfers the given option which (via {@link IndexMode}) to the mapping.
      *
-     * @param key          the mapping key to use
-     * @param annotation   the annotation wrapped as optional
-     * @param mapper       the lambda which selects the value to transfer
-     * @param mapping      the target mapping to fill
+     * @param key        the mapping key to use
+     * @param annotation the annotation wrapped as optional
+     * @param mapper     the lambda which selects the value to transfer
+     * @param mapping    the target mapping to fill
      */
     default void transferOption(String key,
                                 Optional<IndexMode> annotation,

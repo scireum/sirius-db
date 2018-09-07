@@ -8,6 +8,9 @@
 
 package sirius.db.mixing.properties;
 
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
@@ -15,9 +18,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.jdbc.schema.SQLPropertyInfo;
-import sirius.db.jdbc.schema.Table;
-import sirius.db.jdbc.schema.TableColumn;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -140,5 +140,4 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
             throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
         }
     }
-
 }

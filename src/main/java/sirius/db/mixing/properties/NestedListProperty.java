@@ -223,10 +223,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
             description.put(IndexMappings.MAPPING_TYPE, "nested");
         }
 
-        transferOption(IndexMappings.MAPPING_STORED,
-                       getAnnotation(IndexMode.class),
-                       IndexMode::stored,
-                       description);
+        transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
 
         JSONObject properties = new JSONObject();
         for (Property property : getNestedDescriptor().getProperties()) {

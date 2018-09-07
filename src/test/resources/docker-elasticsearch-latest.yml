@@ -4,9 +4,9 @@ services:
   elasticsearch:
     image: elasticsearch:latest
     ports:
-      - "9200"
+    - "9200"
     environment:
-      - xpack.security.enabled=false
-      - script.inline=true
-      - ES_JAVA_OPTS=-Xms32M -Xms128M
+    - xpack.security.enabled=false
+    - script.inline=true
+    - ES_JAVA_OPTS=-Xms32M -Xms128M
     hostname: es

@@ -21,5 +21,4 @@ public class RefMongoEntity extends MongoEntity {
     public SQLEntityRef<RefEntity> getRef() {
         return ref;
     }
-
 }

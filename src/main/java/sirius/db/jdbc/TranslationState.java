@@ -8,8 +8,8 @@
 
 package sirius.db.jdbc;
 
-import sirius.db.mixing.EntityDescriptor;
 import sirius.db.jdbc.constraints.Exists;
+import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.commons.Tuple;
 
 import java.util.Map;

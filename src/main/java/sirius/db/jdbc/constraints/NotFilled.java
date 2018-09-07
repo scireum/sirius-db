@@ -32,5 +32,4 @@ class NotFilled extends SQLConstraint {
     public void asString(StringBuilder builder) {
         builder.append(field.toString()).append(" IS NULL");
     }
-
 }

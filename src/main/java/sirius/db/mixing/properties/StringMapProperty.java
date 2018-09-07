@@ -131,10 +131,7 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
         } else {
             description.put(IndexMappings.MAPPING_TYPE, "nested");
         }
-        transferOption(IndexMappings.MAPPING_STORED,
-                       getAnnotation(IndexMode.class),
-                       IndexMode::stored,
-                       description);
+        transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
 
         JSONObject properties = new JSONObject();
         properties.put(KEY, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));

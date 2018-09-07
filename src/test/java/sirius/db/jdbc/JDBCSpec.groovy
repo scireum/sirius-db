@@ -41,8 +41,8 @@ class JDBCSpec extends BaseSpecification {
         given:
         def db = dbs.get("test")
         when: "a insert statements are submitted"
-        db.insertRow("test_a", [a : 'Hello'])
-        db.insertRow("test_a", [a : 'Test', b: 2])
+        db.insertRow("test_a", [a: 'Hello'])
+        db.insertRow("test_a", [a: 'Test', b: 2])
         then: "data is returned from the database"
         db.createQuery("SELECT * FROM test_a").queryList().size() == 2
         and:

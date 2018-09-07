@@ -10,8 +10,8 @@ package sirius.db.mixing;
 
 import com.google.common.collect.Maps;
 import sirius.db.es.Elastic;
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mongo.Mango;

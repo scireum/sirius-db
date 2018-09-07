@@ -8,7 +8,6 @@
 
 package sirius.db.mixing.types;
 
-
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Iterator;

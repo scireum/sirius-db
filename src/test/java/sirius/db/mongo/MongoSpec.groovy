@@ -40,9 +40,9 @@ class MongoSpec extends BaseSpecification {
         def result3 = mongo.insert().set("sortBy", 2).set("id", keyGen.generateId()).into("test")
         then:
         mongo.find()
-                .orderByDesc("sortBy")
-                .singleIn("test")
-                .map({ entity -> entity.getString("id") })
-                .orElse(null) == result2.getString("id")
+             .orderByDesc("sortBy")
+             .singleIn("test")
+             .map({ entity -> entity.getString("id") })
+             .orElse(null) == result2.getString("id")
     }
 }
