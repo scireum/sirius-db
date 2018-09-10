@@ -18,6 +18,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringIntMap;
 import sirius.db.mongo.Mango;
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
@@ -73,5 +74,10 @@ public class StringIntMapProperty extends BaseMapProperty {
         Document doc = new Document();
         doc.putAll((Map<String, Integer>) object);
         return doc;
+    }
+
+    @Override
+    protected Object transformFromMongo(Value object) {
+        return object.get();
     }
 }
