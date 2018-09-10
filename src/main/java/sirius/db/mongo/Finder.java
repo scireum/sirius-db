@@ -12,7 +12,6 @@ import com.mongodb.client.FindIterable;
 import org.bson.Document;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.async.TaskContext;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Microtiming;
@@ -247,8 +246,6 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
-    @SuppressWarnings("squid:S899")
-    @Explain("We don't care about the return value, we just need to ensure that the query is executed.")
     private void handleTracingAndReporting(String collection, Watch w) {
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {
