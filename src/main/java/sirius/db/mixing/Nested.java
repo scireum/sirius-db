@@ -40,7 +40,7 @@ public class Nested extends Mixable {
         try {
             EntityDescriptor descriptor = mixing.getDescriptor(getClass());
 
-            Nested copy = getClass().newInstance();
+            Nested copy = getClass().getDeclaredConstructor().newInstance();
 
             for (Property property : descriptor.getProperties()) {
                 property.setValue(copy, property.getValueAsCopy(this));

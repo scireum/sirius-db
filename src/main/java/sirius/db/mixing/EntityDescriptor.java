@@ -162,7 +162,7 @@ public class EntityDescriptor {
         this.versioned = type.isAnnotationPresent(Versioned.class);
 
         try {
-            this.referenceInstance = type.newInstance();
+            this.referenceInstance = type.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             Exceptions.handle()
                       .to(Mixing.LOG)
@@ -629,7 +629,7 @@ public class EntityDescriptor {
      */
     public Object make(Class<? extends BaseMapper<?, ?, ?>> mapperType, String alias, ValueSupplier<String> supplier)
             throws Exception {
-        Object entity = type.newInstance();
+        Object entity = type.getDeclaredConstructor().newInstance();
 
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getPropertyName() : alias + "_" + p.getPropertyName();
