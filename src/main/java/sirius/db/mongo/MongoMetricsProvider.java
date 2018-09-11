@@ -27,6 +27,11 @@ public class MongoMetricsProvider implements MetricProvider {
         if (mongo.isConfigured()) {
             collector.metric("mongo-calls", "Mongo DB Calls", mongo.callDuration.getCount(), "/min");
             collector.metric("mongo-call-duration", "Mongo DB Call Duration", mongo.callDuration.getAndClear(), "ms");
+            collector.differentialMetric("mongo-slow-queries",
+                                         "mongo-slow-queries",
+                                         "MongoDB Slow Queries",
+                                         mongo.numSlowQueries.getCount(),
+                                         "/min");
         }
     }
 }

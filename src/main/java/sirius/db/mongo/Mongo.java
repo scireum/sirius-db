@@ -23,10 +23,12 @@ import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Parts;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
+import sirius.kernel.health.Counter;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.settings.PortMapper;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,10 @@ public class Mongo implements Startable, Stoppable {
     @ConfigValue("mongo.db")
     private String dbName;
 
+    @ConfigValue("mongo.logQueryThreshold")
+    private Duration longQueryThreshold;
+    private long longQueryThresholdMillis = -1;
+
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
 
@@ -63,6 +69,7 @@ public class Mongo implements Startable, Stoppable {
     protected volatile int traceLimit;
     protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
     protected Average callDuration = new Average();
+    protected Counter numSlowQueries = new Counter();
 
     /**
      * Determines if access to Mongo DB is configured by checking if a host is given.
@@ -175,5 +182,21 @@ public class Mongo implements Startable, Stoppable {
      */
     public Deleter delete() {
         return new Deleter(this);
+    }
+
+    /**
+     * Returns the query log threshold in millis.
+     * <p>
+     * If the execution duration of a query is longer than this threshold, it is logged into
+     * {@link sirius.db.DB#SLOW_DB_LOG} for further analysis.
+     *
+     * @return the log thresold for queries in milliseconds
+     */
+    protected long getLongQueryThresholdMillis() {
+        if (longQueryThresholdMillis < 0) {
+            longQueryThresholdMillis = longQueryThreshold.toMillis();
+        }
+
+        return longQueryThresholdMillis;
     }
 }

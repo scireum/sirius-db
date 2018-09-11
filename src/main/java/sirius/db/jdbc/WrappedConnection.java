@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc;
 
+import sirius.db.DB;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Watch;
@@ -54,10 +55,10 @@ class WrappedConnection extends DelegatingConnection<Connection> {
         } finally {
             watch.submitMicroTiming("SQL", "Connection Duration: " + database.name);
             if (watch.elapsedMillis() > Databases.getLongConnectionThresholdMillis()) {
-                Databases.SLOW_DB_LOG.INFO("A long running connection was detected (%s): Opened:\n%s\n\nClosed:\n%s",
-                                           watch.duration(),
-                                           connected.toString(),
-                                           ExecutionPoint.snapshot().toString());
+                DB.SLOW_DB_LOG.INFO("A long running connection was detected (%s): Opened:\n%s\n\nClosed:\n%s",
+                                    watch.duration(),
+                                    connected.toString(),
+                                    ExecutionPoint.snapshot().toString());
             }
         }
     }

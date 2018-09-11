@@ -220,6 +220,10 @@ public class Finder extends QueryBuilder<Finder> {
     public void eachIn(String collection, Function<Doc, Boolean> processor) {
         Watch w = Watch.start();
 
+        if (Mongo.LOG.isFINE()) {
+            Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
+        }
+
         FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
         if (fields != null) {
             cur.projection(fields);

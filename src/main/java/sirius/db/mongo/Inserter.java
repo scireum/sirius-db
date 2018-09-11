@@ -93,7 +93,12 @@ public class Inserter {
      * @return the inserted document
      */
     public Doc into(String collection) {
+        if (Mongo.LOG.isFINE()) {
+            Mongo.LOG.FINE("INSERT: %s\nObject: %s", collection, obj);
+        }
+
         Watch w = Watch.start();
+
         mongo.db().getCollection(collection).insertOne(obj);
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {

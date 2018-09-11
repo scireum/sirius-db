@@ -10,10 +10,12 @@ package sirius.db.mongo;
 
 import com.mongodb.BasicDBObject;
 import org.bson.Document;
+import sirius.db.DB;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.db.mongo.constraints.MongoFilterFactory;
+import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
@@ -105,6 +107,15 @@ public abstract class QueryBuilder<S> {
             mongo.traceData.put(location,
                                 Tuple.create(collection + ": " + filterObject.toString() + " [" + w.duration() + "]",
                                              explanation.toString()));
+        }
+
+        if (w.elapsedMillis() > mongo.getLongQueryThresholdMillis()) {
+            mongo.numSlowQueries.inc();
+            DB.SLOW_DB_LOG.INFO("A slow MongoDB query was executed (%s): %s\n%s\n%s",
+                                w.duration(),
+                                collection,
+                                filterObject,
+                                ExecutionPoint.snapshot().toString());
         }
     }
 

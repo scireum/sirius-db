@@ -56,8 +56,7 @@ import java.util.stream.Collectors;
 @Register(classes = {Databases.class, Initializable.class})
 public class Databases implements Initializable {
 
-    protected static final Log LOG = Log.get("db");
-    protected static final Log SLOW_DB_LOG = Log.get("db-slow");
+    protected static final Log LOG = Log.get("jdbc");
     private static final Map<String, Database> datasources = Maps.newConcurrentMap();
 
     @ConfigValue("jdbc.logQueryThreshold")
