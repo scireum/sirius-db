@@ -34,7 +34,7 @@ public class SchemaUpdateAction {
     /**
      * Creates a new schema update action.
      *
-     * @param realm the realm (database) for which this change is genrated
+     * @param realm the realm (database) for which this change is generated
      */
     public SchemaUpdateAction(String realm) {
         this.realm = realm;
