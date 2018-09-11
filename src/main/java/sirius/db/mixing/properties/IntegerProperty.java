@@ -75,6 +75,10 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
 
     @Override
     protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        if (object.get() instanceof Long) {
+            return Integer.valueOf(((Long) object.get()).intValue());
+        }
+
         return object.get();
     }
 
