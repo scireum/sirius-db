@@ -54,7 +54,7 @@ class WrappedPreparedStatement implements PreparedStatement {
         w.submitMicroTiming("SQL", sql);
         Databases.numQueries.inc();
         Databases.queryDuration.addValue(w.elapsedMillis());
-        if (w.elapsedMillis() > Databases.getLongQueryThresholdMillis()) {
+        if (w.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
             Databases.numSlowQueries.inc();
             DB.SLOW_DB_LOG.INFO("A slow JDBC query was executed (%s): %s\n%s",
                                 w.duration(),
@@ -403,7 +403,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             w.submitMicroTiming("BATCH-SQL", preparedSQL);
             Databases.numQueries.inc();
             Databases.queryDuration.addValue(w.elapsedMillis());
-            if (w.elapsedMillis() > Databases.getLongQueryThresholdMillis()) {
+            if (w.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
                 Databases.numSlowQueries.inc();
                 DB.SLOW_DB_LOG.INFO("A slow JDBC batch query was executed (%s): %s (%s rows)\n%s",
                                     w.duration(),

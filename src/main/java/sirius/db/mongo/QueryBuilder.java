@@ -109,7 +109,7 @@ public abstract class QueryBuilder<S> {
                                              explanation.toString()));
         }
 
-        if (w.elapsedMillis() > mongo.getLongQueryThresholdMillis()) {
+        if (w.elapsedMillis() > mongo.getLogQueryThresholdMillis()) {
             mongo.numSlowQueries.inc();
             DB.SLOW_DB_LOG.INFO("A slow MongoDB query was executed (%s): %s\n%s\n%s",
                                 w.duration(),

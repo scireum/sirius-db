@@ -54,7 +54,7 @@ class WrappedConnection extends DelegatingConnection<Connection> {
             Databases.LOG.INFO(e);
         } finally {
             watch.submitMicroTiming("SQL", "Connection Duration: " + database.name);
-            if (watch.elapsedMillis() > Databases.getLongConnectionThresholdMillis()) {
+            if (watch.elapsedMillis() > Databases.getLogConnectionThresholdMillis()) {
                 DB.SLOW_DB_LOG.INFO("A long running connection was detected (%s): Opened:\n%s\n\nClosed:\n%s",
                                     watch.duration(),
                                     connected.toString(),

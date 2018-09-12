@@ -117,7 +117,7 @@ class RequestBuilder {
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming("elastic", method + ": " + uri);
             }
-            if (w.elapsedMillis() > Elastic.getLongQueryThresholdMillis()) {
+            if (w.elapsedMillis() > Elastic.getLogQueryThresholdMillis()) {
                 elastic.numSlowQueries.inc();
                 DB.SLOW_DB_LOG.INFO("A slow Elasticsearch query was executed (%s): %s\n%s\n%s",
                                     w.duration(),

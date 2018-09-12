@@ -58,8 +58,8 @@ public class Mongo implements Startable, Stoppable {
     private String dbName;
 
     @ConfigValue("mongo.logQueryThreshold")
-    private Duration longQueryThreshold;
-    private long longQueryThresholdMillis = -1;
+    private Duration logQueryThreshold;
+    private long logQueryThresholdMillis = -1;
 
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
@@ -192,11 +192,11 @@ public class Mongo implements Startable, Stoppable {
      *
      * @return the log thresold for queries in milliseconds
      */
-    protected long getLongQueryThresholdMillis() {
-        if (longQueryThresholdMillis < 0) {
-            longQueryThresholdMillis = longQueryThreshold.toMillis();
+    protected long getLogQueryThresholdMillis() {
+        if (logQueryThresholdMillis < 0) {
+            logQueryThresholdMillis = logQueryThreshold.toMillis();
         }
 
-        return longQueryThresholdMillis;
+        return logQueryThresholdMillis;
     }
 }

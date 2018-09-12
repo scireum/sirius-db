@@ -87,8 +87,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private String hosts;
 
     @ConfigValue("elasticsearch.logQueryThreshold")
-    private static Duration longQueryThreshold;
-    private static long longQueryThresholdMillis = -1;
+    private static Duration logQueryThreshold;
+    private static long logQueryThresholdMillis = -1;
 
     private LowLevelClient client;
 
@@ -480,12 +480,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      *
      * @return the log thresold for queries in milliseconds
      */
-    protected static long getLongQueryThresholdMillis() {
-        if (longQueryThresholdMillis < 0) {
-            longQueryThresholdMillis = longQueryThreshold.toMillis();
+    protected static long getLogQueryThresholdMillis() {
+        if (logQueryThresholdMillis < 0) {
+            logQueryThresholdMillis = logQueryThreshold.toMillis();
         }
 
-        return longQueryThresholdMillis;
+        return logQueryThresholdMillis;
     }
 
 
