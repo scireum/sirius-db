@@ -186,6 +186,12 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         return QueryBuilder.FILTERS;
     }
 
+    /**
+     * Returns the collection name for the given entity type.
+     *
+     * @param type the type to get the collection for
+     * @return the name of the collection used to store the given entity type
+     */
     public String getCollection(Class<? extends MongoEntity> type) {
         return mixing.getDescriptor(type).getRelationName();
     }

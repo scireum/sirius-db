@@ -162,7 +162,7 @@ public class EntityDescriptor {
         this.versioned = type.isAnnotationPresent(Versioned.class);
 
         try {
-            this.referenceInstance = type.newInstance();
+            this.referenceInstance = type.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             Exceptions.handle()
                       .to(Mixing.LOG)
@@ -472,10 +472,14 @@ public class EntityDescriptor {
         return allMixins.get(forClass);
     }
 
-    /*
+    /**
      * Adds all properties of the given class (and its superclasses)
+     *
+     * @param descriptor       the descriptor to add discovered mixins to
+     * @param accessPath       the access path to apply
+     * @param clazz            the class to scan
+     * @param propertyConsumer the consumer to write the properties to
      */
-    @SuppressWarnings("unchecked")
     public static void addFields(EntityDescriptor descriptor,
                                  AccessPath accessPath,
                                  Class<?> clazz,
@@ -625,7 +629,7 @@ public class EntityDescriptor {
      */
     public Object make(Class<? extends BaseMapper<?, ?, ?>> mapperType, String alias, ValueSupplier<String> supplier)
             throws Exception {
-        Object entity = type.newInstance();
+        Object entity = type.getDeclaredConstructor().newInstance();
 
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getPropertyName() : alias + "_" + p.getPropertyName();

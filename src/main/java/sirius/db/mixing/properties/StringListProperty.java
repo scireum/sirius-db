@@ -111,14 +111,8 @@ public class StringListProperty extends Property implements ESPropertyInfo {
     @Override
     public void describeProperty(JSONObject description) {
         description.put("type", "keyword");
-        transferOption(IndexMappings.MAPPING_STORED,
-                       getAnnotation(IndexMode.class),
-                       IndexMode::stored,
-                       description);
-        transferOption(IndexMappings.MAPPING_INDEX,
-                       getAnnotation(IndexMode.class),
-                       IndexMode::indexed,
-                       description);
+        transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
+        transferOption(IndexMappings.MAPPING_INDEX, getAnnotation(IndexMode.class), IndexMode::indexed, description);
         transferOption(IndexMappings.MAPPING_DOC_VALUES,
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,

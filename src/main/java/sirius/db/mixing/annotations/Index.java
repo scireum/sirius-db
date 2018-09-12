@@ -41,6 +41,15 @@ public @interface Index {
      */
     String[] columns();
 
+    /**
+     * Contains a list of column settings to be used for <tt>Mongo DB</tt>.
+     * <p>
+     * Use {@link sirius.db.mongo.Mango#INDEX_ASCENDING} or {@link sirius.db.mongo.Mango#INDEX_DESCENDING} for
+     * common use cases. Use appropriate strings determined by the Mongo DB documentation for special
+     * indices (e.g. geospatial ones).
+     *
+     * @return an array of strings which determines the index setting per column in the {@link #columns()} array
+     */
     String[] columnSettings() default {};
 
     /**

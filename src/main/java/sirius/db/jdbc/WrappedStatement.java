@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc;
 
+import sirius.db.DB;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Watch;
@@ -48,12 +49,12 @@ class WrappedStatement implements Statement {
         w.submitMicroTiming("SQL", sql);
         Databases.numQueries.inc();
         Databases.queryDuration.addValue(w.elapsedMillis());
-        if (w.elapsedMillis() > Databases.getLongQueryThresholdMillis()) {
+        if (w.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
             Databases.numSlowQueries.inc();
-            Databases.SLOW_DB_LOG.INFO("A slow query was executed (%s): %s\n%s",
-                                       w.duration(),
-                                       sql,
-                                       ExecutionPoint.snapshot().toString());
+            DB.SLOW_DB_LOG.INFO("A slow JDBC query was executed (%s): %s\n%s",
+                                w.duration(),
+                                sql,
+                                ExecutionPoint.snapshot().toString());
         }
     }
 

@@ -109,7 +109,7 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").count() == 0
     }
 
-     def "truncate works"() {
+    def "truncate works"() {
         when:
         for (int i = 0; i < 100; i++) {
             QueryTestEntity entity = new QueryTestEntity()

@@ -53,6 +53,11 @@ public class BulkContext implements Closeable {
     private static final String COMMAND_CREATE = "create";
     private static final String COMMAND_UPDATE = "update";
 
+    private static final String RESPONSE_INDEX = "index";
+    private static final String RESPONSE_TYPE = "type";
+    private static final String RESPONSE_REASON = "reason";
+    private static final String RESPONSE_CAUSED_BY = "caused_by";
+
     private final int maxBatchSize;
     private LowLevelClient client;
     private List<JSONObject> commands;
@@ -248,14 +253,14 @@ public class BulkContext implements Closeable {
             if (error != null) {
                 failedIds.add(current.getString(KEY_ID));
                 failureMessageBuilder.append("index: ")
-                                     .append(error.getString("index"))
+                                     .append(error.getString(RESPONSE_INDEX))
                                      .append(" type: ")
-                                     .append(error.getString("type"))
+                                     .append(error.getString(RESPONSE_TYPE))
                                      .append(" reason: ")
-                                     .append(error.getString("reason"));
-                if (error.getJSONObject("caused_by") != null) {
+                                     .append(error.getString(RESPONSE_REASON));
+                if (error.getJSONObject(RESPONSE_CAUSED_BY) != null) {
                     failureMessageBuilder.append(" cause: ")
-                                         .append(error.getJSONObject("caused_by").getString("reason"));
+                                         .append(error.getJSONObject(RESPONSE_CAUSED_BY).getString(RESPONSE_REASON));
                 }
                 failureMessageBuilder.append("\n");
             }

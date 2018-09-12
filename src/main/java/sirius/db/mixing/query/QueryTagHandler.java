@@ -23,6 +23,7 @@ public interface QueryTagHandler<C extends Constraint> extends Named {
     /**
      * Computes the constraint.
      *
+     * @param factory    the filter factory to use when generating constraints
      * @param descriptor the entity for which the constraint is to be created
      * @param tagValue   the value to filter on
      * @return a constraint representing the given filter

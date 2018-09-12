@@ -11,8 +11,9 @@ package sirius.db.jdbc
 import sirius.db.mixing.Property
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Amount
-import sirius.kernel.di.std.Part
 import sirius.kernel.commons.Value
+import sirius.kernel.di.std.Part
+
 import java.time.Duration
 
 class DataTypesSpec extends BaseSpecification {
@@ -76,7 +77,7 @@ class DataTypesSpec extends BaseSpecification {
         test.getTestEnum() == DataTypesEntity.TestEnum.Test2
     }
 
-    def "default values work"(){
+    def "default values work"() {
         given:
         DataTypesEntity test = new DataTypesEntity()
         when:

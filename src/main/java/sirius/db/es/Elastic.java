@@ -29,11 +29,13 @@ import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
+import sirius.kernel.health.Counter;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
 import sirius.kernel.settings.PortMapper;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
@@ -84,10 +86,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @ConfigValue("elasticsearch.hosts")
     private String hosts;
 
+    @ConfigValue("elasticsearch.logQueryThreshold")
+    private static Duration logQueryThreshold;
+    private static long logQueryThresholdMillis = -1;
+
     private LowLevelClient client;
 
     protected Future readyFuture = new Future();
     protected Average callDuration = new Average();
+    protected Counter numSlowQueries = new Counter();
     protected Map<EntityDescriptor, Property> routeTable = new HashMap<>();
     protected Map<EntityDescriptor, Property> discriminatorTable = new HashMap<>();
     protected boolean dockerDetected = false;
@@ -464,6 +471,23 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     public boolean isStoredPerYear(EntityDescriptor descriptor) {
         return discriminatorTable.containsKey(descriptor);
     }
+
+    /**
+     * Returns the query log threshold in millis.
+     * <p>
+     * If the execution duration of a query is longer than this threshold, it is logged into
+     * {@link sirius.db.DB#SLOW_DB_LOG} for further analysis.
+     *
+     * @return the log thresold for queries in milliseconds
+     */
+    protected static long getLogQueryThresholdMillis() {
+        if (logQueryThresholdMillis < 0) {
+            logQueryThresholdMillis = logQueryThreshold.toMillis();
+        }
+
+        return logQueryThresholdMillis;
+    }
+
 
     @Override
     public <E extends ElasticEntity> ElasticQuery<E> select(Class<E> type) {

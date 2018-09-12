@@ -30,12 +30,12 @@ class MongoStringListMapPropertySpec extends BaseSpecification {
         then:
         resolved.getMap().size() == 2
         and:
-        resolved.getMap().contains("Test","1")
-        resolved.getMap().contains("Test","3")
-        resolved.getMap().contains("Foo","2")
+        resolved.getMap().contains("Test", "1")
+        resolved.getMap().contains("Test", "3")
+        resolved.getMap().contains("Foo", "2")
 
         when:
-        resolved.getMap().remove("Test","1")
+        resolved.getMap().remove("Test", "1")
         and:
         mango.update(resolved)
         and:
@@ -43,9 +43,9 @@ class MongoStringListMapPropertySpec extends BaseSpecification {
         then:
         resolved.getMap().size() == 2
         and:
-        !resolved.getMap().contains("Test","1")
-        resolved.getMap().contains("Test","3")
-        resolved.getMap().contains("Foo","2")
+        !resolved.getMap().contains("Test", "1")
+        resolved.getMap().contains("Test", "3")
+        resolved.getMap().contains("Foo", "2")
     }
 
 }

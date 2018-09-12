@@ -291,6 +291,9 @@ public class Updater extends QueryBuilder<Updater> {
 
         Watch w = Watch.start();
         try {
+            if (Mongo.LOG.isFINE()) {
+                Mongo.LOG.FINE("UPDATE: %s\nFilter: %s\n Update:%s", collection, filterObject, updateObject);
+            }
             UpdateOptions updateOptions = new UpdateOptions().upsert(this.upsert);
             if (many) {
                 return mongo.db().getCollection(collection).updateMany(filterObject, updateObject, updateOptions);

@@ -13,8 +13,12 @@ import sirius.kernel.ScenarioSuite;
 
 @RunWith(ScenarioSuite.class)
 @SuiteClasses({"**/*Test.class", "**/*Spec.class"})
-@Scenario(file = "test-mariadb-latest.conf", includes = "sirius\\.db\\.jdbc.*", excludes = "sirius\\.db\\.jdbc.clickhouse.*")
-@Scenario(file = "test-percona-latest.conf", includes = "sirius\\.db\\.jdbc.*", excludes = "sirius\\.db\\.jdbc.clickhouse.*")
+@Scenario(file = "test-mariadb-latest.conf",
+        includes = "sirius\\.db\\.jdbc.*",
+        excludes = "sirius\\.db\\.jdbc.clickhouse.*")
+@Scenario(file = "test-percona-latest.conf",
+        includes = "sirius\\.db\\.jdbc.*",
+        excludes = "sirius\\.db\\.jdbc.clickhouse.*")
 //@Scenario(file = "test-postgres-latest.conf", filter = "sirius\\.db\\.(jdbc).*")
 @Scenario(file = "test-redis-latest.conf", includes = "sirius\\.db\\.redis.*")
 @Scenario(file = "test-mongo-latest.conf", includes = "sirius\\.db\\.mongo.*")

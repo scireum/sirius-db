@@ -17,18 +17,21 @@ import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
+import sirius.db.DB;
 import sirius.db.mixing.OptimisticLockException;
+import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.Microtiming;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -87,36 +90,21 @@ class RequestBuilder {
         return withParam("version", version);
     }
 
-    @SuppressWarnings("squid:S2095")
-    @Explain("False positive")
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
         Watch w = Watch.start();
         try (Operation op = new Operation(() -> "Elastic: " + method + " " + uri, Duration.ofSeconds(30))) {
-            Response response = restClient.performRequest(method, uri, determineParams(), buildEntity());
+            if (Elastic.LOG.isFINE()) {
+                Elastic.LOG.FINE(method + " " + uri + ": " + buildContent().orElse("-"));
+            }
+
+            NStringEntity requestContent =
+                    buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON))
+                                  .orElse(null);
+            Response response = restClient.performRequest(method, uri, determineParams(), requestContent);
             responseEntity = response.getEntity();
             return this;
         } catch (ResponseException e) {
-            if (customExceptionHandler != null) {
-                HttpEntity result = customExceptionHandler.apply(e);
-                if (result != null) {
-                    responseEntity = result;
-                    return this;
-                }
-            }
-
-            JSONObject error = extractErrorJSON(e);
-            if (e.getResponse().getStatusLine().getStatusCode() == 409) {
-                throw new OptimisticLockException(error.getString("reson"), e);
-            }
-
-            throw Exceptions.handle()
-                            .to(Elastic.LOG)
-                            .error(e)
-                            .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
-                                                    e.getResponse().getHost(),
-                                                    error == null ? "unknown" : error.getString("reason"),
-                                                    error == null ? "-" : error.getString("type"))
-                            .handle();
+            return handleResponseException(e);
         } catch (IOException e) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
@@ -126,26 +114,59 @@ class RequestBuilder {
                             .handle();
         } finally {
             elastic.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming("elastic", method + ": " + uri);
+            }
+            if (w.elapsedMillis() > Elastic.getLogQueryThresholdMillis()) {
+                elastic.numSlowQueries.inc();
+                DB.SLOW_DB_LOG.INFO("A slow Elasticsearch query was executed (%s): %s\n%s\n%s",
+                                    w.duration(),
+                                    method + ": " + uri,
+                                    buildContent().orElse("no content"),
+                                    ExecutionPoint.snapshot().toString());
+            }
         }
+    }
+
+    private RequestBuilder handleResponseException(ResponseException e) throws OptimisticLockException {
+        if (customExceptionHandler != null) {
+            HttpEntity result = customExceptionHandler.apply(e);
+            if (result != null) {
+                responseEntity = result;
+                return this;
+            }
+        }
+
+        JSONObject error = extractErrorJSON(e);
+        if (e.getResponse().getStatusLine().getStatusCode() == 409) {
+            throw new OptimisticLockException(error.getString("reson"), e);
+        }
+
+        throw Exceptions.handle()
+                        .to(Elastic.LOG)
+                        .error(e)
+                        .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
+                                                e.getResponse().getHost(),
+                                                error == null ? "unknown" : error.getString("reason"),
+                                                error == null ? "-" : error.getString("type"))
+                        .handle();
     }
 
     private Map<String, String> determineParams() {
         return params == null ? Collections.emptyMap() : params;
     }
 
-    private HttpEntity buildEntity() {
+    private Optional<String> buildContent() {
         if (data != null) {
-            return new NStringEntity(data.toJSONString(), ContentType.APPLICATION_JSON);
+            return Optional.of(data.toJSONString());
         }
         if (rawData != null) {
-            return new NStringEntity(rawData, ContentType.APPLICATION_JSON);
+            return Optional.of(rawData);
         }
 
-        return null;
+        return Optional.empty();
     }
 
-    @SuppressWarnings("squid:S2095")
-    @Explain("False positive")
     protected RequestBuilder execute(String uri) {
         try {
             return tryExecute(uri);

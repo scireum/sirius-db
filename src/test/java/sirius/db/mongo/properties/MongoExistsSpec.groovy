@@ -9,11 +9,7 @@
 package sirius.db.mongo.properties
 
 import sirius.db.KeyGenerator
-import sirius.db.mongo.Doc
-import sirius.db.mongo.Mango
-import sirius.db.mongo.Mongo
-import sirius.db.mongo.MongoEntity
-import sirius.db.mongo.QueryBuilder
+import sirius.db.mongo.*
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 

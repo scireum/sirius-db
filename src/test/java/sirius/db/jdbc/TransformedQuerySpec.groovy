@@ -39,7 +39,8 @@ class TransformedQuerySpec extends BaseSpecification {
 
     def "transform works when reading a test entity"() {
         given:
-        SQLQuery qry = oma.getDatabase(Mixing.DEFAULT_REALM).createQuery("SELECT * FROM transformedquerytestentity ORDER BY value ASC")
+        SQLQuery qry = oma.getDatabase(Mixing.DEFAULT_REALM).
+                createQuery("SELECT * FROM transformedquerytestentity ORDER BY value ASC")
         when:
         def e = oma.transform(TransformedQueryTestEntity.class, qry).queryFirst()
         and:
@@ -52,7 +53,8 @@ class TransformedQuerySpec extends BaseSpecification {
 
     def "transform works when reading a test entity with alias"() {
         given:
-        SQLQuery qry = oma.getDatabase(Mixing.DEFAULT_REALM).createQuery("SELECT id as x_id, value as x_value  FROM transformedquerytestentity ORDER BY value ASC")
+        SQLQuery qry = oma.getDatabase(Mixing.DEFAULT_REALM).
+                createQuery("SELECT id as x_id, value as x_value  FROM transformedquerytestentity ORDER BY value ASC")
         when:
         def e = oma.transform(TransformedQueryTestEntity.class, "x", qry).first()
         then:
@@ -63,7 +65,8 @@ class TransformedQuerySpec extends BaseSpecification {
 
     def "transform works when reading a test entity with a computed column"() {
         given:
-        SQLQuery qry = oma.getDatabase(Mixing.DEFAULT_REALM).createQuery("SELECT id, value, 'x' as test FROM transformedquerytestentity ORDER BY value ASC")
+        SQLQuery qry = oma.getDatabase(Mixing.DEFAULT_REALM).
+                createQuery("SELECT id, value, 'x' as test FROM transformedquerytestentity ORDER BY value ASC")
         when:
         def e = oma.transform(TransformedQueryTestEntity.class, qry).queryFirst()
         then:

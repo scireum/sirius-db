@@ -56,17 +56,16 @@ import java.util.stream.Collectors;
 @Register(classes = {Databases.class, Initializable.class})
 public class Databases implements Initializable {
 
-    protected static final Log LOG = Log.get("db");
-    protected static final Log SLOW_DB_LOG = Log.get("db-slow");
+    protected static final Log LOG = Log.get("jdbc");
     private static final Map<String, Database> datasources = Maps.newConcurrentMap();
 
     @ConfigValue("jdbc.logQueryThreshold")
-    private static Duration longQueryThreshold;
-    private static long longQueryThresholdMillis = -1;
+    private static Duration logQueryThreshold;
+    private static long logQueryThresholdMillis = -1;
 
     @ConfigValue("jdbc.logConnectionThreshold")
-    private static Duration longConnectionThreshold;
-    private static long longConnectionThresholdMillis = -1;
+    private static Duration logConnectionThreshold;
+    private static long logConnectionThresholdMillis = -1;
 
     protected static Counter numUses = new Counter();
     protected static Counter numConnects = new Counter();
@@ -176,12 +175,12 @@ public class Databases implements Initializable {
      *
      * @return the threshold for long queries in milliseconds
      */
-    protected static long getLongQueryThresholdMillis() {
-        if (longQueryThresholdMillis < 0) {
-            longQueryThresholdMillis = longQueryThreshold.toMillis();
+    protected static long getLogQueryThresholdMillis() {
+        if (logQueryThresholdMillis < 0) {
+            logQueryThresholdMillis = logQueryThreshold.toMillis();
         }
 
-        return longQueryThresholdMillis;
+        return logQueryThresholdMillis;
     }
 
     /**
@@ -189,12 +188,12 @@ public class Databases implements Initializable {
      *
      * @return the threshold for long queries in milliseconds
      */
-    protected static long getLongConnectionThresholdMillis() {
-        if (longConnectionThresholdMillis < 0) {
-            longConnectionThresholdMillis = longConnectionThreshold.toMillis();
+    protected static long getLogConnectionThresholdMillis() {
+        if (logConnectionThresholdMillis < 0) {
+            logConnectionThresholdMillis = logConnectionThreshold.toMillis();
         }
 
-        return longConnectionThresholdMillis;
+        return logConnectionThresholdMillis;
     }
 
     /**

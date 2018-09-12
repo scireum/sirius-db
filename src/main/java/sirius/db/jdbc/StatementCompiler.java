@@ -256,6 +256,7 @@ class StatementCompiler {
      *
      * @param query        the query to expand
      * @param wildcardLeft determines if a % should be added to the start of the string
+     * @return the query with appropriately escaped wildcards
      */
     public static String addSQLWildcard(String query, boolean wildcardLeft) {
         if (query == null) {

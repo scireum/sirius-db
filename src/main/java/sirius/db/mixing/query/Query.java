@@ -36,6 +36,11 @@ public abstract class Query<Q, E extends BaseEntity<?>, C extends Constraint> ex
      */
     public abstract Q where(C constraint);
 
+    /**
+     * Provides access to the filter implementation used by the underlying {@link BaseMapper}.
+     *
+     * @return the filter factory to use for this query
+     */
     public abstract FilterFactory<C> filters();
 
     /**

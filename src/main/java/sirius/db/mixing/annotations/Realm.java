@@ -28,5 +28,4 @@ public @interface Realm {
      * @return the name of the realm
      */
     String value();
-
 }

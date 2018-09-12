@@ -40,6 +40,10 @@ public class Deleter extends QueryBuilder<Deleter> {
     public DeleteResult singleFrom(String collection) {
         Watch w = Watch.start();
         try {
+            if (Mongo.LOG.isFINE()) {
+                Mongo.LOG.FINE("DELETE: %s\nFilter: %s", collection, filterObject);
+            }
+
             return mongo.db().getCollection(collection).deleteOne(filterObject);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
@@ -69,6 +73,10 @@ public class Deleter extends QueryBuilder<Deleter> {
     public DeleteResult manyFrom(String collection) {
         Watch w = Watch.start();
         try {
+            if (Mongo.LOG.isFINE()) {
+                Mongo.LOG.FINE("DELETE: %s\nFilter: %s", collection, filterObject);
+            }
+
             return mongo.db().getCollection(collection).deleteMany(filterObject);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());

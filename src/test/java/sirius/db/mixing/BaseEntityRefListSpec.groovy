@@ -9,7 +9,6 @@
 package sirius.db.mixing
 
 import sirius.db.es.Elastic
-import sirius.db.jdbc.OMA
 import sirius.db.mongo.Mango
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait

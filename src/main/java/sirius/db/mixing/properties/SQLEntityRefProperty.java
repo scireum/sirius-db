@@ -99,14 +99,8 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
     @Override
     public void describeProperty(JSONObject description) {
         description.put(IndexMappings.MAPPING_TYPE, "long");
-        transferOption(IndexMappings.MAPPING_STORED,
-                       getAnnotation(IndexMode.class),
-                       IndexMode::stored,
-                       description);
-        transferOption(IndexMappings.MAPPING_INDEX,
-                       getAnnotation(IndexMode.class),
-                       IndexMode::indexed,
-                       description);
+        transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
+        transferOption(IndexMappings.MAPPING_INDEX, getAnnotation(IndexMode.class), IndexMode::indexed, description);
         transferOption(IndexMappings.MAPPING_DOC_VALUES,
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,

@@ -9,7 +9,6 @@
 package sirius.db.es
 
 import com.alibaba.fastjson.JSONObject
-import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
@@ -37,17 +36,18 @@ class LowLevelClientSpec extends BaseSpecification {
         setup:
         elastic.getLowLevelClient().createIndex("test1", 1, 1)
         when:
-        elastic.getLowLevelClient().index("test1", "lltest","TEST", null, null, new JSONObject().fluentPut("Hello", "World"))
+        elastic.getLowLevelClient().
+                index("test1", "lltest", "TEST", null, null, new JSONObject().fluentPut("Hello", "World"))
         then:
-        def data = elastic.getLowLevelClient().get("test1","lltest","TEST", null, true)
+        def data = elastic.getLowLevelClient().get("test1", "lltest", "TEST", null, true)
         and:
         data.found
         data._source.Hello == 'World'
 
         when:
-        elastic.getLowLevelClient().delete("test1","lltest","TEST",null, null)
+        elastic.getLowLevelClient().delete("test1", "lltest", "TEST", null, null)
         and:
-        data = elastic.getLowLevelClient().get("test1","lltest","TEST", null, true)
+        data = elastic.getLowLevelClient().get("test1", "lltest", "TEST", null, true)
         then:
         !data.found
     }

@@ -19,7 +19,6 @@ import java.time.LocalDate;
 @Realm("clickhouse")
 public class ClickhouseTestEntity extends SQLEntity {
 
-
     public static final Mapping DATE_TIME = Mapping.named("dateTime");
     private Instant dateTime;
 

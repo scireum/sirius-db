@@ -8,7 +8,10 @@
 
 package sirius.db.mongo.properties
 
-import sirius.db.mongo.*
+
+import sirius.db.mongo.Mango
+import sirius.db.mongo.Mongo
+import sirius.db.mongo.QueryBuilder
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
@@ -58,10 +61,14 @@ class MongoFilledSpec extends BaseSpecification {
              .where(QueryBuilder.FILTERS.notFilled(MongoFilledEntity.TEST_FIELD))
              .count() == 1
 
-        mango.select(MongoFilledEntity.class)
-             .where(QueryBuilder.FILTERS.exists(MongoFilledEntity.TEST_FIELD))
-             .queryList()
-             .every({e -> Strings.areEqual(e.getIdAsString(), fieldNotFilled.getIdAsString()) || Strings.areEqual(e.getIdAsString(), fieldFilled.getIdAsString()) })
+        mango.select(MongoFilledEntity.class).
+                where(QueryBuilder.FILTERS
+                                  .exists(MongoFilledEntity.TEST_FIELD))
+             .queryList().every({ e ->
+            Strings.areEqual(e.getIdAsString(),
+                             fieldNotFilled.getIdAsString()) || Strings.areEqual(e.getIdAsString(),
+                                                                                 fieldFilled.getIdAsString())
+        })
         mango.select(MongoFilledEntity.class)
              .where(QueryBuilder.FILTERS.notExists(MongoFilledEntity.TEST_FIELD)).count() == 0
     }

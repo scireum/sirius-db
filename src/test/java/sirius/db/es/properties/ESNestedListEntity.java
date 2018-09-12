@@ -12,7 +12,6 @@ import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Nested;
 import sirius.db.mixing.types.NestedList;
-import sirius.db.mongo.MongoEntity;
 
 public class ESNestedListEntity extends ElasticEntity {
 

@@ -21,5 +21,4 @@ public class RefElasticEntity extends ElasticEntity {
     public SQLEntityRef<RefEntity> getRef() {
         return ref;
     }
-
 }
