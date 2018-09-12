@@ -86,6 +86,10 @@ public class MultiPointLocationProperty extends Property {
             return coordinates;
         }).collect(Collectors.toList());
 
+        if (locationList.isEmpty()) {
+            return null;
+        }
+
         return new Document().append("type", "MultiPoint").append("coordinates", locationList);
     }
 
