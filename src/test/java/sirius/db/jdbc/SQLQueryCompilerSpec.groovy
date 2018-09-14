@@ -93,7 +93,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "!(firstname:X OR lastname:Y)",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT((firstname = X) OR (lastname = Y)))"
+        queryCompiler.compile().toString() == "((NOT(((firstname = X) OR (lastname = Y)))))"
     }
 
     def "compiling 'firstname:test' works as expected"() {
