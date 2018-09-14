@@ -43,13 +43,11 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
             case EQUAL:
                 return factory.eq(field, value);
             case LIKE:
-                if (value.contains("*")) {
-                    return Elastic.FILTERS.prefix(field, value.replace("*", ""));
-                } else {
-                    return factory.eq(field, value);
+                if (!value.contains("*")) {
+                    return factory.eq(field, value.toLowerCase());
                 }
             default:
-                return Elastic.FILTERS.prefix(field, value.replace("*", ""));
+                return Elastic.FILTERS.prefix(field, value.replace("*", "").toLowerCase());
         }
     }
 }
