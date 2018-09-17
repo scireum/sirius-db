@@ -38,6 +38,13 @@ import java.util.function.Function;
  * Internal fluent builder used to create, execute and handle requests via the given REST client.
  */
 class RequestBuilder {
+
+    private static final String PARAM_REASON = "reason";
+    private static final String PARAM_TYPE = "type";
+    private static final String PARAM_ROUTING = "routing";
+    private static final String PARAM_VERSION = "version";
+    private static final String PARAM_ERROR = "error";
+
     private String method;
     private RestClient restClient;
     private Map<String, String> params;
@@ -83,11 +90,11 @@ class RequestBuilder {
     }
 
     protected RequestBuilder routing(Object routing) {
-        return withParam("routing", routing);
+        return withParam(PARAM_ROUTING, routing);
     }
 
     protected RequestBuilder version(Object version) {
-        return withParam("version", version);
+        return withParam(PARAM_VERSION, version);
     }
 
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
@@ -139,7 +146,7 @@ class RequestBuilder {
 
         JSONObject error = extractErrorJSON(e);
         if (e.getResponse().getStatusLine().getStatusCode() == 409) {
-            throw new OptimisticLockException(error.getString("reason"), e);
+            throw new OptimisticLockException(error.getString(PARAM_REASON), e);
         }
 
         throw Exceptions.handle()
@@ -147,8 +154,8 @@ class RequestBuilder {
                         .error(e)
                         .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
                                                 e.getResponse().getHost(),
-                                                error == null ? "unknown" : error.getString("reason"),
-                                                error == null ? "-" : error.getString("type"))
+                                                error == null ? "unknown" : error.getString(PARAM_REASON),
+                                                error == null ? "-" : error.getString(PARAM_TYPE))
                         .handle();
     }
 
@@ -182,7 +189,7 @@ class RequestBuilder {
     protected JSONObject extractErrorJSON(ResponseException e) {
         try {
             JSONObject response = JSON.parseObject(EntityUtils.toString(e.getResponse().getEntity()));
-            return response.getJSONObject("error");
+            return response.getJSONObject(PARAM_ERROR);
         } catch (IOException ex) {
             Exceptions.handle(Elastic.LOG, ex);
             throw Exceptions.handle()
