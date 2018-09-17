@@ -168,6 +168,12 @@ public abstract class QueryCompiler<C extends Constraint> {
 
     private C parseExpression() {
         skipWhitespace(reader);
+
+        if (reader.current().is('!')) {
+            reader.consume();
+            return factory.not(parseExpression());
+        }
+
         if (reader.current().is('(')) {
             return parseBrackets();
         }

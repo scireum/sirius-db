@@ -41,7 +41,7 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
         if (mode == QueryField.Mode.EQUAL) {
             return factory.eq(field, value);
         } else {
-            return QueryBuilder.FILTERS.text(value);
+            return QueryBuilder.FILTERS.text(value.toLowerCase());
         }
     }
 }
