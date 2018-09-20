@@ -40,7 +40,7 @@ class MongoOneInField extends OneInField<MongoConstraint> {
             for (Object value : values) {
                 list.add(factory.transform(value));
             }
-            return new MongoConstraint("$in", new Document(field.toString(), list));
+            return new MongoConstraint(field.toString(), new Document("$in", list));
         }
 
         List<MongoConstraint> clauses = new ArrayList<>();
@@ -48,9 +48,7 @@ class MongoOneInField extends OneInField<MongoConstraint> {
             clauses.add(factory.eq(field, value));
         }
 
-        if (orEmpty) {
-            clauses.add(factory.notFilled(field));
-        }
+        clauses.add(factory.notFilled(field));
 
         return factory.or(clauses);
     }
