@@ -164,6 +164,9 @@ public class Redis implements Startable, Stoppable {
     @SuppressWarnings("squid:S2250")
     @Explain("There aren't that many subscriptions, so there is no performance hotspot")
     public void started() {
+        if (!isConfigured()) {
+            return;
+        }
         for (Subscriber subscriber : subscribers) {
             JedisPubSub subscription = new JedisPubSub() {
                 @Override
@@ -178,6 +181,9 @@ public class Redis implements Startable, Stoppable {
 
     @Override
     public void stopped() {
+        if (!isConfigured()) {
+            return;
+        }
         subscriptionsActive.set(false);
         for (JedisPubSub subscription : subscriptions) {
             try {
