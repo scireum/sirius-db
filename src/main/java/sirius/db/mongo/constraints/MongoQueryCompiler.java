@@ -21,6 +21,14 @@ import java.util.List;
  */
 public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
 
+    private static final Mapping FULLTEXT_MAPPING = Mapping.named("$text");
+
+    /**
+     * Represents an artificial field which generates a search using a <tt>$text</tt> filter. Therefore
+     * an appropriate <b>text</b> index has to be present.
+     */
+    public static final QueryField FULLTEXT = QueryField.contains(FULLTEXT_MAPPING);
+
     /**
      * Creates a new instance for the given factory entity and query.
      *
@@ -38,10 +46,17 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
 
     @Override
     protected MongoConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
+        if (field == FULLTEXT_MAPPING) {
+            return QueryBuilder.FILTERS.text(value.toLowerCase());
+        }
+
         if (mode == QueryField.Mode.EQUAL) {
             return factory.eq(field, value);
+        } else if (mode == QueryField.Mode.PREFIX) {
+            return QueryBuilder.FILTERS.prefix(field, value);
         } else {
-            return QueryBuilder.FILTERS.text(value.toLowerCase());
+            throw new IllegalArgumentException("MongoQueryCompiler only supports either a search in the FULLTEXT_FIELD "
+                                               + "or an equals or prefix search in a string field");
         }
     }
 }

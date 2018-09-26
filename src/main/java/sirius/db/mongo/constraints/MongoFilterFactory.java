@@ -15,7 +15,9 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mixing.query.constraints.OneInField;
+import sirius.kernel.commons.Strings;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,6 +25,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -187,12 +190,40 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     /**
+     * Builds a filter which represents a regex filter representing the given prefix filter.
+     * <p>
+     * Regular expressions of this kind can utilize an index and are therefore fast.
+     *
+     * @param key    the name of the field to check
+     * @param prefix the prefix to scan for
+     * @return a filter representing the given operation
+     */
+    @Nullable
+    public MongoConstraint prefix(Mapping key, String prefix) {
+        if (Strings.isEmpty(prefix)) {
+            return null;
+        }
+        return new MongoConstraint(key.toString(),
+                                   new Document("$regex", "/^" + Pattern.quote(prefix.toLowerCase()) + "/"));
+    }
+
+    /**
      * Executes a $text search in the underlying fulltext index.
+     * <p>
+     * If the given value is empty, no constraint will be generated.
+     * <p>
+     * Due to the nature of the MongoDB implementation on full token matches are successfull. To provide a
+     * prefix search use {@link #prefix(Mapping, String)} and ensure that a proper index is present.
      *
      * @param value the token to search for
      * @return a filter representing the $text constraint
      */
+    @Nullable
     public MongoConstraint text(String value) {
+        if (Strings.isEmpty(value)) {
+            return null;
+        }
+
         return new MongoConstraint("$text", new Document("$search", value));
     }
 }
