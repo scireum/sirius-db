@@ -39,15 +39,14 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
-        switch (mode) {
-            case EQUAL:
-                return factory.eq(field, value);
-            case LIKE:
-                if (!value.contains("*")) {
-                    return factory.eq(field, value.toLowerCase());
-                }
-            default:
-                return Elastic.FILTERS.prefix(field, value.replace("*", "").toLowerCase());
+        if (mode == QueryField.Mode.EQUAL) {
+            return factory.eq(field, value);
         }
+
+        if (mode == QueryField.Mode.LIKE && !value.contains("*")) {
+            return factory.eq(field, value.toLowerCase());
+        }
+
+        return Elastic.FILTERS.prefix(field, value.replace("*", "").toLowerCase());
     }
 }
