@@ -28,6 +28,10 @@ class MongoFilterFactorySpec extends BaseSpecification {
         PrefixTestEntity test = new PrefixTestEntity()
         test.setPrefix("test-1")
         mango.update(test)
+        and:
+        print mongo.find().
+                      where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "te")).explain(PrefixTestEntity.class)
+
         then:
         mongo.find().
                 where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "te")).

@@ -250,6 +250,23 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
+    @Override
+    public Doc explain(String collection) {
+        FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
+        if (fields != null) {
+            cur.projection(fields);
+        }
+        if (orderBy != null) {
+            cur.sort(orderBy);
+        }
+        cur.skip(skip);
+        if (limit > 0) {
+            cur.limit(limit);
+        }
+
+        return new Doc(cur.modifiers(new Document("$explain", true)).first());
+    }
+
     private void handleTracingAndReporting(String collection, Watch w) {
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {

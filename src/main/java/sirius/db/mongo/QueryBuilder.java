@@ -96,14 +96,34 @@ public abstract class QueryBuilder<S> {
         target.filterObject.putAll(filterObject.toMap());
     }
 
+    /**
+     * Returns an <tt>$explain</tt> for the filter represented by this query.
+     *
+     * @param collection the collection to execute the query for
+     * @return the explanation delivered by MongoDB
+     */
+    public Doc explain(String collection) {
+        return new Doc(mongo.db()
+                            .getCollection(collection)
+                            .find(filterObject)
+                            .modifiers(new Document("$explain", true))
+                            .first());
+    }
+
+    /**
+     * Returns an <tt>$explain</tt> for the filter represented by this query.
+     *
+     * @param type the type of entities to generate the explanation for
+     * @return the explanation delivered by MongoDB
+     */
+    public Doc explain(Class<?> type) {
+        return explain(getRelationName(type));
+    }
+
     protected void traceIfRequired(String collection, Watch w) {
         if (mongo.tracing && w.elapsedMillis() >= mongo.traceLimit) {
             String location = determineLocation();
-            Document explanation = mongo.db()
-                                        .getCollection(collection)
-                                        .find(filterObject)
-                                        .modifiers(new Document("$explain", true))
-                                        .first();
+            Doc explanation = explain(collection);
             mongo.traceData.put(location,
                                 Tuple.create(collection + ": " + filterObject.toString() + " [" + w.duration() + "]",
                                              explanation.toString()));

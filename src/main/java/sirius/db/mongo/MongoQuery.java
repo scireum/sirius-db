@@ -148,6 +148,15 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         return QueryBuilder.FILTERS;
     }
 
+    /**
+     * Returns an <tt>$explain</tt> for this query.
+     *
+     * @return the explanation delivered by MongoDB
+     */
+    public Doc explain() {
+        return finder.explain(descriptor.getRelationName());
+    }
+
     @Override
     public String toString() {
         return descriptor.getType() + ": " + finder.toString();
