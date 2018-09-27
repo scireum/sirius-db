@@ -35,6 +35,12 @@ import java.util.stream.Collectors;
  */
 public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
+    /**
+     * Represents a regular expression which detects all character which aren't allowed in a search prefix
+     * for {@link #prefix(Mapping, String)}.
+     */
+    public static final Pattern NON_PREFIX_CHARACTER = Pattern.compile("[^\\p{L}_\\-@.#]");
+
     @Override
     protected Object customTransform(Object value) {
         if (value instanceof LocalDate) {
@@ -203,8 +209,11 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         if (Strings.isEmpty(prefix)) {
             return null;
         }
-        return new MongoConstraint(key.toString(),
-                                   new Document("$regex", "/^" + Pattern.quote(prefix.toLowerCase()) + "/"));
+
+        String escapedPrefix =
+                NON_PREFIX_CHARACTER.matcher(prefix).replaceAll("").replace(".", "\\.").replace("-", "\\-");
+
+        return new MongoConstraint(key.toString(), new Document("$regex", "^" + escapedPrefix.toLowerCase()));
     }
 
     /**

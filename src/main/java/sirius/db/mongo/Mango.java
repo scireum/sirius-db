@@ -43,6 +43,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      */
     public static final String INDEX_DESCENDING = "-1";
 
+    /**
+     * Defines the value used to desclare create a fulltext index for the given column.
+     */
+    public static final String INDEX_AS_FULLTEXT = "text";
+
     @Part
     private Mongo mongo;
 
