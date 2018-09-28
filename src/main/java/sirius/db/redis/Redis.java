@@ -10,59 +10,51 @@ package sirius.db.redis;
 
 import com.google.common.collect.Lists;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
-import redis.clients.jedis.JedisSentinelPool;
+import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
 import sirius.kernel.async.CallContext;
-import sirius.kernel.async.Operation;
 import sirius.kernel.async.Tasks;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Wait;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.PartCollection;
-import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Parts;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
-import sirius.kernel.health.Microtiming;
-import sirius.kernel.settings.PortMapper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Provides a thin layer to access Redis.
  * <p>
- * The connection parameters are setup using the system configuration. Most probably a value for <tt>redis.host</tt>
- * is all that is required. Another good practice is to use <tt>redis.db=1</tt> for developement system
- * so that they can run in parallel with a test system (which uses the default database 0 - unless configured
- * otherwise).
+ * The configuration is loaded from <tt>redis.pools</tt>. By default the <b>system</b> pool is used,
+ * but multiple database can be used at the same time.
  */
 @Register(classes = {Redis.class, Startable.class, Stoppable.class})
 public class Redis implements Startable, Stoppable {
 
-    private static final String SERVICE_NAME = "redis";
+    /**
+     * Contains the pool name of the default redis being used.
+     */
+    public static final String POOL_SYSTEM = "system";
 
     @Parts(Subscriber.class)
     private PartCollection<Subscriber> subscribers;
@@ -73,43 +65,18 @@ public class Redis implements Startable, Stoppable {
     @Part
     private Tasks tasks;
 
-    @ConfigValue("redis.host")
-    private String host;
-
-    @ConfigValue("redis.port")
-    private int port;
-
-    @ConfigValue("redis.timeout")
-    private int connectTimeout;
-
-    @ConfigValue("redis.password")
-    private String password;
-
-    @ConfigValue("redis.db")
-    private int db;
-
-    @ConfigValue("redis.maxActive")
-    private int maxActive;
-
-    @ConfigValue("redis.maxIdle")
-    private int maxIdle;
-
-    @ConfigValue("redis.master")
-    private String masterName;
-
-    @ConfigValue("redis.sentinels")
-    private String sentinels;
-
     private static final String PREFIX_LOCK = "lock_";
     private static final String SUFFIX_DATE = "_date";
 
-    private static final String NAME_REDIS = "redis";
-    public static final Log LOG = Log.get(NAME_REDIS);
+    /**
+     * Contains the logger for all redis related messages.
+     */
+    public static final Log LOG = Log.get("redis");
 
-    protected Average callDuration = new Average();
     protected Average messageDuration = new Average();
-    protected JedisPool jedis;
-    protected JedisSentinelPool sentinelPool;
+    protected Average callDuration = new Average();
+    protected RedisDB system;
+    protected Map<String, RedisDB> databases = new ConcurrentHashMap<>();
 
     /**
      * Contains the entry name of the info section under which redis reports the amount of consumed ram
@@ -130,7 +97,7 @@ public class Redis implements Startable, Stoppable {
                                                   subscriber.getTopic())
                           .handle();
             }
-            w.submitMicroTiming(NAME_REDIS, channel);
+            w.submitMicroTiming("redis", channel);
             messageDuration.addValue(w.elapsedMillis());
         });
     }
@@ -197,75 +164,52 @@ public class Redis implements Startable, Stoppable {
             }
         }
 
-        if (sentinelPool != null) {
-            sentinelPool.close();
-        }
-        if (jedis != null) {
-            jedis.close();
-        }
+        databases.values().forEach(RedisDB::close);
     }
 
     /**
-     * Determines if access to Redis is configured.
+     * Returns Redis database using the configuration of the given name.
+     * <p>
+     * The configuration resides in <tt>redis.pools.[name]</tt>
      *
-     * @return <tt>true</tt> if at least a host is given or at least one sentinel is available, <tt>false</tt> otherwise
+     * @param name the name of the pool to fetch
+     * @return the database initialized with the given config
      */
-    public boolean isConfigured() {
-        return Strings.isFilled(host) || Strings.isFilled(sentinels);
+    public RedisDB getPool(String name) {
+        return databases.computeIfAbsent(name, this::makeDatabase);
+    }
+
+    private RedisDB makeDatabase(String name) {
+        return new RedisDB(this, Sirius.getSettings().getExtension("redis.pools", name));
+    }
+
+    /**
+     * Provides access the to default (system) database.
+     *
+     * @return the default database
+     */
+    public RedisDB getSystem() {
+        if (system == null) {
+            system = getPool(POOL_SYSTEM);
+        }
+        return system;
     }
 
     private Jedis getConnection() {
-        if (sentinelPool != null) {
-            return sentinelPool.getResource();
-        }
-        if (jedis != null) {
-            return jedis.getResource();
-        }
-
-        return setupConnection();
-    }
-
-    private synchronized Jedis setupConnection() {
-        if (sentinelPool == null && Strings.isFilled(sentinels)) {
-            JedisPoolConfig poolConfig = new JedisPoolConfig();
-            poolConfig.setMaxTotal(maxActive);
-            poolConfig.setMaxIdle(maxIdle);
-
-            sentinelPool = new JedisSentinelPool(masterName,
-                                                 Arrays.stream(sentinels.split(","))
-                                                       .map(String::trim)
-                                                       .collect(Collectors.toSet()),
-                                                 poolConfig);
-            return sentinelPool.getResource();
-        }
-        if (sentinelPool != null) {
-            return sentinelPool.getResource();
-        }
-
-        if (jedis == null) {
-            if (Strings.isEmpty(host)) {
-                LOG.SEVERE("Missing a Redis host! This might lead to undefined behaviour."
-                           + " Please specify redis.host or redis.sentinels!");
-            }
-
-            JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-            jedisPoolConfig.setMaxTotal(maxActive);
-            jedisPoolConfig.setMaxIdle(maxIdle);
-            Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(SERVICE_NAME, host, port);
-            jedis = new JedisPool(jedisPoolConfig,
-                                  effectiveHostAndPort.getFirst(),
-                                  effectiveHostAndPort.getSecond(),
-                                  connectTimeout,
-                                  Strings.isFilled(password) ? password : null,
-                                  db,
-                                  CallContext.getNodeName());
-        }
-
-        return jedis.getResource();
+        return getSystem().getConnection();
     }
 
     /**
-     * Executes one or more Redis commands and returns a value of the given type.
+     * Invokes {@link RedisDB#isConfigured()} for the {@link #getSystem() system database}.
+     *
+     * @return <tt>true</tt> if the system database is configured, <tt>false otherwise</tt>
+     */
+    public boolean isConfigured() {
+        return getSystem().isConfigured();
+    }
+
+    /**
+     * Invokes {@link RedisDB#query(Supplier, Function)} for the {@link #getSystem() system database}.
      *
      * @param description a description of the actions performed used for debugging and tracing
      * @param task        the actual task to perform using redis
@@ -273,89 +217,57 @@ public class Redis implements Startable, Stoppable {
      * @return a result computed by <tt>task</tt>
      */
     public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
-        Watch w = Watch.start();
-        try (Operation op = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
-            return task.apply(redis);
-        } catch (Exception e) {
-            throw Exceptions.handle(LOG, e);
-        } finally {
-            callDuration.addValue(w.elapsedMillis());
-            if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(NAME_REDIS, description.get());
-            }
-        }
+        return getSystem().query(description, task);
     }
 
     /**
-     * Executes one or more Redis commands without any return value.
+     * Invokes {@link RedisDB#exec(Supplier, Consumer)} for the {@link #getSystem() system database}.
      *
      * @param description a description of the actions performed used for debugging and tracing
      * @param task        the actual task to perform using redis
      */
     public void exec(Supplier<String> description, Consumer<Jedis> task) {
-        query(description, r -> {
-            task.accept(r);
-            return null;
-        });
+        getSystem().exec(description, task);
     }
 
     /**
-     * Pushes a piece of data to a queue in Redis.
+     * Invokes {@link RedisDB#pushToQueue(String, String)} for the {@link #getSystem() system database}.
      *
      * @param queue the name of the queue
      * @param data  the data to push
      */
     public void pushToQueue(String queue, String data) {
-        exec(() -> "Push to Queue: " + queue, r -> {
-            r.lpush(queue, data);
-        });
+        getSystem().pushToQueue(queue, data);
     }
 
     /**
-     * Polls an element off a queue in Redis.
+     * Invokes {@link RedisDB#pollQueue(String)} for the {@link #getSystem() system database}.
      *
      * @param queue the name of the queue
      * @return the next entry in the queue or <tt>null</tt> if the queue is empty
      */
     @Nullable
     public String pollQueue(String queue) {
-        return query(() -> "Poll from Queue: " + queue, r -> {
-            String result = r.rpop(queue);
-            if (Strings.isEmpty(result)) {
-                return null;
-            } else {
-                return result;
-            }
-        });
+        return getSystem().pollQueue(queue);
     }
 
     /**
-     * Broadcasts a message to a pub-sub topic in redis.
+     * Invokes {@link RedisDB#publish(String, String)} for the {@link #getSystem() system database}.
      *
      * @param topic   the name of the topic to broadcast to
      * @param message the message to send
      */
     public void publish(String topic, String message) {
-        exec(() -> "Publish to topic: " + topic, r -> {
-            r.publish(topic, message);
-        });
+        getSystem().publish(topic, message);
     }
 
     /**
-     * Returns a map of monitoring info about the redis server.
+     * Invokes {@link RedisDB#getInfo()} for the {@link #getSystem() system database}.
      *
      * @return a map containing statistical values supplied by the server
      */
     public Map<String, String> getInfo() {
-        try {
-            return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
-                         .map(l -> Strings.split(l, ":"))
-                         .filter(t -> t.getFirst() != null && t.getSecond() != null)
-                         .collect(Collectors.toMap(Tuple::getFirst, Tuple::getSecond));
-        } catch (Exception e) {
-            Exceptions.handle(LOG, e);
-            return Collections.emptyMap();
-        }
+        return getSystem().getInfo();
     }
 
     /**
