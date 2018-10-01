@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseMapper;
@@ -261,7 +262,13 @@ public abstract class BatchQuery<E extends SQLEntity> {
         return sb.toString();
     }
 
+    private boolean isNullSafeOperator() {
+        return oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.NULL_SAFE_OPERATOR);
+    }
+
     protected void buildWhere(StringBuilder sql, boolean addVersionConstraint) {
+        String compareOperator = isNullSafeOperator() ? " <=> ?" : " = ?";
+
         sql.append(" WHERE ");
         Monoflop mf = Monoflop.create();
         for (Property p : getProperties()) {
@@ -269,7 +276,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
                 sql.append(" AND ");
             }
             sql.append(p.getPropertyName());
-            sql.append(" <=> ?");
+            sql.append(compareOperator);
         }
 
         if (!addVersionConstraint) {

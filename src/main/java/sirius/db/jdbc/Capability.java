@@ -38,13 +38,22 @@ public enum Capability {
      */
     LOWER_CASE_TABLE_NAMES,
 
+    /**
+     * Determines if the database has a null safe operator.
+     */
+    NULL_SAFE_OPERATOR,
+
     GENERATED_KEYS;
 
     /**
      * Contains the capabilities of a MySQL database
      */
-    public static final Set<Capability> MYSQL_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LOWER_CASE_TABLE_NAMES, STREAMING, LIMIT, GENERATED_KEYS));
+    public static final Set<Capability> MYSQL_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(
+            LOWER_CASE_TABLE_NAMES,
+            STREAMING,
+            LIMIT,
+            GENERATED_KEYS,
+            NULL_SAFE_OPERATOR));
 
     /**
      * Contains the capabilities of a Postgres database
