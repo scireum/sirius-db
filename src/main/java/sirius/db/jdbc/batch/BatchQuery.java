@@ -269,7 +269,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
                 sql.append(" AND ");
             }
             sql.append(p.getPropertyName());
-            sql.append(" = ?");
+            sql.append(" <=> ?");
         }
 
         if (!addVersionConstraint) {
