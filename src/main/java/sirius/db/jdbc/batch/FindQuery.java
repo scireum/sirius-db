@@ -13,7 +13,6 @@ import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Property;
-import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
@@ -118,15 +117,8 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
     protected void buildSQL() throws SQLException {
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(getDescriptor().getRelationName());
-        sql.append(" WHERE ");
-        Monoflop mf = Monoflop.create();
-        for (Property p : getProperties()) {
-            if (mf.successiveCall()) {
-                sql.append(" AND ");
-            }
-            sql.append(p.getPropertyName());
-            sql.append(" = ?");
-        }
+        buildWhere(sql, false);
+
         createStmt(sql.toString(), false);
     }
 }

@@ -8,11 +8,14 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Average;
@@ -257,5 +260,35 @@ public abstract class BatchQuery<E extends SQLEntity> {
         }
 
         return sb.toString();
+    }
+
+    private boolean isNullSafeOperator() {
+        return oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.NULL_SAFE_OPERATOR);
+    }
+
+    protected void buildWhere(StringBuilder sql, boolean addVersionConstraint) {
+        String compareOperator = isNullSafeOperator() ? " <=> ?" : " = ?";
+
+        sql.append(" WHERE ");
+        Monoflop mf = Monoflop.create();
+        for (Property p : getProperties()) {
+            if (mf.successiveCall()) {
+                sql.append(" AND ");
+            }
+            sql.append(p.getPropertyName());
+            sql.append(compareOperator);
+        }
+
+        if (!addVersionConstraint) {
+            return;
+        }
+
+        if (descriptor.isVersioned()) {
+            if (mf.successiveCall()) {
+                sql.append(" AND ");
+            }
+            sql.append(BaseMapper.VERSION);
+            sql.append(" = ?");
+        }
     }
 }
