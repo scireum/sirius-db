@@ -10,9 +10,7 @@ package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
-import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Property;
-import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 
@@ -106,23 +104,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
     protected void buildSQL() throws SQLException {
         StringBuilder sql = new StringBuilder("DELETE FROM ");
         sql.append(getDescriptor().getRelationName());
-        sql.append(" WHERE ");
-        Monoflop mf = Monoflop.create();
-        for (Property p : getProperties()) {
-            if (mf.successiveCall()) {
-                sql.append(" AND ");
-            }
-            sql.append(p.getPropertyName());
-            sql.append(" = ?");
-        }
-
-        if (descriptor.isVersioned()) {
-            if (mf.successiveCall()) {
-                sql.append(" AND ");
-            }
-            sql.append(BaseMapper.VERSION);
-            sql.append(" = ?");
-        }
+        buildWhere(sql, true);
 
         createStmt(sql.toString(), false);
     }

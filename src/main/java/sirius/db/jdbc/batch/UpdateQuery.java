@@ -184,25 +184,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             sql.append(" = ?");
         }
 
-        sql.append(" WHERE ");
-
-        mf = Monoflop.create();
-        for (Property p : getProperties()) {
-            if (mf.successiveCall()) {
-                sql.append(" AND ");
-            }
-            sql.append(p.getPropertyName());
-            sql.append(" = ?");
-        }
-
-        if (descriptor.isVersioned()) {
-            if (mf.successiveCall()) {
-                sql.append(" AND ");
-            }
-            sql.append(BaseMapper.VERSION);
-            sql.append(" = ?");
-        }
-
+        buildWhere(sql, true);
         createStmt(sql.toString(), false);
     }
 }
