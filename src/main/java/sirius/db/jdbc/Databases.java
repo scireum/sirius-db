@@ -90,27 +90,35 @@ public class Databases implements Initializable {
         public void gather(MetricsCollector collector) {
             // Only report statistics if we have at least one database connection...
             if (!datasources.isEmpty()) {
-                collector.differentialMetric("jdbc-use", "db-uses", "JDBC Uses", numUses.getCount(), "/min");
-                collector.differentialMetric("jdbc-connects",
+                collector.differentialMetric("jdbc_use", "db-uses", "JDBC Uses", numUses.getCount(), "/min");
+                collector.differentialMetric("jdbc_connects",
                                              "db-connects",
                                              "JDBC Connects",
                                              numConnects.getCount(),
                                              "/min");
 
                 int highestUtilization = determineHighestUtilization();
-                collector.metric("db-pool-utilization", "JDBC Pool Utilization (max)", highestUtilization, "%");
+                collector.metric("jdbc_pool_utilization",
+                                 "db-pool-utilization",
+                                 "JDBC Pool Utilization (max)",
+                                 highestUtilization,
+                                 "%");
 
-                collector.differentialMetric("jdbc-queries",
+                collector.differentialMetric("jdbc_queries",
                                              "db-queries",
                                              "JDBC Queries",
                                              numQueries.getCount(),
                                              "/min");
-                collector.differentialMetric("jdbc-slow-queries",
+                collector.differentialMetric("jdbc_slow_queries",
                                              "db-slow-queries",
                                              "Slow JDBC Queries",
                                              numSlowQueries.getCount(),
                                              "/min");
-                collector.metric("db-query-duration", "JDBC Query Duration", queryDuration.getAndClear(), "ms");
+                collector.metric("jdbc_query_duration",
+                                 "db-query-duration",
+                                 "JDBC Query Duration",
+                                 queryDuration.getAndClear(),
+                                 "ms");
             }
         }
 
