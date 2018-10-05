@@ -25,9 +25,9 @@ public class MongoMetricsProvider implements MetricProvider {
     @Override
     public void gather(MetricsCollector collector) {
         if (mongo.isConfigured()) {
-            collector.metric("mongo-calls", "Mongo DB Calls", mongo.callDuration.getCount(), "/min");
-            collector.metric("mongo-call-duration", "Mongo DB Call Duration", mongo.callDuration.getAndClear(), "ms");
-            collector.differentialMetric("mongo-slow-queries",
+            collector.metric("mongo_calls","mongo-calls", "Mongo DB Calls", mongo.callDuration.getCount(), "/min");
+            collector.metric("mongo_call_duration","mongo-call-duration", "Mongo DB Call Duration", mongo.callDuration.getAndClear(), "ms");
+            collector.differentialMetric("mongo_slow_queries",
                                          "mongo-slow-queries",
                                          "MongoDB Slow Queries",
                                          mongo.numSlowQueries.getCount(),

@@ -25,13 +25,14 @@ public class ElasticMetricsProvider implements MetricProvider {
     @Override
     public void gather(MetricsCollector collector) {
         if (elastic.isConfigured()) {
-            collector.differentialMetric("es-slow-queries",
+            collector.differentialMetric("es_slow_queries",
                                          "es-slow-queries",
                                          "Elasticsearch Slow Queries",
                                          elastic.numSlowQueries.getCount(),
                                          "/min");
-            collector.metric("es-calls", "Elasticsearch Calls", elastic.callDuration.getCount(), "/min");
-            collector.metric("es-call-duration",
+            collector.metric("es_calls", "es-calls", "Elasticsearch Calls", elastic.callDuration.getCount(), "/min");
+            collector.metric("es_call_duration",
+                             "es-call-duration",
                              "Elasticsearch Call Duration",
                              elastic.callDuration.getAndClear(),
                              "ms");
