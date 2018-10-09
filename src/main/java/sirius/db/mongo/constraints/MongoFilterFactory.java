@@ -113,7 +113,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected MongoConstraint invert(MongoConstraint constraint) {
-        throw new UnsupportedOperationException();
+        return new MongoConstraint(constraint.getKey(), new Document("$not", constraint.getObject()));
     }
 
     @Override
