@@ -131,8 +131,6 @@ public class Finder extends QueryBuilder<Finder> {
 
     /**
      * Adds a limit to the query.
-     * <p>
-     * This is boilerplate for {@code finder.limit(0, limit)}.
      *
      * @param limit the max. number of items to return
      * @return the builder itself for fluent method calls
