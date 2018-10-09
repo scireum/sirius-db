@@ -24,13 +24,13 @@ import java.util.stream.Collectors;
  */
 public class OneInField<C extends Constraint> {
 
-    protected final Collection<Object> values;
+    protected final Collection<?> values;
     protected FilterFactory<C> factory;
     protected final Mapping field;
     protected boolean orEmpty = false;
     protected boolean forceEmpty = false;
 
-    protected OneInField(FilterFactory<C> factory, Mapping field, Collection<Object> values) {
+    protected OneInField(FilterFactory<C> factory, Mapping field, Collection<?> values) {
         this.factory = factory;
         this.field = field;
         if (values != null) {
