@@ -138,7 +138,6 @@ public class Finder extends QueryBuilder<Finder> {
      * @return the builder itself for fluent method calls
      */
     public Finder limit(int limit) {
-        this.skip = 0;
         this.limit = limit;
 
         return this;
@@ -152,6 +151,7 @@ public class Finder extends QueryBuilder<Finder> {
      */
     public Finder skip(int skip) {
         this.skip = skip;
+
         return this;
     }
 
