@@ -10,6 +10,10 @@ package sirius.db.mixing.properties;
 
 import com.alibaba.fastjson.JSONObject;
 import org.bson.Document;
+import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.IndexMappings;
+import sirius.db.es.annotations.ESOption;
+import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
@@ -25,23 +29,14 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringBooleanMap} field within a {@link Mixable}.
  */
-public class StringBooleanMapProperty extends BaseMapProperty {
-
-    /**
-     * Contains the name of the field used to store the map key
-     */
-    public static final String KEY = "key";
-
-    /**
-     * Contains the name of the field used to store the map value
-     */
-    public static final String VALUE = "value";
+public class StringBooleanMapProperty extends BaseMapProperty implements ESPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -79,7 +74,7 @@ public class StringBooleanMapProperty extends BaseMapProperty {
         if (object instanceof Document) {
             return object;
         }
-        
+
         Document doc = new Document();
         doc.putAll((Map<String, Boolean>) object);
 
@@ -90,7 +85,8 @@ public class StringBooleanMapProperty extends BaseMapProperty {
     protected Object transformToElastic(Object object) {
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
-                                   .map(e -> new JSONObject().fluentPut(KEY, e.getKey()).fluentPut(VALUE, e.getValue()))
+                                   .map(e -> new JSONObject().fluentPut(StringMapProperty.KEY, e.getKey())
+                                                             .fluentPut(StringMapProperty.VALUE, e.getValue()))
                                    .collect(Collectors.toList());
     }
 
@@ -105,8 +101,30 @@ public class StringBooleanMapProperty extends BaseMapProperty {
         Map<Object, Object> result = new HashMap<>();
         Object value = object.get();
         if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
+            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(StringMapProperty.KEY),
+                                                                        entry.get(StringMapProperty.VALUE)));
         }
         return result;
+    }
+
+    @Override
+    public void describeProperty(JSONObject description) {
+        ESOption indexed = Optional.ofNullable(getClass().getAnnotation(IndexMode.class))
+                                   .map(IndexMode::indexed)
+                                   .orElse(ESOption.ES_DEFAULT);
+
+        if (ESOption.FALSE == indexed) {
+            description.put(IndexMappings.MAPPING_TYPE, "object");
+        } else {
+            description.put(IndexMappings.MAPPING_TYPE, "nested");
+        }
+        transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
+
+        JSONObject properties = new JSONObject();
+        properties.put(StringMapProperty.KEY,
+                       new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
+        properties.put(StringMapProperty.VALUE, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, "boolean"));
+        description.put("properties", properties);
+        description.put("dynamic", false);
     }
 }
