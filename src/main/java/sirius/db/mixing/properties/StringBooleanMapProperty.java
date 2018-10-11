@@ -8,28 +8,40 @@
 
 package sirius.db.mixing.properties;
 
+import com.alibaba.fastjson.JSONObject;
 import org.bson.Document;
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringBooleanMap;
-import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringBooleanMap} field within a {@link Mixable}.
  */
 public class StringBooleanMapProperty extends BaseMapProperty {
+
+    /**
+     * Contains the name of the field used to store the map key
+     */
+    public static final String KEY = "key";
+
+    /**
+     * Contains the name of the field used to store the map value
+     */
+    public static final String VALUE = "value";
 
     /**
      * Factory for generating properties based on their field type
@@ -63,14 +75,7 @@ public class StringBooleanMapProperty extends BaseMapProperty {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
-        if (mapperType != Mango.class) {
-            throw new UnsupportedOperationException("StringBooleanMapProperty currently only supports Mango as mapper!");
-        }
-        if (object instanceof Document) {
-            return object;
-        }
-
+    protected Object transformToMongo(Object object) {
         Document doc = new Document();
         doc.putAll((Map<String, Boolean>) object);
 
@@ -78,7 +83,26 @@ public class StringBooleanMapProperty extends BaseMapProperty {
     }
 
     @Override
+    protected Object transformToElastic(Object object) {
+        return ((Map<?, ?>) object).entrySet()
+                                   .stream()
+                                   .map(e -> new JSONObject().fluentPut(KEY, e.getKey()).fluentPut(VALUE, e.getValue()))
+                                   .collect(Collectors.toList());
+    }
+
+    @Override
     protected Object transformFromMongo(Value object) {
         return object.get();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object transformFromElastic(Value object) {
+        Map<Object, Object> result = new HashMap<>();
+        Object value = object.get();
+        if (value instanceof Collection) {
+            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
+        }
+        return result;
     }
 }
