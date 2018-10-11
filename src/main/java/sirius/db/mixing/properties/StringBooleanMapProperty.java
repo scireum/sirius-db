@@ -76,6 +76,10 @@ public class StringBooleanMapProperty extends BaseMapProperty {
     @SuppressWarnings("unchecked")
     @Override
     protected Object transformToMongo(Object object) {
+        if (object instanceof Document) {
+            return object;
+        }
+        
         Document doc = new Document();
         doc.putAll((Map<String, Boolean>) object);
 
