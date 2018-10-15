@@ -634,7 +634,7 @@ public class EntityDescriptor {
         for (Property p : getProperties()) {
             String columnName = (alias == null) ? p.getPropertyName() : alias + "_" + p.getPropertyName();
             Value data = supplier.apply(columnName);
-            if (data != null) {
+            if (data != null && !data.isNull()) {
                 p.setValueFromDatasource(mapperType, entity, data);
                 if (isBaseEntity(entity)) {
                     asBaseEntity(entity).persistedData.put(p, p.getValueAsCopy(entity));
