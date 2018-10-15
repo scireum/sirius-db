@@ -19,6 +19,7 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 
 /**
  * Fluent builder to build an update statement.
@@ -29,6 +30,7 @@ public class Updater extends QueryBuilder<Updater> {
     private BasicDBObject unsetObject;
     private BasicDBObject incObject;
     private BasicDBObject addToSetObject;
+    private BasicDBObject addEachToSetObject;
     private BasicDBObject pullAllObject;
     private BasicDBObject pullObject;
     private boolean upsert = false;
@@ -201,6 +203,33 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
+     * Adds the given values to the given set / list.
+     *
+     * @param field the field containing the set / list
+     * @param value the values to add
+     * @return the builder itself for fluent method calls
+     */
+    public Updater addEachToSet(Mapping field, Object value) {
+        return addEachToSet(field.toString(), value);
+    }
+
+    /**
+     * Adds the given values to the given set / list.
+     *
+     * @param field the field containing the set / list
+     * @param value the values to add
+     * @return the builder itself for fluent method calls
+     */
+    public Updater addEachToSet(String field, Object value) {
+        if (addEachToSetObject == null) {
+            addEachToSetObject = new BasicDBObject();
+        }
+        addEachToSetObject.put(field, new Document("$each", QueryBuilder.FILTERS.transform(value)));
+
+        return this;
+    }
+
+    /**
      * Removes all occurences of the given values from the list in the given field.
      *
      * @param field  the field containing the list
@@ -329,6 +358,9 @@ public class Updater extends QueryBuilder<Updater> {
         }
         if (pullObject != null) {
             updateObject.put("$pull", pullObject);
+        }
+        if (addEachToSetObject != null) {
+            updateObject.put("$addToSet", addEachToSetObject);
         }
 
         if (updateObject.isEmpty()) {
