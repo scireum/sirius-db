@@ -19,6 +19,8 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * Fluent builder to build an update statement.
@@ -196,6 +198,37 @@ public class Updater extends QueryBuilder<Updater> {
             addToSetObject = new BasicDBObject();
         }
         addToSetObject.put(field, QueryBuilder.FILTERS.transform(value));
+
+        return this;
+    }
+
+    /**
+     * Adds the given values to the given set / list.
+     *
+     * @param field  the field containing the set / list
+     * @param values a collection of values to add
+     * @return the builder itself for fluent method calls
+     */
+    public Updater addEachToSet(Mapping field, Collection<?> values) {
+        return addEachToSet(field.toString(), values);
+    }
+
+    /**
+     * Adds the given values to the given set / list.
+     *
+     * @param field  the field containing the set / list
+     * @param values a collection of values to add
+     * @return the builder itself for fluent method calls
+     */
+    public Updater addEachToSet(String field, Collection<?> values) {
+        if (addToSetObject == null) {
+            addToSetObject = new BasicDBObject();
+        }
+        addToSetObject.put(field,
+                           new Document("$each",
+                                        values.stream()
+                                              .map(QueryBuilder.FILTERS::transform)
+                                              .collect(Collectors.toList())));
 
         return this;
     }
