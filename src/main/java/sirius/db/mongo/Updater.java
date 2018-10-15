@@ -20,6 +20,7 @@ import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * Fluent builder to build an update statement.
@@ -30,7 +31,6 @@ public class Updater extends QueryBuilder<Updater> {
     private BasicDBObject unsetObject;
     private BasicDBObject incObject;
     private BasicDBObject addToSetObject;
-    private BasicDBObject addEachToSetObject;
     private BasicDBObject pullAllObject;
     private BasicDBObject pullObject;
     private boolean upsert = false;
@@ -221,10 +221,14 @@ public class Updater extends QueryBuilder<Updater> {
      * @return the builder itself for fluent method calls
      */
     public Updater addEachToSet(String field, Collection<?> values) {
-        if (addEachToSetObject == null) {
-            addEachToSetObject = new BasicDBObject();
+        if (addToSetObject == null) {
+            addToSetObject = new BasicDBObject();
         }
-        addEachToSetObject.put(field, new Document("$each", QueryBuilder.FILTERS.transform(values)));
+        addToSetObject.put(field,
+                           new Document("$each",
+                                        values.stream()
+                                              .map(QueryBuilder.FILTERS::transform)
+                                              .collect(Collectors.toList())));
 
         return this;
     }
@@ -358,9 +362,6 @@ public class Updater extends QueryBuilder<Updater> {
         }
         if (pullObject != null) {
             updateObject.put("$pull", pullObject);
-        }
-        if (addEachToSetObject != null) {
-            updateObject.put("$addToSet", addEachToSetObject);
         }
 
         if (updateObject.isEmpty()) {

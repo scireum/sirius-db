@@ -59,7 +59,7 @@ class MongoStringListPropertySpec extends BaseSpecification {
         !resolved.getList().contains("World")
 
         when:
-        mongo.update().addEachToSet(MongoStringListEntity.LIST, ["a", "b", "c"]).executeFor(resolved)
+        mongo.update().addEachToSet(MongoStringListEntity.LIST, ["a", "b", "c", "Test"]).executeFor(resolved)
         and:
         resolved = mango.refreshOrFail(test)
         then:
