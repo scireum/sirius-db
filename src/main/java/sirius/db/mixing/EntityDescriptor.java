@@ -274,9 +274,6 @@ public class EntityDescriptor {
      * @return <tt>true</tt> if a value was fetched from the database, <tt>false</tt> otherwise
      */
     public boolean isFetched(BaseEntity<?> entity, Property property) {
-        if (entity.isNew()) {
-            return false;
-        }
         return entity.persistedData.containsKey(property);
     }
 

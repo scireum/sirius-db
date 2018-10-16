@@ -107,12 +107,11 @@ class OMASpec extends BaseSpecification {
         then:
         readBack != null
         and:
-        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.ID))
+        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.ID))
         readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.FIRSTNAME))
         !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.LASTNAME))
         readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.AGE))
         and:
-        !readBack.isNew()
         readBack.getFirstname() == "Marge"
         readBack.getLastname() == null
         readBack.getAge() == 43

@@ -53,12 +53,11 @@ class MangoSpec extends BaseSpecification {
         then:
         readBack != null
         and:
-        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.ID))
+        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.ID))
         readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.FIRSTNAME))
         !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.LASTNAME))
         readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.AGE))
         and:
-        !readBack.isNew()
         readBack.getFirstname() == "Test2"
         readBack.getLastname() == null
         readBack.getAge() == 13
