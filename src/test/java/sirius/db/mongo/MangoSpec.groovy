@@ -37,6 +37,32 @@ class MangoSpec extends BaseSpecification {
         readBack.getAge() == 12
     }
 
+    def "select not all fields"() {
+        given:
+        MangoTestEntity e = new MangoTestEntity()
+        e.setFirstname("Test2")
+        e.setLastname("Entity2")
+        e.setAge(13)
+        when:
+        mango.update(e)
+        and:
+        MangoTestEntity readBack = mango.select(MangoTestEntity.class)
+                                        .eq(MangoTestEntity.ID, e.getId())
+                                        .fields(MangoTestEntity.FIRSTNAME, MangoTestEntity.AGE)
+                                        .queryFirst()
+        then:
+        readBack != null
+        and:
+        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.ID))
+        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.FIRSTNAME))
+        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.LASTNAME))
+        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.AGE))
+        and:
+        readBack.getFirstname() == "Test2"
+        readBack.getLastname() == null
+        readBack.getAge() == 13
+    }
+
     def "delete an entity"() {
         given:
         MangoTestEntity e = new MangoTestEntity()
