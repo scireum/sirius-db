@@ -35,7 +35,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +42,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides a query DSL which is used to query {@link SQLEntity} instances from the database.
@@ -113,18 +114,25 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     /**
      * Specifies the fields to select, which also have to be <tt>DISTINCT</tt>.
+     * The {@link SQLEntity#ID ID} field is always selected.
      *
      * @param fields the fields to select and to apply a <tt>DISTINCT</tt> filter on.
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> distinctFields(Mapping... fields) {
-        this.fields = Arrays.asList(fields);
+        if (fields.length > 0) {
+            this.fields =
+                    Stream.concat(Stream.of(SQLEntity.ID), Stream.of(fields)).distinct().collect(Collectors.toList());
+        } else {
+            this.fields = Collections.emptyList();
+        }
         this.distinct = true;
         return this;
     }
 
     /**
      * Specifies which fields to select.
+     * The {@link SQLEntity#ID ID} field is always selected.
      * <p>
      * If no fields are given, <tt>*</tt> is selected
      *
@@ -132,7 +140,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> fields(Mapping... fields) {
-        this.fields = Lists.newArrayList(fields);
+        if (fields.length > 0) {
+            this.fields =
+                    Stream.concat(Stream.of(SQLEntity.ID), Stream.of(fields)).distinct().collect(Collectors.toList());
+        } else {
+            this.fields = Collections.emptyList();
+        }
         return this;
     }
 
