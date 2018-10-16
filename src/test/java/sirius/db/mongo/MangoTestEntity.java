@@ -8,12 +8,17 @@
 
 package sirius.db.mongo;
 
+import sirius.db.mixing.Mapping;
+
 public class MangoTestEntity extends MongoEntity {
 
+    public static final Mapping FIRSTNAME = Mapping.named("firstname");
     private String firstname;
 
+    public static final Mapping LASTNAME = Mapping.named("lastname");
     private String lastname;
 
+    public static final Mapping AGE = Mapping.named("age");
     private int age;
 
     public String getFirstname() {

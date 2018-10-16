@@ -91,6 +91,33 @@ class OMASpec extends BaseSpecification {
         readBack.as(TestMixin.class).as(TestMixinMixin.class).getInitial() == "J"
     }
 
+    def "select not all fields"() {
+        given:
+        TestEntity e = new TestEntity()
+        e.setFirstname("Marge")
+        e.setLastname("Simpson")
+        e.setAge(43)
+        when:
+        oma.update(e)
+        and:
+        TestEntity readBack = oma.select(TestEntity.class)
+                                 .eq(TestEntity.ID, e.getId())
+                                 .fields(TestEntity.FIRSTNAME, TestEntity.AGE)
+                                 .queryFirst()
+        then:
+        readBack != null
+        and:
+        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.ID))
+        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.FIRSTNAME))
+        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.LASTNAME))
+        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.AGE))
+        and:
+        !readBack.isNew()
+        readBack.getFirstname() == "Marge"
+        readBack.getLastname() == null
+        readBack.getAge() == 43
+    }
+
     def "resolve can resolve an entity by its unique name"() {
         given:
         TestClobEntity test = new TestClobEntity()
