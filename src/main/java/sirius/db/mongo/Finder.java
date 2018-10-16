@@ -36,14 +36,13 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     /**
-     * Limits the fields being returned to the given list. The {@link MongoEntity#ID ID} field is always returned.
+     * Limits the fields being returned to the given list.
      *
      * @param fieldsToReturn specified the list of fields to return
      * @return the builder itself for fluent method calls
      */
     public Finder selectFields(Mapping... fieldsToReturn) {
         fields = new Document();
-        fields.put(MongoEntity.ID.toString(), 1);
         for (Mapping field : fieldsToReturn) {
             fields.put(field.toString(), 1);
         }
@@ -52,14 +51,13 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     /**
-     * Limits the fields being returned to the given list. The {@link MongoEntity#ID ID} field is always returned.
+     * Limits the fields being returned to the given list.
      *
      * @param fieldsToReturn specified the list of fields to return
      * @return the builder itself for fluent method calls
      */
     public Finder selectFields(String... fieldsToReturn) {
         fields = new Document();
-        fields.put(MongoEntity.ID.toString(), 1);
         for (String field : fieldsToReturn) {
             fields.put(field, 1);
         }

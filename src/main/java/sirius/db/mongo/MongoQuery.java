@@ -43,7 +43,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     /**
-     * Limits the fields being returned to the given list. The {@link MongoEntity#ID ID} field is always returned.
+     * Limits the fields being returned to the given list.
      *
      * @param fieldsToReturn specified the list of fields to return
      * @return the builder itself for fluent method calls
