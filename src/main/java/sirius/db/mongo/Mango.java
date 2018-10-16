@@ -165,7 +165,9 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     @SuppressWarnings("unchecked")
     public static <E extends MongoEntity> E make(EntityDescriptor ed, Doc doc) {
         try {
-            E result = (E) ed.make(Mango.class, null, doc::get);
+            E result = (E) ed.make(Mango.class,
+                                   null,
+                                   key -> doc.getUnderlyingObject().containsKey(key) ? doc.get(key) : null);
             if (ed.isVersioned()) {
                 result.setVersion(doc.get(VERSION).asInt(0));
             }
