@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Defines the dialect used to sync the schema against a MySQL database.
+ * Defines the dialect used to sync the schema against a Clickhouse database.
  */
 @Register(name = "clickhouse", classes = DatabaseDialect.class)
 public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
