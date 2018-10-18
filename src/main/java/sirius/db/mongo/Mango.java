@@ -206,11 +206,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         mixing.getDesciptors()
               .stream()
               .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
-              .forEach(ed -> createIndices(ed, ed.getType(), client));
+              .forEach(ed -> createIndices(ed, client));
     }
 
-    private void createIndices(EntityDescriptor ed, Class<?> type, MongoDatabase client) {
-        for (Index index : type.getAnnotationsByType(Index.class)) {
+    private void createIndices(EntityDescriptor ed, MongoDatabase client) {
+        ed.getAnnotations(Index.class).forEach(index -> {
             if (index.columnSettings() == null || index.columns().length != index.columnSettings().length) {
                 Exceptions.handle()
                           .to(Mongo.LOG)
@@ -223,11 +223,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             } else {
                 createIndex(ed, client, index);
             }
-        }
-
-        if (type.getSuperclass() != null && !Object.class.equals(type.getSuperclass())) {
-            createIndices(ed, type.getSuperclass(), client);
-        }
+        });
     }
 
     private void createIndex(EntityDescriptor ed, MongoDatabase client, Index index) {
