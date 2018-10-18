@@ -405,12 +405,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     }
 
     protected Value getEngine(Table table) {
-        Engine engine = table.getSource().getType().getAnnotation(Engine.class);
-        if (engine == null) {
-            return Value.EMPTY;
-        }
-
-        return Value.of(engine.value());
+        return table.getSource().getAnnotation(Engine.class).map(Engine::value).map(Value::of).orElse(Value.EMPTY);
     }
 
     /**
