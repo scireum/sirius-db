@@ -450,7 +450,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param values the values to check
      * @return a filter builder used to generate a constraint
      */
-    public OneInField<C> oneInField(Mapping field, List<Object> values) {
+    public OneInField<C> oneInField(Mapping field, List<?> values) {
         return new OneInField<>(this, field, values);
     }
 
@@ -472,7 +472,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param values the values to check
      * @return the generated constraint
      */
-    public C noneInField(Mapping field, List<Object> values) {
+    public C noneInField(Mapping field, List<?> values) {
         if (values == null || values.isEmpty()) {
             return null;
         }

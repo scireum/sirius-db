@@ -57,6 +57,17 @@ class MongoStringListPropertySpec extends BaseSpecification {
         resolved.getList().contains("Test")
         !resolved.getList().contains("Hello")
         !resolved.getList().contains("World")
-    }
 
+        when:
+        mongo.update().addEachToSet(MongoStringListEntity.LIST, ["a", "b", "c", "Test"]).executeFor(resolved)
+        and:
+        resolved = mango.refreshOrFail(test)
+        then:
+        resolved.getList().size() == 4
+        and:
+        resolved.getList().contains("Test")
+        resolved.getList().contains("a")
+        resolved.getList().contains("b")
+        resolved.getList().contains("c")
+    }
 }

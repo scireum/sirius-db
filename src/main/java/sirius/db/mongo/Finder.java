@@ -131,14 +131,11 @@ public class Finder extends QueryBuilder<Finder> {
 
     /**
      * Adds a limit to the query.
-     * <p>
-     * This is boilerplate for {@code finder.limit(0, limit)}.
      *
      * @param limit the max. number of items to return
      * @return the builder itself for fluent method calls
      */
     public Finder limit(int limit) {
-        this.skip = 0;
         this.limit = limit;
 
         return this;
@@ -152,6 +149,7 @@ public class Finder extends QueryBuilder<Finder> {
      */
     public Finder skip(int skip) {
         this.skip = skip;
+
         return this;
     }
 

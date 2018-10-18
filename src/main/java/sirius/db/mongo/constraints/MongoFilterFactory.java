@@ -113,7 +113,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected MongoConstraint invert(MongoConstraint constraint) {
-        throw new UnsupportedOperationException();
+        return new MongoConstraint(constraint.getKey(), new Document("$not", constraint.getObject()));
     }
 
     @Override
@@ -133,12 +133,12 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
-    public OneInField<MongoConstraint> oneInField(Mapping field, List<Object> values) {
+    public OneInField<MongoConstraint> oneInField(Mapping field, List<?> values) {
         return new MongoOneInField(this, field, values);
     }
 
     @Override
-    public MongoConstraint noneInField(Mapping field, List<Object> values) {
+    public MongoConstraint noneInField(Mapping field, List<?> values) {
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
             list.add(transform(value));

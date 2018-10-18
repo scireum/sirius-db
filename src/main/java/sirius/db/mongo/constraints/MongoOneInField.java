@@ -21,7 +21,7 @@ import java.util.List;
  */
 class MongoOneInField extends OneInField<MongoConstraint> {
 
-    protected MongoOneInField(MongoFilterFactory factory, Mapping field, List<Object> values) {
+    protected MongoOneInField(MongoFilterFactory factory, Mapping field, List<?> values) {
         super(factory, field, values);
     }
 
