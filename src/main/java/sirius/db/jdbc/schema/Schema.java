@@ -211,7 +211,7 @@ public class Schema implements Startable, Initializable {
     }
 
     private void collectKeys(Table table, EntityDescriptor ed) {
-        for (Index index : ed.getType().getAnnotationsByType(Index.class)) {
+        ed.getAnnotations(Index.class).forEach(index -> {
             Key key = new Key();
             key.setName(index.name());
             for (int i = 0; i < index.columns().length; i++) {
@@ -230,7 +230,7 @@ public class Schema implements Startable, Initializable {
             }
             key.setUnique(index.unique());
             table.getKeys().add(key);
-        }
+        });
     }
 
     private void collectColumns(Table table, EntityDescriptor ed) {
