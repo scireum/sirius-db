@@ -35,20 +35,24 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Used by {@link Mixing} to describe all properties and consistency checks of a managed entity.
@@ -154,12 +158,10 @@ public class EntityDescriptor {
      */
     protected EntityDescriptor(Class<?> type) {
         this.type = type;
-        RelationName relationNameAnnotation = type.getAnnotation(RelationName.class);
         this.relationName =
-                relationNameAnnotation != null ? relationNameAnnotation.value() : type.getSimpleName().toLowerCase();
-        Realm realmAnnotation = type.getAnnotation(Realm.class);
-        this.realm = realmAnnotation != null ? realmAnnotation.value() : Mixing.DEFAULT_REALM;
-        this.versioned = type.isAnnotationPresent(Versioned.class);
+                getAnnotation(RelationName.class).map(RelationName::value).orElse(type.getSimpleName().toLowerCase());
+        this.realm = getAnnotation(Realm.class).map(Realm::value).orElse(Mixing.DEFAULT_REALM);
+        this.versioned = getAnnotation(Versioned.class).isPresent();
 
         try {
             this.referenceInstance = type.getDeclaredConstructor().newInstance();
@@ -691,6 +693,44 @@ public class EntityDescriptor {
      */
     public Class<?> getType() {
         return type;
+    }
+
+    /**
+     * Returns the first annotation available for the given type.
+     * <p>
+     * Note that the annotation can be either placed on the {@link #getType() entity type} or
+     * on one of its super classes.
+     *
+     * @param annotationType the annotation to look for
+     * @param <A>            the annotation type to look for
+     * @return the annotation wrapped as optional or an empty one of the annotation isn't present
+     */
+    public <A extends Annotation> Optional<A> getAnnotation(Class<A> annotationType) {
+        return getAnnotations(annotationType).findFirst();
+    }
+
+    /**
+     * Returns the all annotations available for the given type.
+     * <p>
+     * Note that the annotations can be either placed on the {@link #getType() entity type} or
+     * on one of its super classes.
+     *
+     * @param annotationType the annotation to look for
+     * @param <A>            the annotation type to look for
+     * @return a stream containing all annotations placed on the entity type or on one of its super classes
+     */
+    public <A extends Annotation> Stream<A> getAnnotations(Class<A> annotationType) {
+        List<A> result = new ArrayList<>();
+        collectAnnotations(type, annotationType, result);
+
+        return result.stream();
+    }
+
+    private <A extends Annotation> void collectAnnotations(Class<?> type, Class<A> annotationType, List<A> collector) {
+        collector.addAll(Arrays.asList(type.getAnnotationsByType(annotationType)));
+        if (type.getSuperclass() != null && !Object.class.equals(type.getSuperclass())) {
+            collectAnnotations(type.getSuperclass(), annotationType, collector);
+        }
     }
 
     /**
