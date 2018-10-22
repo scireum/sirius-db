@@ -266,8 +266,38 @@ public abstract class QueryCompiler<C extends Constraint> {
             reader.consume();
             return new FieldValue(result.toString(), true);
         } else {
-            return new FieldValue(readToken().getValue(), false);
+            return new FieldValue(readValue().getValue(), false);
         }
+    }
+
+    private FieldValue readValue() {
+        StringBuilder token = new StringBuilder();
+        boolean inQuotes = reader.current().is('"');
+        if (inQuotes) {
+            reader.consume();
+        }
+        while (continueValue(inQuotes)) {
+            if (reader.current().is('\\')) {
+                reader.consume();
+            }
+            token.append(reader.consume());
+        }
+        if (inQuotes && reader.current().is('"')) {
+            reader.consume();
+        }
+        return new FieldValue(token.toString(), inQuotes);
+    }
+
+    private boolean continueValue(boolean inQuotes) {
+        if (reader.current().isEndOfInput()) {
+            return false;
+        }
+
+        if (inQuotes) {
+            return !reader.current().is('"');
+        }
+
+        return !reader.current().is(')') && !reader.current().isWhitepace();
     }
 
     private FieldValue compileValue(String field, FieldValue value) {
