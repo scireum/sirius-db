@@ -149,7 +149,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     private void waitForElasticsearchToBecomReady() {
-        int retries = 5;
+        int retries = 15;
         while (retries-- > 0) {
             try {
                 if (client.getRestClient().performRequest("GET", "/_cat/indices").getStatusLine().getStatusCode()
@@ -162,6 +162,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             Elastic.LOG.INFO("Sleeping two seconds to wait until Elasticsearch is ready...");
             Wait.seconds(2);
         }
+
+        Elastic.LOG.WARN("Elasticsearch was not ready after waiting 30s...");
     }
 
     private Tuple<String, Integer> parsePort(Tuple<String, String> hostnameAndPort) {
