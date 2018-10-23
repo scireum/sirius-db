@@ -149,7 +149,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     private void waitForElasticsearchToBecomReady() {
-        int retries = 10;
+        int retries = 15;
         while (retries-- > 0) {
             try {
                 if (client.getRestClient().performRequest("GET", "/_cat/indices").getStatusLine().getStatusCode()
