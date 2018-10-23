@@ -119,7 +119,8 @@ public class Schema implements Startable, Initializable {
                 executed++;
                 action.execute(getDatabase(action.getRealm()));
                 if (action.isFailed()) {
-                    OMA.LOG.WARN("Failed schema change action -  reason: %s - error: %s",
+                    OMA.LOG.WARN("Failed schema change action - SQL: %s  reason: %s - error: %s",
+                                 Strings.join(action.getSql(), "; "),
                                  action.getReason(),
                                  action.getError());
                     failed++;
