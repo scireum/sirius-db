@@ -163,7 +163,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             Wait.seconds(2);
         }
 
-        Elastic.LOG.WARN("Elasticsearch was not ready after waiting 20s...");
+        Elastic.LOG.WARN("Elasticsearch was not ready after waiting 30s...");
     }
 
     private Tuple<String, Integer> parsePort(Tuple<String, String> hostnameAndPort) {
