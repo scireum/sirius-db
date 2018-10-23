@@ -313,15 +313,19 @@ public class Schema implements Startable, Initializable {
 
         for (String realm : realms) {
             Extension ext = Sirius.getSettings().getExtension(EXTENSION_MIXING_JDBC, realm);
-            String databaseName = ext.get(KEY_DATABASE).asString();
-            if (dbs.hasDatabase(databaseName)) {
-                databases.put(realm, dbs.get(databaseName));
-                waitForDatabaseToBecomeReady(realm, ext.get("initSql").asString());
+            if (ext.isDefault()) {
+                OMA.LOG.INFO("Mixing is disabled for realm '%s' no configuration is present...", realm);
             } else {
-                OMA.LOG.INFO(
-                        "Mixing is disabled for realm '%s' as the database '%s' is not present in the configuration...",
-                        realm,
-                        databaseName);
+                String databaseName = ext.get(KEY_DATABASE).asString();
+                if (dbs.hasDatabase(databaseName)) {
+                    databases.put(realm, dbs.get(databaseName));
+                    waitForDatabaseToBecomeReady(realm, ext.get("initSql").asString());
+                } else {
+                    OMA.LOG.INFO(
+                            "Mixing is disabled for realm '%s' as the database '%s' is not present in the configuration...",
+                            realm,
+                            databaseName);
+                }
             }
         }
 
