@@ -106,4 +106,16 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         then:
         queryCompiler.compile().toString() == "((firstname = test))"
     }
+
+    def "compiling 'firstname:type:value-123' works"(){
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname:type:value-123",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((firstname = type:value-123))"
+
+    }
 }
