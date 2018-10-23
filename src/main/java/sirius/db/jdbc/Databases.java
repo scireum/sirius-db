@@ -14,6 +14,7 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.Initializable;
 import sirius.kernel.di.std.ConfigValue;
@@ -173,7 +174,11 @@ public class Databases implements Initializable {
      * @param name the name of the database
      * @return <tt>true</tt> if a configuration <tt>jdbc.database.[name]</tt> does exist, <tt>false</tt> otherwise
      */
-    public boolean hasDatabase(String name) {
+    public boolean hasDatabase(@Nullable String name) {
+        if (Strings.isEmpty(name)) {
+            return false;
+        }
+
         Extension extension = Sirius.getSettings().getExtension("jdbc.database", name);
         return extension != null && !extension.isDefault();
     }
