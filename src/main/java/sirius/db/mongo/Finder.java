@@ -30,6 +30,7 @@ public class Finder extends QueryBuilder<Finder> {
     private Document orderBy;
     private int skip;
     private int limit;
+    private int batchSize;
 
     protected Finder(Mongo mongo) {
         super(mongo);
@@ -144,12 +145,25 @@ public class Finder extends QueryBuilder<Finder> {
     /**
      * Specifies the number of items to skip before items are added to the result.
      *
-     * @param skip the number of items to skip. Value &lt;= 0 are ignored.
+     * @param skip the number of items to skip. Values &lt;= 0 are ignored.
      * @return the query itself for fluent method calls
      */
     public Finder skip(int skip) {
         this.skip = skip;
 
+        return this;
+    }
+
+    /**
+     * Specifies the number of items per batch. This has no effect on the result. Low batchSizes can be used
+     * to prevent cursor timeouts when using a time consuming processor, but will be slower because the cursor
+     * makes more requests to the server.
+     *
+     * @param batchSize the number of items per batch. Values &lt;= 0 are ignored.
+     * @return the query itself for fluent method calls
+     */
+    public Finder batchSize(int batchSize) {
+        this.batchSize = batchSize;
         return this;
     }
 
@@ -232,6 +246,9 @@ public class Finder extends QueryBuilder<Finder> {
         cur.skip(skip);
         if (limit > 0) {
             cur.limit(limit);
+        }
+        if (batchSize > 0) {
+            cur.batchSize(batchSize);
         }
 
         TaskContext ctx = TaskContext.get();
