@@ -90,6 +90,7 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.update(entity)
         Wait.seconds(1)
         def query = elastic.select(ESStringMapEntity.class)
+                           .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
                            .addSubAggregation(AggregationBuilder.create("terms", "keys")
                            .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString())))
@@ -121,7 +122,8 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.update(entity)
         Wait.seconds(1)
         def query = elastic.select(ESStringMapEntity.class)
-                       .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
+                           .eq(ESStringMapEntity.ID, entity.getId())
+                           .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
                                                          .addSubAggregation(filterAggregation))
         query.computeAggregations()
         then:
