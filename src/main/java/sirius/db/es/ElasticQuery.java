@@ -92,7 +92,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private BoolQueryBuilder queryBuilder;
 
-    private JSONObject aggregations;
+    private List<AggregationBuilder> aggregations;
 
     private BoolQueryBuilder postFilters;
 
@@ -401,15 +401,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds the given aggregation for the given name.
      *
-     * @param name        the name of the aggregation
      * @param aggregation the aggregation itself
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> addAggregation(String name, JSONObject aggregation) {
+    public ElasticQuery<E> addAggregation(AggregationBuilder aggregation) {
         if (aggregations == null) {
-            aggregations = new JSONObject();
+            aggregations = new ArrayList<>();
         }
-        aggregations.put(name, aggregation);
+
+        aggregations.add(aggregation);
 
         return this;
     }
@@ -435,9 +435,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see #getAggregationBuckets(String)
      */
     public ElasticQuery<E> addTermAggregation(String name, Mapping field, int size) {
-        return addAggregation(name,
-                              new JSONObject().fluentPut(KEY_TERMS,
-                                                         new JSONObject().fluentPut(KEY_FIELD, field.toString())
+        return addAggregation(AggregationBuilder.create(KEY_TERMS, name)
+                                                .addBody(new JSONObject().fluentPut(KEY_FIELD, field.toString())
                                                                          .fluentPut(KEY_SIZE, size)));
     }
 
@@ -462,9 +461,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return result;
         }).collect(Collectors.toList());
 
-        return addAggregation(name,
-                              new JSONObject().fluentPut(KEY_DATE_RANGE,
-                                                         new JSONObject().fluentPut(KEY_FIELD, field.toString())
+        return addAggregation(AggregationBuilder.create(KEY_DATE_RANGE, name)
+                                                .addBody(new JSONObject().fluentPut(KEY_FIELD, field.toString())
                                                                          .fluentPut(KEY_KEYED, true)
                                                                          .fluentPut(KEY_RANGES, transformedRanges)));
     }
@@ -514,7 +512,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (aggregations != null) {
-            payload.put(KEY_AGGS, aggregations);
+            JSONObject aggs = new JSONObject();
+            aggregations.forEach(agg -> aggs.put(agg.getName(), agg.build()));
+            payload.put(KEY_AGGS, aggs);
         }
 
         if (postFilters != null) {
@@ -720,6 +720,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         return result;
+    }
+
+    public JSONObject getRawAggregations() {
+        return response.getJSONObject(KEY_AGGREGATIONS);
     }
 
     /**
