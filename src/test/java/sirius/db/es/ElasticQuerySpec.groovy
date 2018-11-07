@@ -8,9 +8,7 @@
 
 package sirius.db.es
 
-import com.alibaba.fastjson.JSONArray
 import com.alibaba.fastjson.JSONObject
-import sirius.db.es.constraints.BoolQueryBuilder
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
