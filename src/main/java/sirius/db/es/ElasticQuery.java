@@ -436,8 +436,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public ElasticQuery<E> addTermAggregation(String name, Mapping field, int size) {
         return addAggregation(AggregationBuilder.create(KEY_TERMS, name)
-                                                .addBody(new JSONObject().fluentPut(KEY_FIELD, field.toString())
-                                                                         .fluentPut(KEY_SIZE, size)));
+                                                .addBodyParameter(KEY_FIELD, field.toString())
+                                                .addBodyParameter(KEY_SIZE, size));
     }
 
     /**
@@ -462,9 +462,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }).collect(Collectors.toList());
 
         return addAggregation(AggregationBuilder.create(KEY_DATE_RANGE, name)
-                                                .addBody(new JSONObject().fluentPut(KEY_FIELD, field.toString())
-                                                                         .fluentPut(KEY_KEYED, true)
-                                                                         .fluentPut(KEY_RANGES, transformedRanges)));
+                                                .addBodyParameter(KEY_FIELD, field.toString())
+                                                .addBodyParameter(KEY_KEYED, true)
+                                                .addBodyParameter(KEY_RANGES, transformedRanges));
     }
 
     /**

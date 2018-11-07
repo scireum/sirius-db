@@ -11,7 +11,6 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.health.Exceptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +26,7 @@ public class AggregationBuilder {
 
     private String name;
     private String type;
-    private JSONObject body;
+    private JSONObject body = new JSONObject();
     private String path;
     private List<AggregationBuilder> subAggregations;
 
@@ -60,13 +59,14 @@ public class AggregationBuilder {
     }
 
     /**
-     * Adds a aggregation body to the builder.
+     * Adds a parameter to the body of the aggregation.
      *
-     * @param body the aggregation body as json
+     * @param name  the name of the parameter
+     * @param value the value of the parameter
      * @return the builder itself for fluent method calls
      */
-    public AggregationBuilder addBody(JSONObject body) {
-        this.body = body;
+    public AggregationBuilder addBodyParameter(String name, Object value) {
+        this.body.put(name, value);
         return this;
     }
 
@@ -104,23 +104,15 @@ public class AggregationBuilder {
         JSONObject builder = new JSONObject();
 
         if (Strings.isFilled(path)) {
-            builder.fluentPut(NESTED, new JSONObject().fluentPut(NESTED_PATH, path));
+            builder.put(NESTED, new JSONObject().fluentPut(NESTED_PATH, path));
         } else {
-            if (Strings.isEmpty(body)) {
-                throw Exceptions.handle()
-                                .to(Elastic.LOG)
-                                .withSystemErrorMessage("Missing body for aggregation: '%s'", name)
-                                .handle();
-            }
-
-            builder.fluentPut(type, body);
+            builder.put(type, body);
         }
 
         if (subAggregations != null) {
             JSONObject subAggs = new JSONObject();
-            subAggregations.forEach(subAggregation -> subAggs.fluentPut(subAggregation.getName(),
-                                                                        subAggregation.build()));
-            builder.fluentPut(AGGREGATIONS, subAggs);
+            subAggregations.forEach(subAggregation -> subAggs.put(subAggregation.getName(), subAggregation.build()));
+            builder.put(AGGREGATIONS, subAggs);
         }
 
         return builder;

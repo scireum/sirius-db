@@ -92,7 +92,7 @@ class ElasticQuerySpec extends BaseSpecification {
         def query = elastic.select(ESStringMapEntity.class)
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
                            .addSubAggregation(AggregationBuilder.create("terms", "keys")
-                           .addBody(new JSONObject().fluentPut("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString()))))
+                           .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString())))
         query.computeAggregations()
         then:
         query.getRawAggregations().getJSONObject("test")
@@ -111,9 +111,9 @@ class ElasticQuerySpec extends BaseSpecification {
     def "muli-level nested aggregations work"(){
         given:
         def keysAggregation = AggregationBuilder.create("terms", "keys")
-                                                .addBody(new JSONObject().fluentPut("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)).toString()))
+                                                .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)).toString())
         def filterAggregation = AggregationBuilder.create("filter", "filter")
-                                                  .addBody(new JSONObject().fluentPut("term", new JSONObject().fluentPut(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString(), "3")))
+                                                  .addBodyParameter("term", new JSONObject().fluentPut(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString(), "3"))
                                                   .addSubAggregation(keysAggregation)
         when:
         ESStringMapEntity entity = new ESStringMapEntity()
