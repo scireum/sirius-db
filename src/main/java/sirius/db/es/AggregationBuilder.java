@@ -107,7 +107,10 @@ public class AggregationBuilder {
             builder.fluentPut(NESTED, new JSONObject().fluentPut(NESTED_PATH, path));
         } else {
             if (Strings.isEmpty(body)) {
-                Exceptions.handle().to(Elastic.LOG).withSystemErrorMessage("Missing body for aggregation").handle();
+                throw Exceptions.handle()
+                                .to(Elastic.LOG)
+                                .withSystemErrorMessage("Missing body for aggregation: '%s'", name)
+                                .handle();
             }
 
             builder.fluentPut(type, body);
