@@ -10,6 +10,7 @@ package sirius.db.es.properties
 
 import sirius.db.es.Elastic
 import sirius.kernel.BaseSpecification
+import sirius.kernel.commons.Amount
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
@@ -164,6 +165,19 @@ class DataTypesSpec extends BaseSpecification {
         test = elastic.refreshOrFail(test)
         then:
         test.getStringValue() == "Test"
+    }
+
+    def "reading and writing amount works"() {
+        given:
+        DataTypesEntity test = new DataTypesEntity()
+        when:
+        test.setAmountValue(Amount.of(400.5))
+        and:
+        elastic.update(test)
+        and:
+        test = elastic.refreshOrFail(test)
+        then:
+        test.getAmountValue() == Amount.of(400.5)
     }
 
     def "reading and writing LocalDate works"() {

@@ -13,6 +13,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Ordinal;
+import sirius.kernel.commons.Amount;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +36,10 @@ public class DataTypesEntity extends ElasticEntity {
     @Length(255)
     @NullAllowed
     private String stringValue;
+
+    private static final Mapping AMOUNT_VALUE = Mapping.named("amountValue");
+    @NullAllowed
+    private Amount amountValue;
 
     private static final Mapping LOCALDATE_VALUE = Mapping.named("localDateValue");
     @NullAllowed
@@ -82,6 +87,14 @@ public class DataTypesEntity extends ElasticEntity {
 
     public void setStringValue(String stringValue) {
         this.stringValue = stringValue;
+    }
+
+    public Amount getAmountValue() {
+        return amountValue;
+    }
+
+    public void setAmountValue(Amount amountValue) {
+        this.amountValue = amountValue;
     }
 
     public LocalDate getLocalDateValue() {
