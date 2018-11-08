@@ -81,6 +81,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_ORDER = "order";
     private static final String KEY_FROM = "from";
     private static final String KEY_TO = "to";
+    private static final String KEY_EXPLAIN = "explain";
 
     @Part
     private static Elastic elastic;
@@ -105,6 +106,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private String routing;
     private boolean unrouted;
+
+    private boolean explain;
 
     private JSONObject response;
 
@@ -172,6 +175,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         return list;
+    }
+
+    /**
+     * Enables the explain mode which gives detailed informations about score calculations.
+     * <p>
+     * Only use this mode for debugging as this might cost performance!
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> explain() {
+        explain = true;
+        return this;
     }
 
     /**
@@ -501,6 +516,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject payload = new JSONObject();
         if (descriptor.isVersioned()) {
             payload.put(BaseMapper.VERSION, true);
+        }
+
+        if (explain) {
+            payload.put(KEY_EXPLAIN, true);
         }
 
         if (queryBuilder != null) {
