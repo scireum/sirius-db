@@ -131,6 +131,18 @@ class SQLQueryCompilerSpec extends BaseSpecification {
 
     }
 
+    def "compiling 'hello::world' does not treat hello as a field"(){
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "hello::world",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((((LOWER(firstname) LIKE '%hello::world%'))))"
+
+    }
+
     def "compiling 'hello > world' silently drops the operator as hello isn't a field"(){
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
