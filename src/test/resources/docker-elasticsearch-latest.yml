@@ -11,5 +11,3 @@ services:
     - xpack.security.enabled=false
     - ES_JAVA_OPTS=-Xms256M -Xmx256M
     hostname: es
-    logging:
-      driver: syslog
