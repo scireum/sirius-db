@@ -91,10 +91,14 @@ public abstract class QueryCompiler<C extends Constraint> {
         this.reader = new LookaheadReader(new StringReader(query));
     }
 
-    private void skipWhitespace(LookaheadReader reader) {
+    private boolean skipWhitespace(LookaheadReader reader) {
+        boolean skipped = false;
         while (reader.current().isWhitepace()) {
             reader.consume();
+            skipped = true;
         }
+
+        return skipped;
     }
 
     /**
@@ -191,12 +195,42 @@ public abstract class QueryCompiler<C extends Constraint> {
         }
 
         FieldValue token = readToken();
-        skipWhitespace(reader);
+        boolean skipped = skipWhitespace(reader);
         if (isAtOperator()) {
-            return parseOperation(token.getValue().toString());
+            String field = token.getValue().toString();
+            Property property = resolveProperty(field);
+            if (property != null) {
+                return parseOperation(property, field);
+            } else if (!skipped) {
+                token = treatOperatorAsTokenPart(token);
+            }
         }
 
         return compileDefaultSearch(searchFields, token);
+    }
+
+    /**
+     * Handles an operator which was found when reading a field token as part of a value, as the field isn't a property
+     * (real database field) of the underlying entity).
+     * <p>
+     * An example would be something like <pre>hello:world</pre> where <b>hello</b> isn't an actual field of the
+     * entity being searched. Therefore we have to emit a {@link #compileDefaultSearch(List, FieldValue)} with
+     * <pre>hello:world</pre> as token.
+     *
+     * @param token the partial field/token
+     * @return the enhanced field token.
+     */
+    private FieldValue treatOperatorAsTokenPart(FieldValue token) {
+        StringBuilder additionalToken = new StringBuilder();
+        while (isAtOperator() || continueToken(false)) {
+            if (reader.current().is('\\')) {
+                reader.consume();
+            }
+            additionalToken.append(reader.consume());
+        }
+
+        token = new FieldValue(token.getValue().toString() + additionalToken, token.isExact());
+        return token;
     }
 
     protected C compileDefaultSearch(List<QueryField> searchFields, FieldValue token) {
@@ -223,10 +257,10 @@ public abstract class QueryCompiler<C extends Constraint> {
 
     protected abstract C compileSearchToken(Mapping field, QueryField.Mode mode, String value);
 
-    protected C parseOperation(String field) {
+    protected C parseOperation(Property property, String field) {
         String operation = readOp();
 
-        FieldValue value = compileValue(field, parseValue());
+        FieldValue value = compileValue(property, parseValue());
 
         return compileOperation(Mapping.named(field), operation, value);
     }
@@ -300,14 +334,9 @@ public abstract class QueryCompiler<C extends Constraint> {
         return !reader.current().is(')') && !reader.current().isWhitepace();
     }
 
-    private FieldValue compileValue(String field, FieldValue value) {
+    private FieldValue compileValue(Property property, FieldValue value) {
         if (!value.isExact() && "-".equals(value.getValue())) {
             return new FieldValue(null, false);
-        }
-
-        Property property = resolveProperty(field);
-        if (property == null) {
-            return value;
         }
 
         return new FieldValue(property.transformValue(Value.of(value.getValue())), value.isExact());
