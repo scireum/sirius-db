@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -743,6 +744,33 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     public JSONObject getRawAggregations() {
         return response.getJSONObject(KEY_AGGREGATIONS);
+    }
+
+    /**
+     * Returns the response as a {@link JSONObject}.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @return the response as JSON
+     */
+    public JSONObject getRawResponse() {
+        return (JSONObject) response.clone();
+    }
+
+    /**
+     * Returns the hits as a map of {@link JSONObject}s.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @return a map of the hits as JSON with the document ID as the key
+     */
+    public Map<String, JSONObject> getRawHits() {
+        return response.getJSONObject(KEY_HITS)
+                       .getJSONArray(KEY_HITS)
+                       .stream()
+                       .filter(hit -> hit instanceof JSONObject)
+                       .map(hit -> (JSONObject) hit)
+                       .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
     }
 
     /**
