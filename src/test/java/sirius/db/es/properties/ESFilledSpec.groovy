@@ -26,7 +26,7 @@ class ESFilledSpec extends BaseSpecification {
         when:
         elastic.update(fieldFilled)
         elastic.update(fieldNotFilled)
-        Wait.seconds(1)
+        Wait.seconds(2)
         then:
         elastic.select(ESFilledEntity.class)
                .eq(ESFilledEntity.TEST_FIELD, null)
