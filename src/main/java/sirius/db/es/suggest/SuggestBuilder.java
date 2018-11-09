@@ -38,20 +38,15 @@ public class SuggestBuilder {
 
     private JSONObject body = new JSONObject();
 
-    private SuggestBuilder(String type, String name) {
-        this.type = type;
-        this.name = name;
-    }
-
     /**
      * Creates a new suggest builder.
      *
      * @param type the type of the suggester.
      * @param name the name of the suggester
-     * @return the builder itself for fluent method calls
      */
-    public static SuggestBuilder create(String type, String name) {
-        return new SuggestBuilder(type, name);
+    public SuggestBuilder(String type, String name) {
+        this.type = type;
+        this.name = name;
     }
 
     public String getName() {

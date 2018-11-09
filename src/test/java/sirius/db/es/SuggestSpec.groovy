@@ -39,8 +39,8 @@ class SuggestSpec extends BaseSpecification {
         and:
         Wait.seconds(2)
         def suggestParts = elastic.select(SuggestTestEntity.class)
-                                  .suggest(SuggestBuilder.create(SuggestBuilder.TERM, "test")
-                                                         .on(SuggestTestEntity.CONTENT, "HSS dril bitt"))
+                                  .suggest(new SuggestBuilder(SuggestBuilder.TERM, "test")
+                                                   .on(SuggestTestEntity.CONTENT, "HSS dril bitt"))
                                   .getSuggestParts("test")
         then:
         suggestParts.size() == 3
@@ -65,8 +65,8 @@ class SuggestSpec extends BaseSpecification {
         and:
         Wait.seconds(2)
         def suggestOptions = elastic.select(SuggestTestEntity.class)
-                                    .suggest(SuggestBuilder.create(SuggestBuilder.PHRASE, "test")
-                                                           .on(SuggestTestEntity.CONTENT, "dril potatoes"))
+                                    .suggest(new SuggestBuilder(SuggestBuilder.PHRASE, "test")
+                                                     .on(SuggestTestEntity.CONTENT, "dril potatoes"))
                                     .getSuggestOptions("test")
         then:
         suggestOptions.size() == 2
@@ -106,10 +106,10 @@ class SuggestSpec extends BaseSpecification {
         and:
         Wait.seconds(2)
         def suggestOptions = elastic.select(SuggestTestEntity.class)
-                                    .suggest(SuggestBuilder.create(SuggestBuilder.PHRASE, "test")
-                                                           .on(SuggestTestEntity.CONTENT, "Sals Kartoffeln")
-                                                           .collate(new BoolQueryBuilder().must(matchPhrase)
-                                                                                          .must(matchShop), true))
+                                    .suggest(new SuggestBuilder(SuggestBuilder.PHRASE, "test")
+                                                     .on(SuggestTestEntity.CONTENT, "Sals Kartoffeln")
+                                                     .collate(new BoolQueryBuilder().must(matchPhrase)
+                                                                                    .must(matchShop), true))
                                     .getSuggestOptions("test")
         then:
         suggestOptions.size() == 3
