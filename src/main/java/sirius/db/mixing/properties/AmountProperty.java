@@ -95,6 +95,11 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
+    protected Object transformToMongo(Object object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
+    }
+
+    @Override
     protected Object transformToElastic(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
     }
@@ -109,6 +114,11 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
             return Amount.of((Double) object);
         }
         return Amount.of((BigDecimal) object);
+    }
+
+    @Override
+    protected Object transformFromMongo(Value object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
     }
 
     @Override
