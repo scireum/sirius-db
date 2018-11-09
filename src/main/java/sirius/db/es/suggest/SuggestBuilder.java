@@ -67,9 +67,7 @@ public class SuggestBuilder {
      */
     public SuggestBuilder on(Mapping field, String text) {
         this.text = text;
-        this.body.put(PARAM_FIELD, field.getName());
-
-        return this;
+        return addBodyParameter(PARAM_FIELD, field.getName());
     }
 
     /**

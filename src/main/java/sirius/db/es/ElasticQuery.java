@@ -510,11 +510,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      */
     public ElasticQuery<E> suggest(SuggestBuilder suggestBuilder) {
-        if (this.suggesters == null) {
-            this.suggesters = new HashMap<>();
-        }
-        suggesters.put(suggestBuilder.getName(), suggestBuilder.build());
-        return this;
+        return suggest(suggestBuilder.getName(), suggestBuilder.build());
     }
 
     /**
