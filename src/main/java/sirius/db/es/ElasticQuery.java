@@ -838,12 +838,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                     client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
         }
 
-        return response.getJSONObject(KEY_SUGGEST)
-                       .getJSONArray(name)
-                       .stream()
-                       .map(part -> (JSONObject) part)
-                       .map(SuggestPart::makeSuggestPart)
-                       .collect(Collectors.toList());
+        JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
+
+        if (responseSuggestions == null) {
+            return Collections.emptyList();
+        }
+
+        return responseSuggestions.getJSONArray(name)
+                                  .stream()
+                                  .map(part -> (JSONObject) part)
+                                  .map(SuggestPart::makeSuggestPart)
+                                  .collect(Collectors.toList());
     }
 
     /**

@@ -10,6 +10,7 @@ package sirius.db.es.suggest;
 
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,6 +76,10 @@ public class SuggestPart {
      * @return a list of {@link SuggestOption}s
      */
     public List<SuggestOption> getOptions() {
+        if (options == null) {
+            return Collections.emptyList();
+        }
+
         return options;
     }
 
