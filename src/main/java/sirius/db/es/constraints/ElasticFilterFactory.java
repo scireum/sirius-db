@@ -218,4 +218,22 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
                                                                                           .fluentPut("rewrite",
                                                                                                      "top_terms_256"))));
     }
+
+    /**
+     * Creates a query that matches everything.
+     *
+     * @return a new match_all query.
+     */
+    public ElasticConstraint matchAll() {
+        return wrap(new JSONObject().fluentPut("match_all", new JSONObject()));
+    }
+
+    /**
+     * Creates a query that matches nothing.
+     *
+     * @return a new match_none query.
+     */
+    public ElasticConstraint matchNone() {
+        return wrap(new JSONObject().fluentPut("match_none", new JSONObject()));
+    }
 }

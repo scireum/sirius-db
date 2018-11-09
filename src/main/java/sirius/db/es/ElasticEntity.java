@@ -12,9 +12,14 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
@@ -32,6 +37,9 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     private String id;
+
+    @Transient
+    private Set<String> matchedQueries;
 
     @Override
     protected boolean isUnique(Mapping field, Object value, Mapping... within) {
@@ -63,5 +71,42 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      */
     protected void setId(String id) {
         this.id = id;
+    }
+
+    /**
+     * Gets the list of all named queries which matched this entity.
+     * <p>
+     * Note: This will be only populated, if the source of the entity is a query.
+     *
+     * @return the list of named queries which matched this entity.
+     */
+    public Set<String> getMatchedQueries() {
+        return matchedQueries;
+    }
+
+    /**
+     * Sets the name of the queries which matched this entity.
+     * <p>
+     * ElasticSearch allows to name/alias a sub-query so that we can signal whether a sub-query matched an entity
+     * or not to prevent additional queries.
+     *
+     * @param matchedQueries the list of named queries which matched this entity
+     */
+    protected void setMatchedQueries(Set<String> matchedQueries) {
+        this.matchedQueries = matchedQueries;
+    }
+
+    /**
+     * Checks wether the query with the given name matched this entity.
+     *
+     * @param queryName the name of the query to check
+     * @return the list of named queries which matched this entity.
+     */
+    public boolean isMatchedNamedQuery(String queryName) {
+        if (matchedQueries == null) {
+            return false;
+        }
+
+        return matchedQueries.contains(queryName);
     }
 }

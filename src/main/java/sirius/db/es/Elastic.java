@@ -8,6 +8,7 @@
 
 package sirius.db.es;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -40,6 +41,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,6 +68,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static final String RESPONSE_VERSION = "_version";
     private static final String RESPONSE_FOUND = "found";
     private static final String RESPONSE_SOURCE = "_source";
+    private static final String MATCHED_QUERIES = "matched_queries";
 
     /**
      * Contains the name of the ID field used by Elasticsearch
@@ -378,8 +381,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
         try {
             JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
+            JSONArray matchedQueries = obj.getJSONArray(MATCHED_QUERIES);
+
             ElasticEntity result = (ElasticEntity) ed.make(Elastic.class, null, key -> Value.of(source.get(key)));
             result.setId(obj.getString(ID_FIELD));
+
+            if (matchedQueries != null) {
+                result.setMatchedQueries(new HashSet<>(matchedQueries.toJavaList(String.class)));
+            }
 
             if (ed.isVersioned()) {
                 result.setVersion(obj.getInteger(RESPONSE_VERSION));
@@ -489,7 +498,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
         return logQueryThresholdMillis;
     }
-
 
     @Override
     public <E extends ElasticEntity> ElasticQuery<E> select(Class<E> type) {

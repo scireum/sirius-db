@@ -8,11 +8,14 @@
 
 package sirius.db.mixing.properties;
 
+import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.IndexMappings;
+import sirius.db.es.annotations.IndexMode;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
-import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
@@ -33,7 +36,7 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link Amount} field within a {@link Mixable}.
  */
-public class AmountProperty extends Property implements SQLPropertyInfo {
+public class AmountProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -87,12 +90,22 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
-    protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
+    protected Object transformToJDBC(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
+    protected Object transformToMongo(Object object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
+    }
+
+    @Override
+    protected Object transformToElastic(Object object) {
+        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
+    }
+
+    @Override
+    protected Object transformFromJDBC(Value data) {
         Object object = data.get();
         if (object == null) {
             return Amount.NOTHING;
@@ -101,6 +114,20 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
             return Amount.of((Double) object);
         }
         return Amount.of((BigDecimal) object);
+    }
+
+    @Override
+    protected Object transformFromMongo(Value object) {
+        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
+    }
+
+    @Override
+    protected Object transformFromElastic(Value data) {
+        String valueAsString = data.asString();
+        if (Strings.isEmpty(valueAsString)) {
+            return Amount.NOTHING;
+        }
+        return Amount.of(new BigDecimal(valueAsString));
     }
 
     @Override
@@ -139,5 +166,16 @@ public class AmountProperty extends Property implements SQLPropertyInfo {
         if (!isNullable() && ((Amount) propertyValue).isEmpty()) {
             throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
         }
+    }
+
+    @Override
+    public void describeProperty(JSONObject description) {
+        description.put("type", "keyword");
+        transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
+        transferOption(IndexMappings.MAPPING_INDEX, getAnnotation(IndexMode.class), IndexMode::indexed, description);
+        transferOption(IndexMappings.MAPPING_DOC_VALUES,
+                       getAnnotation(IndexMode.class),
+                       IndexMode::docValues,
+                       description);
     }
 }
