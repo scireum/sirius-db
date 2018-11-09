@@ -12,6 +12,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
+import sirius.db.es.suggest.SuggestBuilder;
+import sirius.db.es.suggest.SuggestOption;
+import sirius.db.es.suggest.SuggestPart;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
@@ -83,6 +86,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_FROM = "from";
     private static final String KEY_TO = "to";
     private static final String KEY_EXPLAIN = "explain";
+    private static final String KEY_SUGGEST = "suggest";
 
     @Part
     private static Elastic elastic;
@@ -109,6 +113,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private boolean unrouted;
 
     private boolean explain;
+
+    private Map<String, JSONObject> suggesters;
 
     private JSONObject response;
 
@@ -484,6 +490,30 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds a suggester.
+     *
+     * @param suggest a JSON object describing a suggest requirement
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> suggest(String name, JSONObject suggest) {
+        if (this.suggesters == null) {
+            this.suggesters = new HashMap<>();
+        }
+        suggesters.put(name, suggest);
+        return this;
+    }
+
+    /**
+     * Adds a suggester.
+     *
+     * @param suggestBuilder a suggest builder
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> suggest(SuggestBuilder suggestBuilder) {
+        return suggest(suggestBuilder.getName(), suggestBuilder.build());
+    }
+
+    /**
      * Specifies the routing value to use.
      * <p>
      * For routed entities it is highly recommended to supply a routing value as it greatly improves the
@@ -547,6 +577,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 collapse.put(KEY_INNER_HITS, collapseByInnerHits);
             }
             payload.put(KEY_COLLAPSE, collapse);
+        }
+
+        if (suggesters != null && !suggesters.isEmpty()) {
+            payload.put(KEY_SUGGEST, new JSONObject().fluentPutAll(suggesters));
         }
 
         return payload;
@@ -771,6 +805,50 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                        .filter(hit -> hit instanceof JSONObject)
                        .map(hit -> (JSONObject) hit)
                        .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
+    }
+
+    /**
+     * Returns all suggest options for the suggester with the given name.
+     *
+     * @param name the name of the suggester
+     * @return a list of suggest options
+     */
+    public List<SuggestOption> getSuggestOptions(String name) {
+        return getSuggestParts(name).stream().flatMap(part -> part.getOptions().stream()).collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all suggest parts for the suggester with the given name.
+     * <p>
+     * This is mainly used for term suggesters where every term receives their own suggestions.
+     *
+     * @param name the name of the suggester
+     * @return a list of suggest parts
+     */
+    public List<SuggestPart> getSuggestParts(String name) {
+        if (response == null) {
+            checkRouting();
+
+            List<String> indices = determineIndices();
+            if (indices.isEmpty()) {
+                Collections.emptyList();
+            }
+
+            this.response =
+                    client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
+        }
+
+        JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
+
+        if (responseSuggestions == null) {
+            return Collections.emptyList();
+        }
+
+        return responseSuggestions.getJSONArray(name)
+                                  .stream()
+                                  .map(part -> (JSONObject) part)
+                                  .map(SuggestPart::makeSuggestPart)
+                                  .collect(Collectors.toList());
     }
 
     /**
