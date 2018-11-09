@@ -186,7 +186,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      */
     public ElasticQuery<E> explain() {
-        explain = true;
+        this.explain = true;
         return this;
     }
 

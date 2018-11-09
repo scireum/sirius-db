@@ -19,6 +19,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
@@ -38,7 +39,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     private String id;
 
     @Transient
-    private List<String> matchedQueries;
+    private Set<String> matchedQueries;
 
     @Override
     protected boolean isUnique(Mapping field, Object value, Mapping... within) {
@@ -74,10 +75,12 @@ public abstract class ElasticEntity extends BaseEntity<String> {
 
     /**
      * Gets the list of all named queries which matched this entity.
+     * <p>
+     * Note: This will be only populated, if the source of the entity is a query.
      *
      * @return the list of named queries which matched this entity.
      */
-    public List<String> getMatchedQueries() {
+    public Set<String> getMatchedQueries() {
         return matchedQueries;
     }
 
@@ -89,7 +92,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      *
      * @param matchedQueries the list of named queries which matched this entity
      */
-    protected void setMatchedQueries(List<String> matchedQueries) {
+    protected void setMatchedQueries(Set<String> matchedQueries) {
         this.matchedQueries = matchedQueries;
     }
 
@@ -104,6 +107,6 @@ public abstract class ElasticEntity extends BaseEntity<String> {
             return false;
         }
 
-        return matchedQueries.stream().anyMatch(query -> Strings.areEqual(query, queryName));
+        return matchedQueries.contains(queryName);
     }
 }

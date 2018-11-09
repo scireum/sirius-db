@@ -41,6 +41,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -386,7 +387,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             result.setId(obj.getString(ID_FIELD));
 
             if (matchedQueries != null) {
-                result.setMatchedQueries(matchedQueries.toJavaList(String.class));
+                result.setMatchedQueries(new HashSet<>(matchedQueries.toJavaList(String.class)));
             }
 
             if (ed.isVersioned()) {
