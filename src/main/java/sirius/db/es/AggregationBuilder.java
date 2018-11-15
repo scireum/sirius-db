@@ -21,11 +21,52 @@ import java.util.List;
  */
 public class AggregationBuilder {
 
+    /**
+     * Type string for nested aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-nested-aggregation.html">
+     * ElasticSearch reference page for nested aggregations</a>
+     */
     public static final String NESTED = "nested";
+
+    /**
+     * Type string for filter aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-filter-aggregation.html">
+     * ElasticSearch reference page for filter aggregations</a>
+     */
     public static final String FILTER = "filter";
+
+    /**
+     * Type string for terms aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html">
+     * ElasticSearch reference page for terms aggregations</a>
+     */
     public static final String TERMS = "terms";
+
+    /**
+     * Type string for min aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-min-aggregation.html">
+     * ElasticSearch reference page for min aggregations</a>
+     */
     public static final String MIN = "min";
+
+    /**
+     * Type string for max aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-max-aggregation.html">
+     * ElasticSearch reference page for max aggregations</a>
+     */
     public static final String MAX = "max";
+
+    /**
+     * Type string for cardinality aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/current/current/search-aggregations-metrics-cardinality-aggregation.html">
+     * ElasticSearch reference page for cardinality aggregations</a>
+     */
     public static final String CARDINALITY = "cardinality";
 
     private static final String NESTED_PATH = "path";
