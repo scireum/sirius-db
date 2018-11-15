@@ -9,6 +9,7 @@
 package sirius.db.es;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
 
@@ -20,9 +21,17 @@ import java.util.List;
  */
 public class AggregationBuilder {
 
-    private static final String NESTED = "nested";
+    public static final String NESTED = "nested";
+    public static final String FILTER = "filter";
+    public static final String TERMS = "terms";
+    public static final String MIN = "min";
+    public static final String MAX = "max";
+    public static final String CARDINALITY = "cardinality";
+
     private static final String NESTED_PATH = "path";
     private static final String AGGREGATIONS = "aggs";
+    private static final String FIELD = "field";
+    private static final String SIZE = "size";
 
     private String name;
     private String type;
@@ -59,6 +68,17 @@ public class AggregationBuilder {
     }
 
     /**
+     * Creates a new aggregation builder for a filter aggregation.
+     *
+     * @param name   the name of the aggregation
+     * @param filter the constraint to filter on
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createFiltered(String name, ElasticConstraint filter) {
+        return new AggregationBuilder(FILTER, null, name).withBody(filter.toJSON());
+    }
+
+    /**
      * Adds a parameter to the body of the aggregation.
      *
      * @param name  the name of the parameter
@@ -68,6 +88,37 @@ public class AggregationBuilder {
     public AggregationBuilder addBodyParameter(String name, Object value) {
         this.body.put(name, value);
         return this;
+    }
+
+    /**
+     * Sets the body of the aggregation.
+     *
+     * @param body the body to use
+     * @return the builder itself for fluent method calls
+     */
+    public AggregationBuilder withBody(JSONObject body) {
+        this.body = body;
+        return this;
+    }
+
+    /**
+     * Adds the field parameter to the aggregation.
+     *
+     * @param field the field to add
+     * @return the builder itself for fluent method calls
+     */
+    public AggregationBuilder field(Mapping field) {
+        return addBodyParameter(FIELD, field.toString());
+    }
+
+    /**
+     * Adds the size parameter to the aggregation.
+     *
+     * @param size the size to set
+     * @return the builder itself for fluent method calls
+     */
+    public AggregationBuilder size(int size) {
+        return addBodyParameter(SIZE, size);
     }
 
     /**

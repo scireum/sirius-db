@@ -8,7 +8,6 @@
 
 package sirius.db.es
 
-import com.alibaba.fastjson.JSONObject
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
@@ -92,8 +91,8 @@ class ElasticQuerySpec extends BaseSpecification {
         def query = elastic.select(ESStringMapEntity.class)
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
-                           .addSubAggregation(AggregationBuilder.create("terms", "keys")
-                           .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString())))
+                           .addSubAggregation(AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
+                           .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)))))
         query.computeAggregations()
         then:
         query.getRawAggregations().getJSONObject("test")
@@ -111,10 +110,9 @@ class ElasticQuerySpec extends BaseSpecification {
 
     def "muli-level nested aggregations work"(){
         given:
-        def keysAggregation = AggregationBuilder.create("terms", "keys")
-                                                .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)).toString())
-        def filterAggregation = AggregationBuilder.create("filter", "filter")
-                                                  .addBodyParameter("term", new JSONObject().fluentPut(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString(), "3"))
+        def keysAggregation = AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
+                                                .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)))
+        def filterAggregation = AggregationBuilder.createFiltered("filter", Elastic.FILTERS.eq(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)), "3"))
                                                   .addSubAggregation(keysAggregation)
         when:
         ESStringMapEntity entity = new ESStringMapEntity()
