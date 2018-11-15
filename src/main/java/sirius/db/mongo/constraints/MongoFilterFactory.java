@@ -39,7 +39,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      * Represents a regular expression which detects all character which aren't allowed in a search prefix
      * for {@link #prefix(Mapping, String)}.
      */
-    public static final Pattern NON_PREFIX_CHARACTER = Pattern.compile("[^\\p{L}_\\-@.#]");
+    public static final Pattern NON_PREFIX_CHARACTER = Pattern.compile("[^\\p{L}_\\-.#]");
 
     @Override
     protected Object customTransform(Object value) {
