@@ -76,9 +76,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_HITS = "hits";
     private static final String KEY_TOTAL = "total";
     private static final String KEY_AGGREGATIONS = "aggregations";
-    private static final String KEY_BUCKETS = "buckets";
     private static final String KEY_KEY = "key";
-    private static final String KEY_DOC_COUNT = "doc_count";
     private static final String KEY_NAME = "name";
     private static final String KEY_ASC = "asc";
     private static final String KEY_DESC = "desc";
@@ -106,6 +104,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private List<JSONObject> collapseByInnerHits;
 
     private List<JSONObject> sorts;
+
+    private FunctionScoreBuilder functionScore;
 
     private List<Integer> years;
 
@@ -345,6 +345,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds a sort statement to the query.
      *
+     * @param sortBuilder a sort builder
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> sort(SortBuilder sortBuilder) {
+        return sort(sortBuilder.build());
+    }
+
+    /**
+     * Adds a sort statement to the query.
+     *
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
@@ -385,6 +395,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @Override
     public ElasticQuery<E> orderDesc(Mapping field) {
         return sort(field, new JSONObject().fluentPut(KEY_ORDER, KEY_DESC));
+    }
+
+    /**
+     * Adds the given function score to the query.
+     *
+     * @param functionScore the function score builder to use
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> functionScore(FunctionScoreBuilder functionScore) {
+        this.functionScore = functionScore;
+        return this;
     }
 
     /**
@@ -553,9 +574,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             payload.put(KEY_EXPLAIN, true);
         }
 
-        if (queryBuilder != null) {
-            payload.put(KEY_QUERY, queryBuilder.build());
-        }
+        applyQuery(payload);
 
         if (sorts != null && !sorts.isEmpty()) {
             payload.put(KEY_SORT, sorts);
@@ -584,6 +603,26 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         return payload;
+    }
+
+    /**
+     * Adds the query and the function score query to the payload.
+     * <p>
+     * If a function score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
+     * payload. If only a function score builder is set, it is added to the payload without a query.
+     *
+     * @param payload the existing payload to add the query to
+     */
+    private void applyQuery(JSONObject payload) {
+        if (functionScore != null) {
+            if (queryBuilder != null) {
+                payload.put(KEY_QUERY, functionScore.apply(queryBuilder.build()));
+            } else {
+                payload.put(KEY_QUERY, functionScore.build());
+            }
+        } else if (queryBuilder != null) {
+            payload.put(KEY_QUERY, queryBuilder.build());
+        }
     }
 
     /**
@@ -761,19 +800,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return result;
         }
 
-        Object buckets = aggregation.get(KEY_BUCKETS);
-        if (buckets instanceof JSONArray) {
-            for (Object bucket : (JSONArray) buckets) {
-                result.add(Tuple.create(((JSONObject) bucket).getString(KEY_KEY),
-                                        ((JSONObject) bucket).getInteger(KEY_DOC_COUNT)));
-            }
-        } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
-                result.add(Tuple.create(entry.getKey(), ((JSONObject) entry.getValue()).getInteger(KEY_DOC_COUNT)));
-            }
-        }
-
-        return result;
+        return Bucket.fromAggregation(aggregation)
+                     .stream()
+                     .map(bucket -> Tuple.create(bucket.getKey(), bucket.getDocCount()))
+                     .collect(Collectors.toList());
     }
 
     public JSONObject getRawAggregations() {

@@ -61,6 +61,28 @@ class ElasticQuerySpec extends BaseSpecification {
         entities.get(9).getCounter() == 19
     }
 
+    def "sorting works"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("SORT")
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        def entities = elastic.select(QueryTestEntity.class)
+                              .eq(QueryTestEntity.VALUE, "SORT")
+                              .sort(SortBuilder.on(QueryTestEntity.COUNTER)
+                                               .order(SortBuilder.Order.DESC))
+                              .queryList()
+        then:
+        entities.size() == 100
+        and:
+        entities.get(0).getCounter() == 99
+        and:
+        entities.get(99).getCounter() == 0
+    }
+
     def "aggregations work"() {
         when:
         for (int i = 0; i < 100; i++) {
@@ -92,8 +114,8 @@ class ElasticQuerySpec extends BaseSpecification {
         def query = elastic.select(ESStringMapEntity.class)
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
-                           .addSubAggregation(AggregationBuilder.create("terms", "keys")
-                           .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString())))
+                           .addSubAggregation(AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
+                           .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)))))
         query.computeAggregations()
         then:
         query.getRawAggregations().getJSONObject("test")
@@ -111,10 +133,9 @@ class ElasticQuerySpec extends BaseSpecification {
 
     def "muli-level nested aggregations work"(){
         given:
-        def keysAggregation = AggregationBuilder.create("terms", "keys")
-                                                .addBodyParameter("field", ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)).toString())
-        def filterAggregation = AggregationBuilder.create("filter", "filter")
-                                                  .addBodyParameter("term", new JSONObject().fluentPut(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)).toString(), "3"))
+        def keysAggregation = AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
+                                                .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)))
+        def filterAggregation = AggregationBuilder.createFiltered("filter", Elastic.FILTERS.eq(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)), "3"))
                                                   .addSubAggregation(keysAggregation)
         when:
         ESStringMapEntity entity = new ESStringMapEntity()
@@ -215,4 +236,52 @@ class ElasticQuerySpec extends BaseSpecification {
         sum == (1500 * 1501) / 2
     }
 
+    def "queries with multiple occurences of the same constraint works"() {
+        when:
+        QueryTestEntity entity = new QueryTestEntity()
+        entity.setValue("NOREF")
+        entity.setCounter(1)
+        elastic.update(entity)
+        Wait.seconds(2)
+        and:
+        def constraint = Elastic.FILTERS.eq(QueryTestEntity.VALUE, "NOREF")
+        and:
+        def entities = elastic.select(QueryTestEntity.class).where(Elastic.FILTERS.or(constraint, constraint)).queryList()
+        then:
+        entities.size() == 1
+    }
+
+    def "function score queries work"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("FUNCTIONSCORE")
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        and:
+        def scoreFunction = new JSONObject().fluentPut("field_value_factor",
+                                                       new JSONObject().fluentPut("field",
+                                                                                  QueryTestEntity.COUNTER.toString())
+                                                                       .fluentPut("factor", 2))
+        and:
+        def query = elastic.select(QueryTestEntity.class)
+                           .must(Elastic.FILTERS.eq(QueryTestEntity.VALUE, "FUNCTIONSCORE"))
+                           .functionScore(new FunctionScoreBuilder().function(scoreFunction)
+                                                                    .parameter("boost_mode", "replace"))
+                           .orderAsc(Mapping.named("_score"))
+        and:
+        def entities = query.queryList()
+        and:
+        def hits = query.getRawHits()
+        then:
+        entities.size() == 100
+        and:
+        hits.get(entities.get(0).getId()).getDoubleValue("_score") == 0
+        and:
+        hits.get(entities.get(50).getId()).getDoubleValue("_score") == 100
+        and:
+        hits.get(entities.get(99).getId()).getDoubleValue("_score") == 198
+    }
 }

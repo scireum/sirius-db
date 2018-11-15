@@ -9,6 +9,7 @@
 package sirius.db.es;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
 
@@ -20,9 +21,58 @@ import java.util.List;
  */
 public class AggregationBuilder {
 
-    private static final String NESTED = "nested";
+    /**
+     * Type string for nested aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-nested-aggregation.html">
+     * ElasticSearch reference page for nested aggregations</a>
+     */
+    public static final String NESTED = "nested";
+
+    /**
+     * Type string for filter aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-filter-aggregation.html">
+     * ElasticSearch reference page for filter aggregations</a>
+     */
+    public static final String FILTER = "filter";
+
+    /**
+     * Type string for terms aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html">
+     * ElasticSearch reference page for terms aggregations</a>
+     */
+    public static final String TERMS = "terms";
+
+    /**
+     * Type string for min aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-min-aggregation.html">
+     * ElasticSearch reference page for min aggregations</a>
+     */
+    public static final String MIN = "min";
+
+    /**
+     * Type string for max aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-max-aggregation.html">
+     * ElasticSearch reference page for max aggregations</a>
+     */
+    public static final String MAX = "max";
+
+    /**
+     * Type string for cardinality aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/current/current/search-aggregations-metrics-cardinality-aggregation.html">
+     * ElasticSearch reference page for cardinality aggregations</a>
+     */
+    public static final String CARDINALITY = "cardinality";
+
     private static final String NESTED_PATH = "path";
     private static final String AGGREGATIONS = "aggs";
+    private static final String FIELD = "field";
+    private static final String SIZE = "size";
 
     private String name;
     private String type;
@@ -59,6 +109,17 @@ public class AggregationBuilder {
     }
 
     /**
+     * Creates a new aggregation builder for a filter aggregation.
+     *
+     * @param name   the name of the aggregation
+     * @param filter the constraint to filter on
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createFiltered(String name, ElasticConstraint filter) {
+        return new AggregationBuilder(FILTER, null, name).withBody(filter.toJSON());
+    }
+
+    /**
      * Adds a parameter to the body of the aggregation.
      *
      * @param name  the name of the parameter
@@ -68,6 +129,37 @@ public class AggregationBuilder {
     public AggregationBuilder addBodyParameter(String name, Object value) {
         this.body.put(name, value);
         return this;
+    }
+
+    /**
+     * Sets the body of the aggregation.
+     *
+     * @param body the body to use
+     * @return the builder itself for fluent method calls
+     */
+    public AggregationBuilder withBody(JSONObject body) {
+        this.body = body;
+        return this;
+    }
+
+    /**
+     * Adds the field parameter to the aggregation.
+     *
+     * @param field the field to add
+     * @return the builder itself for fluent method calls
+     */
+    public AggregationBuilder field(Mapping field) {
+        return addBodyParameter(FIELD, field.toString());
+    }
+
+    /**
+     * Adds the size parameter to the aggregation.
+     *
+     * @param size the size to set
+     * @return the builder itself for fluent method calls
+     */
+    public AggregationBuilder size(int size) {
+        return addBodyParameter(SIZE, size);
     }
 
     /**
