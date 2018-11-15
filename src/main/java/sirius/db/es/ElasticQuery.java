@@ -105,6 +105,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private List<JSONObject> sorts;
 
+    private FunctionScoreBuilder functionScore;
+
     private List<Integer> years;
 
     private String routing;
@@ -396,6 +398,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds the given function score to the query.
+     *
+     * @param functionScore the function score builder to use
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> functionScore(FunctionScoreBuilder functionScore) {
+        this.functionScore = functionScore;
+        return this;
+    }
+
+    /**
      * Collapses by the given field.
      *
      * @param field the field to collapse results by.
@@ -561,9 +574,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             payload.put(KEY_EXPLAIN, true);
         }
 
-        if (queryBuilder != null) {
-            payload.put(KEY_QUERY, queryBuilder.build());
-        }
+        applyQuery(payload);
 
         if (sorts != null && !sorts.isEmpty()) {
             payload.put(KEY_SORT, sorts);
@@ -592,6 +603,26 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         return payload;
+    }
+
+    /**
+     * Adds the query and the function score query to the payload.
+     * <p>
+     * If a function score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
+     * payload. If only a function score builder is set, it is added to the payload without a query.
+     *
+     * @param payload the existing payload to add the query to
+     */
+    private void applyQuery(JSONObject payload) {
+        if (functionScore != null) {
+            if (queryBuilder != null) {
+                payload.put(KEY_QUERY, functionScore.apply(queryBuilder.build()));
+            } else {
+                payload.put(KEY_QUERY, functionScore.build());
+            }
+        } else if (queryBuilder != null) {
+            payload.put(KEY_QUERY, queryBuilder.build());
+        }
     }
 
     /**

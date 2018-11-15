@@ -8,6 +8,7 @@
 
 package sirius.db.es
 
+import com.alibaba.fastjson.JSONObject
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
@@ -248,5 +249,39 @@ class ElasticQuerySpec extends BaseSpecification {
         def entities = elastic.select(QueryTestEntity.class).where(Elastic.FILTERS.or(constraint, constraint)).queryList()
         then:
         entities.size() == 1
+    }
+
+    def "function score queries work"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("FUNCTIONSCORE")
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        and:
+        def scoreFunction = new JSONObject().fluentPut("field_value_factor",
+                                                       new JSONObject().fluentPut("field",
+                                                                                  QueryTestEntity.COUNTER.toString())
+                                                                       .fluentPut("factor", 2))
+        and:
+        def query = elastic.select(QueryTestEntity.class)
+                           .must(Elastic.FILTERS.eq(QueryTestEntity.VALUE, "FUNCTIONSCORE"))
+                           .functionScore(new FunctionScoreBuilder().function(scoreFunction)
+                                                                    .parameter("boost_mode", "replace"))
+                           .orderAsc(Mapping.named("_score"))
+        and:
+        def entities = query.queryList()
+        and:
+        def hits = query.getRawHits()
+        then:
+        entities.size() == 100
+        and:
+        hits.get(entities.get(0).getId()).getDoubleValue("_score") == 0
+        and:
+        hits.get(entities.get(50).getId()).getDoubleValue("_score") == 100
+        and:
+        hits.get(entities.get(99).getId()).getDoubleValue("_score") == 198
     }
 }
