@@ -213,4 +213,18 @@ class ElasticQuerySpec extends BaseSpecification {
         sum == (1500 * 1501) / 2
     }
 
+    def "queries with multiple occurences of the same constraint works"() {
+        when:
+        QueryTestEntity entity = new QueryTestEntity()
+        entity.setValue("NOREF")
+        entity.setCounter(1)
+        elastic.update(entity)
+        Wait.seconds(2)
+        and:
+        def constraint = Elastic.FILTERS.eq(QueryTestEntity.VALUE, "NOREF")
+        and:
+        def entities = elastic.select(QueryTestEntity.class).where(Elastic.FILTERS.or(constraint, constraint)).queryList()
+        then:
+        entities.size() == 1
+    }
 }
