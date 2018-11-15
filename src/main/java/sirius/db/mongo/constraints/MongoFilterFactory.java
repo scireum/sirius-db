@@ -36,10 +36,16 @@ import java.util.stream.Collectors;
 public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     /**
-     * Represents a regular expression which detects all character which aren't allowed in a search prefix
+     * Represents a regular expression which detects all characters which aren't allowed in a search prefix
      * for {@link #prefix(Mapping, String)}.
      */
-    public static final Pattern NON_PREFIX_CHARACTER = Pattern.compile("[^\\p{L}_\\-.#]");
+    public static final Pattern NON_PREFIX_CHARACTER = Pattern.compile("[^\\p{L}\\d_\\-@.#]+");
+
+    /**
+     * Represents a regular expression which detects all characters which are allowed in a search prefix but still cause
+     * a token to be splitted.
+     */
+    public static final Pattern SEMI_NON_PREFIX_CHARACTER = Pattern.compile("[^\\p{L}]+");
 
     @Override
     protected Object customTransform(Object value) {
