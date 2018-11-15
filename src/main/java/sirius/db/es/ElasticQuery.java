@@ -76,9 +76,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_HITS = "hits";
     private static final String KEY_TOTAL = "total";
     private static final String KEY_AGGREGATIONS = "aggregations";
-    private static final String KEY_BUCKETS = "buckets";
     private static final String KEY_KEY = "key";
-    private static final String KEY_DOC_COUNT = "doc_count";
     private static final String KEY_NAME = "name";
     private static final String KEY_ASC = "asc";
     private static final String KEY_DESC = "desc";
@@ -771,19 +769,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return result;
         }
 
-        Object buckets = aggregation.get(KEY_BUCKETS);
-        if (buckets instanceof JSONArray) {
-            for (Object bucket : (JSONArray) buckets) {
-                result.add(Tuple.create(((JSONObject) bucket).getString(KEY_KEY),
-                                        ((JSONObject) bucket).getInteger(KEY_DOC_COUNT)));
-            }
-        } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
-                result.add(Tuple.create(entry.getKey(), ((JSONObject) entry.getValue()).getInteger(KEY_DOC_COUNT)));
-            }
-        }
-
-        return result;
+        return Bucket.fromAggregation(aggregation)
+                     .stream()
+                     .map(bucket -> Tuple.create(bucket.getKey(), bucket.getDocCount()))
+                     .collect(Collectors.toList());
     }
 
     public JSONObject getRawAggregations() {
