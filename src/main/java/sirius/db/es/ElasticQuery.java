@@ -345,6 +345,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds a sort statement to the query.
      *
+     * @param sortBuilder a sort builder
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> sort(SortBuilder sortBuilder) {
+        return sort(sortBuilder.build());
+    }
+
+    /**
+     * Adds a sort statement to the query.
+     *
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */

@@ -60,6 +60,28 @@ class ElasticQuerySpec extends BaseSpecification {
         entities.get(9).getCounter() == 19
     }
 
+    def "sorting works"() {
+        when:
+        for (int i = 0; i < 100; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("SORT")
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        Wait.seconds(2)
+        def entities = elastic.select(QueryTestEntity.class)
+                              .eq(QueryTestEntity.VALUE, "SORT")
+                              .sort(SortBuilder.on(QueryTestEntity.COUNTER)
+                                               .order(SortBuilder.Order.DESC))
+                              .queryList()
+        then:
+        entities.size() == 100
+        and:
+        entities.get(0).getCounter() == 99
+        and:
+        entities.get(99).getCounter() == 0
+    }
+
     def "aggregations work"() {
         when:
         for (int i = 0; i < 100; i++) {
