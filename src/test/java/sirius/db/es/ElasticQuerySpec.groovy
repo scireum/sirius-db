@@ -16,6 +16,7 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 import java.time.Duration
 
@@ -283,5 +284,21 @@ class ElasticQuerySpec extends BaseSpecification {
         hits.get(entities.get(50).getId()).getDoubleValue("_score") == 100
         and:
         hits.get(entities.get(99).getId()).getDoubleValue("_score") == 198
+    }
+
+    def "selecting over 1000 entities in queryList throws an exception"() {
+        given:
+        elastic.select(ListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 1001; i++) {
+            def entityToCreate = new ListTestEntity()
+            entityToCreate.setCounter(i)
+            elastic.update(entityToCreate)
+        }
+        Wait.seconds(2)
+        when:
+        elastic.select(ListTestEntity.class).queryList()
+        then:
+        thrown(HandledException)
     }
 }
