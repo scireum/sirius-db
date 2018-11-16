@@ -11,7 +11,6 @@ package sirius.db.mixing.query;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
-import sirius.db.mongo.Mongo;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.di.std.Part;
@@ -154,7 +153,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
 
         // Install circuit breaker...
         if (limit == 0) {
-            limit = MAX_LIST_SIZE;
+            limit = MAX_LIST_SIZE + 1;
         }
 
         iterateAll(entity -> {
@@ -168,7 +167,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     protected void failOnOverflow(List<E> result) {
         if (result.size() > MAX_LIST_SIZE) {
             throw Exceptions.handle()
-                            .to(Mongo.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage("More than %s results were loaded into a list by executing: %s",
                                                     MAX_LIST_SIZE,
                                                     this)
