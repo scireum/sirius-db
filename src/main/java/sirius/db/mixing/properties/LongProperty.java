@@ -79,6 +79,10 @@ public class LongProperty extends Property implements SQLPropertyInfo, ESPropert
             return Long.valueOf((Integer) object.get());
         }
 
+        if (object.get() instanceof String) {
+            return Long.valueOf((String) object.get());
+        }
+
         return object.get();
     }
 

@@ -79,6 +79,10 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
             return Integer.valueOf(((Long) object.get()).intValue());
         }
 
+        if (object.get() instanceof String) {
+            return Integer.valueOf((String) object.get());
+        }
+
         return object.get();
     }
 
