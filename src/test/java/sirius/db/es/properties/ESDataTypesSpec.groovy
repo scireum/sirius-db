@@ -17,7 +17,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class DataTypesSpec extends BaseSpecification {
+class ESDataTypesSpec extends BaseSpecification {
 
     @Part
     private static Elastic elastic
