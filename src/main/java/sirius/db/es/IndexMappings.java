@@ -104,7 +104,7 @@ public class IndexMappings implements Startable {
                 elastic.updateDiscriminatorTable(ed, ed.getProperty(storePerYear.value()));
             } else {
                 Elastic.LOG.INFO("Updating mapping for %s...", ed.getType().getSimpleName());
-                createMapping(ed, ed.getRelationName());
+                createMapping(ed, elastic.determineIndex(ed));
             }
             return true;
         } catch (Exception e) {
@@ -147,7 +147,7 @@ public class IndexMappings implements Startable {
                           .withSystemErrorMessage(
                                   "The entity %s (%s) contains an unmappable property %s - ESPropertyInfo is not available!",
                                   ed.getType().getName(),
-                                  ed.getRelationName(),
+                                  elastic.determineIndex(ed),
                                   property.getName())
                           .handle();
             } else {

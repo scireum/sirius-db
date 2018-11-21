@@ -89,6 +89,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @ConfigValue("elasticsearch.hosts")
     private String hosts;
 
+    @ConfigValue("elasticsearch.prefix")
+    private String prefix;
+
     @ConfigValue("elasticsearch.logQueryThreshold")
     private static Duration logQueryThreshold;
     private static long logQueryThresholdMillis = -1;
@@ -316,11 +319,27 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected String determineIndex(EntityDescriptor ed, ElasticEntity entity) {
         Property discriminator = discriminatorTable.get(ed);
         if (discriminator == null) {
-            return ed.getRelationName();
+            return determineIndex(ed);
         }
 
         int year = ((TemporalAccessor) discriminator.getValue(entity)).get(ChronoField.YEAR);
         return determineYearIndex(ed, year);
+    }
+
+    /**
+     * Determines the index to use for the given entity.
+     * <p>
+     * This will either be the {@link EntityDescriptor#getRelationName() relation name} with an optional prefix.
+     *
+     * @param ed the descriptor of the entity
+     * @return the index name to use for the given entity.
+     */
+    protected String determineIndex(EntityDescriptor ed) {
+        if (Strings.isFilled(prefix)) {
+            return prefix + "-" + ed.getRelationName();
+        }
+
+        return ed.getRelationName();
     }
 
     /**
@@ -333,7 +352,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return the index name for the given descriptor and year
      */
     protected String determineYearIndex(EntityDescriptor ed, Object year) {
-        return ed.getRelationName() + "-" + year;
+        return determineIndex(ed) + "-" + year;
     }
 
     /**
