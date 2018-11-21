@@ -17,6 +17,7 @@ import sirius.kernel.di.std.Part
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.temporal.ChronoField
 
 class ClickhouseSpec extends BaseSpecification {
 
@@ -30,7 +31,8 @@ class ClickhouseSpec extends BaseSpecification {
     def "write a test entity and read it back"() {
         given:
         ClickhouseTestEntity e = new ClickhouseTestEntity()
-        e.setDateTime(Instant.now())
+        Instant now = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
+        e.setDateTime(now)
         e.setDate(LocalDate.now())
         e.setInt8(100)
         e.setInt16(30_000)
@@ -50,6 +52,13 @@ class ClickhouseSpec extends BaseSpecification {
         readBack.getInt8() == 100
         readBack.isaBooleanSetToTrue() == true
         readBack.isaBooleanSetToFalse() == false
+        readBack.getInt16() == 30_000
+        readBack.getInt32() == 1_000_000_000
+        readBack.getInt64() == 10_000_000_000
+        readBack.getString() == "This is a long string"
+        readBack.getFixedString() == "X"
+        readBack.getDate() == LocalDate.now()
+        readBack.getDateTime() == now
     }
 
     def "batch insert into clickhouse works"() {
