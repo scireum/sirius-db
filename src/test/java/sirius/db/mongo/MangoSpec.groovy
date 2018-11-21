@@ -120,15 +120,15 @@ class MangoSpec extends BaseSpecification {
 
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
-        mango.select(ListTestEntity.class).delete()
+        mango.select(MangoListTestEntity.class).delete()
         and:
         for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new ListTestEntity()
+            def entityToCreate = new MangoListTestEntity()
             entityToCreate.setCounter(i)
             mango.update(entityToCreate)
         }
         when:
-        mango.select(ListTestEntity.class).queryList()
+        mango.select(MangoListTestEntity.class).queryList()
         then:
         thrown(HandledException)
     }

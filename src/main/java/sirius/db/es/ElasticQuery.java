@@ -735,7 +735,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @SuppressWarnings("unchecked")
     @Override
     public void iterate(Function<E, Boolean> handler) {
-        if (limit == 0 || limit > MAX_LIST_SIZE) {
+        if (useScrolling()) {
             scroll(handler);
             return;
         }
@@ -754,6 +754,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return;
             }
         }
+    }
+
+    /**
+     * Determines if this query should use scrolling.
+     * <p>
+     * The limit needs to be greater than <tt>{@link #MAX_LIST_SIZE} + 1</tt> for scrolling because we query
+     * <tt>{@link #MAX_LIST_SIZE} + 1</tt> elements when not explicitly setting a limit.
+     *
+     * @return <tt>true</tt> if this query should scroll
+     */
+    private boolean useScrolling() {
+        return limit == 0 || limit > MAX_LIST_SIZE + 1;
     }
 
     /**
@@ -788,6 +800,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
+        if (response == null && useScrolling()) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("'getAggregationBuckets' not possible when scrolling")
+                            .handle();
+        }
+
         List<Tuple<String, Integer>> result = new ArrayList<>();
 
         JSONObject responseAggregations = response.getJSONObject(KEY_AGGREGATIONS);
@@ -806,7 +825,21 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                      .collect(Collectors.toList());
     }
 
+    /**
+     * Returns the aggregations as a {@link JSONObject}.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @return the response as JSON
+     */
     public JSONObject getRawAggregations() {
+        if (response == null && useScrolling()) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("'getRawAggregations' not possible when scrolling")
+                            .handle();
+        }
+
         return response.getJSONObject(KEY_AGGREGATIONS);
     }
 
@@ -818,6 +851,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the response as JSON
      */
     public JSONObject getRawResponse() {
+        if (response == null && useScrolling()) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("'getRawResponse' not possible when scrolling")
+                            .handle();
+        }
+
         return (JSONObject) response.clone();
     }
 
@@ -829,6 +869,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a map of the hits as JSON with the document ID as the key
      */
     public Map<String, JSONObject> getRawHits() {
+        if (useScrolling()) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("'getRawHits' not possible when scrolling")
+                            .handle();
+        }
+
         return response.getJSONObject(KEY_HITS)
                        .getJSONArray(KEY_HITS)
                        .stream()

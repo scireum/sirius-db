@@ -17,7 +17,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class DataTypesSpec extends BaseSpecification {
+class ESDataTypesSpec extends BaseSpecification {
 
     @Part
     private static Elastic elastic
@@ -28,7 +28,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing Long works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
 
         when:
         test.setLongValue(Long.MAX_VALUE)
@@ -60,7 +60,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing Integer works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
 
         when:
         test.setIntValue(Integer.MAX_VALUE)
@@ -92,7 +92,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing long works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
 
         when:
         test.setLongValue2(Long.MAX_VALUE)
@@ -124,7 +124,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing int works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
 
         when:
         test.setIntValue2(Integer.MAX_VALUE)
@@ -156,7 +156,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing String works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
         test.setStringValue("Test")
         and:
@@ -169,7 +169,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing amount works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
         test.setAmountValue(Amount.of(400.5))
         and:
@@ -182,7 +182,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing LocalDate works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
         test.setLocalDateValue(LocalDate.of(2014, 10, 24))
         and:
@@ -195,7 +195,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing LocalDateTime works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
         test.setLocalDateTimeValue(LocalDateTime.of(2014, 10, 24, 14, 30))
         and:
@@ -208,7 +208,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing Boolean true works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
         test.setBoolValue(true)
         and:
@@ -221,7 +221,7 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing Boolean false works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
         test.setBoolValue(false)
         and:
@@ -234,27 +234,27 @@ class DataTypesSpec extends BaseSpecification {
 
     def "reading and writing TestEnum works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
-        test.setTestEnum(DataTypesEntity.TestEnum.Test1)
+        test.setTestEnum(ESDataTypesEntity.TestEnum.Test1)
         and:
         elastic.update(test)
         and:
         test = elastic.refreshOrFail(test)
         then:
-        test.getTestEnum() == DataTypesEntity.TestEnum.Test1
+        test.getTestEnum() == ESDataTypesEntity.TestEnum.Test1
     }
 
     def "reading and writing TestEnum as ordinal works"() {
         given:
-        DataTypesEntity test = new DataTypesEntity()
+        ESDataTypesEntity test = new ESDataTypesEntity()
         when:
-        test.setTestEnum2(DataTypesEntity.TestEnum.Test2)
+        test.setTestEnum2(ESDataTypesEntity.TestEnum.Test2)
         and:
         elastic.update(test)
         and:
         test = elastic.refreshOrFail(test)
         then:
-        test.getTestEnum2() == DataTypesEntity.TestEnum.Test2
+        test.getTestEnum2() == ESDataTypesEntity.TestEnum.Test2
     }
 }

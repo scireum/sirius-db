@@ -18,7 +18,7 @@ import sirius.kernel.commons.Amount;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public class DataTypesEntity extends ElasticEntity {
+public class ESDataTypesEntity extends ElasticEntity {
 
     public enum TestEnum {
         Test1, Test2

@@ -288,16 +288,16 @@ class ElasticQuerySpec extends BaseSpecification {
 
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
-        elastic.select(ListTestEntity.class).delete()
+        elastic.select(ESListTestEntity.class).delete()
         and:
         for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new ListTestEntity()
+            def entityToCreate = new ESListTestEntity()
             entityToCreate.setCounter(i)
             elastic.update(entityToCreate)
         }
         Wait.seconds(2)
         when:
-        elastic.select(ListTestEntity.class).queryList()
+        elastic.select(ESListTestEntity.class).queryList()
         then:
         thrown(HandledException)
     }
