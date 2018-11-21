@@ -343,7 +343,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return the type name to use
      */
     protected String determineTypeName(EntityDescriptor ed) {
-        return ed.getRelationName();
+        return ed.getType().getSimpleName();
     }
 
     /**
