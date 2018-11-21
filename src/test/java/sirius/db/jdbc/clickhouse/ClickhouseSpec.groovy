@@ -90,7 +90,7 @@ class ClickhouseSpec extends BaseSpecification {
         ctx.close()
     }
 
-    def "property with default value is set to default when null in object"() {
+    def "property with default-value is set to default when null in object"() {
         given:
         ClickhouseTestEntity e = new ClickhouseTestEntity()
         e.setDateTime(Instant.now())
@@ -101,6 +101,7 @@ class ClickhouseSpec extends BaseSpecification {
         e.setInt64(10_000_000_000)
         e.setString("This is a long string")
         e.setFixedString("Y")
+        e.setInt8WithDefault(null)
         when:
         oma.update(e)
         then:
@@ -111,7 +112,7 @@ class ClickhouseSpec extends BaseSpecification {
         readBack.getInt8WithDefault() == 42
     }
 
-    def "property with default is set to actuall value when set"() {
+    def "property with default-value is set to actual value when set"() {
         given:
         ClickhouseTestEntity e = new ClickhouseTestEntity()
         e.setDateTime(Instant.now())

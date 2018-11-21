@@ -129,7 +129,7 @@ public class ClickhouseTestEntity extends SQLEntity {
         return int8WithDefault;
     }
 
-    public void setInt8WithDefault(int int8WithDefault) {
+    public void setInt8WithDefault(Integer int8WithDefault) {
         this.int8WithDefault = int8WithDefault;
     }
 
