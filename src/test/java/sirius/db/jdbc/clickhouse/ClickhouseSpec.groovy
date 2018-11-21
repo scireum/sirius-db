@@ -65,6 +65,7 @@ class ClickhouseSpec extends BaseSpecification {
             e.setInt64(i)
             e.setString("Test")
             e.setFixedString("B")
+            e.setInt8WithDefault(0)
             insert.insert(e, true, true)
         }
         and:
@@ -76,4 +77,46 @@ class ClickhouseSpec extends BaseSpecification {
         ctx.close()
     }
 
+    def "property with default value is set to default when null in object"() {
+        given:
+        ClickhouseTestEntity e = new ClickhouseTestEntity()
+        e.setDateTime(Instant.now())
+        e.setDate(LocalDate.now())
+        e.setInt8(100)
+        e.setInt16(30_000)
+        e.setInt32(1_000_000_000)
+        e.setInt64(10_000_000_000)
+        e.setString("This is a long string")
+        e.setFixedString("Y")
+        when:
+        oma.update(e)
+        then:
+        ClickhouseTestEntity readBack = oma.select(ClickhouseTestEntity.class).
+                eq(ClickhouseTestEntity.FIXED_STRING, "Y").
+                queryFirst()
+        and:
+        readBack.getInt8WithDefault() == 42
+    }
+
+    def "property with default is set to actuall value when set"() {
+        given:
+        ClickhouseTestEntity e = new ClickhouseTestEntity()
+        e.setDateTime(Instant.now())
+        e.setDate(LocalDate.now())
+        e.setInt8(100)
+        e.setInt16(30_000)
+        e.setInt32(1_000_000_000)
+        e.setInt64(10_000_000_000)
+        e.setString("This is a long string")
+        e.setFixedString("Z")
+        e.setInt8WithDefault(17)
+        when:
+        oma.update(e)
+        then:
+        ClickhouseTestEntity readBack = oma.select(ClickhouseTestEntity.class).
+                eq(ClickhouseTestEntity.FIXED_STRING, "Z").
+                queryFirst()
+        and:
+        readBack.getInt8WithDefault() == 17
+    }
 }

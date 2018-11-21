@@ -10,7 +10,9 @@ package sirius.db.jdbc.clickhouse;
 
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
+import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Realm;
 
 import java.time.Instant;
@@ -46,6 +48,12 @@ public class ClickhouseTestEntity extends SQLEntity {
     public static final Mapping FIXED_STRING = Mapping.named("fixedString");
     @Length(1)
     private String fixedString;
+
+    public static final Mapping INT8_WITH_DEFAULT = Mapping.named("int8");
+    @Length(1)
+    @NullAllowed
+    @DefaultValue("42")
+    private Integer int8WithDefault;
 
     public Instant getDateTime() {
         return dateTime;
@@ -109,5 +117,13 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public void setFixedString(String fixedString) {
         this.fixedString = fixedString;
+    }
+
+    public int getInt8WithDefault() {
+        return int8WithDefault;
+    }
+
+    public void setInt8WithDefault(int int8WithDefault) {
+        this.int8WithDefault = int8WithDefault;
     }
 }

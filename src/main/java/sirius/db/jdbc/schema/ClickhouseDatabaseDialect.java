@@ -36,10 +36,9 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
                 if (mf.successiveCall()) {
                     sb.append(",");
                 }
-                sb.append(MessageFormat.format("  {0} {1}{2}{3}\n",
+                sb.append(MessageFormat.format("  {0} {1} {2}\n",
                                                col.getName(),
                                                getTypeName(col),
-                                               Strings.isFilled(col.getDefaultValue()) ? " DEFAULT " : "",
                                                getDefaultValueAsString(col)));
             }
         }
