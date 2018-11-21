@@ -38,6 +38,8 @@ class ClickhouseSpec extends BaseSpecification {
         e.setInt64(10_000_000_000)
         e.setString("This is a long string")
         e.setFixedString("X")
+        e.setaBooleanSetToTrue(true)
+        e.setaBooleanSetToFalse(false)
         when:
         oma.update(e)
         then:
@@ -46,6 +48,8 @@ class ClickhouseSpec extends BaseSpecification {
                 queryFirst()
         and:
         readBack.getInt8() == 100
+        readBack.isaBooleanSetToTrue() == true
+        readBack.isaBooleanSetToFalse() == false
     }
 
     def "batch insert into clickhouse works"() {

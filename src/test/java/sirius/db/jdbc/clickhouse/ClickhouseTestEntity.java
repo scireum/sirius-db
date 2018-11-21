@@ -55,6 +55,12 @@ public class ClickhouseTestEntity extends SQLEntity {
     @DefaultValue("42")
     private Integer int8WithDefault;
 
+    public static final Mapping A_BOOLEAN_SET_TO_TRUE = Mapping.named("aBooleanSetToTrue");
+    private boolean aBooleanSetToTrue;
+
+    public static final Mapping A_BOOLEAN_SET_TO_FALSE = Mapping.named("aBooleanSetToFalse");
+    private boolean aBooleanSetToFalse;
+
     public Instant getDateTime() {
         return dateTime;
     }
@@ -125,5 +131,21 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public void setInt8WithDefault(int int8WithDefault) {
         this.int8WithDefault = int8WithDefault;
+    }
+
+    public boolean isaBooleanSetToTrue() {
+        return aBooleanSetToTrue;
+    }
+
+    public void setaBooleanSetToTrue(boolean aBooleanSetToTrue) {
+        this.aBooleanSetToTrue = aBooleanSetToTrue;
+    }
+
+    public boolean isaBooleanSetToFalse() {
+        return aBooleanSetToFalse;
+    }
+
+    public void setaBooleanSetToFalse(boolean aBooleanSetToFalse) {
+        this.aBooleanSetToFalse = aBooleanSetToFalse;
     }
 }

@@ -90,6 +90,10 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
             }
         }
 
+        if (type == Types.BOOLEAN) {
+            return "Int8";
+        }
+
         throw new IllegalArgumentException(Strings.apply("The type %s (Property: %s) cannot be used in clickhouse!",
                                                          SchemaTool.getJdbcTypeName(type),
                                                          column.getSource()));
