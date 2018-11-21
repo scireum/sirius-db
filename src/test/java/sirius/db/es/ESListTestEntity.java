@@ -6,11 +6,11 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo;
+package sirius.db.es;
 
 import sirius.db.mixing.Mapping;
 
-public class ListTestEntity extends MongoEntity {
+public class ESListTestEntity extends ElasticEntity {
 
     public static final Mapping COUNTER = Mapping.named("counter");
     private int counter;
