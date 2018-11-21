@@ -36,10 +36,9 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
                 if (mf.successiveCall()) {
                     sb.append(",");
                 }
-                sb.append(MessageFormat.format("  {0} {1}{2}{3}\n",
+                sb.append(MessageFormat.format("  {0} {1} {2}\n",
                                                col.getName(),
                                                getTypeName(col),
-                                               Strings.isFilled(col.getDefaultValue()) ? " DEFAULT " : "",
                                                getDefaultValueAsString(col)));
             }
         }
@@ -89,6 +88,10 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
             } else {
                 return "FixedString(" + column.getLength() + ")";
             }
+        }
+
+        if (type == Types.BOOLEAN) {
+            return "Int8";
         }
 
         throw new IllegalArgumentException(Strings.apply("The type %s (Property: %s) cannot be used in clickhouse!",

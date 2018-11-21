@@ -17,6 +17,7 @@ import sirius.kernel.di.std.Part
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.temporal.ChronoField
 
 class ClickhouseSpec extends BaseSpecification {
 
@@ -30,7 +31,8 @@ class ClickhouseSpec extends BaseSpecification {
     def "write a test entity and read it back"() {
         given:
         ClickhouseTestEntity e = new ClickhouseTestEntity()
-        e.setDateTime(Instant.now())
+        Instant now = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
+        e.setDateTime(now)
         e.setDate(LocalDate.now())
         e.setInt8(100)
         e.setInt16(30_000)
@@ -38,6 +40,8 @@ class ClickhouseSpec extends BaseSpecification {
         e.setInt64(10_000_000_000)
         e.setString("This is a long string")
         e.setFixedString("X")
+        e.setaBooleanSetToTrue(true)
+        e.setaBooleanSetToFalse(false)
         when:
         oma.update(e)
         then:
@@ -46,6 +50,15 @@ class ClickhouseSpec extends BaseSpecification {
                 queryFirst()
         and:
         readBack.getInt8() == 100
+        readBack.isaBooleanSetToTrue() == true
+        readBack.isaBooleanSetToFalse() == false
+        readBack.getInt16() == 30_000
+        readBack.getInt32() == 1_000_000_000
+        readBack.getInt64() == 10_000_000_000
+        readBack.getString() == "This is a long string"
+        readBack.getFixedString() == "X"
+        readBack.getDate() == LocalDate.now()
+        readBack.getDateTime() == now
     }
 
     def "batch insert into clickhouse works"() {
@@ -65,6 +78,7 @@ class ClickhouseSpec extends BaseSpecification {
             e.setInt64(i)
             e.setString("Test")
             e.setFixedString("B")
+            e.setInt8WithDefault(0)
             insert.insert(e, true, true)
         }
         and:
@@ -76,4 +90,47 @@ class ClickhouseSpec extends BaseSpecification {
         ctx.close()
     }
 
+    def "property with default-value is set to default when null in object"() {
+        given:
+        ClickhouseTestEntity e = new ClickhouseTestEntity()
+        e.setDateTime(Instant.now())
+        e.setDate(LocalDate.now())
+        e.setInt8(100)
+        e.setInt16(30_000)
+        e.setInt32(1_000_000_000)
+        e.setInt64(10_000_000_000)
+        e.setString("This is a long string")
+        e.setFixedString("Y")
+        e.setInt8WithDefault(null)
+        when:
+        oma.update(e)
+        then:
+        ClickhouseTestEntity readBack = oma.select(ClickhouseTestEntity.class).
+                eq(ClickhouseTestEntity.FIXED_STRING, "Y").
+                queryFirst()
+        and:
+        readBack.getInt8WithDefault() == 42
+    }
+
+    def "property with default-value is set to actual value when set"() {
+        given:
+        ClickhouseTestEntity e = new ClickhouseTestEntity()
+        e.setDateTime(Instant.now())
+        e.setDate(LocalDate.now())
+        e.setInt8(100)
+        e.setInt16(30_000)
+        e.setInt32(1_000_000_000)
+        e.setInt64(10_000_000_000)
+        e.setString("This is a long string")
+        e.setFixedString("Z")
+        e.setInt8WithDefault(17)
+        when:
+        oma.update(e)
+        then:
+        ClickhouseTestEntity readBack = oma.select(ClickhouseTestEntity.class).
+                eq(ClickhouseTestEntity.FIXED_STRING, "Z").
+                queryFirst()
+        and:
+        readBack.getInt8WithDefault() == 17
+    }
 }
