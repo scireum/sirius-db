@@ -12,6 +12,9 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.schema.SQLPropertyInfo;
+import sirius.db.jdbc.schema.Table;
+import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
@@ -24,13 +27,15 @@ import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.sql.Types;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Represents a {@link StringList} field within a {@link Mixable}.
  */
-public class StringListProperty extends Property implements ESPropertyInfo {
+public class StringListProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -102,6 +107,16 @@ public class StringListProperty extends Property implements ESPropertyInfo {
         return object.get();
     }
 
+    @Override
+    protected Object transformFromJDBC(Value object) {
+        return Arrays.asList(object.coerce(String[].class, new String[]{}));
+    }
+
+    @Override
+    protected Object transformToJDBC(Object object) {
+        return object;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     protected void setValueToField(Object value, Object target) {
@@ -117,5 +132,10 @@ public class StringListProperty extends Property implements ESPropertyInfo {
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    @Override
+    public void contributeToTable(Table table) {
+        table.getColumns().add(new TableColumn(this, Types.ARRAY));
     }
 }

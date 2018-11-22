@@ -94,6 +94,10 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
             return "Int8";
         }
 
+        if (type == Types.ARRAY) {
+            return "Array(String)";
+        }
+
         throw new IllegalArgumentException(Strings.apply("The type %s (Property: %s) cannot be used in clickhouse!",
                                                          SchemaTool.getJdbcTypeName(type),
                                                          column.getSource()));

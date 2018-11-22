@@ -14,6 +14,7 @@ import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Realm;
+import sirius.db.mixing.types.StringList;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -60,6 +61,9 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public static final Mapping A_BOOLEAN_SET_TO_FALSE = Mapping.named("aBooleanSetToFalse");
     private boolean aBooleanSetToFalse;
+
+    public static final Mapping STRING_LIST = Mapping.named("stringList");
+    private final StringList stringList = new StringList();
 
     public Instant getDateTime() {
         return dateTime;
@@ -147,5 +151,9 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public void setaBooleanSetToFalse(boolean aBooleanSetToFalse) {
         this.aBooleanSetToFalse = aBooleanSetToFalse;
+    }
+
+    public StringList getStringList() {
+        return stringList;
     }
 }

@@ -42,6 +42,7 @@ class ClickhouseSpec extends BaseSpecification {
         e.setFixedString("X")
         e.setaBooleanSetToTrue(true)
         e.setaBooleanSetToFalse(false)
+        e.getStringList().add("string1").add("string2")
         when:
         oma.update(e)
         then:
@@ -59,6 +60,7 @@ class ClickhouseSpec extends BaseSpecification {
         readBack.getFixedString() == "X"
         readBack.getDate() == LocalDate.now()
         readBack.getDateTime() == now
+        readBack.getStringList().data() == ["string1", "string2"]
     }
 
     def "batch insert into clickhouse works"() {
