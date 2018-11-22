@@ -12,6 +12,8 @@ import sirius.db.mixing.EntityDescriptor;
 
 /**
  * Can be supplied to enforce naming conventions for indices and mappings in ElasticSearch on a per product basis.
+ * <p>
+ * Use {@link sirius.kernel.di.std.Register} to make a custom implementation visible to the framework.
  */
 public interface IndexNaming {
 
