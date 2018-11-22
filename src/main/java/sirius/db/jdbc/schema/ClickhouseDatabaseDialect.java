@@ -51,6 +51,13 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
     @Override
     protected String getTypeName(TableColumn column) {
+        if (column.isNullable()) {
+            return "Nullable(" + getClickHouseType(column) + ")";
+        }
+        return getClickHouseType(column);
+    }
+
+    private String getClickHouseType(TableColumn column) {
         int type = column.getType();
         if (type == Types.INTEGER) {
             if (column.getLength() == 1) {
