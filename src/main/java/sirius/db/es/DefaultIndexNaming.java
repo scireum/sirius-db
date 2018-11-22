@@ -19,7 +19,7 @@ public class DefaultIndexNaming implements IndexNaming {
 
     @Override
     public int getPriority() {
-        return DEFAULT_PRIORITY;
+        return 150;
     }
 
     /**

@@ -18,6 +18,11 @@ import sirius.kernel.di.std.Priorized;
  */
 public interface IndexNaming extends Priorized {
 
+    @Override
+    default int getPriority() {
+        return DEFAULT_PRIORITY;
+    }
+
     /**
      * Determines the name of the index for the given entity.
      *
