@@ -29,7 +29,7 @@ class SuggestSpec extends BaseSpecification {
 
     def "term suggest works"() {
         when:
-        // Add enough data for black magic
+        // Add enough data to make sure elastic returns all expected suggestions
         for (int i = 0; i < 100; i++) {
             def entity1 = new SuggestTestEntity()
             entity1.setContent("HSS drill bit")
@@ -58,7 +58,7 @@ class SuggestSpec extends BaseSpecification {
 
     def "phrase suggest works"() {
         when:
-        // Add enough data for black magic
+        // Add enough data to make sure elastic returns all expected suggestions
         for (int i = 0; i < 100; i++) {
             def entity1 = new SuggestTestEntity()
             entity1.setContent("HSS drill bit")
