@@ -29,13 +29,16 @@ class SuggestSpec extends BaseSpecification {
 
     def "term suggest works"() {
         when:
-        def entity1 = new SuggestTestEntity()
-        entity1.setContent("HSS drill bit")
-        elastic.update(entity1)
-        and:
-        def entity2 = new SuggestTestEntity()
-        entity2.setContent("Salmon with dill")
-        elastic.update(entity2)
+        // Add enough data to make sure elastic returns all expected suggestions
+        for (int i = 0; i < 100; i++) {
+            def entity1 = new SuggestTestEntity()
+            entity1.setContent("HSS drill bit")
+            elastic.update(entity1)
+
+            def entity2 = new SuggestTestEntity()
+            entity2.setContent("Salmon with dill")
+            elastic.update(entity2)
+        }
         and:
         Wait.seconds(2)
         def suggestParts = elastic.select(SuggestTestEntity.class)
@@ -55,13 +58,16 @@ class SuggestSpec extends BaseSpecification {
 
     def "phrase suggest works"() {
         when:
-        def entity1 = new SuggestTestEntity()
-        entity1.setContent("HSS drill bit")
-        elastic.update(entity1)
-        and:
-        def entity2 = new SuggestTestEntity()
-        entity2.setContent("Salmon with dill")
-        elastic.update(entity2)
+        // Add enough data to make sure elastic returns all expected suggestions
+        for (int i = 0; i < 100; i++) {
+            def entity1 = new SuggestTestEntity()
+            entity1.setContent("HSS drill bit")
+            elastic.update(entity1)
+
+            def entity2 = new SuggestTestEntity()
+            entity2.setContent("Salmon with dill")
+            elastic.update(entity2)
+        }
         and:
         Wait.seconds(2)
         def suggestOptions = elastic.select(SuggestTestEntity.class)

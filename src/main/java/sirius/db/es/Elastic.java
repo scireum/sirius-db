@@ -81,6 +81,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static final String SCHEME_HTTP = "http";
 
     @Part
+    private IndexNaming indexNaming;
+
+    @Part
     private KeyGenerator keyGen;
 
     @Part
@@ -305,7 +308,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the index to use for the given entity.
      * <p>
-     * This will either be the {@link EntityDescriptor#getRelationName() relation name} or if the entity is
+     * This will either be determined by {@link #determineIndex(EntityDescriptor)} or if the entity is
      * {@link sirius.db.es.annotations.StorePerYear stored per year}, it will be determined by
      * {@link #determineYearIndex(EntityDescriptor, Object)}.
      *
@@ -316,7 +319,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected String determineIndex(EntityDescriptor ed, ElasticEntity entity) {
         Property discriminator = discriminatorTable.get(ed);
         if (discriminator == null) {
-            return ed.getRelationName();
+            return determineIndex(ed);
         }
 
         int year = ((TemporalAccessor) discriminator.getValue(entity)).get(ChronoField.YEAR);
@@ -324,26 +327,50 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
+     * Determines the index to use for the given entity.
+     * <p>
+     * It will be determined by {@link IndexNaming} if it is implemented, or it will equal the
+     * {@link EntityDescriptor#getRelationName() relation name}.
+     *
+     * @param ed the descriptor of the entity
+     * @return the index name to use for the given entity.
+     */
+    protected String determineIndex(EntityDescriptor ed) {
+        if (indexNaming == null) {
+            return ed.getRelationName();
+        }
+
+        return indexNaming.determineIndexName(ed);
+    }
+
+    /**
      * Computes the effective index name for the given descriptor and year.
      * <p>
-     * This will be {@code ed.getRelationName() + "-" + year}
+     * This will be {@code determineIndex(ed) + "-" + year}
      *
      * @param ed   the descriptor of the entity
      * @param year the year of the index
      * @return the index name for the given descriptor and year
      */
     protected String determineYearIndex(EntityDescriptor ed, Object year) {
-        return ed.getRelationName() + "-" + year;
+        return determineIndex(ed) + "-" + year;
     }
 
     /**
      * Determines the type name used for a given entity type.
+     * <p>
+     * It will be determined by {@link IndexNaming} if it is implemented, or it will equal the lowercase
+     * {@link Class#getSimpleName() name of the entity}.
      *
      * @param ed the descriptor of the entity
      * @return the type name to use
      */
     protected String determineTypeName(EntityDescriptor ed) {
-        return ed.getRelationName();
+        if (indexNaming == null) {
+            return ed.getType().getSimpleName().toLowerCase();
+        }
+
+        return indexNaming.determineMappingName(ed);
     }
 
     /**

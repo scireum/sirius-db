@@ -103,8 +103,10 @@ public class IndexMappings implements Startable {
             if (storePerYear != null) {
                 elastic.updateDiscriminatorTable(ed, ed.getProperty(storePerYear.value()));
             } else {
-                Elastic.LOG.INFO("Updating mapping for %s...", ed.getRelationName());
-                createMapping(ed, ed.getRelationName());
+                Elastic.LOG.INFO("Updating mapping %s for %s...",
+                                 elastic.determineTypeName(ed),
+                                 ed.getType().getSimpleName());
+                createMapping(ed, elastic.determineIndex(ed));
             }
             return true;
         } catch (Exception e) {
@@ -147,7 +149,7 @@ public class IndexMappings implements Startable {
                           .withSystemErrorMessage(
                                   "The entity %s (%s) contains an unmappable property %s - ESPropertyInfo is not available!",
                                   ed.getType().getName(),
-                                  ed.getRelationName(),
+                                  elastic.determineIndex(ed),
                                   property.getName())
                           .handle();
             } else {
@@ -166,8 +168,12 @@ public class IndexMappings implements Startable {
                                 realmConfig.getInt("numberOfReplicas"));
         }
 
-        Elastic.LOG.INFO("Creating a mapping for %s in index %s in Elasticsearch....", ed.getRelationName(), indexName);
-        elastic.getLowLevelClient().putMapping(indexName, ed.getRelationName(), mapping);
+        String mappingName = elastic.determineTypeName(ed);
+        Elastic.LOG.INFO("Creating mapping %s for %s in index %s in Elasticsearch....",
+                         mappingName,
+                         ed.getType().getSimpleName(),
+                         indexName);
+        elastic.getLowLevelClient().putMapping(indexName, mappingName, mapping);
     }
 
     private boolean isExcludeFromSource(Property p) {
