@@ -74,6 +74,10 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
             return Boolean.parseBoolean((String) object);
         }
 
+        if (data.is(String.class) ) {
+            return data.asBoolean();
+        }
+
         if (object == null) {
             if (field.getType().isPrimitive()) {
                 return false;
