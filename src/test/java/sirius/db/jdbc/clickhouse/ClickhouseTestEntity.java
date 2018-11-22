@@ -65,6 +65,10 @@ public class ClickhouseTestEntity extends SQLEntity {
     public static final Mapping STRING_LIST = Mapping.named("stringList");
     private final StringList stringList = new StringList();
 
+    public static final Mapping NULLABLE = Mapping.named("nullable");
+    @NullAllowed
+    private Long nullable = null;
+
     public Instant getDateTime() {
         return dateTime;
     }
@@ -155,5 +159,13 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public StringList getStringList() {
         return stringList;
+    }
+
+    public Long getNullable() {
+        return nullable;
+    }
+
+    public void setNullable(Long nullable) {
+        this.nullable = nullable;
     }
 }

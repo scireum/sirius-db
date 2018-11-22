@@ -135,4 +135,27 @@ class ClickhouseSpec extends BaseSpecification {
         and:
         readBack.getInt8WithDefault() == 17
     }
+
+    def "nullable property can be null"() {
+        given:
+        ClickhouseTestEntity e = new ClickhouseTestEntity()
+        e.setDateTime(Instant.now())
+        e.setDate(LocalDate.now())
+        e.setInt8(100)
+        e.setInt16(30_000)
+        e.setInt32(1_000_000_000)
+        e.setInt64(10_000_000_000)
+        e.setString("This is a long string")
+        e.setFixedString("A")
+        e.setInt8WithDefault(17)
+        e.setNullable(null)
+        when:
+        oma.update(e)
+        then:
+        ClickhouseTestEntity readBack = oma.select(ClickhouseTestEntity.class).
+                eq(ClickhouseTestEntity.FIXED_STRING, "A").
+                queryFirst()
+        and:
+        readBack.getNullable() == null
+    }
 }
