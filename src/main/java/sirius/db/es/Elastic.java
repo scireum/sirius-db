@@ -28,7 +28,6 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Wait;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.di.std.PriorityParts;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
@@ -43,7 +42,6 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -82,8 +80,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static final String SERVICE_ELASTICSEARCH = "elasticsearch";
     private static final String SCHEME_HTTP = "http";
 
-    @PriorityParts(IndexNaming.class)
-    protected static List<IndexNaming> indexNamings;
+    @Part
+    private IndexNaming indexNaming;
 
     @Part
     private KeyGenerator keyGen;
@@ -331,13 +329,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the index to use for the given entity.
      * <p>
-     * It will be determined by {@link IndexNaming} with the best priority.
+     * It will be determined by {@link IndexNaming} if it is implemented, or it will equal the
+     * {@link EntityDescriptor#getRelationName() relation name}.
      *
      * @param ed the descriptor of the entity
      * @return the index name to use for the given entity.
      */
     protected String determineIndex(EntityDescriptor ed) {
-        return indexNamings.get(0).determineIndexName(ed);
+        if (indexNaming == null) {
+            return ed.getRelationName();
+        }
+
+        return indexNaming.determineIndexName(ed);
     }
 
     /**
@@ -356,13 +359,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the type name used for a given entity type.
      * <p>
-     * It will be determined by {@link IndexNaming} with the best priority.
+     * It will be determined by {@link IndexNaming} if it is implemented, or it will equal the lowercase
+     * {@link Class#getSimpleName() name of the entity}.
      *
      * @param ed the descriptor of the entity
      * @return the type name to use
      */
     protected String determineTypeName(EntityDescriptor ed) {
-        return indexNamings.get(0).determineMappingName(ed);
+        if (indexNaming == null) {
+            return ed.getType().getSimpleName().toLowerCase();
+        }
+
+        return indexNaming.determineMappingName(ed);
     }
 
     /**

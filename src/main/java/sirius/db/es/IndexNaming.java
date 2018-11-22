@@ -9,19 +9,11 @@
 package sirius.db.es;
 
 import sirius.db.mixing.EntityDescriptor;
-import sirius.kernel.di.std.Priorized;
 
 /**
  * Can be supplied to enforce naming conventions for indices and mappings in ElasticSearch on a per product basis.
- * <p>
- * The priority needs to be lower than {@link #DEFAULT_PRIORITY}.
  */
-public interface IndexNaming extends Priorized {
-
-    @Override
-    default int getPriority() {
-        return DEFAULT_PRIORITY;
-    }
+public interface IndexNaming {
 
     /**
      * Determines the name of the index for the given entity.
