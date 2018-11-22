@@ -200,13 +200,13 @@ public abstract class QueryCompiler<C extends Constraint> {
             String field = token.getValue().toString();
             Property property = resolveProperty(field);
 
-            return compileContraint(property, token, skipped);
+            return compileConstraint(property, token, skipped);
         }
 
         return compileDefaultSearch(searchFields, token);
     }
 
-    protected C compileContraint(Property property, FieldValue token, boolean skipped) {
+    protected C compileConstraint(Property property, FieldValue token, boolean skipped) {
         if (property != null) {
             return parseOperation(property, token.getValue().toString());
         }
