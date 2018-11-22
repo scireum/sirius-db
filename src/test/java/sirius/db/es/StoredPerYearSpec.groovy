@@ -31,7 +31,7 @@ class StoredPerYearSpec extends BaseSpecification {
         elastic.update(test)
         Wait.seconds(2)
         then:
-        elastic.getLowLevelClient().indexExists("test-yearlytestentity-2014")
+        elastic.getLowLevelClient().indexExists("yearlytestentity-2014")
         and:
         elastic.find(YearlyTestEntity.class, test.getId()).isPresent()
 
@@ -58,7 +58,7 @@ class StoredPerYearSpec extends BaseSpecification {
                 first().
                 get()
         then:
-        elastic.getLowLevelClient().indexExists("test-yearlytestentity-2008")
+        elastic.getLowLevelClient().indexExists("yearlytestentity-2008")
         and:
         test != null
 

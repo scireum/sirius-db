@@ -28,6 +28,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Wait;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.di.std.PriorityParts;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
@@ -42,6 +43,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -80,6 +82,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static final String SERVICE_ELASTICSEARCH = "elasticsearch";
     private static final String SCHEME_HTTP = "http";
 
+    @PriorityParts(IndexNaming.class)
+    protected static List<IndexNaming> indexNamings;
+
     @Part
     private KeyGenerator keyGen;
 
@@ -88,9 +93,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     @ConfigValue("elasticsearch.hosts")
     private String hosts;
-
-    @ConfigValue("elasticsearch.prefix")
-    private String prefix;
 
     @ConfigValue("elasticsearch.logQueryThreshold")
     private static Duration logQueryThreshold;
@@ -308,7 +310,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the index to use for the given entity.
      * <p>
-     * This will either be the {@link EntityDescriptor#getRelationName() relation name} or if the entity is
+     * This will either be determined by {@link #determineIndex(EntityDescriptor)} or if the entity is
      * {@link sirius.db.es.annotations.StorePerYear stored per year}, it will be determined by
      * {@link #determineYearIndex(EntityDescriptor, Object)}.
      *
@@ -329,23 +331,19 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the index to use for the given entity.
      * <p>
-     * This will either be the {@link EntityDescriptor#getRelationName() relation name} with an optional prefix.
+     * It will be determined by {@link IndexNaming} with the best priority.
      *
      * @param ed the descriptor of the entity
      * @return the index name to use for the given entity.
      */
     protected String determineIndex(EntityDescriptor ed) {
-        if (Strings.isFilled(prefix)) {
-            return prefix + "-" + ed.getRelationName();
-        }
-
-        return ed.getRelationName();
+        return indexNamings.get(0).determineIndexName(ed);
     }
 
     /**
      * Computes the effective index name for the given descriptor and year.
      * <p>
-     * This will be {@code ed.getRelationName() + "-" + year}
+     * This will be {@code determineIndex(ed) + "-" + year}
      *
      * @param ed   the descriptor of the entity
      * @param year the year of the index
@@ -357,12 +355,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     /**
      * Determines the type name used for a given entity type.
+     * <p>
+     * It will be determined by {@link IndexNaming} with the best priority.
      *
      * @param ed the descriptor of the entity
      * @return the type name to use
      */
     protected String determineTypeName(EntityDescriptor ed) {
-        return ed.getType().getSimpleName();
+        return indexNamings.get(0).determineMappingName(ed);
     }
 
     /**
