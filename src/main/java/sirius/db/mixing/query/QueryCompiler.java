@@ -200,10 +200,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             String field = token.getValue().toString();
             Property property = resolveProperty(field);
 
-            C constraint = compileContraint(property, token, skipped);
-            if (constraint != null) {
-                return constraint;
-            }
+            return compileContraint(property, token, skipped);
         }
 
         return compileDefaultSearch(searchFields, token);
@@ -218,7 +215,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             return compileDefaultSearch(searchFields, treatOperatorAsTokenPart(token));
         }
 
-        return null;
+        return compileDefaultSearch(searchFields, token);
     }
 
     /**
