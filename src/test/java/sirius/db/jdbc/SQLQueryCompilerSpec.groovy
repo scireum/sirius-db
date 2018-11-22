@@ -165,7 +165,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "is:chat",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME))) {
             @Override
-            protected SQLConstraint compileContraint(Property property, QueryCompiler.FieldValue token, boolean skipped) {
+            protected SQLConstraint compileConstraint(Property property, QueryCompiler.FieldValue token, boolean skipped) {
                 return parseOperation(property, token.getValue().toString())
             }
             @Override
