@@ -8,8 +8,11 @@
 
 package sirius.db.jdbc
 
+import sirius.db.jdbc.constraints.SQLConstraint
 import sirius.db.jdbc.constraints.SQLQueryCompiler
 import sirius.db.mixing.Mixing
+import sirius.db.mixing.Property
+import sirius.db.mixing.query.QueryCompiler
 import sirius.db.mixing.query.QueryField
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
@@ -152,6 +155,26 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
         queryCompiler.compile().toString() == "((((LOWER(firstname) LIKE '%hello%')) AND ((LOWER(firstname) LIKE '%world%'))))"
+    }
 
+    def "customizing constraint compilation works"(){
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "is:chat",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME))) {
+            @Override
+            protected SQLConstraint compileContraint(Property property, QueryCompiler.FieldValue token, boolean skipped) {
+                return parseOperation(property, token.getValue().toString())
+            }
+            @Override
+            protected QueryCompiler.FieldValue compileValue(Property property, QueryCompiler.FieldValue value) {
+                return value
+            }
+
+        }
+        then:
+        queryCompiler.compile().toString() == "((is = chat))"
     }
 }

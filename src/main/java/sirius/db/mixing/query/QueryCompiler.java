@@ -199,11 +199,20 @@ public abstract class QueryCompiler<C extends Constraint> {
         if (isAtOperator()) {
             String field = token.getValue().toString();
             Property property = resolveProperty(field);
-            if (property != null) {
-                return parseOperation(property, field);
-            } else if (!skipped) {
-                token = treatOperatorAsTokenPart(token);
-            }
+
+            return compileContraint(property, token, skipped);
+        }
+
+        return compileDefaultSearch(searchFields, token);
+    }
+
+    protected C compileContraint(Property property, FieldValue token, boolean skipped) {
+        if (property != null) {
+            return parseOperation(property, token.getValue().toString());
+        }
+
+        if (!skipped) {
+            return compileDefaultSearch(searchFields, treatOperatorAsTokenPart(token));
         }
 
         return compileDefaultSearch(searchFields, token);
@@ -334,7 +343,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         return !reader.current().is(')') && !reader.current().isWhitepace();
     }
 
-    private FieldValue compileValue(Property property, FieldValue value) {
+    protected FieldValue compileValue(Property property, FieldValue value) {
         if (!value.isExact() && "-".equals(value.getValue())) {
             return new FieldValue(null, false);
         }
