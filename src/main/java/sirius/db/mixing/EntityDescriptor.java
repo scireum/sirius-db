@@ -21,6 +21,8 @@ import sirius.db.mixing.annotations.Realm;
 import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.query.Query;
+import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.PriorityCollector;
@@ -795,7 +797,8 @@ public class EntityDescriptor {
      *
      * @return the mapper responsible for entities of this descriptor
      */
-    public BaseMapper<?, ?, ?> getMapper() {
+    @SuppressWarnings("unchecked")
+    public <E extends BaseEntity<?>, C extends Constraint, Q extends Query<Q, E, C>> BaseMapper<E, C, Q> getMapper() {
         if (mapper == null) {
             try {
                 mapper = ((BaseEntity<?>) getReferenceInstance()).getMapper();
@@ -809,7 +812,7 @@ public class EntityDescriptor {
             }
         }
 
-        return mapper;
+        return (BaseMapper<E, C, Q>) mapper;
     }
 
     /**
