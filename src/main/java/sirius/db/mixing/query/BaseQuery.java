@@ -100,7 +100,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      */
     @SuppressWarnings("unchecked")
     public Q skip(int skip) {
-        this.skip = skip;
+        this.skip = skip > 0 ? skip : this.skip;
         return (Q) this;
     }
 
