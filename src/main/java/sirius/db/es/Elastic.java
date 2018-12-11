@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import sirius.db.KeyGenerator;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.es.constraints.ElasticFilterFactory;
@@ -138,13 +139,21 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private synchronized void initializeClient() {
         if (client == null) {
             Elastic.LOG.INFO("Initializing Elasticsearch client against: %s", hosts);
+
+            // Fixes an Elastic bug that results in TimeoutExceptions
+            // Remove this, once ES is updated to at least 6.3.1
+            RestClientBuilder.RequestConfigCallback configCallback =
+                    requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(0);
+
             client = new LowLevelClient(RestClient.builder(Arrays.stream(hosts.split(","))
                                                                  .map(String::trim)
                                                                  .map(host -> Strings.splitAtLast(host, ":"))
                                                                  .map(this::parsePort)
                                                                  .map(this::mapPort)
                                                                  .map(this::makeHttpHost)
-                                                                 .toArray(size -> new HttpHost[size])).build());
+                                                                 .toArray(size -> new HttpHost[size]))
+                                                  .setRequestConfigCallback(configCallback)
+                                                  .build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.
