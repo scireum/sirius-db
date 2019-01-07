@@ -40,13 +40,19 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
     @Override
     protected ElasticConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
         if (mode == QueryField.Mode.EQUAL) {
-            return factory.eq(field, value);
+            return queryValue(field, value);
         }
-
         if (mode == QueryField.Mode.LIKE && !value.contains("*")) {
-            return factory.eq(field, value.toLowerCase());
+            return queryValue(field, value.toLowerCase());
         }
 
         return Elastic.FILTERS.prefix(field, value.replace("*", "").toLowerCase());
+    }
+
+    private ElasticConstraint queryValue(Mapping field, String value) {
+        if (value.startsWith("-")) {
+            return factory.ne(field, value.replace("-", ""));
+        }
+        return factory.eq(field, value);
     }
 }
