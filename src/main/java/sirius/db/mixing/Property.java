@@ -515,10 +515,9 @@ public abstract class Property {
      */
     protected HandledException illegalFieldValue(Value value) {
         return Exceptions.createHandled()
-                         .withNLSKey(NLS.fmtr("Property.illegalValue")
-                                        .set("property", getLabel())
-                                        .set("value", NLS.toUserString(value.get()))
-                                        .format())
+                         .withNLSKey("Property.illegalValue")
+                         .set("property", getLabel())
+                         .set("value", NLS.toUserString(value.get()))
                          .handle();
     }
 
