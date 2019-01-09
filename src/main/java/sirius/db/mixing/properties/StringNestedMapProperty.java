@@ -89,7 +89,7 @@ public class StringNestedMapProperty extends BaseMapProperty {
         for (Map.Entry<String, Nested> entry : ((Map<String, Nested>) object).entrySet()) {
             Document inner = new Document();
             for (Property property : getNestedDescriptor().getProperties()) {
-                inner.put(property.getPropertyName(), property.getValue(entry.getValue()));
+                inner.put(property.getPropertyName(), property.getValueForDatasource(Mango.class, entry.getValue()));
             }
             result.put(entry.getKey(), inner);
         }

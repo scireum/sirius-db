@@ -13,18 +13,20 @@ import sirius.db.mixing.Nested;
 import sirius.db.mixing.types.StringNestedMap;
 import sirius.db.mongo.MongoEntity;
 
+import java.time.LocalDateTime;
+
 public class MongoStringNestedMapEntity extends MongoEntity {
 
     public static class NestedEntity extends Nested {
 
         private String value1;
-        private String value2;
+        private LocalDateTime value2;
 
         public String getValue1() {
             return value1;
         }
 
-        public String getValue2() {
+        public LocalDateTime getValue2() {
             return value2;
         }
 
@@ -33,7 +35,7 @@ public class MongoStringNestedMapEntity extends MongoEntity {
             return this;
         }
 
-        public NestedEntity withValue2(String value) {
+        public NestedEntity withValue2(LocalDateTime value) {
             this.value2 = value;
             return this;
         }
