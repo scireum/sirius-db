@@ -39,7 +39,7 @@ public class Doc {
      * @return the id as assigned by mongo db
      */
     public String id() {
-        return String.valueOf(obj.get("_id"));
+        return String.valueOf(obj.get(Mango.ID_FIELD));
     }
 
     /**
