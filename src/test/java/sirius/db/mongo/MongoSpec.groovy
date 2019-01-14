@@ -61,7 +61,7 @@ class MongoSpec extends BaseSpecification {
              .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0) == 51
         and:
         mongo.find()
-             .aggregateIn("test2", Mapping.named("value"), "\$avg").asInt(0) == 20
+             .aggregateIn("test2", Mapping.named("value"), "\$avg").asDouble(0.0) == 20
         and:
         mongo.find()
              .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
