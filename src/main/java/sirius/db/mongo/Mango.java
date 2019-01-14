@@ -34,6 +34,11 @@ import java.util.function.Function;
 public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?>> implements IndexDescription {
 
     /**
+     * Defines the name of the internal ID field in MongoDB
+     */
+    public static final String ID_FIELD = "_id";
+
+    /**
      * Defines the value used to desclare an index as sorted in ascending order.
      */
     public static final String INDEX_ASCENDING = "1";

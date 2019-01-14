@@ -8,14 +8,18 @@
 
 package sirius.db.mongo;
 
+import com.google.common.collect.ImmutableList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import org.bson.Document;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Microtiming;
 
+import javax.annotation.Nonnull;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -341,6 +345,53 @@ public class Finder extends QueryBuilder<Finder> {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject);
+            }
+            traceIfRequired(collection, w);
+        }
+    }
+
+    /**
+     * Aggregates the documents in the result of the given query with an accumulator operator.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param type     the type of entities to aggregate
+     * @param field    the field to aggregate
+     * @param operator the accumulation operator to aggregate with
+     * @return the result of the accumulation (usually Integer, Double or List)
+     * @see <a href="https://docs.mongodb.com/manual/reference/operator/aggregation/group/#accumulator-operator">MongoDB Reference</a>
+     */
+    public Value aggregateIn(@Nonnull Class<?> type, @Nonnull Mapping field, @Nonnull String operator) {
+        return aggregateIn(getRelationName(type), field, operator);
+    }
+
+    /**
+     * Aggregates the documents in the result of the given query with an accumulator operator.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param collection the collection to search in
+     * @param field      the field to aggregate
+     * @param operator   the accumulation operator to aggregate with
+     * @return the result of the accumulation (usually Integer, Double or List)
+     * @see <a href="https://docs.mongodb.com/manual/reference/operator/aggregation/group/#accumulator-operator">MongoDB Reference</a>
+     */
+    public Value aggregateIn(@Nonnull String collection, @Nonnull Mapping field, @Nonnull String operator) {
+        Watch w = Watch.start();
+        try {
+            BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
+                                                          .append("result", new BasicDBObject(operator, "$" + field));
+            return Value.of(mongo.db()
+                                 .getCollection(collection)
+                                 .aggregate(ImmutableList.of(new BasicDBObject("$match", filterObject),
+                                                             new BasicDBObject("$group", groupStage)))
+                                 .first()
+                                 .get("result"));
+        } finally {
+            mongo.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming(KEY_MONGO,
+                                    "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject);
             }
             traceIfRequired(collection, w);
         }

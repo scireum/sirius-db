@@ -9,6 +9,7 @@
 package sirius.db.mongo
 
 import sirius.db.KeyGenerator
+import sirius.db.mixing.Mapping
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 
@@ -44,5 +45,47 @@ class MongoSpec extends BaseSpecification {
              .singleIn("test")
              .map({ entity -> entity.getString("id") })
              .orElse(null) == result2.getString("id")
+    }
+
+    def "aggregation works"() {
+        when:
+        def result1 = mongo.insert().set("filter", 1).set("value", 9).set("id", keyGen.generateId()).into("test2")
+        def result2 = mongo.insert().set("filter", 4).set("value", 29).set("id", keyGen.generateId()).into("test2")
+        def result3 = mongo.insert().set("filter", 2).set("value", 22).set("id", keyGen.generateId()).into("test2")
+        then:
+        mongo.find()
+             .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0) == 60
+        and:
+        mongo.find()
+             .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
+             .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0) == 51
+        and:
+        mongo.find()
+             .aggregateIn("test2", Mapping.named("value"), "\$avg").asInt(0) == 20
+        and:
+        mongo.find()
+             .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
+             .aggregateIn("test2", Mapping.named("value"), "\$avg").asDouble(0.0) == 25.5
+        and:
+        mongo.find()
+             .aggregateIn("test2", Mapping.named("value"), "\$min").asInt(0) == 9
+        and:
+        mongo.find()
+             .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
+             .aggregateIn("test2", Mapping.named("value"), "\$min").asInt(0) == 22
+        and:
+        mongo.find()
+             .aggregateIn("test2", Mapping.named("value"), "\$max").asInt(0) == 29
+        and:
+        mongo.find()
+             .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
+             .aggregateIn("test2", Mapping.named("value"), "\$max").asInt(0) == 29
+        and:
+        mongo.find()
+             .aggregateIn("test2", Mapping.named("value"), "\$push").get(List.class, []) == [9, 29, 22]
+        and:
+        mongo.find()
+             .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
+             .aggregateIn("test2", Mapping.named("value"), "\$push").get(List.class, []) == [29, 22]
     }
 }
