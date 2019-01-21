@@ -10,6 +10,7 @@ package sirius.db.mongo;
 
 import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import org.bson.Document;
 import sirius.db.mixing.Mapping;
@@ -381,12 +382,17 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
-            return Value.of(mongo.db()
-                                 .getCollection(collection)
-                                 .aggregate(ImmutableList.of(new BasicDBObject("$match", filterObject),
-                                                             new BasicDBObject("$group", groupStage)))
-                                 .first()
-                                 .get("result"));
+            AggregateIterable<Document> queryResult = mongo.db()
+                                                           .getCollection(collection)
+                                                           .aggregate(ImmutableList.of(new BasicDBObject("$match",
+                                                                                                         filterObject),
+                                                                                       new BasicDBObject("$group",
+                                                                                                         groupStage)));
+            if (queryResult.iterator().hasNext()) {
+                return Value.of(queryResult.first().get("result"));
+            } else {
+                return Value.EMPTY;
+            }
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
