@@ -10,8 +10,8 @@ package sirius.db.mongo;
 
 import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.async.TaskContext;
@@ -382,14 +382,15 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
-            AggregateIterable<Document> queryResult = mongo.db()
-                                                           .getCollection(collection)
-                                                           .aggregate(ImmutableList.of(new BasicDBObject("$match",
-                                                                                                         filterObject),
-                                                                                       new BasicDBObject("$group",
-                                                                                                         groupStage)));
-            if (queryResult.iterator().hasNext()) {
-                return Value.of(queryResult.first().get("result"));
+            MongoCursor<Document> queryResult = mongo.db()
+                                                     .getCollection(collection)
+                                                     .aggregate(ImmutableList.of(new BasicDBObject("$match",
+                                                                                                   filterObject),
+                                                                                 new BasicDBObject("$group",
+                                                                                                   groupStage)))
+                                                     .iterator();
+            if (queryResult.hasNext()) {
+                return Value.of(queryResult.next().get("result"));
             } else {
                 return Value.EMPTY;
             }
