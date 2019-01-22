@@ -273,9 +273,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         return null;
     }
 
-    protected boolean equalValue(String left, String right) {
+    protected boolean equalValue(String a, String b) {
         // Remove permutations...
-        return checkForEquality(left, right) || checkForEquality(right, left);
+        return checkForEquality(a, b) || checkForEquality(b, a);
     }
 
     protected boolean checkForEquality(String left, String right) {
