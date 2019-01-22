@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.jdbc.constraints.SQLFilterFactory;
 import sirius.db.jdbc.schema.Schema;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
@@ -19,6 +20,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -71,6 +73,30 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     @Nullable
     public Database getDatabase(String realm) {
         return schema.getDatabase(realm);
+    }
+
+    /**
+     * Provides the underlying database instance which represents the local secondary copy of the main database.
+     * <p>
+     * In large environments the underlying JDBC database might be setup as a master-slave replication. Such a slave
+     * is called a secondary copy of the database (as it might not always be fully up to date). However, for some
+     * queries this is sufficient. Also, querying a local copy is faster and takes load from the main database.
+     *
+     * @param realm the realm to determine the database for
+     * @return the secondary database used by the framework. If no secondary database is present or its usage is
+     * disabled, the primary database is returned.
+     */
+    @Nullable
+    public Database getSecondaryDatabase(String realm) {
+        Tuple<Database, Database> primaryAndSecondary = schema.getDatabases(realm).orElse(null);
+        if (primaryAndSecondary == null) {
+            return null;
+        }
+        if (primaryAndSecondary.getSecond() != null) {
+            return primaryAndSecondary.getSecond();
+        }
+
+        return primaryAndSecondary.getFirst();
     }
 
     /**
@@ -251,6 +277,23 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     public <E extends SQLEntity> SmartQuery<E> select(Class<E> type) {
         EntityDescriptor ed = mixing.getDescriptor(type);
         return new SmartQuery<>(ed, getDatabase(ed.getRealm()));
+    }
+
+    /**
+     * Creates a query for the given type using the <tt>secondary</tt> datasource.
+     * <p>
+     * Note that an entity fetched from a secondary database shoudln't be updated back into the
+     * primary database. Call {@link #tryRefresh(BaseEntity)} to obtain a up-to-date copy from
+     * the primary or use <tt>optimistic locking</tt> to prevent re-inserting stale data into the primary db.
+     *
+     * @param type the type of entities to query for.
+     * @param <E>  the generic type of entities to be returned
+     * @return a query used to search for entities of the given type
+     * @see #getSecondaryDatabase(String)
+     */
+    public <E extends SQLEntity> SmartQuery<E> selectFromSecondary(Class<E> type) {
+        EntityDescriptor ed = mixing.getDescriptor(type);
+        return new SmartQuery<>(ed, getSecondaryDatabase(ed.getRealm()));
     }
 
     @Override
