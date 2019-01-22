@@ -54,6 +54,10 @@ class MongoSpec extends BaseSpecification {
         def result3 = mongo.insert().set("filter", 2).set("value", 22).set("id", keyGen.generateId()).into("test2")
         then:
         mongo.find()
+             .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 5))
+             .aggregateIn("test2", Mapping.named("value"), "\$sum").isNull()
+        then:
+        mongo.find()
              .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0) == 60
         and:
         mongo.find()
