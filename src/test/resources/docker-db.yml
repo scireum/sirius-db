@@ -27,11 +27,11 @@ services:
     - "9000"
     hostname: clickhouse
   elasticsearch:
-    image: elasticsearch:5.6.8
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.14
     ports:
     - "9200"
     environment:
     - xpack.security.enabled=false
     - script.inline=true
-    - ES_JAVA_OPTS=-Xms32M -Xmx128M
+    - ES_JAVA_OPTS=-Xms128M -Xmx128M
     hostname: es
