@@ -26,6 +26,7 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Wait;
 import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.Initializable;
@@ -34,6 +35,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.settings.Extension;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -45,6 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,6 +59,8 @@ public class Schema implements Startable, Initializable {
 
     private static final String EXTENSION_MIXING_JDBC = "mixing.jdbc";
     private static final String KEY_DATABASE = "database";
+    private static final String KEY_SECONDARY_DATABASE = "secondaryDatabase";
+    private static final String KEY_SECONDARY_ENABLED = "secondaryEnabled";
 
     private Future readyFuture = new Future();
 
@@ -72,7 +77,23 @@ public class Schema implements Startable, Initializable {
     private GlobalContext globalContext;
 
     private List<SchemaUpdateAction> requiredSchemaChanges = new ArrayList<>();
-    private Map<String, Database> databases = new HashMap<>();
+    private Map<String, Tuple<Database, Database>> databases = new HashMap<>();
+
+    /**
+     * Returns a tuple of configured databases for a given realm.
+     * <p>
+     * The tuple (if present) contains the primary database along with an optional secondary database.
+     * This might be a local read slave which can be used for non-critical reads.
+     *
+     * @param realm the realm to determine the databases for
+     * @return a tuple of the primary and secondary database wrapped as optional. Note that the optional might
+     * be empty if no configuration is present and also note that the secondary database might be <tt>null</tt>
+     * if only the primary database is configured.
+     */
+    @Nonnull
+    public Optional<Tuple<Database, Database>> getDatabases(String realm) {
+        return Optional.ofNullable(databases.get(realm));
+    }
 
     /**
      * Provides the underlying database instance used to perform the actual statements.
@@ -82,7 +103,7 @@ public class Schema implements Startable, Initializable {
      */
     @Nullable
     public Database getDatabase(String realm) {
-        return databases.get(realm);
+        return getDatabases(realm).map(Tuple::getFirst).orElse(null);
     }
 
     /**
@@ -318,7 +339,8 @@ public class Schema implements Startable, Initializable {
             } else {
                 String databaseName = ext.get(KEY_DATABASE).asString();
                 if (dbs.hasDatabase(databaseName)) {
-                    databases.put(realm, dbs.get(databaseName));
+                    Database primary = dbs.get(databaseName);
+                    databases.put(realm, Tuple.create(primary, determineSecondary(ext).orElse(primary)));
                     waitForDatabaseToBecomeReady(realm, ext.get("initSql").asString());
                 } else {
                     OMA.LOG.INFO(
@@ -330,6 +352,14 @@ public class Schema implements Startable, Initializable {
         }
 
         tasks.defaultExecutor().fork(this::updateSchemaAtStartup);
+    }
+
+    private Optional<Database> determineSecondary(Extension ext) {
+        if (!ext.get(KEY_SECONDARY_ENABLED).asBoolean()) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(dbs.get(ext.get(KEY_SECONDARY_DATABASE).asString()));
     }
 
     /**

@@ -99,13 +99,13 @@ class StatementCompiler {
      * result SQL.
      */
     private void parseSection(String sql) throws SQLException {
-        int index = sql.indexOf("[");
+        int index = sql.indexOf('[');
         if (index > -1) {
-            int nextClose = sql.indexOf("]", index + 1);
+            int nextClose = sql.indexOf(']', index + 1);
             if (nextClose < 0) {
                 throw new SQLException(Strings.apply("Unbalanced [ at %d in: %s ", index, originalSQL));
             }
-            int nextOpen = sql.indexOf("[", index + 1);
+            int nextOpen = sql.indexOf('[', index + 1);
             if ((nextOpen > -1) && (nextOpen < nextClose)) {
                 throw new SQLException(Strings.apply("Cannot nest blocks of angular brackets at %d in: %s ",
                                                      index,
@@ -172,8 +172,8 @@ class StatementCompiler {
         String accessPath = null;
         String parameterName = fullParameterName;
         if (fullParameterName.contains(".")) {
-            accessPath = parameterName.substring(parameterName.indexOf(".") + 1);
-            parameterName = parameterName.substring(0, parameterName.indexOf("."));
+            accessPath = parameterName.substring(parameterName.indexOf('.') + 1);
+            parameterName = parameterName.substring(0, parameterName.indexOf('.'));
         }
 
         Object paramValue = context.get(parameterName);
@@ -223,7 +223,7 @@ class StatementCompiler {
     }
 
     private int findClosingCurlyBracket(String sql, int index) throws SQLException {
-        int endIndex = sql.indexOf("}", index);
+        int endIndex = sql.indexOf('}', index);
         if (endIndex < 0) {
             throw new SQLException(NLS.fmtr("StatementCompiler.errorUnbalancedCurlyBracket")
                                       .set("index", index)

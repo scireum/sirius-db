@@ -15,10 +15,8 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 
-import java.util.List;
 import java.util.Set;
 
 /**
