@@ -143,7 +143,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         for (Object value : values) {
             list.add(transform(value));
         }
-        return new MongoConstraint("$nin", new Document(field.toString(), list));
+        return new MongoConstraint(field.toString(), new Document("$nin", list));
     }
 
     /**
