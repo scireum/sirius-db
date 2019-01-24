@@ -39,7 +39,7 @@ public class ESDataTypesEntity extends ElasticEntity {
 
     private static final Mapping AMOUNT_VALUE = Mapping.named("amountValue");
     @NullAllowed
-    private Amount amountValue;
+    private Amount amountValue = Amount.NOTHING;
 
     private static final Mapping LOCALDATE_VALUE = Mapping.named("localDateValue");
     @NullAllowed
