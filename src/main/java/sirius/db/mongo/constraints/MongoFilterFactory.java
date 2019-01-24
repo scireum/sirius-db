@@ -143,7 +143,22 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         for (Object value : values) {
             list.add(transform(value));
         }
-        return new MongoConstraint("$nin", new Document(field.toString(), list));
+        return new MongoConstraint(field.toString(), new Document("$nin", list));
+    }
+
+    /**
+     * Creates a constraint which ensures that the given field contains all of the given values.
+     *
+     * @param field  the field to filter on
+     * @param values the values to check
+     * @return the generated constraint
+     */
+    public MongoConstraint allInField(Mapping field, List<?> values) {
+        BasicDBList list = new BasicDBList();
+        for (Object value : values) {
+            list.add(transform(value));
+        }
+        return new MongoConstraint(field.toString(), new Document("$all", list));
     }
 
     @Override
