@@ -513,6 +513,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds a suggester.
      *
+     * @param name    the name of the suggester
      * @param suggest a JSON object describing a suggest requirement
      * @return the query itself for fluent method calls
      */

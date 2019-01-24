@@ -91,6 +91,26 @@ class OMASpec extends BaseSpecification {
         readBack.as(TestMixin.class).as(TestMixinMixin.class).getInitial() == "J"
     }
 
+    def "select from secondary works"() {
+        given:
+        TestEntity e = new TestEntity()
+        e.setFirstname("Marge")
+        e.setLastname("Simpson")
+        e.setAge(43)
+        when:
+        oma.update(e)
+        and:
+        TestEntity readBack = oma.selectFromSecondary(TestEntity.class)
+                                 .eq(TestEntity.ID, e.getId())
+                                 .queryFirst()
+        then:
+        readBack != null
+        and:
+        readBack.getFirstname() == "Marge"
+        readBack.getLastname() == "Simpson"
+        readBack.getAge() == 43
+    }
+
     def "select not all fields"() {
         given:
         TestEntity e = new TestEntity()

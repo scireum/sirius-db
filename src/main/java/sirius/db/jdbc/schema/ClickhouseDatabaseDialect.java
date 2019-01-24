@@ -20,6 +20,9 @@ import java.util.List;
 
 /**
  * Defines the dialect used to sync the schema against a Clickhouse database.
+ * <p>
+ * Note that this is quite simple due to the fact that clickhouse cannot modify a schema after the fact
+ * (one cannot add / drop columns once a table has been created).
  */
 @Register(name = "clickhouse", classes = DatabaseDialect.class)
 public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
@@ -32,7 +35,7 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         sb.append("` (\n");
         Monoflop mf = Monoflop.create();
         for (TableColumn col : table.getColumns()) {
-            if (!col.isAutoIncrement()) {
+            if (shouldGenerateColumn(col)) {
                 if (mf.successiveCall()) {
                     sb.append(",");
                 }
@@ -49,6 +52,19 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         return sb.toString();
     }
 
+    /**
+     * Determines if the column should be generated / added to the target table.
+     * <p>
+     * This is a bit of an ugly hack to filter out the auto-generated
+     * "id" column which is unsupported and also not required by clickhouse...
+     *
+     * @param col the column to check.
+     * @return <tt>true</tt> if the column should be output / generated, <tt>false</tt> otherwise
+     */
+    private boolean shouldGenerateColumn(TableColumn col) {
+        return !col.isAutoIncrement();
+    }
+
     @Override
     protected String getTypeName(TableColumn column) {
         if (column.isNullable()) {
@@ -60,13 +76,7 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     private String getClickHouseType(TableColumn column) {
         int type = column.getType();
         if (type == Types.INTEGER) {
-            if (column.getLength() == 1) {
-                return "Int8";
-            } else if (column.getLength() == 2) {
-                return "Int16";
-            } else if (column.getLength() == 4) {
-                return "Int32";
-            }
+            return getIntType(column);
         }
 
         if (type == Types.BIGINT) {
@@ -90,11 +100,7 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         }
 
         if (type == Types.CHAR) {
-            if (column.getLength() == 0) {
-                return "String";
-            } else {
-                return "FixedString(" + column.getLength() + ")";
-            }
+            return getStringType(column);
         }
 
         if (type == Types.BOOLEAN) {
@@ -108,6 +114,28 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         throw new IllegalArgumentException(Strings.apply("The type %s (Property: %s) cannot be used in clickhouse!",
                                                          SchemaTool.getJdbcTypeName(type),
                                                          column.getSource()));
+    }
+
+    private String getStringType(TableColumn column) {
+        if (column.getLength() == 0) {
+            return "String";
+        } else {
+            return "FixedString(" + column.getLength() + ")";
+        }
+    }
+
+    private String getIntType(TableColumn column) {
+        if (column.getLength() == 1) {
+            return "Int8";
+        } else if (column.getLength() == 2) {
+            return "Int16";
+        } else if (column.getLength() == 4) {
+            return "Int32";
+        } else {
+            throw new IllegalArgumentException(Strings.apply("Property: %s has an invalid length for an int type (%s)!",
+                                                             column.getSource(),
+                                                             column.getLength()));
+        }
     }
 
     @Override
