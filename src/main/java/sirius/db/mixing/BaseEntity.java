@@ -123,7 +123,7 @@ public abstract class BaseEntity<I> extends Mixable {
      * @param within the side constraints within the value must be unique
      * @return <tt>true</tt> if the given field is unique, <tt>false</tt> otherwise
      */
-    protected abstract boolean isUnique(Mapping field, Object value, Mapping... within);
+    public abstract boolean isUnique(Mapping field, Object value, Mapping... within);
 
     /**
      * Ensures that the given value in the given field is unique within the given side constraints.
@@ -133,7 +133,7 @@ public abstract class BaseEntity<I> extends Mixable {
      * @param within the side constraints within the value must be unique
      * @throws sirius.kernel.health.HandledException if the value isn't unique
      */
-    protected void assertUnique(Mapping field, Object value, Mapping... within) {
+    public void assertUnique(Mapping field, Object value, Mapping... within) {
         if (!isUnique(field, value, within)) {
             throw Exceptions.createHandled()
                             .withNLSKey("Property.fieldNotUnique")
@@ -237,7 +237,7 @@ public abstract class BaseEntity<I> extends Mixable {
         if (other == null) {
             return false;
         }
-        if (!(other.getClass().equals(getClass()))) {
+        if (this.getClass() != other.getClass()) {
             return false;
         }
         BaseEntity<?> otherEntity = (BaseEntity<?>) other;

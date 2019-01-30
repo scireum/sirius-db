@@ -118,7 +118,7 @@ public abstract class SQLEntity extends BaseEntity<Long> {
     }
 
     @Override
-    protected boolean isUnique(Mapping field, Object value, Mapping... within) {
+    public boolean isUnique(Mapping field, Object value, Mapping... within) {
         SmartQuery<? extends SQLEntity> qry = oma.select(getClass()).eq(field, value);
         for (Mapping withinField : within) {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));

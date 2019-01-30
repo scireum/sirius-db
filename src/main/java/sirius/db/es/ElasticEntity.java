@@ -40,7 +40,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     private Set<String> matchedQueries;
 
     @Override
-    protected boolean isUnique(Mapping field, Object value, Mapping... within) {
+    public boolean isUnique(Mapping field, Object value, Mapping... within) {
         ElasticQuery<? extends ElasticEntity> qry = elastic.select(getClass()).eq(field, value);
         for (Mapping withinField : within) {
             qry.eq(withinField, getDescriptor().getProperty(withinField).getValue(this));
