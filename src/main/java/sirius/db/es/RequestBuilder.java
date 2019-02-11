@@ -147,7 +147,7 @@ class RequestBuilder {
 
         JSONObject error = extractErrorJSON(e);
         if (e.getResponse().getStatusLine().getStatusCode() == 409) {
-            throw new OptimisticLockException(error.getString(PARAM_REASON), e);
+            throw new OptimisticLockException(error == null ? e.getMessage() : error.getString(PARAM_REASON), e);
         }
 
         throw Exceptions.handle()
