@@ -78,11 +78,6 @@ public class Redis implements Startable, Stoppable {
     protected RedisDB system;
     protected Map<String, RedisDB> databases = new ConcurrentHashMap<>();
 
-    /**
-     * Contains the entry name of the info section under which redis reports the amount of consumed ram
-     */
-    public static final String INFO_USED_MEMORY = "used_memory";
-
     protected void handlePubSubMessage(String channel, String message, Subscriber subscriber) {
         tasks.executor("redis-pubsub").start(() -> {
             Watch w = Watch.start();
