@@ -8,13 +8,16 @@
 
 package sirius.db.es;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
+import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nullable;
@@ -29,9 +32,19 @@ import java.util.stream.Collectors;
  */
 public class LowLevelClient {
 
+    private static final String API_REINDEX = "/_reindex?pretty";
+    private static final String API_ALIAS = "/_alias";
+    private static final String API_ALIASES = "/_aliases";
     private static final String API_SEARCH = "/_search";
     private static final String API_DELETE_BY_QUERY = "/_delete_by_query";
+
+    private static final String PARAM_INDEX = "index";
+    private static final String PARAM_TYPE = "type";
+
     private RestClient restClient;
+
+    @Part
+    private static Elastic elastic;
 
     /**
      * Creates a new client based on the given REST client which handle load balancing and connection management.
@@ -193,6 +206,94 @@ public class LowLevelClient {
                            .data(query)
                            .execute(Strings.join(indices, ",") + "/" + type + API_SEARCH)
                            .response();
+    }
+
+    /**
+     * Executes a reindex request.
+     *
+     * @param ed           the current entitydescriptor that should be reindexd
+     * @param newIndexName the name of the index in which the documents shoulds be reindex
+     * @return the response of the call
+     */
+    public JSONObject reindex(EntityDescriptor ed, String newIndexName) {
+        return performPost().data(new JSONObject().fluentPut("source",
+                                                             new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                        elastic.determineAlias(ed))
+                                                                             .fluentPut(PARAM_TYPE,
+                                                                                        elastic.determineTypeName(ed)))
+                                                  .fluentPut("dest",
+                                                             new JSONObject().fluentPut(PARAM_INDEX, newIndexName)
+                                                                             .fluentPut(PARAM_TYPE,
+                                                                                        elastic.determineTypeName(ed))))
+
+                            .execute(API_REINDEX).response();
+    }
+
+    /**
+     * Adds an alias to a given index.
+     *
+     * @param indexName the name of the index which should be aliased
+     * @param alias     the alias to apply
+     * @return the response of the call
+     */
+    public JSONObject addAlias(String indexName, String alias) {
+        return performPut().execute("/" + indexName + API_ALIAS + "/" + alias).response();
+    }
+
+    /**
+     * Returns the names of the indexed which are aliased with the given alias.
+     *
+     * @param alias the given alias
+     * @return a list of indexes which are aliased with the given alias
+     */
+    public boolean aliasExists(String alias) {
+        try {
+            return restClient.performRequest("HEAD", API_ALIAS + "/" + alias).getStatusLine().getStatusCode() == 200;
+        } catch (ResponseException e) {
+            throw Exceptions.handle()
+                            .to(Elastic.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("An error occurred when checking for alias '%s': %s (%s)", alias)
+                            .handle();
+        } catch (IOException e) {
+            throw Exceptions.handle()
+                            .to(Elastic.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("An IO error occurred when checking for index '%s': %s (%s)", alias)
+                            .handle();
+        }
+    }
+
+    /**
+     * Performs an atomic move operation where the alias, which marks the currently active index (see {@link Elastic#ACTIVE_ALIAS}),
+     * for the given descriptor is transferred to the given destination.
+     *
+     * @param ed          the entity descriptor
+     * @param destination the index that should be marked with the given alias
+     * @return the reponse of the call
+     */
+    public JSONObject moveActiveAlias(EntityDescriptor ed, String destination) {
+        String alias = elastic.determineAlias(ed);
+
+        if (!indexExists(alias)) {
+            throw Exceptions.handle()
+                            .withSystemErrorMessage("There exists no index which holds the alias '%s'", alias)
+                            .handle();
+        }
+
+        if (!indexExists(destination)) {
+            throw Exceptions.handle()
+                            .withSystemErrorMessage("There exists no index with name '%s'", destination)
+                            .handle();
+        }
+
+        JSONObject remove =
+                new JSONObject().fluentPut(PARAM_INDEX, elastic.determineAlias(ed)).fluentPut("alias", alias);
+        JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut("alias", alias);
+        JSONArray actions = new JSONArray().fluentAdd(new JSONObject().fluentPut("remove", remove))
+                                           .fluentAdd(new JSONObject().fluentPut("add", add));
+
+        return performPost().data(new JSONObject().fluentPut("actions", actions)).execute(API_ALIASES).response();
     }
 
     /**

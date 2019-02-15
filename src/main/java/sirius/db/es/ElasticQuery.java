@@ -679,7 +679,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Determines which indices top search in.
+     * Determines which indices to search in.
      *
      * @return the list of indices to search in
      */
@@ -693,7 +693,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                         ExecutionPoint.snapshot());
             }
 
-            return Collections.singletonList(elastic.determineIndex(descriptor, null));
+            return Collections.singletonList(elastic.determineAlias(descriptor));
         } else {
             if (years == null || years.isEmpty()) {
                 Elastic.LOG.WARN(
