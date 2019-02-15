@@ -290,8 +290,8 @@ public class LowLevelClient {
         JSONObject remove =
                 new JSONObject().fluentPut(PARAM_INDEX, elastic.determineAlias(ed)).fluentPut("alias", alias);
         JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut("alias", alias);
-        JSONArray actions = new JSONArray().fluentAdd(new JSONObject().fluentPut("add", add))
-                                           .fluentAdd(new JSONObject().fluentPut("remove", remove));
+        JSONArray actions = new JSONArray().fluentAdd(new JSONObject().fluentPut("remove", remove))
+                                           .fluentAdd(new JSONObject().fluentPut("add", add));
 
         return performPost().data(new JSONObject().fluentPut("actions", actions)).execute(API_ALIASES).response();
     }
