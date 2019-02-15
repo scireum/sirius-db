@@ -12,6 +12,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.metrics.MetricProvider;
+import sirius.kernel.health.metrics.MetricState;
 import sirius.kernel.health.metrics.MetricsCollector;
 
 /**
@@ -22,6 +23,16 @@ public class RedisMetricProvider implements MetricProvider {
 
     @Part
     private Redis redis;
+
+    /**
+     * Contains the entry name of the info section under which redis reports the amount of consumed ram
+     */
+    public static final String INFO_USED_MEMORY = "used_memory";
+
+    /**
+     * Contains the entry name of the info section under which redis reports the maximal amount of available ram
+     */
+    public static final String INFO_MAXMEMORY = "maxmemory";
 
     @Override
     public void gather(MetricsCollector collector) {
@@ -35,8 +46,13 @@ public class RedisMetricProvider implements MetricProvider {
             collector.metric("redis_memory_usage",
                              "redis-memory-usage",
                              "Redis Memory Usage",
-                             Value.of(redis.getInfo().get(Redis.INFO_USED_MEMORY)).asLong(0) / 1024d / 1024d,
+                             Value.of(redis.getInfo().get(INFO_USED_MEMORY)).asLong(0) / 1024d / 1024d,
                              "MB");
+            collector.metric("redis_max_memory",
+                             "Redis Memory Usage",
+                             Value.of(redis.getInfo().get(INFO_MAXMEMORY)).asLong(0) / 1024d / 1024d,
+                             "MB",
+                             MetricState.GRAY);
             collector.metric("redis_messages",
                              "redis-messages",
                              "Redis PubSub Messages",

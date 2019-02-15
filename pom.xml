@@ -19,7 +19,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>12.4</sirius.kernel>
+        <sirius.kernel>12.5</sirius.kernel>
     </properties>
 
     <dependencies>
