@@ -98,6 +98,7 @@ public class IndexMappings implements Startable {
 
     protected boolean setupEntity(EntityDescriptor ed) {
         try {
+            boolean addedAlias = setupAlias(ed);
             determineRouting(ed);
             StorePerYear storePerYear = ed.getType().getAnnotation(StorePerYear.class);
             if (storePerYear != null) {
@@ -106,7 +107,11 @@ public class IndexMappings implements Startable {
                 Elastic.LOG.INFO("Updating mapping %s for %s...",
                                  elastic.determineTypeName(ed),
                                  ed.getType().getSimpleName());
-                createMapping(ed, elastic.determineIndex(ed));
+                createMapping(ed, addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed));
+                if (!addedAlias) {
+                    // we couldn't setup the alias in the first place as the index didn't exist
+                    setupAlias(ed);
+                }
             }
             return true;
         } catch (Exception e) {
@@ -119,6 +124,27 @@ public class IndexMappings implements Startable {
         }
     }
 
+    private boolean setupAlias(EntityDescriptor ed) {
+        if (elastic.getLowLevelClient().aliasExists(elastic.determineAlias(ed))) {
+            Elastic.LOG.INFO("Alias for mapping '%s' already present.", elastic.determineTypeName(ed));
+        } else {
+            if (elastic.getLowLevelClient().indexExists(elastic.determineIndex(ed))) {
+                createAliasForIndex(ed);
+            } else {
+                Elastic.LOG.INFO("Found no index to attach an alias to for mapping '%s'.",
+                                 elastic.determineTypeName(ed));
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void createAliasForIndex(EntityDescriptor ed) {
+        Elastic.LOG.INFO("Creating alias for index %s. ", elastic.determineIndex(ed));
+        elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineAlias(ed));
+    }
+
     private void determineRouting(EntityDescriptor ed) {
         ed.getProperties()
           .stream()
@@ -127,7 +153,14 @@ public class IndexMappings implements Startable {
           .ifPresent(p -> elastic.updateRouteTable(ed, p));
     }
 
-    private void createMapping(EntityDescriptor ed, String indexName) {
+    /**
+     * Creates the mapping for the given {@link EntityDescriptor} within the given <tt>indexName</tt>. The index is
+     * created if not present.
+     *
+     * @param ed        the {@link EntityDescriptor} describing the mapping that should be created
+     * @param indexName the name of the index in which the mapping should be created
+     */
+    public void createMapping(EntityDescriptor ed, String indexName) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
         mapping.put("properties", properties);

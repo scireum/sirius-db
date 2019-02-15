@@ -64,6 +64,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     public static final ElasticFilterFactory FILTERS = new ElasticFilterFactory();
 
+    /**
+     * The suffix of the alias which resolves the currently active index for a {@link EntityDescriptor}.
+     */
+    public static final String ACTIVE_ALIAS = "-active";
+
     private static final String CONTEXT_ROUTING = "routing";
 
     private static final String RESPONSE_VERSION = "_version";
@@ -350,6 +355,16 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         }
 
         return indexNaming.determineIndexName(ed);
+    }
+
+    /**
+     * Determines the alias for the currently active index for the given {@link EntityDescriptor}.
+     *
+     * @param ed the descriptor
+     * @return the alias of the currently active index
+     */
+    protected String determineAlias(EntityDescriptor ed) {
+        return ed.getRelationName() + ACTIVE_ALIAS;
     }
 
     /**
