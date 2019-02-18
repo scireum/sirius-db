@@ -106,7 +106,7 @@ public abstract class SQLEntity extends BaseEntity<Long> {
         if (other == null) {
             return false;
         }
-        if (!(other.getClass().equals(getClass()))) {
+        if (other.getClass() != this.getClass()) {
             return false;
         }
         SQLEntity otherEntity = (SQLEntity) other;
