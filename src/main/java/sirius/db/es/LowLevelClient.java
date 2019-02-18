@@ -266,11 +266,11 @@ public class LowLevelClient {
     }
 
     /**
-     * Returns all indexes which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}.
+     * Returns all indices which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}.
      *
-     * @return a list of all indexes which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}
+     * @return a list of all indices which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}
      */
-    public List<String> getIndexesForAlias(EntityDescriptor ed) {
+    public List<String> getIndicesForAlias(EntityDescriptor ed) {
         List<String> indexNames = new ArrayList<>();
         performGet().execute(API_ALIAS + "/" + elastic.determineAlias(ed))
                     .response()
