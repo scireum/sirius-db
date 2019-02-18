@@ -22,6 +22,7 @@ import sirius.db.DB;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -45,6 +46,7 @@ class RequestBuilder {
     private static final String PARAM_ROUTING = "routing";
     private static final String PARAM_VERSION = "version";
     private static final String PARAM_ERROR = "error";
+    private static final int MAX_CONTET_LONG_LENGTH = 256;
 
     private String method;
     private RestClient restClient;
@@ -102,7 +104,8 @@ class RequestBuilder {
         Watch w = Watch.start();
         try (Operation op = new Operation(() -> "Elastic: " + method + " " + uri, Duration.ofSeconds(30))) {
             if (Elastic.LOG.isFINE()) {
-                Elastic.LOG.FINE(method + " " + uri + ": " + buildContent().orElse("-"));
+                Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
+                                                                           MAX_CONTET_LONG_LENGTH));
             }
 
             NStringEntity requestContent =
@@ -130,7 +133,7 @@ class RequestBuilder {
                 DB.SLOW_DB_LOG.INFO("A slow Elasticsearch query was executed (%s): %s\n%s\n%s",
                                     w.duration(),
                                     method + ": " + uri,
-                                    buildContent().orElse("no content"),
+                                    Strings.limit(buildContent().orElse("no content"), MAX_CONTET_LONG_LENGTH),
                                     ExecutionPoint.snapshot().toString());
             }
         }
@@ -211,6 +214,7 @@ class RequestBuilder {
 
                 responseObject = JSON.parseObject(EntityUtils.toString(responseEntity));
             }
+
             return responseObject;
         } catch (IOException e) {
             throw Exceptions.handle()
