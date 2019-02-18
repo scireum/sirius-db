@@ -22,6 +22,8 @@ import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 
+import java.util.Objects;
+
 /**
  * Base class for queries providing a filter builder.
  *
@@ -75,7 +77,8 @@ public abstract class QueryBuilder<S> {
      */
     @SuppressWarnings("unchecked")
     public S where(MongoConstraint filter) {
-        if (filterObject.containsField(filter.getKey())) {
+        if (filterObject.containsField(filter.getKey()) && !Objects.equals(filterObject.get(filter.getKey()),
+                                                                           filter.getObject())) {
             throw new IllegalArgumentException(Strings.apply("A constraint for %s was already specified. "
                                                              + "Please use Filter.and to combine multiple constraints "
                                                              + "on one field. Filter: %s",
