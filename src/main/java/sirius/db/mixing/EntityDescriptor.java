@@ -24,6 +24,7 @@ import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.Sirius;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.PriorityCollector;
 import sirius.kernel.commons.Strings;
@@ -45,6 +46,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -833,6 +835,8 @@ public class EntityDescriptor {
      * @param composite the composite type to check for
      * @return <tt>true</tt> if one or more composites of the given type are present, <tt>false</tt> otherwise
      */
+    @SuppressWarnings("squid:S2175")
+    @Explain("False positive detected by sonarlint")
     public boolean hasComposite(Class<? extends Composite> composite) {
         return composites.contains(composite);
     }
@@ -843,7 +847,7 @@ public class EntityDescriptor {
      * @return a collection containing all mixin classes affecting the described entity
      */
     public Collection<Class<? extends Mixable>> getMixins() {
-        return mixins;
+        return Collections.unmodifiableSet(mixins);
     }
 
     /**

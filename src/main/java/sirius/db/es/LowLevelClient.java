@@ -268,6 +268,7 @@ public class LowLevelClient {
     /**
      * Returns all indices which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}.
      *
+     * @param ed the entity descriptor to check
      * @return a list of all indices which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}
      */
     public List<String> getIndicesForAlias(EntityDescriptor ed) {
@@ -423,7 +424,7 @@ public class LowLevelClient {
     public JSONObject createIndex(String index, int numberOfShards, int numberOfReplicas) {
         JSONObject indexObj = new JSONObject().fluentPut("number_of_shards", numberOfShards)
                                               .fluentPut("number_of_replicas", numberOfReplicas);
-        JSONObject settingsObj = new JSONObject().fluentPut("index", indexObj);
+        JSONObject settingsObj = new JSONObject().fluentPut(PARAM_INDEX, indexObj);
         JSONObject input = new JSONObject().fluentPut("settings", settingsObj);
         return performPut().data(input).execute(index).response();
     }
