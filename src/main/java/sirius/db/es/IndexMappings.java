@@ -163,6 +163,7 @@ public class IndexMappings implements Startable {
     public void createMapping(EntityDescriptor ed, String indexName) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
+        mapping.put("dynamic", "strict");
         mapping.put("properties", properties);
 
         List<String> excludes = ed.getProperties()
