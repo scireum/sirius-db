@@ -49,7 +49,7 @@ public class RedisMetricProvider implements MetricProvider {
                              Value.of(redis.getInfo().get(INFO_USED_MEMORY)).asLong(0) / 1024d / 1024d,
                              "MB");
             collector.metric("redis_max_memory",
-                             "Redis Memory Usage",
+                             "Redis Max Memory",
                              Value.of(redis.getInfo().get(INFO_MAXMEMORY)).asLong(0) / 1024d / 1024d,
                              "MB",
                              MetricState.GRAY);
