@@ -183,7 +183,7 @@ public class IndexMappings implements Startable {
                           .withSystemErrorMessage(
                                   "The entity %s (%s) contains an unmappable property %s - ESPropertyInfo is not available!",
                                   ed.getType().getName(),
-                                  elastic.determineIndex(ed),
+                                  indexName,
                                   property.getName())
                           .handle();
             } else {

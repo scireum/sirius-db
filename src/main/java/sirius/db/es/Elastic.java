@@ -223,7 +223,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         toJSON(ed, entity, data);
 
         String id = determineId(entity);
-        JSONObject response = getLowLevelClient().index(determineIndex(ed, entity),
+        JSONObject response = getLowLevelClient().index(determineAlias(ed),
                                                         determineTypeName(ed),
                                                         id,
                                                         determineRouting(ed, entity),
@@ -262,7 +262,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return;
         }
 
-        JSONObject response = getLowLevelClient().index(determineIndex(ed, entity),
+        JSONObject response = getLowLevelClient().index(determineAlias(ed),
                                                         determineTypeName(ed),
                                                         determineId(entity),
                                                         determineRouting(ed, entity),
@@ -415,7 +415,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     @Override
     protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        getLowLevelClient().delete(determineIndex(ed, entity),
+        getLowLevelClient().delete(determineAlias(ed),
                                    determineTypeName(ed),
                                    entity.getId(),
                                    determineRouting(ed, entity),
