@@ -33,6 +33,24 @@ import java.util.stream.Collectors;
 public class IndexMappings implements Startable {
 
     /**
+     * Defines the dynamic mapping mode for indices, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/dynamic-field-mapping.html
+     */
+    public enum DynamicMapping {
+        STRICT("strict"), FALSE("false"), TRUE("true");
+
+        private final String mode;
+
+        DynamicMapping(String mode) {
+            this.mode = mode;
+        }
+
+        @Override
+        public String toString() {
+            return mode;
+        }
+    }
+
+    /**
      * Mapping key used to tell ES if and how a property is stored
      */
     public static final String MAPPING_STORED = "store";
@@ -104,7 +122,9 @@ public class IndexMappings implements Startable {
                              elastic.determineTypeName(ed),
                              ed.getType().getSimpleName());
 
-            createMapping(ed, addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed));
+            createMapping(ed,
+                          addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed),
+                          DynamicMapping.STRICT);
             if (!addedAlias) {
                 // we couldn't setup the alias in the first place as the index didn't exist
                 setupAlias(ed);
@@ -156,11 +176,12 @@ public class IndexMappings implements Startable {
      *
      * @param ed        the {@link EntityDescriptor} describing the mapping that should be created
      * @param indexName the name of the index in which the mapping should be created
+     * @param mode      defines the setting which should be used for dynamic mappings
      */
-    public void createMapping(EntityDescriptor ed, String indexName) {
+    public void createMapping(EntityDescriptor ed, String indexName, DynamicMapping mode) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
-        mapping.put("dynamic", "strict");
+        mapping.put("dynamic", mode.toString());
         mapping.put("properties", properties);
 
         List<String> excludes = ed.getProperties()
@@ -210,5 +231,4 @@ public class IndexMappings implements Startable {
     private boolean isExcludeFromSource(Property p) {
         return p.getAnnotation(IndexMode.class).map(IndexMode::excludeFromSource).orElse(false);
     }
-
 }
