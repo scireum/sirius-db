@@ -8,7 +8,10 @@
 
 package sirius.db.mixing;
 
+import sirius.kernel.commons.Strings;
+
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * Represents a column (property) name which is used in queries.
@@ -162,5 +165,33 @@ public class Mapping {
         } else {
             return name;
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (obj.getClass() != Mapping.class) {
+            return false;
+        }
+
+        Mapping other = (Mapping) obj;
+
+        return Strings.areEqual(name, other.getName()) && Objects.equals(parent, other.getParent());
+    }
+
+    @Override
+    public int hashCode() {
+        if (parent == null) {
+            return name.hashCode();
+        }
+
+        return name.hashCode() + 17 * parent.hashCode();
     }
 }
