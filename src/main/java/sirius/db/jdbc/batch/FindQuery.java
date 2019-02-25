@@ -22,6 +22,8 @@ import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -89,6 +91,15 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
                                                     type.getName())
                             .handle();
         }
+    }
+
+    /**
+     * Returns a list of all mappings used to filter on.
+     *
+     * @return the mappings on which this query filters
+     */
+    public List<String> getFilterMappings() {
+        return Arrays.asList(mappings);
     }
 
     private SQLEntity make(ResultSet rs) throws Exception {

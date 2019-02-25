@@ -229,6 +229,18 @@ public abstract class BatchQuery<E extends SQLEntity> {
         }
     }
 
+    /**
+     * Determines if the internal query has already been compiled.
+     * <p>
+     * A batch query can be created but the underlying SQL query is created just in time
+     * on its first use.
+     *
+     * @return <tt>true</tt> if the underlying query has already been created, <tt>false</tt> otehrwise
+     */
+    protected boolean isQueryAvailable() {
+        return query != null;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

@@ -286,7 +286,9 @@ public class BatchContext implements Closeable {
         StringBuilder sb = new StringBuilder("Batch Context\n");
         sb.append("----------------------------------------\n");
         for (BatchQuery<?> query : queries) {
-            sb.append(query).append("\n");
+            if (query.isQueryAvailable()) {
+                sb.append(query).append("\n");
+            }
         }
         sb.append("----------------------------------------\n");
 
