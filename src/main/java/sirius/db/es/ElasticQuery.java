@@ -33,7 +33,6 @@ import sirius.kernel.health.Exceptions;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -106,8 +105,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private List<JSONObject> sorts;
 
     private FunctionScoreBuilder functionScore;
-
-    private List<Integer> years;
 
     private String routing;
     private boolean unrouted;
@@ -193,35 +190,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public ElasticQuery<E> explain() {
         this.explain = true;
-        return this;
-    }
-
-    /**
-     * Specifies which years to query for entities which are {@link sirius.db.es.annotations.StorePerYear stored per year}.
-     *
-     * @param years a list of years to search in. Note that years for which no index exists will be filtered automatically
-     * @return the query itself for fluent method calls
-     */
-    public ElasticQuery<E> years(int... years) {
-        this.years = autoinit(this.years);
-        Arrays.stream(years).forEach(this.years::add);
-        return this;
-    }
-
-    /**
-     * Specifies a range of years to query for entities which are {@link sirius.db.es.annotations.StorePerYear stored per year}.
-     * <p>
-     * Note that years for which no index exists will be filtered automatically
-     *
-     * @param from the first year to search in
-     * @param to   the last year to search in
-     * @return the query itself for fluent method calls
-     */
-    public ElasticQuery<E> yearsFromTo(int from, int to) {
-        this.years = autoinit(this.years);
-        for (int year = from; year <= to; year++) {
-            years.add(year);
-        }
         return this;
     }
 
@@ -649,14 +617,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         checkRouting();
 
-        List<String> indices = determineIndices();
-
-        if (indices.isEmpty()) {
-            return 0;
-        }
-
-        JSONObject countResponse =
-                client.count(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
+        JSONObject countResponse = client.count(elastic.determineAlias(descriptor),
+                                                elastic.determineTypeName(descriptor),
+                                                routing,
+                                                buildSimplePayload());
         return countResponse.getLong(KEY_COUNT);
     }
 
@@ -678,42 +642,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
     }
 
-    /**
-     * Determines which indices to search in.
-     *
-     * @return the list of indices to search in
-     */
-    private List<String> determineIndices() {
-        if (!elastic.isStoredPerYear(descriptor)) {
-            if (years != null && !years.isEmpty()) {
-                Elastic.LOG.WARN(
-                        "Discriminators (years) were given for an entity (%s) which isn't stored per year: %s\n",
-                        descriptor.getType(),
-                        this,
-                        ExecutionPoint.snapshot());
-            }
-
-            return Collections.singletonList(elastic.determineAlias(descriptor));
-        } else {
-            if (years == null || years.isEmpty()) {
-                Elastic.LOG.WARN(
-                        "No discriminators (years) were given for an entity (%s) which isn't stored per year: %s\n",
-                        descriptor.getType(),
-                        this,
-                        ExecutionPoint.snapshot());
-            }
-
-            if (years == null) {
-                return Collections.emptyList();
-            }
-
-            return years.stream()
-                        .map(year -> elastic.determineYearIndex(descriptor, String.valueOf(year)))
-                        .filter(indexMappings::yearlyIndexExists)
-                        .collect(Collectors.toList());
-        }
-    }
-
     @Override
     public boolean exists() {
         if (skip > 0 || limit > 0) {
@@ -722,14 +650,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         checkRouting();
 
-        List<String> indices = determineIndices();
-
-        if (indices.isEmpty()) {
-            return false;
-        }
-
-        JSONObject existsResponse =
-                client.exists(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
+        JSONObject existsResponse = client.exists(elastic.determineAlias(descriptor),
+                                                  elastic.determineTypeName(descriptor),
+                                                  routing,
+                                                  buildSimplePayload());
         return existsResponse.getJSONObject(KEY_HITS).getInteger(KEY_TOTAL) >= 1;
     }
 
@@ -743,13 +667,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         checkRouting();
 
-        List<String> indices = determineIndices();
-        if (indices.isEmpty()) {
-            return;
-        }
-
-        this.response =
-                client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
+        this.response = client.search(elastic.determineAlias(descriptor),
+                                      elastic.determineTypeName(descriptor),
+                                      routing,
+                                      skip,
+                                      limit,
+                                      buildPayload());
         for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
             if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
@@ -783,13 +706,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                             .handle();
         }
 
-        List<String> indices = determineIndices();
-        if (indices.isEmpty()) {
-            return;
-        }
-
-        this.response =
-                client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
+        this.response = client.search(elastic.determineAlias(descriptor),
+                                      elastic.determineTypeName(descriptor),
+                                      routing,
+                                      skip,
+                                      limit,
+                                      buildPayload());
     }
 
     /**
@@ -907,13 +829,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (response == null) {
             checkRouting();
 
-            List<String> indices = determineIndices();
-            if (indices.isEmpty()) {
-                Collections.emptyList();
-            }
-
-            this.response =
-                    client.search(indices, elastic.determineTypeName(descriptor), routing, skip, limit, buildPayload());
+            this.response = client.search(elastic.determineAlias(descriptor),
+                                          elastic.determineTypeName(descriptor),
+                                          routing,
+                                          skip,
+                                          limit,
+                                          buildPayload());
         }
 
         JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
@@ -945,12 +866,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
             checkRouting();
 
-            List<String> indices = determineIndices();
-            if (indices.isEmpty()) {
-                return;
-            }
-
-            JSONObject scrollResponse = client.createScroll(indices,
+            JSONObject scrollResponse = client.createScroll(elastic.determineAlias(descriptor),
                                                             elastic.determineTypeName(descriptor),
                                                             routing,
                                                             0,
@@ -1051,13 +967,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void truncate() {
-        List<String> indices = determineIndices();
-        if (indices.isEmpty()) {
-            return;
-        }
-
         elastic.getLowLevelClient()
-               .deleteByQuery(indices, elastic.determineTypeName(descriptor), routing, buildSimplePayload());
+               .deleteByQuery(elastic.determineAlias(descriptor),
+                              elastic.determineTypeName(descriptor),
+                              routing,
+                              buildSimplePayload());
     }
 
     @Override

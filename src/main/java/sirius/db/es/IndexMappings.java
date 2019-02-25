@@ -11,7 +11,6 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.es.annotations.RoutedBy;
-import sirius.db.es.annotations.StorePerYear;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -100,19 +99,17 @@ public class IndexMappings implements Startable {
         try {
             boolean addedAlias = setupAlias(ed);
             determineRouting(ed);
-            StorePerYear storePerYear = ed.getType().getAnnotation(StorePerYear.class);
-            if (storePerYear != null) {
-                elastic.updateDiscriminatorTable(ed, ed.getProperty(storePerYear.value()));
-            } else {
-                Elastic.LOG.INFO("Updating mapping %s for %s...",
-                                 elastic.determineTypeName(ed),
-                                 ed.getType().getSimpleName());
-                createMapping(ed, addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed));
-                if (!addedAlias) {
-                    // we couldn't setup the alias in the first place as the index didn't exist
-                    setupAlias(ed);
-                }
+
+            Elastic.LOG.INFO("Updating mapping %s for %s...",
+                             elastic.determineTypeName(ed),
+                             ed.getType().getSimpleName());
+
+            createMapping(ed, addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed));
+            if (!addedAlias) {
+                // we couldn't setup the alias in the first place as the index didn't exist
+                setupAlias(ed);
             }
+
             return true;
         } catch (Exception e) {
             Exceptions.handle()
@@ -214,45 +211,4 @@ public class IndexMappings implements Startable {
         return p.getAnnotation(IndexMode.class).map(IndexMode::excludeFromSource).orElse(false);
     }
 
-    /**
-     * Determines if the given yearly index exists.
-     * <p>
-     * As we might check this frequently (for queries against entities stored per year) the result is cached.
-     *
-     * @param name the name of the index to check.
-     * @return <tt>true</tt> if an index exists, <tt>false</tt> if it hasn't been created yet
-     */
-    public boolean yearlyIndexExists(String name) {
-        if (!checkedIndices.containsKey(name)) {
-            checkedIndices.put(name, elastic.getLowLevelClient().indexExists(name));
-        }
-
-        return checkedIndices.get(name);
-    }
-
-    /**
-     * Ensures that the index for the given entity type and year exists and contains the appropriate mappings.
-     *
-     * @param ed   the descriptor of the entity type
-     * @param year the year to create the index for
-     */
-    public void ensureYearlyIndexExists(EntityDescriptor ed, int year) {
-        String name = elastic.determineYearIndex(ed, year);
-        if (yearlyIndexExists(name)) {
-            return;
-        }
-
-        try {
-            createMapping(ed, name);
-            checkedIndices.put(name, true);
-        } catch (Exception e) {
-            Exceptions.handle()
-                      .to(Elastic.LOG)
-                      .error(e)
-                      .withSystemErrorMessage("Failed to initialize dynamic index %s for %s: %s (%s)",
-                                              name,
-                                              ed.getType().getName())
-                      .handle();
-        }
-    }
 }

@@ -38,8 +38,6 @@ import sirius.kernel.settings.PortMapper;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -108,15 +106,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected Average callDuration = new Average();
     protected Counter numSlowQueries = new Counter();
     protected Map<EntityDescriptor, Property> routeTable = new HashMap<>();
-    protected Map<EntityDescriptor, Property> discriminatorTable = new HashMap<>();
     protected boolean dockerDetected = false;
 
     protected void updateRouteTable(EntityDescriptor ed, Property p) {
         routeTable.put(ed, p);
-    }
-
-    protected void updateDiscriminatorTable(EntityDescriptor ed, Property p) {
-        discriminatorTable.put(ed, p);
     }
 
     /**
@@ -296,48 +289,17 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the id of the entity.
      * <p>
-     * This will either return the stored ID or create a new one, if the entity is still new. If the entity is
-     * {@link sirius.db.es.annotations.StorePerYear stored per year}, the year will be prepended to the ID itself
-     * to determine the index in {@link #determineIndex(EntityDescriptor, ElasticEntity)}.
+     * This will either return the stored ID or create a new one, if the entity is still new.
      *
      * @param entity the entity to determine the id for
      * @return the id to use for this entity
      */
     protected String determineId(ElasticEntity entity) {
         if (entity.isNew()) {
-            EntityDescriptor ed = entity.getDescriptor();
-            Property discriminator = discriminatorTable.get(ed);
-            if (discriminator == null) {
-                return keyGen.generateId();
-            }
-
-            int year = ((TemporalAccessor) discriminator.getValue(entity)).get(ChronoField.YEAR);
-            indexMappings.ensureYearlyIndexExists(ed, year);
-            return year + keyGen.generateId();
+            return keyGen.generateId();
         }
 
         return entity.getId();
-    }
-
-    /**
-     * Determines the index to use for the given entity.
-     * <p>
-     * This will either be determined by {@link #determineIndex(EntityDescriptor)} or if the entity is
-     * {@link sirius.db.es.annotations.StorePerYear stored per year}, it will be determined by
-     * {@link #determineYearIndex(EntityDescriptor, Object)}.
-     *
-     * @param ed     the descriptor of the entity
-     * @param entity the entity to determine the index for
-     * @return the index name to use for the given entity.
-     */
-    protected String determineIndex(EntityDescriptor ed, ElasticEntity entity) {
-        Property discriminator = discriminatorTable.get(ed);
-        if (discriminator == null) {
-            return determineIndex(ed);
-        }
-
-        int year = ((TemporalAccessor) discriminator.getValue(entity)).get(ChronoField.YEAR);
-        return determineYearIndex(ed, year);
     }
 
     /**
@@ -365,19 +327,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     protected String determineAlias(EntityDescriptor ed) {
         return ed.getRelationName() + ACTIVE_ALIAS;
-    }
-
-    /**
-     * Computes the effective index name for the given descriptor and year.
-     * <p>
-     * This will be {@code determineIndex(ed) + "-" + year}
-     *
-     * @param ed   the descriptor of the entity
-     * @param year the year of the index
-     * @return the index name for the given descriptor and year
-     */
-    protected String determineYearIndex(EntityDescriptor ed, Object year) {
-        return determineIndex(ed) + "-" + year;
     }
 
     /**
@@ -476,9 +425,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                      ExecutionPoint.snapshot());
         }
 
-        String index =
-                isStoredPerYear(ed) ? determineYearIndex(ed, id.toString().substring(0, 4)) : determineIndex(ed, null);
-        JSONObject obj = getLowLevelClient().get(index, determineTypeName(ed), id.toString(), routing, true);
+        JSONObject obj =
+                getLowLevelClient().get(determineAlias(ed), determineTypeName(ed), id.toString(), routing, true);
 
         if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
             return Optional.empty();
@@ -522,16 +470,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     public boolean isConfigured() {
         return Strings.isFilled(hosts);
-    }
-
-    /**
-     * Determines if the given entity type is {@link sirius.db.es.annotations.StorePerYear stored per year}.
-     *
-     * @param descriptor the descriptor of the entity type
-     * @return <tt>true</tt> if it is stored per year, <tt>false</tt> otherwise
-     */
-    public boolean isStoredPerYear(EntityDescriptor descriptor) {
-        return discriminatorTable.containsKey(descriptor);
     }
 
     /**
