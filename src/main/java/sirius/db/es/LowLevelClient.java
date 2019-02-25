@@ -298,8 +298,17 @@ public class LowLevelClient {
                             .handle();
         }
 
-        JSONObject remove =
-                new JSONObject().fluentPut(PARAM_INDEX, elastic.determineAlias(ed)).fluentPut("alias", alias);
+        List<String> indices = elastic.getLowLevelClient().getIndicesForAlias(ed);
+        if (indices.size() > 1) {
+            throw Exceptions.handle()
+                            .withSystemErrorMessage(
+                                    "More than one index is referenced by alias '%s'. Cannot move alias to '%'",
+                                    alias,
+                                    destination)
+                            .handle();
+        }
+
+        JSONObject remove = new JSONObject().fluentPut(PARAM_INDEX, indices.get(0)).fluentPut("alias", alias);
         JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut("alias", alias);
         JSONArray actions = new JSONArray().fluentAdd(new JSONObject().fluentPut("remove", remove))
                                            .fluentAdd(new JSONObject().fluentPut("add", add));
