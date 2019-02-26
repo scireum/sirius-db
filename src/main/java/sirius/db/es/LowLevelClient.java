@@ -11,6 +11,7 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import sirius.db.mixing.EntityDescriptor;
@@ -23,6 +24,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -206,24 +208,28 @@ public class LowLevelClient {
     }
 
     /**
-     * Executes a reindex request.
+     * Executes a async reindex request.
      *
      * @param ed           the current entitydescriptor that should be reindexd
      * @param newIndexName the name of the index in which the documents shoulds be reindex
-     * @return the response of the call
+     * @param onSuccess    is called if the request is successfully finished
+     * @param onFailure    is called if a exception occurs while performing the request
      */
-    public JSONObject reindex(EntityDescriptor ed, String newIndexName) {
-        return performPost().data(new JSONObject().fluentPut("source",
-                                                             new JSONObject().fluentPut(PARAM_INDEX,
-                                                                                        elastic.determineAlias(ed))
-                                                                             .fluentPut(PARAM_TYPE,
-                                                                                        elastic.determineTypeName(ed)))
-                                                  .fluentPut("dest",
-                                                             new JSONObject().fluentPut(PARAM_INDEX, newIndexName)
-                                                                             .fluentPut(PARAM_TYPE,
-                                                                                        elastic.determineTypeName(ed))))
 
-                            .execute(API_REINDEX).response();
+    public void reindex(EntityDescriptor ed,
+                        String newIndexName,
+                        Consumer<Response> onSuccess,
+                        Consumer<Exception> onFailure) {
+        performPost().data(new JSONObject().fluentPut("source",
+                                                      new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                 elastic.determineAlias(ed))
+                                                                      .fluentPut(PARAM_TYPE,
+                                                                                 elastic.determineTypeName(ed)))
+                                           .fluentPut("dest",
+                                                      new JSONObject().fluentPut(PARAM_INDEX, newIndexName)
+                                                                      .fluentPut(PARAM_TYPE,
+                                                                                 elastic.determineTypeName(ed))))
+                     .executeAsync(API_REINDEX, onSuccess, onFailure);
     }
 
     /**
