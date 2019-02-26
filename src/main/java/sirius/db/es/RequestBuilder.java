@@ -17,6 +17,7 @@ import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import sirius.db.DB;
 import sirius.db.mixing.OptimisticLockException;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -188,6 +190,28 @@ class RequestBuilder {
                             .withSystemErrorMessage("An unexpected optimitic locking error ocurred: %s")
                             .handle();
         }
+    }
+
+    protected void executeAsync(String uri, Consumer<Response> onSuccess, Consumer<Exception> onFailure) {
+        if (Elastic.LOG.isFINE()) {
+            Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
+                                                                       MAX_CONTENT_LONG_LENGTH));
+        }
+
+        NStringEntity requestContent =
+                buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON)).orElse(null);
+
+        restClient.performRequestAsync(method, uri, determineParams(), requestContent, new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                onSuccess.accept(response);
+            }
+
+            @Override
+            public void onFailure(Exception exception) {
+                onFailure.accept(exception);
+            }
+        });
     }
 
     protected JSONObject extractErrorJSON(ResponseException e) {

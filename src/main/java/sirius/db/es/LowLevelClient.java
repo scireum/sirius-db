@@ -11,12 +11,12 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.commons.Explain;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -171,23 +172,20 @@ public class LowLevelClient {
     /**
      * Deletes all documents matched by the given query.
      *
-     * @param indices the indices to search in
+     * @param alias   the alias which determines the indices to search in
      * @param type    the document type to search
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject deleteByQuery(List<String> indices, String type, @Nullable String routing, JSONObject query) {
-        return performPost().routing(routing)
-                            .data(query)
-                            .execute(Strings.join(indices, ",") + "/" + type + API_DELETE_BY_QUERY)
-                            .response();
+    public JSONObject deleteByQuery(String alias, String type, @Nullable String routing, JSONObject query) {
+        return performPost().routing(routing).data(query).execute(alias + "/" + type + API_DELETE_BY_QUERY).response();
     }
 
     /**
      * Executes a search.
      *
-     * @param indices the indices to search in
+     * @param alias   the alias which determines the indices to search in
      * @param type    the document type to search
      * @param routing the routing to use
      * @param from    the number of items to skip
@@ -195,7 +193,7 @@ public class LowLevelClient {
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject search(List<String> indices,
+    public JSONObject search(String alias,
                              String type,
                              @Nullable String routing,
                              int from,
@@ -205,29 +203,33 @@ public class LowLevelClient {
                            .withParam("size", size)
                            .withParam("from", from)
                            .data(query)
-                           .execute(Strings.join(indices, ",") + "/" + type + API_SEARCH)
+                           .execute(alias + "/" + type + API_SEARCH)
                            .response();
     }
 
     /**
-     * Executes a reindex request.
+     * Executes a async reindex request.
      *
      * @param ed           the current entitydescriptor that should be reindexd
      * @param newIndexName the name of the index in which the documents shoulds be reindex
-     * @return the response of the call
+     * @param onSuccess    is called if the request is successfully finished
+     * @param onFailure    is called if a exception occurs while performing the request
      */
-    public JSONObject reindex(EntityDescriptor ed, String newIndexName) {
-        return performPost().data(new JSONObject().fluentPut("source",
-                                                             new JSONObject().fluentPut(PARAM_INDEX,
-                                                                                        elastic.determineAlias(ed))
-                                                                             .fluentPut(PARAM_TYPE,
-                                                                                        elastic.determineTypeName(ed)))
-                                                  .fluentPut("dest",
-                                                             new JSONObject().fluentPut(PARAM_INDEX, newIndexName)
-                                                                             .fluentPut(PARAM_TYPE,
-                                                                                        elastic.determineTypeName(ed))))
 
-                            .execute(API_REINDEX).response();
+    public void reindex(EntityDescriptor ed,
+                        String newIndexName,
+                        Consumer<Response> onSuccess,
+                        Consumer<Exception> onFailure) {
+        performPost().data(new JSONObject().fluentPut("source",
+                                                      new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                 elastic.determineAlias(ed))
+                                                                      .fluentPut(PARAM_TYPE,
+                                                                                 elastic.determineTypeName(ed)))
+                                           .fluentPut("dest",
+                                                      new JSONObject().fluentPut(PARAM_INDEX, newIndexName)
+                                                                      .fluentPut(PARAM_TYPE,
+                                                                                 elastic.determineTypeName(ed))))
+                     .executeAsync(API_REINDEX, onSuccess, onFailure);
     }
 
     /**
@@ -302,8 +304,17 @@ public class LowLevelClient {
                             .handle();
         }
 
-        JSONObject remove =
-                new JSONObject().fluentPut(PARAM_INDEX, elastic.determineAlias(ed)).fluentPut("alias", alias);
+        List<String> indices = elastic.getLowLevelClient().getIndicesForAlias(ed);
+        if (indices.size() > 1) {
+            throw Exceptions.handle()
+                            .withSystemErrorMessage(
+                                    "More than one index is referenced by alias '%s'. Cannot move alias to '%'",
+                                    alias,
+                                    destination)
+                            .handle();
+        }
+
+        JSONObject remove = new JSONObject().fluentPut(PARAM_INDEX, indices.get(0)).fluentPut("alias", alias);
         JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut("alias", alias);
         JSONArray actions = new JSONArray().fluentAdd(new JSONObject().fluentPut("remove", remove))
                                            .fluentAdd(new JSONObject().fluentPut("add", add));
@@ -314,7 +325,7 @@ public class LowLevelClient {
     /**
      * Creates a scroll search.
      *
-     * @param indices      the indices to search in
+     * @param alias        the alias which determines the indices to search in
      * @param type         the document type to search
      * @param routing      the routing to use
      * @param from         the number of items to skip
@@ -323,7 +334,7 @@ public class LowLevelClient {
      * @param query        the query to execute
      * @return the response of the call
      */
-    public JSONObject createScroll(List<String> indices,
+    public JSONObject createScroll(String alias,
                                    String type,
                                    String routing,
                                    int from,
@@ -335,7 +346,7 @@ public class LowLevelClient {
                            .withParam("from", from)
                            .withParam("scroll", ttlSeconds + "s")
                            .data(query)
-                           .execute(Strings.join(indices, ",") + "/" + type + API_SEARCH)
+                           .execute(alias + "/" + type + API_SEARCH)
                            .response();
     }
 
@@ -368,35 +379,32 @@ public class LowLevelClient {
     /**
      * Determines if a given query has at least one result.
      *
-     * @param indices the indices to search in
+     * @param alias   the alias which determines the indices to search in
      * @param type    the document type to search
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject exists(List<String> indices, String type, String routing, JSONObject query) {
+    public JSONObject exists(String alias, String type, String routing, JSONObject query) {
         return performGet().routing(routing)
                            .withParam("size", 0)
                            .withParam("terminate_after", 1)
                            .data(query)
-                           .execute(Strings.join(indices, ",") + "/" + type + API_SEARCH)
+                           .execute(alias + "/" + type + API_SEARCH)
                            .response();
     }
 
     /**
      * Determines the number of hits for a given query.
      *
-     * @param indices the indices to search in
+     * @param alias   the alias which determines the indices to search in
      * @param type    the document type to search
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject count(List<String> indices, String type, String routing, JSONObject query) {
-        return performGet().routing(routing)
-                           .data(query)
-                           .execute(Strings.join(indices, ",") + "/" + type + "/_count")
-                           .response();
+    public JSONObject count(String alias, String type, String routing, JSONObject query) {
+        return performGet().routing(routing).data(query).execute(alias + "/" + type + "/_count").response();
     }
 
     /**

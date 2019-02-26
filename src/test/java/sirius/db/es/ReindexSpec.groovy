@@ -28,7 +28,9 @@ class ReindexSpec extends BaseSpecification {
         and:
         Wait.seconds(2)
         when:
-        elastic.getLowLevelClient().reindex(e.getDescriptor(), "reindex-test")
+        elastic.getLowLevelClient().reindex(e.getDescriptor(), "reindex-test", {}, {})
+        and:
+        Wait.seconds(2)
         then:
         elastic.getLowLevelClient().indexExists("reindex-test")
         when:

@@ -11,7 +11,6 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.es.annotations.RoutedBy;
-import sirius.db.es.annotations.StorePerYear;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -32,6 +31,24 @@ import java.util.stream.Collectors;
  */
 @Register(classes = {IndexMappings.class, Startable.class})
 public class IndexMappings implements Startable {
+
+    /**
+     * Defines the dynamic mapping mode for indices, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/dynamic-field-mapping.html
+     */
+    public enum DynamicMapping {
+        STRICT("strict"), FALSE("false"), TRUE("true");
+
+        private final String mode;
+
+        DynamicMapping(String mode) {
+            this.mode = mode;
+        }
+
+        @Override
+        public String toString() {
+            return mode;
+        }
+    }
 
     /**
      * Mapping key used to tell ES if and how a property is stored
@@ -100,19 +117,19 @@ public class IndexMappings implements Startable {
         try {
             boolean addedAlias = setupAlias(ed);
             determineRouting(ed);
-            StorePerYear storePerYear = ed.getType().getAnnotation(StorePerYear.class);
-            if (storePerYear != null) {
-                elastic.updateDiscriminatorTable(ed, ed.getProperty(storePerYear.value()));
-            } else {
-                Elastic.LOG.INFO("Updating mapping %s for %s...",
-                                 elastic.determineTypeName(ed),
-                                 ed.getType().getSimpleName());
-                createMapping(ed, addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed));
-                if (!addedAlias) {
-                    // we couldn't setup the alias in the first place as the index didn't exist
-                    setupAlias(ed);
-                }
+
+            Elastic.LOG.INFO("Updating mapping %s for %s...",
+                             elastic.determineTypeName(ed),
+                             ed.getType().getSimpleName());
+
+            createMapping(ed,
+                          addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed),
+                          DynamicMapping.STRICT);
+            if (!addedAlias) {
+                // we couldn't setup the alias in the first place as the index didn't exist
+                setupAlias(ed);
             }
+
             return true;
         } catch (Exception e) {
             Exceptions.handle()
@@ -159,11 +176,12 @@ public class IndexMappings implements Startable {
      *
      * @param ed        the {@link EntityDescriptor} describing the mapping that should be created
      * @param indexName the name of the index in which the mapping should be created
+     * @param mode      defines the setting which should be used for dynamic mappings
      */
-    public void createMapping(EntityDescriptor ed, String indexName) {
+    public void createMapping(EntityDescriptor ed, String indexName, DynamicMapping mode) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
-        mapping.put("dynamic", "strict");
+        mapping.put("dynamic", mode.toString());
         mapping.put("properties", properties);
 
         List<String> excludes = ed.getProperties()
@@ -183,7 +201,7 @@ public class IndexMappings implements Startable {
                           .withSystemErrorMessage(
                                   "The entity %s (%s) contains an unmappable property %s - ESPropertyInfo is not available!",
                                   ed.getType().getName(),
-                                  elastic.determineIndex(ed),
+                                  indexName,
                                   property.getName())
                           .handle();
             } else {
@@ -212,47 +230,5 @@ public class IndexMappings implements Startable {
 
     private boolean isExcludeFromSource(Property p) {
         return p.getAnnotation(IndexMode.class).map(IndexMode::excludeFromSource).orElse(false);
-    }
-
-    /**
-     * Determines if the given yearly index exists.
-     * <p>
-     * As we might check this frequently (for queries against entities stored per year) the result is cached.
-     *
-     * @param name the name of the index to check.
-     * @return <tt>true</tt> if an index exists, <tt>false</tt> if it hasn't been created yet
-     */
-    public boolean yearlyIndexExists(String name) {
-        if (!checkedIndices.containsKey(name)) {
-            checkedIndices.put(name, elastic.getLowLevelClient().indexExists(name));
-        }
-
-        return checkedIndices.get(name);
-    }
-
-    /**
-     * Ensures that the index for the given entity type and year exists and contains the appropriate mappings.
-     *
-     * @param ed   the descriptor of the entity type
-     * @param year the year to create the index for
-     */
-    public void ensureYearlyIndexExists(EntityDescriptor ed, int year) {
-        String name = elastic.determineYearIndex(ed, year);
-        if (yearlyIndexExists(name)) {
-            return;
-        }
-
-        try {
-            createMapping(ed, name);
-            checkedIndices.put(name, true);
-        } catch (Exception e) {
-            Exceptions.handle()
-                      .to(Elastic.LOG)
-                      .error(e)
-                      .withSystemErrorMessage("Failed to initialize dynamic index %s for %s: %s (%s)",
-                                              name,
-                                              ed.getType().getName())
-                      .handle();
-        }
     }
 }
