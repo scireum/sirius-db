@@ -183,6 +183,16 @@ public abstract class Property {
     }
 
     /**
+     * Determines if an anotation of the given type is present.
+     *
+     * @param type the type of the annotation to fetch
+     * @return <tt>true</tt> if an annotation of the given type is present, <tt>false</tt> otherwise
+     */
+    public boolean isAnnotationPresent(Class<? extends Annotation> type) {
+        return field.isAnnotationPresent(type);
+    }
+
+    /**
      * Returns the name of the property.
      *
      * @return the name of the property.
@@ -201,13 +211,25 @@ public abstract class Property {
     }
 
     /**
-     * Returns the field which will store the database value
+     * Returns the field which will store the database value.
      *
      * @return the field in the target object which stores the database value
      */
     @Nonnull
-    protected Field getField() {
+    public Field getField() {
         return field;
+    }
+
+    /**
+     * Executes the underlying access path to obtain the object out of the entity which actually contains the field.
+     * <p>
+     * This object might differ from the entity itself for composites and mixins.
+     *
+     * @param entity the entity to read the target object from
+     * @return the target object which actually contains the property
+     */
+    public Object getTarget(Object entity) {
+        return accessPath.apply(entity);
     }
 
     /**
@@ -506,6 +528,41 @@ public abstract class Property {
      * @return the converted value
      */
     public abstract Object transformValue(Value value);
+
+    /**
+     * Parses the given value read from an import and applies it to the given entity if possible.
+     * <p>
+     * In contrast to {@link #parseValue(Object, Value)} which is intended for user input, this method should
+     * be used to process data from an import (e.g. an Excel import).
+     *
+     * @param e     the entity to receive the parsed value
+     * @param value the value to parse and apply
+     */
+    public void parseValueFromImport(Object e, Value value) {
+        try {
+            setValue(e, transformValueFromImport(value));
+        } catch (IllegalArgumentException exception) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("Property.parseValueErrorMessage")
+                            .set("message", exception.getMessage())
+                            .error(exception)
+                            .handle();
+        }
+    }
+
+    /**
+     * Converts the given value, which is read from an import (e.g. an Excel import) into the target type of this
+     * property.
+     * <p>
+     * By default, this will use the logic provided by {@link #transformValue(Value)} but cen be overwritten by
+     * properties.
+     *
+     * @param value the value to convert
+     * @return the converted value
+     */
+    protected Object transformValueFromImport(Value value) {
+        return transformValue(value);
+    }
 
     /**
      * Creates an exception which represents an illegal value for this property
