@@ -44,16 +44,6 @@ import java.util.stream.Collectors;
 public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo {
 
     /**
-     * Contains the name of the field used to store the map key
-     */
-    public static final String KEY = "key";
-
-    /**
-     * Contains the name of the field used to store the map value
-     */
-    public static final String VALUE = "value";
-
-    /**
      * Factory for generating properties based on their field type
      */
     @Register
@@ -100,7 +90,6 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected Object transformToElastic(Object object) {
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
