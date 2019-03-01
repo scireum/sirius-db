@@ -14,6 +14,8 @@ import sirius.db.es.annotations.RoutedBy;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.properties.BaseMapProperty;
+import sirius.db.mixing.properties.NestedListProperty;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.di.std.Part;
@@ -207,6 +209,9 @@ public class IndexMappings implements Startable {
             } else {
                 JSONObject propertyInfo = new JSONObject();
                 ((ESPropertyInfo) property).describeProperty(propertyInfo);
+                if (property instanceof BaseMapProperty || property instanceof NestedListProperty) {
+                    propertyInfo.put("dynamic", mode.toString());
+                }
                 properties.put(property.getPropertyName(), propertyInfo);
             }
         }
