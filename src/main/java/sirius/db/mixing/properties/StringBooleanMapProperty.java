@@ -125,6 +125,5 @@ public class StringBooleanMapProperty extends BaseMapProperty implements ESPrope
                        new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
         properties.put(StringMapProperty.VALUE, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, "boolean"));
         description.put("properties", properties);
-        description.put("dynamic", false);
     }
 }

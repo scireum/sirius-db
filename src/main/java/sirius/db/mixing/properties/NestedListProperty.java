@@ -245,6 +245,5 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
             }
         }
         description.put("properties", properties);
-        description.put("dynamic", false);
     }
 }

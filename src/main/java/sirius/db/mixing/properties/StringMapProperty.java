@@ -127,6 +127,5 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
         properties.put(VALUE,
                        new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
         description.put("properties", properties);
-        description.put("dynamic", false);
     }
 }
