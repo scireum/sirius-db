@@ -31,6 +31,9 @@ import java.util.function.Supplier;
 
 /**
  * Bundles the preparation and execution of a bunch of {@link BatchQuery batch queries}.
+ * <p>
+ * Note that this context can only operate on databases managed via {@link sirius.db.mixing.Mixing}. To
+ * perform batch operations against external JDBC databases use {@link sirius.db.jdbc.batch.external.ExternalBatchContext}.
  */
 @NotThreadSafe
 public class BatchContext implements Closeable {
