@@ -8,23 +8,30 @@
 
 package sirius.db.jdbc.batch.external;
 
+import sirius.db.jdbc.BaseSQLQuery;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Row;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nullable;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.Function;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link ExternalBatchContext}.
  */
-public class ExternalBatchQuery {
+public class ExternalBatchQuery extends BaseSQLQuery {
 
     /**
      * Defines the default batch size used by a query.
@@ -106,12 +113,41 @@ public class ExternalBatchQuery {
      *
      * @throws SQLException in case of a database error
      */
-    protected void addBatch() throws SQLException {
+    public void addBatch() throws SQLException {
         statement.addBatch();
         batchBacklog++;
         if (batchBacklog > batchBacklogLimit) {
             commit();
         }
+    }
+
+    /**
+     * Boilerplate for invoking {@link #setParameter(int, Object)} for each of the given paremeters
+     * followed by {@link #addBatch()}.
+     *
+     * @param parameters the parameters to be used for the next batch invokation
+     * @throws SQLException in case of a database error
+     */
+    public void addBatch(Object... parameters) throws SQLException {
+        for (int i = 0; i < parameters.length; i++) {
+            setParameter(i + 1, parameters[i]);
+        }
+        addBatch();
+    }
+
+    @Override
+    public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
+        Watch w = Watch.start();
+
+        try (ResultSet rs = statement.executeQuery()) {
+            TaskContext tc = TaskContext.get();
+            processResultSet(handler, limit, rs, tc);
+        }
+    }
+
+    @Override
+    protected void writeBlobToParameter(String name, Blob blob) throws SQLException {
+        throw new UnsupportedOperationException();
     }
 
     /**
