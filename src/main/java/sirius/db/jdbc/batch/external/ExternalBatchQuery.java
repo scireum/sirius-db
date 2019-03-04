@@ -65,9 +65,11 @@ public class ExternalBatchQuery extends BaseSQLQuery {
      * Resets all previously set parameters.
      *
      * @throws SQLException in case of a database error
+     * @throws SQLException in case of a database error
      */
-    public void clearParameters() throws SQLException {
+    public ExternalBatchQuery clearParameters() throws SQLException {
         statement.clearParameters();
+        return this;
     }
 
     /**
@@ -75,10 +77,26 @@ public class ExternalBatchQuery extends BaseSQLQuery {
      *
      * @param oneBasedIndex the one-based index of the parameter to set
      * @param value         the parameter value to set
+     * @return the query itself for fluent method calls
      * @throws SQLException in case of a database error
      */
-    public void setParameter(int oneBasedIndex, Object value) throws SQLException {
+    public ExternalBatchQuery withParameter(int oneBasedIndex, Object value) throws SQLException {
         statement.setObject(oneBasedIndex, Databases.convertValue(value));
+        return this;
+    }
+
+    /**
+     * Sets the given parameters to the given values.
+     *
+     * @param parameters the parameters to set
+     * @return the query itself for fluent method calls
+     * @throws SQLException in case of a database error
+     */
+    public ExternalBatchQuery withParameters(Object... parameters) throws SQLException {
+        for (int i = 0; i < parameters.length; i++) {
+            withParameter(i + 1, parameters[i]);
+        }
+        return this;
     }
 
     protected void tryCommit(boolean cascade) {
@@ -119,20 +137,6 @@ public class ExternalBatchQuery extends BaseSQLQuery {
         if (batchBacklog > batchBacklogLimit) {
             commit();
         }
-    }
-
-    /**
-     * Boilerplate for invoking {@link #setParameter(int, Object)} for each of the given paremeters
-     * followed by {@link #addBatch()}.
-     *
-     * @param parameters the parameters to be used for the next batch invokation
-     * @throws SQLException in case of a database error
-     */
-    public void addBatch(Object... parameters) throws SQLException {
-        for (int i = 0; i < parameters.length; i++) {
-            setParameter(i + 1, parameters[i]);
-        }
-        addBatch();
     }
 
     @Override
