@@ -8,23 +8,30 @@
 
 package sirius.db.jdbc.batch.external;
 
+import sirius.db.jdbc.BaseSQLQuery;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Row;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nullable;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.function.Function;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link ExternalBatchContext}.
  */
-public class ExternalBatchQuery {
+public class ExternalBatchQuery extends BaseSQLQuery {
 
     /**
      * Defines the default batch size used by a query.
@@ -58,9 +65,11 @@ public class ExternalBatchQuery {
      * Resets all previously set parameters.
      *
      * @throws SQLException in case of a database error
+     * @throws SQLException in case of a database error
      */
-    public void clearParameters() throws SQLException {
+    public ExternalBatchQuery clearParameters() throws SQLException {
         statement.clearParameters();
+        return this;
     }
 
     /**
@@ -68,10 +77,26 @@ public class ExternalBatchQuery {
      *
      * @param oneBasedIndex the one-based index of the parameter to set
      * @param value         the parameter value to set
+     * @return the query itself for fluent method calls
      * @throws SQLException in case of a database error
      */
-    public void setParameter(int oneBasedIndex, Object value) throws SQLException {
+    public ExternalBatchQuery withParameter(int oneBasedIndex, Object value) throws SQLException {
         statement.setObject(oneBasedIndex, Databases.convertValue(value));
+        return this;
+    }
+
+    /**
+     * Sets the given parameters to the given values.
+     *
+     * @param parameters the parameters to set
+     * @return the query itself for fluent method calls
+     * @throws SQLException in case of a database error
+     */
+    public ExternalBatchQuery withParameters(Object... parameters) throws SQLException {
+        for (int i = 0; i < parameters.length; i++) {
+            withParameter(i + 1, parameters[i]);
+        }
+        return this;
     }
 
     protected void tryCommit(boolean cascade) {
@@ -106,12 +131,27 @@ public class ExternalBatchQuery {
      *
      * @throws SQLException in case of a database error
      */
-    protected void addBatch() throws SQLException {
+    public void addBatch() throws SQLException {
         statement.addBatch();
         batchBacklog++;
         if (batchBacklog > batchBacklogLimit) {
             commit();
         }
+    }
+
+    @Override
+    public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
+        Watch w = Watch.start();
+
+        try (ResultSet rs = statement.executeQuery()) {
+            TaskContext tc = TaskContext.get();
+            processResultSet(handler, limit, rs, tc);
+        }
+    }
+
+    @Override
+    protected void writeBlobToParameter(String name, Blob blob) throws SQLException {
+        throw new UnsupportedOperationException();
     }
 
     /**
