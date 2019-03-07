@@ -251,7 +251,12 @@ public class Schema implements Startable, Initializable {
                 key.addColumn(i, name);
             }
             key.setUnique(index.unique());
-            table.getKeys().add(key);
+
+            // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
+            // Using this approach, indices can be "overwritten" by subclasses.
+            if (table.getKeys().stream().map(Key::getName).noneMatch(name -> Strings.areEqual(name, key.getName()))) {
+                table.getKeys().add(key);
+            }
         });
     }
 
