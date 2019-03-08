@@ -24,7 +24,9 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -217,6 +219,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     private void createIndices(EntityDescriptor ed, MongoDatabase client) {
+        Set<String> seenIndices = new HashSet<>();
         ed.getAnnotations(Index.class).forEach(index -> {
             if (index.columnSettings() == null || index.columns().length != index.columnSettings().length) {
                 Exceptions.handle()
@@ -228,7 +231,12 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                                   ed.getRelationName())
                           .handle();
             } else {
-                createIndex(ed, client, index);
+                // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
+                // Using this approach, indices can be "overwritten" by subclasses.
+                if (!seenIndices.contains(index.name())) {
+                    createIndex(ed, client, index);
+                    seenIndices.add(index.name());
+                }
             }
         });
     }
