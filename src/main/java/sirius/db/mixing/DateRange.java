@@ -16,6 +16,8 @@ import javax.annotation.Nullable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -239,12 +241,14 @@ public class DateRange {
      * @param qry   the query to expand
      */
     public <C extends Constraint> void applyTo(String field, Query<?, ?, C> qry) {
+        List<C> constraints = new ArrayList<>(2);
         if (from != null) {
-            qry.where(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
+            constraints.add(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
         if (until != null) {
-            qry.where(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
+            constraints.add(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
+        qry.where(qry.filters().and(constraints));
     }
 
     @Override
