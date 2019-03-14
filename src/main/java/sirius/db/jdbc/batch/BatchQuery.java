@@ -226,6 +226,8 @@ public abstract class BatchQuery<E extends SQLEntity> {
                       .error(e)
                       .withSystemErrorMessage("An error occured while closing a prepared statement: %s (%s)")
                       .handle();
+        } finally {
+            stmt = null;
         }
     }
 
