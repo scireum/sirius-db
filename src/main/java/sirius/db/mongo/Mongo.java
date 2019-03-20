@@ -129,7 +129,11 @@ public class Mongo implements Startable, Stoppable {
             return Collections.emptyList();
         }
 
-        return Collections.singletonList(MongoCredential.createCredential(user, userDatabase, password.toCharArray()));
+        return Collections.singletonList(MongoCredential.createCredential(user,
+                                                                          Strings.isFilled(userDatabase) ?
+                                                                          userDatabase :
+                                                                          dbName,
+                                                                          password.toCharArray()));
     }
 
     private void createIndices(MongoDatabase db) {
