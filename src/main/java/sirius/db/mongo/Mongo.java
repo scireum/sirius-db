@@ -10,6 +10,8 @@ package sirius.db.mongo;
 
 import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import sirius.kernel.Startable;
@@ -30,6 +32,7 @@ import sirius.kernel.settings.PortMapper;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +59,15 @@ public class Mongo implements Startable, Stoppable {
 
     @ConfigValue("mongo.db")
     private String dbName;
+
+    @ConfigValue("mongo.user")
+    private String user;
+
+    @ConfigValue("mongo.password")
+    private String password;
+
+    @ConfigValue("mongo.userDatabase")
+    private String userDatabase;
 
     @ConfigValue("mongo.logQueryThreshold")
     private Duration logQueryThreshold;
@@ -105,9 +117,19 @@ public class Mongo implements Startable, Stoppable {
                                                                                 hostAndPort.getSecond()))
                                           .filter(Objects::nonNull)
                                           .collect(Collectors.toList());
-        mongoClient = new MongoClient(hosts);
+        List<MongoCredential> credentials = determineCredentials();
+        MongoClientOptions options = MongoClientOptions.builder().sslEnabled(true).build();
+        mongoClient = new MongoClient(hosts, credentials, options);
 
         createIndices(mongoClient.getDatabase(dbName));
+    }
+
+    private List<MongoCredential> determineCredentials() {
+        if (Strings.isEmpty(user) || Strings.isEmpty(password)) {
+            return Collections.emptyList();
+        }
+
+        return Collections.singletonList(MongoCredential.createCredential(user, userDatabase, password.toCharArray()));
     }
 
     private void createIndices(MongoDatabase db) {
