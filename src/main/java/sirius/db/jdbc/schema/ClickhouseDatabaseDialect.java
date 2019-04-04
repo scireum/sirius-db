@@ -213,6 +213,14 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
             return null;
         }
 
+        if (target.getType() == Types.CHAR
+            && (current.getType() == Types.BLOB || current.getType() == Types.VARCHAR)
+            && target.getLength() == current.getLength()) {
+            // None of the Clickhouse String-Types translates back to the CHAR-Type.
+            // "FixedString"s are type BLOB, "String"s are type VARCHAR.
+            return null;
+        }
+
         return reason;
     }
 }
