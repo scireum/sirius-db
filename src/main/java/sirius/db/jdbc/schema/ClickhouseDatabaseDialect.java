@@ -197,4 +197,22 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     public boolean shouldDropKey(Table targetTable, Table currentTable, Key key) {
         return false;
     }
+
+    @Override
+    public String areColumnsEqual(TableColumn target, TableColumn current) {
+        String reason = super.areColumnsEqual(target, current);
+
+        if (Strings.isEmpty(reason)) {
+            return null;
+        }
+
+        if (target.getType() == Types.BOOLEAN && current.getType() == Types.INTEGER && current.getLength() == 4) {
+            // Clickhouse does not have a boolean type, so booleans are saved in "Int8" columns.
+            // To make sure we have a "Int8" on our hands, we check for type == Integer and size == 4.
+            // Clickhouse returns the size 4 for "Int8" columns, because e.g. "-127" has 4 digits including the sign...
+            return null;
+        }
+
+        return reason;
+    }
 }
