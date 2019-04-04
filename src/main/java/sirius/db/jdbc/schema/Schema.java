@@ -261,13 +261,15 @@ public class Schema implements Startable, Initializable {
     }
 
     private void collectColumns(Table table, EntityDescriptor ed) {
-        TableColumn idColumn = new TableColumn();
-        idColumn.setAutoIncrement(true);
-        idColumn.setName(SQLEntity.ID.getName());
-        idColumn.setType(Types.BIGINT);
-        idColumn.setLength(20);
-        table.getColumns().add(idColumn);
-        table.getPrimaryKey().add(idColumn.getName());
+        if (Sirius.getSettings().getExtension(EXTENSION_MIXING_JDBC, ed.getRealm()).get("createIdColumn").asBoolean()) {
+            TableColumn idColumn = new TableColumn();
+            idColumn.setAutoIncrement(true);
+            idColumn.setName(SQLEntity.ID.getName());
+            idColumn.setType(Types.BIGINT);
+            idColumn.setLength(20);
+            table.getColumns().add(idColumn);
+            table.getPrimaryKey().add(idColumn.getName());
+        }
 
         if (ed.isVersioned()) {
             TableColumn versionColumn = new TableColumn();

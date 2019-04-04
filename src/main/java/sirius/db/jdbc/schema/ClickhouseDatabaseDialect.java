@@ -35,34 +35,19 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         sb.append("` (\n");
         Monoflop mf = Monoflop.create();
         for (TableColumn col : table.getColumns()) {
-            if (shouldGenerateColumn(col)) {
-                if (mf.successiveCall()) {
-                    sb.append(",");
-                }
-                sb.append(MessageFormat.format("  {0} {1} {2}\n",
-                                               col.getName(),
-                                               getTypeName(col),
-                                               getDefaultValueAsString(col)));
+            if (mf.successiveCall()) {
+                sb.append(",");
             }
+            sb.append(MessageFormat.format("  {0} {1} {2}\n",
+                                           col.getName(),
+                                           getTypeName(col),
+                                           getDefaultValueAsString(col)));
         }
 
         sb.append("\n) ENGINE=");
         sb.append(getEngine(table).asString("Log"));
 
         return sb.toString();
-    }
-
-    /**
-     * Determines if the column should be generated / added to the target table.
-     * <p>
-     * This is a bit of an ugly hack to filter out the auto-generated
-     * "id" column which is unsupported and also not required by clickhouse...
-     *
-     * @param col the column to check.
-     * @return <tt>true</tt> if the column should be output / generated, <tt>false</tt> otherwise
-     */
-    private boolean shouldGenerateColumn(TableColumn col) {
-        return !col.isAutoIncrement();
     }
 
     @Override
