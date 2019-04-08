@@ -145,7 +145,14 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
     @Override
     public String generateAddColumn(Table table, TableColumn col) {
-        return null;
+        if (!shouldGenerateColumn(col)) {
+            return null;
+        }
+        return MessageFormat.format("ALTER TABLE `{0}` ADD COLUMN `{1}` {2} {3}",
+                                    table.getName(),
+                                    col.getName(),
+                                    getTypeName(col),
+                                    getDefaultValueAsString(col));
     }
 
     @Override
