@@ -44,22 +44,25 @@ public interface DatabaseDialect {
      * @return null if they are equal or a string which contains a reason why
      * they are not.
      */
+    @Nullable
     String areColumnsEqual(TableColumn target, TableColumn current);
 
     /**
      * Builds a CREATE TABLE statement.
      *
      * @param table the table to create
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateCreateTable(Table table);
 
     /**
      * Builds a DROP TABLE statement.
      *
      * @param table the table to drop
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateDropTable(Table table);
 
     /**
@@ -68,7 +71,7 @@ public interface DatabaseDialect {
      * @param table    the table to alter
      * @param oldName  the old name of the column (if it was renamed)
      * @param toColumn the column as expected in the schema
-     * @return the generated SQL statement
+     * @return the generated SQL statement or an empty list if nothing should be done
      */
     List<String> generateAlterColumnTo(Table table, @Nullable String oldName, TableColumn toColumn);
 
@@ -77,8 +80,9 @@ public interface DatabaseDialect {
      *
      * @param table the table to alter
      * @param col   the column to create
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateAddColumn(Table table, TableColumn col);
 
     /**
@@ -86,15 +90,16 @@ public interface DatabaseDialect {
      *
      * @param table the table to alter
      * @param col   the column to drop
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateDropColumn(Table table, TableColumn col);
 
     /**
      * Alters the table so that the PK is updated.
      *
      * @param table the table to alter
-     * @return the generated SQL statement
+     * @return the generated SQL statement or an empty list if nothing should be done
      */
     List<String> generateAlterPrimaryKey(Table table);
 
@@ -104,7 +109,7 @@ public interface DatabaseDialect {
      * @param table the table to alter
      * @param from  the key as currently present in the database
      * @param to    the key as defined in the schema
-     * @return the generated SQL statement
+     * @return the generated SQL statement or an empty list if nothing should be done
      */
     List<String> generateAlterKey(Table table, Key from, Key to);
 
@@ -113,8 +118,9 @@ public interface DatabaseDialect {
      *
      * @param table the table to alter
      * @param key   the key to add
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateAddKey(Table table, Key key);
 
     /**
@@ -122,18 +128,18 @@ public interface DatabaseDialect {
      *
      * @param table the table to alter
      * @param key   the key to drop
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateDropKey(Table table, Key key);
 
     /**
      * Alters the table so that the given foreign key is updated
-     * * @param table the table to alter
      *
      * @param table the table to alter
      * @param from  the key as currently present in the database
      * @param to    the key as defined in the schema
-     * @return the generated SQL statements
+     * @return the generated SQL statements or an empty list if nothing should be done
      */
     List<String> generateAlterForeignKey(Table table, ForeignKey from, ForeignKey to);
 
@@ -142,8 +148,9 @@ public interface DatabaseDialect {
      *
      * @param table the table to alter
      * @param key   the key to add
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateAddForeignKey(Table table, ForeignKey key);
 
     /**
@@ -151,8 +158,9 @@ public interface DatabaseDialect {
      *
      * @param table the table to alter
      * @param key   the key to drop
-     * @return the generated SQL statement
+     * @return the generated SQL statement or null if nothing should be done
      */
+    @Nullable
     String generateDropForeignKey(Table table, ForeignKey key);
 
     /**
