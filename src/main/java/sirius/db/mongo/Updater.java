@@ -36,8 +36,8 @@ public class Updater extends QueryBuilder<Updater> {
     private boolean upsert = false;
     private boolean many = false;
 
-    protected Updater(Mongo mongo) {
-        super(mongo);
+    protected Updater(Mongo mongo, String database) {
+        super(mongo,database);
     }
 
     /**
@@ -329,9 +329,9 @@ public class Updater extends QueryBuilder<Updater> {
             }
             UpdateOptions updateOptions = new UpdateOptions().upsert(this.upsert);
             if (many) {
-                return mongo.db().getCollection(collection).updateMany(filterObject, updateObject, updateOptions);
+                return mongo.db(database).getCollection(collection).updateMany(filterObject, updateObject, updateOptions);
             } else {
-                return mongo.db().getCollection(collection).updateOne(filterObject, updateObject, updateOptions);
+                return mongo.db(database).getCollection(collection).updateOne(filterObject, updateObject, updateOptions);
             }
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());

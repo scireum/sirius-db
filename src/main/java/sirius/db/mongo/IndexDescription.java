@@ -21,7 +21,8 @@ public interface IndexDescription {
     /**
      * Invoked once the Mongo DB is first accessed and permits to create required indices.
      *
-     * @param client can be used to create indices in the Mongo DB
+     * @param database the name of the database (in the configuration) for which the indices are created
+     * @param client   can be used to create indices in the Mongo DB
      */
-    void createIndices(MongoDatabase client);
+    void createIndices(String database, MongoDatabase client);
 }

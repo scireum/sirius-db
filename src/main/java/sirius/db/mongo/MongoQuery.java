@@ -39,7 +39,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      */
     protected MongoQuery(EntityDescriptor descriptor) {
         super(descriptor);
-        this.finder = mongo.find();
+        this.finder = mongo.find(descriptor.getRealm());
     }
 
     /**

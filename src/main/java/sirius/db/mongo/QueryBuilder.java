@@ -31,7 +31,8 @@ import java.util.Objects;
  */
 public abstract class QueryBuilder<S> {
 
-    protected Mongo mongo;
+    protected final String database;
+    protected final Mongo mongo;
     protected BasicDBObject filterObject = new BasicDBObject();
 
     /**
@@ -42,8 +43,9 @@ public abstract class QueryBuilder<S> {
     @Part
     protected static Mixing mixing;
 
-    QueryBuilder(Mongo mongo) {
+    QueryBuilder(Mongo mongo, String database) {
         this.mongo = mongo;
+        this.database = database;
     }
 
     /**
@@ -106,7 +108,7 @@ public abstract class QueryBuilder<S> {
      * @return the explanation delivered by MongoDB
      */
     public Doc explain(String collection) {
-        return new Doc(mongo.db()
+        return new Doc(mongo.db(database)
                             .getCollection(collection)
                             .find(filterObject)
                             .modifiers(new Document("$explain", true))
