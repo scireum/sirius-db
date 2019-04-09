@@ -187,11 +187,14 @@ public class SchemaTool {
                                   List<Table> targetSchema) {
         for (Table table : currentSchema) {
             if (findInList(targetSchema, table) == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.tableUnused").set(KEY_TABLE, table.getName()).format());
-                action.setDataLossPossible(true);
-                action.setSql(dialect.generateDropTable(table));
-                result.add(action);
+                String sql = dialect.generateDropTable(table);
+                if (Strings.isFilled(sql)) {
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                    action.setReason(NLS.fmtr("SchemaTool.tableUnused").set(KEY_TABLE, table.getName()).format());
+                    action.setDataLossPossible(true);
+                    action.setSql(sql);
+                    result.add(action);
+                }
             }
         }
     }
@@ -206,13 +209,16 @@ public class SchemaTool {
 
             Table other = findInList(currentSchema, targetTable);
             if (other == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
-                                    .set(KEY_TABLE, targetTable.getName())
-                                    .format());
-                action.setDataLossPossible(false);
-                action.setSql(dialect.generateCreateTable(targetTable));
-                result.add(action);
+                String sql = dialect.generateCreateTable(targetTable);
+                if (Strings.isFilled(sql)) {
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                    action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
+                                        .set(KEY_TABLE, targetTable.getName())
+                                        .format());
+                    action.setDataLossPossible(false);
+                    action.setSql(sql);
+                    result.add(action);
+                }
             } else {
                 syncTables(targetTable, other, result);
             }
@@ -242,11 +248,14 @@ public class SchemaTool {
         syncColumns(targetTable, other, result);
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
-            SchemaUpdateAction action = new SchemaUpdateAction(realm);
-            action.setReason(NLS.fmtr("SchemaTool.pkChanged").set(KEY_TABLE, targetTable.getName()).format());
-            action.setDataLossPossible(true);
-            action.setSql(dialect.generateAlterPrimaryKey(targetTable));
-            result.add(action);
+            List<String> sql = dialect.generateAlterPrimaryKey(targetTable);
+            if (!sql.isEmpty()) {
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                action.setReason(NLS.fmtr("SchemaTool.pkChanged").set(KEY_TABLE, targetTable.getName()).format());
+                action.setDataLossPossible(true);
+                action.setSql(sql);
+                result.add(action);
+            }
         }
     }
 
@@ -261,14 +270,17 @@ public class SchemaTool {
             if (findInList(targetTable.getKeys(), key) == null
                 && findInList(targetTable.getForeignKeys(), fk) == null
                 && dialect.shouldDropKey(targetTable, other, key)) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.indexUnused")
-                                    .set("key", key.getName())
-                                    .set(KEY_TABLE, other.getName())
-                                    .format());
-                action.setDataLossPossible(true);
-                action.setSql(dialect.generateDropKey(other, key));
-                result.add(action);
+                String sql = dialect.generateDropKey(other, key);
+                if (Strings.isFilled(sql)) {
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                    action.setReason(NLS.fmtr("SchemaTool.indexUnused")
+                                        .set("key", key.getName())
+                                        .set(KEY_TABLE, other.getName())
+                                        .format());
+                    action.setDataLossPossible(true);
+                    action.setSql(sql);
+                    result.add(action);
+                }
             }
         }
     }
@@ -276,14 +288,17 @@ public class SchemaTool {
     private void dropForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         for (ForeignKey key : other.getForeignKeys()) {
             if (findInList(targetTable.getForeignKeys(), key) == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.fkUnused")
-                                    .set("key", key.getName())
-                                    .set(KEY_TABLE, other.getName())
-                                    .format());
-                action.setDataLossPossible(true);
-                action.setSql(dialect.generateDropForeignKey(other, key));
-                result.add(action);
+                String sql = dialect.generateDropForeignKey(other, key);
+                if (Strings.isFilled(sql)) {
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                    action.setReason(NLS.fmtr("SchemaTool.fkUnused")
+                                        .set("key", key.getName())
+                                        .set(KEY_TABLE, other.getName())
+                                        .format());
+                    action.setDataLossPossible(true);
+                    action.setSql(sql);
+                    result.add(action);
+                }
             }
         }
     }
@@ -292,25 +307,31 @@ public class SchemaTool {
         for (Key targetKey : targetTable.getKeys()) {
             Key otherKey = findInList(other.getKeys(), targetKey);
             if (otherKey == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
-                                    .set("key", targetKey.getName())
-                                    .set(KEY_TABLE, targetTable.getName())
-                                    .format());
-                action.setDataLossPossible(false);
-                action.setSql(dialect.generateAddKey(targetTable, targetKey));
-                result.add(action);
-            } else {
-                if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
-                    || targetKey.isUnique() != otherKey.isUnique()) {
+                String sql = dialect.generateAddKey(targetTable, targetKey);
+                if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                    action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
+                    action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
                                         .set("key", targetKey.getName())
                                         .set(KEY_TABLE, targetTable.getName())
                                         .format());
-                    action.setDataLossPossible(true);
-                    action.setSql(dialect.generateAlterKey(targetTable, otherKey, targetKey));
+                    action.setDataLossPossible(false);
+                    action.setSql(sql);
                     result.add(action);
+                }
+            } else {
+                if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
+                    || targetKey.isUnique() != otherKey.isUnique()) {
+                    List<String> sql = dialect.generateAlterKey(targetTable, otherKey, targetKey);
+                    if (!sql.isEmpty()) {
+                        SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                        action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
+                                            .set("key", targetKey.getName())
+                                            .set(KEY_TABLE, targetTable.getName())
+                                            .format());
+                        action.setDataLossPossible(true);
+                        action.setSql(sql);
+                        result.add(action);
+                    }
                 }
             }
         }
@@ -320,26 +341,32 @@ public class SchemaTool {
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
             ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.fkDoesNotExist")
-                                    .set("key", targetKey.getName())
-                                    .set(KEY_TABLE, targetTable.getName())
-                                    .format());
-                action.setDataLossPossible(false);
-                action.setSql(dialect.generateAddForeignKey(targetTable, targetKey));
-                result.add(action);
+                String sql = dialect.generateAddForeignKey(targetTable, targetKey);
+                if (Strings.isFilled(sql)) {
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                    action.setReason(NLS.fmtr("SchemaTool.fkDoesNotExist")
+                                        .set("key", targetKey.getName())
+                                        .set(KEY_TABLE, targetTable.getName())
+                                        .format());
+                    action.setDataLossPossible(false);
+                    action.setSql(sql);
+                    result.add(action);
+                }
             } else {
                 if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
                     || !keyListEqual(targetKey.getForeignColumns(), otherKey.getForeignColumns())
                     || !targetKey.getForeignTable().equalsIgnoreCase(otherKey.getForeignTable())) {
-                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                    action.setReason(NLS.fmtr("SchemaTool.fkNeedsChange")
-                                        .set("key", targetKey.getName())
-                                        .set(KEY_TABLE, targetTable.getName())
-                                        .format());
-                    action.setDataLossPossible(true);
-                    action.setSql(dialect.generateAlterForeignKey(targetTable, otherKey, targetKey));
-                    result.add(action);
+                    List<String> sql = dialect.generateAlterForeignKey(targetTable, otherKey, targetKey);
+                    if (!sql.isEmpty()) {
+                        SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                        action.setReason(NLS.fmtr("SchemaTool.fkNeedsChange")
+                                            .set("key", targetKey.getName())
+                                            .set(KEY_TABLE, targetTable.getName())
+                                            .format());
+                        action.setDataLossPossible(true);
+                        action.setSql(sql);
+                        result.add(action);
+                    }
                 }
             }
         }
@@ -371,14 +398,17 @@ public class SchemaTool {
                                      Set<String> usedColumns) {
         for (TableColumn col : other.getColumns()) {
             if (!usedColumns.contains(col.getName())) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.columnUnused")
-                                    .set(KEY_COLUMN, col.getName())
-                                    .set(KEY_TABLE, other.getName())
-                                    .format());
-                action.setDataLossPossible(true);
-                action.setSql(dialect.generateDropColumn(targetTable, col));
-                result.add(action);
+                String sql = dialect.generateDropColumn(targetTable, col);
+                if (Strings.isFilled(sql)) {
+                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                    action.setReason(NLS.fmtr("SchemaTool.columnUnused")
+                                        .set(KEY_COLUMN, col.getName())
+                                        .set(KEY_TABLE, other.getName())
+                                        .format());
+                    action.setDataLossPossible(true);
+                    action.setSql(sql);
+                    result.add(action);
+                }
             }
         }
     }
@@ -407,23 +437,29 @@ public class SchemaTool {
                         .format();
         }
         if (reason != null) {
-            SchemaUpdateAction action = new SchemaUpdateAction(realm);
-            action.setReason(reason);
-            action.setDataLossPossible(true);
-            action.setSql(dialect.generateAlterColumnTo(targetTable, targetCol.getOldName(), targetCol));
-            result.add(action);
+            List<String> sql = dialect.generateAlterColumnTo(targetTable, targetCol.getOldName(), targetCol);
+            if (!sql.isEmpty()) {
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                action.setReason(reason);
+                action.setDataLossPossible(true);
+                action.setSql(sql);
+                result.add(action);
+            }
         }
     }
 
     private void handleNewColumn(Table targetTable, List<SchemaUpdateAction> result, TableColumn targetCol) {
-        SchemaUpdateAction action = new SchemaUpdateAction(realm);
-        action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
-                            .set(KEY_COLUMN, targetCol.getName())
-                            .set(KEY_TABLE, targetTable.getName())
-                            .format());
-        action.setDataLossPossible(false);
-        action.setSql(dialect.generateAddColumn(targetTable, targetCol));
-        result.add(action);
+        String sql = dialect.generateAddColumn(targetTable, targetCol);
+        if (Strings.isFilled(sql)) {
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
+            action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
+                                .set(KEY_COLUMN, targetCol.getName())
+                                .set(KEY_TABLE, targetTable.getName())
+                                .format());
+            action.setDataLossPossible(false);
+            action.setSql(sql);
+            result.add(action);
+        }
     }
 
     private TableColumn findColumn(Table other, String name) {
