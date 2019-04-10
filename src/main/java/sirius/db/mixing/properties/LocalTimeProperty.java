@@ -61,6 +61,15 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(LocalTime.class)) {
+            return value.get();
+        }
+
+        return transformValue(value);
+    }
+
+    @Override
     protected Object transformFromJDBC(Value data) {
         Object object = data.get();
 
