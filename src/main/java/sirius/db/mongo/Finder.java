@@ -37,8 +37,8 @@ public class Finder extends QueryBuilder<Finder> {
     private int limit;
     private int batchSize;
 
-    protected Finder(Mongo mongo) {
-        super(mongo);
+    protected Finder(Mongo mongo, String database) {
+        super(mongo,database);
     }
 
     /**
@@ -191,7 +191,7 @@ public class Finder extends QueryBuilder<Finder> {
     public Optional<Doc> singleIn(String collection) {
         Watch w = Watch.start();
         try {
-            FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
+            FindIterable<Document> cur = mongo.db(database).getCollection(collection).find(filterObject);
             if (fields != null) {
                 cur.projection(fields);
             }
@@ -241,7 +241,7 @@ public class Finder extends QueryBuilder<Finder> {
             Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
         }
 
-        FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
+        FindIterable<Document> cur = mongo.db(database).getCollection(collection).find(filterObject);
         if (fields != null) {
             cur.projection(fields);
         }

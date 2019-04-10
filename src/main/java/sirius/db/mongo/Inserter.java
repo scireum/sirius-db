@@ -19,11 +19,13 @@ import sirius.kernel.health.Microtiming;
  */
 public class Inserter {
 
+    private final String database;
+    private final Mongo mongo;
     private Document obj = new Document();
-    private Mongo mongo;
 
-    protected Inserter(Mongo mongo) {
+    protected Inserter(Mongo mongo, String database) {
         this.mongo = mongo;
+        this.database = database;
     }
 
     /**
@@ -99,7 +101,7 @@ public class Inserter {
 
         Watch w = Watch.start();
 
-        mongo.db().getCollection(collection).insertOne(obj);
+        mongo.db(database).getCollection(collection).insertOne(obj);
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {
             w.submitMicroTiming("mongo", "INSERT - " + collection + ": " + obj);

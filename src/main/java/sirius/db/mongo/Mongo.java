@@ -10,12 +10,15 @@ package sirius.db.mongo;
 
 import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
+import sirius.db.mixing.Mixing;
+import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
 import sirius.kernel.commons.Explain;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.PartCollection;
@@ -26,10 +29,14 @@ import sirius.kernel.health.Average;
 import sirius.kernel.health.Counter;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
+import sirius.kernel.settings.Extension;
 import sirius.kernel.settings.PortMapper;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,7 +45,7 @@ import java.util.stream.Collectors;
 /**
  * Provides a thin layer above Mongo DB with fluent APIs for CRUD operations.
  */
-@Register(classes = {Mongo.class, Startable.class, Stoppable.class})
+@Register(classes = {Mongo.class, Stoppable.class})
 public class Mongo implements Startable, Stoppable {
 
     private static final String SERVICE_NAME = "mongo";
@@ -49,13 +56,8 @@ public class Mongo implements Startable, Stoppable {
 
     private static final int MONGO_PORT = 27017;
 
-    private volatile MongoClient mongoClient;
-
-    @ConfigValue("mongo.hosts")
-    private String dbHosts;
-
-    @ConfigValue("mongo.db")
-    private String dbName;
+    private Map<String, Tuple<MongoClient, String>> mongoClients = new HashMap<>();
+    private Map<String, Boolean> mongoClientConfigured = new HashMap<>();
 
     @ConfigValue("mongo.logQueryThreshold")
     private Duration logQueryThreshold;
@@ -64,7 +66,6 @@ public class Mongo implements Startable, Stoppable {
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
 
-    protected boolean temporaryDB;
     protected volatile boolean tracing;
     protected volatile int traceLimit;
     protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
@@ -76,46 +77,80 @@ public class Mongo implements Startable, Stoppable {
      *
      * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
      */
+    public boolean isConfigured(String database) {
+        return mongoClientConfigured.computeIfAbsent(database,
+                                                     db -> Sirius.getSettings()
+                                                                 .getExtension("mongo.databases", database)
+                                                                 .get("hosts")
+                                                                 .isFilled());
+    }
+
+    /**
+     * Determines if access to default Mongo DB is configured by checking if a host is given.
+     *
+     * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
+     */
     public boolean isConfigured() {
-        return Strings.isFilled(dbHosts);
+        return isConfigured(Mixing.DEFAULT_REALM);
     }
 
     /**
      * Provides direct access to the Mongo DB for non-trivial operations.
      *
+     * @param database the name of the database configuration to use.
+     * @return an initialized client instance to access Mongo DB.
+     */
+    @Nullable
+    public MongoDatabase db(String database) {
+        Tuple<MongoClient, String> clientAndDB = mongoClients.computeIfAbsent(database, this::setupClient);
+        return clientAndDB.getFirst().getDatabase(clientAndDB.getSecond());
+    }
+
+    /**
+     * Provides direct access to the default Mongo DB for non-trivial operations.
+     *
      * @return an initialized client instance to access Mongo DB.
      */
     public MongoDatabase db() {
-        if (mongoClient == null) {
-            initializeClient();
-        }
-
-        return mongoClient.getDatabase(dbName);
+        return db(Mixing.DEFAULT_REALM);
     }
 
-    protected synchronized void initializeClient() {
-        if (mongoClient != null) {
-            return;
-        }
-
-        List<ServerAddress> hosts = Arrays.stream(dbHosts.split(","))
+    protected synchronized Tuple<MongoClient, String> setupClient(String database) {
+        Extension config = Sirius.getSettings().getExtension("mongo.databases", database);
+        List<ServerAddress> hosts = Arrays.stream(config.get("hosts").asString().split(","))
                                           .map(String::trim)
                                           .map(hostname -> PortMapper.mapPort(SERVICE_NAME, hostname, MONGO_PORT))
                                           .map(hostAndPort -> new ServerAddress(hostAndPort.getFirst(),
                                                                                 hostAndPort.getSecond()))
                                           .filter(Objects::nonNull)
                                           .collect(Collectors.toList());
-        mongoClient = new MongoClient(hosts);
+        List<MongoCredential> credentials = determineCredentials(config);
+        MongoClientOptions options = MongoClientOptions.builder().build();
+        MongoClient mongoClient = new MongoClient(hosts, credentials, options);
 
-        createIndices(mongoClient.getDatabase(dbName));
+        createIndices(database, mongoClient.getDatabase(config.get("db").asString()));
+        return Tuple.create(mongoClient, config.get("db").asString());
     }
 
-    private void createIndices(MongoDatabase db) {
+    private List<MongoCredential> determineCredentials(Extension config) {
+        if (config.get("user").isEmptyString() || config.get("password").isEmptyString()) {
+            return Collections.emptyList();
+        }
+
+        return Collections.singletonList(MongoCredential.createCredential(config.get("user").asString(),
+                                                                          config.get("userDatabase")
+                                                                                .asString(config.get("db").asString()),
+                                                                          config.get("password")
+                                                                                .asString()
+                                                                                .toCharArray()));
+    }
+
+    private void createIndices(String database, MongoDatabase db) {
         for (IndexDescription idx : indexDescriptions) {
             Watch w = Watch.start();
             try {
                 LOG.INFO("Creating indices in Mongo DB: %s", idx.getClass().getName());
-                idx.createIndices(db);
+                idx.createIndices(database, db);
                 LOG.INFO("Completed indices for: %s (%s)", idx.getClass().getName(), w.duration());
             } catch (Exception t) {
                 Exceptions.handle()
@@ -143,45 +178,90 @@ public class Mongo implements Startable, Stoppable {
 
     @Override
     public void stopped() {
-        if (mongoClient != null) {
-            mongoClient.close();
-        }
+        mongoClients.values().stream().map(Tuple::getFirst).forEach(client -> {
+            try {
+                client.close();
+            } catch (Exception e) {
+                LOG.WARN(e);
+            }
+        });
+
+        mongoClients.clear();
     }
 
     /**
-     * Returns a fluent query builder to insert a document into the database
+     * Returns a fluent query builder to insert a document into the database.
+     *
+     * @param database the name of the database configuration to use
+     * @return a query builder to create an insert statement
+     */
+    public Inserter insert(String database) {
+        return new Inserter(this, database);
+    }
+
+    /**
+     * Returns a fluent query builder to insert a document into the default database.
      *
      * @return a query builder to create an insert statement
      */
     public Inserter insert() {
-        return new Inserter(this);
+        return insert(Mixing.DEFAULT_REALM);
     }
 
     /**
      * Returns a fluent query builder to find one or more documents in the database
      *
+     * @param database the name of the database configuration to use
      * @return a query builder to create a find statement
      */
-    public Finder find() {
-        return new Finder(this);
+    public Finder find(String database) {
+        return new Finder(this, database);
     }
 
     /**
-     * Returns a fluent query builder to update one or more documents in the database
+     * Returns a fluent query builder to find one or more documents in the default database
+     *
+     * @return a query builder to create a find statement
+     */
+    public Finder find() {
+        return find(Mixing.DEFAULT_REALM);
+    }
+
+    /**
+     * Returns a fluent query builder to update one or more documents in the database.
+     *
+     * @param database the name of the database configuration to use.
+     * @return a query builder to create an update statement
+     */
+    public Updater update(String database) {
+        return new Updater(this, database);
+    }
+
+    /**
+     * Returns a fluent query builder to update one or more documents in the default database.
      *
      * @return a query builder to create an update statement
      */
     public Updater update() {
-        return new Updater(this);
+        return update(Mixing.DEFAULT_REALM);
     }
 
     /**
-     * Returns a fluent query builder to delete one or more documents in the database
+     * Returns a fluent query builder to delete one or more documents in the database.
+     *
+     * @return a query builder to create a delete statement
+     */
+    public Deleter delete(String database) {
+        return new Deleter(this, database);
+    }
+
+    /**
+     * Returns a fluent query builder to delete one or more documents in the default database.
      *
      * @return a query builder to create a delete statement
      */
     public Deleter delete() {
-        return new Deleter(this);
+        return delete(Mixing.DEFAULT_REALM);
     }
 
     /**

@@ -19,6 +19,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
+import sirius.kernel.Startable;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -32,8 +33,8 @@ import java.util.function.Function;
 /**
  * Provides the {@link BaseMapper mapper} used to communicate with <tt>MongoDB</tt>.
  */
-@Register(classes = {Mango.class, IndexDescription.class})
-public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?>> implements IndexDescription {
+@Register(classes = {Mango.class, Startable.class})
+public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?>> implements Startable {
 
     /**
      * Defines the name of the internal ID field in MongoDB
@@ -85,7 +86,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     @Override
     protected void updateEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        Updater updater = mongo.update();
+        Updater updater = mongo.update(ed.getRealm());
         boolean changed = false;
         for (Property p : ed.getProperties()) {
             if (ed.isChanged(entity, p)) {
@@ -138,7 +139,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     @Override
     protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        Deleter deleter = mongo.delete().where(MongoEntity.ID, entity.getId());
+        Deleter deleter = mongo.delete(ed.getRealm()).where(MongoEntity.ID, entity.getId());
         if (!force && ed.isVersioned()) {
             deleter.where(VERSION, entity.getVersion());
         }
@@ -155,7 +156,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     protected <E extends MongoEntity> Optional<E> findEntity(Object id,
                                                              EntityDescriptor ed,
                                                              Function<String, Value> context) throws Exception {
-        return mongo.find()
+        return mongo.find(ed.getRealm())
                     .where(MongoEntity.ID, id.toString())
                     .singleIn(ed.getRelationName())
                     .map(doc -> make(ed, doc));
@@ -211,14 +212,27 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    public void createIndices(MongoDatabase client) {
+    public int getPriority() {
+        return 75;
+    }
+
+    @Override
+    public void started() {
         mixing.getDesciptors()
               .stream()
               .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
-              .forEach(ed -> createIndices(ed, client));
+              .forEach(ed -> createIndices(ed));
     }
 
-    private void createIndices(EntityDescriptor ed, MongoDatabase client) {
+    private void createIndices(EntityDescriptor ed) {
+        String database = ed.getRealm();
+        if (!mongo.isConfigured(database)) {
+            Mongo.LOG.WARN("Skipping MongoDB indices for: %s as no configuration for database %s is present...",
+                           ed.getRelationName(),
+                           database);
+            return;
+        }
+
         Set<String> seenIndices = new HashSet<>();
         ed.getAnnotations(Index.class).forEach(index -> {
             if (index.columnSettings() == null || index.columns().length != index.columnSettings().length) {
@@ -234,7 +248,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                 // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
                 // Using this approach, indices can be "overwritten" by subclasses.
                 if (!seenIndices.contains(index.name())) {
-                    createIndex(ed, client, index);
+                    createIndex(ed, mongo.db(database), index);
                     seenIndices.add(index.name());
                 }
             }

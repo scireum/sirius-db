@@ -17,8 +17,8 @@ import sirius.kernel.health.Microtiming;
  */
 public class Deleter extends QueryBuilder<Deleter> {
 
-    protected Deleter(Mongo mongo) {
-        super(mongo);
+    protected Deleter(Mongo mongo, String database) {
+        super(mongo, database);
     }
 
     /**
@@ -44,7 +44,7 @@ public class Deleter extends QueryBuilder<Deleter> {
                 Mongo.LOG.FINE("DELETE: %s\nFilter: %s", collection, filterObject);
             }
 
-            return mongo.db().getCollection(collection).deleteOne(filterObject);
+            return mongo.db(database).getCollection(collection).deleteOne(filterObject);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -77,7 +77,7 @@ public class Deleter extends QueryBuilder<Deleter> {
                 Mongo.LOG.FINE("DELETE: %s\nFilter: %s", collection, filterObject);
             }
 
-            return mongo.db().getCollection(collection).deleteMany(filterObject);
+            return mongo.db(database).getCollection(collection).deleteMany(filterObject);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
