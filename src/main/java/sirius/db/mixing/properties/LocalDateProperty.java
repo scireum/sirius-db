@@ -68,6 +68,15 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
     }
 
     @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(LocalDate.class)) {
+            return value.get();
+        }
+
+        return transformValue(value);
+    }
+
+    @Override
     protected Object transformFromJDBC(Value data) {
         Object object = data.get();
         if (object == null) {

@@ -69,6 +69,15 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
     }
 
     @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(LocalDateTime.class)) {
+            return value.get();
+        }
+
+        return transformValue(value);
+    }
+
+    @Override
     protected Object transformFromJDBC(Value object) {
         Object data = object.get();
         if (data == null) {
