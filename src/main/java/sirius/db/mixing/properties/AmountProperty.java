@@ -90,6 +90,19 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(Amount.class)) {
+            return value.get();
+        }
+
+        if (value.isFilled()) {
+            return Amount.ofMachineString(value.asString());
+        }
+
+        return transformValue(value);
+    }
+
+    @Override
     protected Object transformToJDBC(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
     }
