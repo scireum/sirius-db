@@ -37,7 +37,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setCounter(i)
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         def entities = elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "SELECT").queryList()
         then:
         entities.size() == 100
@@ -70,7 +70,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setCounter(i)
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         def entities = elastic.select(QueryTestEntity.class)
                               .eq(QueryTestEntity.VALUE, "SORT")
                               .sort(SortBuilder.on(QueryTestEntity.COUNTER)
@@ -92,7 +92,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setCounter(i)
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         def query = elastic.select(QueryTestEntity.class)
                            .addTermAggregation(QueryTestEntity.VALUE)
                            .where(Elastic.FILTERS.prefix(QueryTestEntity.VALUE, "AGG"))
@@ -111,7 +111,7 @@ class ElasticQuerySpec extends BaseSpecification {
         ESStringMapEntity entity = new ESStringMapEntity()
         entity.getMap().put("1", "1").put("2", "2").put("test", "test")
         elastic.update(entity)
-        Wait.seconds(1)
+        elastic.refresh(ESStringMapEntity.class)
         def query = elastic.select(ESStringMapEntity.class)
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
@@ -142,7 +142,7 @@ class ElasticQuerySpec extends BaseSpecification {
         ESStringMapEntity entity = new ESStringMapEntity()
         entity.getMap().put("3", "3").put("4", "4").put("test2", "test2")
         elastic.update(entity)
-        Wait.seconds(1)
+        elastic.refresh(ESStringMapEntity.class)
         def query = elastic.select(ESStringMapEntity.class)
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
@@ -166,7 +166,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setValue("COUNT")
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "COUNT").count() == 100
     }
@@ -178,13 +178,13 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setValue("DELETE")
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").count() == 100
         when:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").delete()
         and:
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "DELETE").count() == 0
     }
@@ -196,13 +196,13 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setValue("TRUNCATE")
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "TRUNCATE").count() == 100
         when:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "TRUNCATE").truncate()
         and:
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "TRUNCATE").count() == 0
     }
@@ -214,7 +214,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setValue("EXISTS")
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "EXISTS").exists()
     }
@@ -227,7 +227,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setCounter(i)
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         and:
         int sum = 0
         elastic.select(QueryTestEntity.class).
@@ -243,7 +243,7 @@ class ElasticQuerySpec extends BaseSpecification {
         entity.setValue("NOREF")
         entity.setCounter(1)
         elastic.update(entity)
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         and:
         def constraint = Elastic.FILTERS.eq(QueryTestEntity.VALUE, "NOREF")
         and:
@@ -260,7 +260,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entity.setCounter(i)
             elastic.update(entity)
         }
-        Wait.seconds(2)
+        elastic.refresh(QueryTestEntity.class)
         and:
         def scoreFunction = new JSONObject().fluentPut("field_value_factor",
                                                        new JSONObject().fluentPut("field",
@@ -295,7 +295,7 @@ class ElasticQuerySpec extends BaseSpecification {
             entityToCreate.setCounter(i)
             elastic.update(entityToCreate)
         }
-        Wait.seconds(2)
+        elastic.refresh(ESListTestEntity.class)
         when:
         elastic.select(ESListTestEntity.class).queryList()
         then:

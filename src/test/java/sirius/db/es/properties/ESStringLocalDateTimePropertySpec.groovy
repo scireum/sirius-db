@@ -27,7 +27,7 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         test.getMap().put("a", now)
         elastic.update(test)
         and:
-        Wait.seconds(2)
+        elastic.refresh(ESStringLocalDateTimeMapEntity.class)
         def resolved = elastic.refreshOrFail(test)
         then:
         resolved.getMap().size() == 1
@@ -40,7 +40,7 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         and:
         elastic.update(resolved)
         and:
-        Wait.seconds(2)
+        elastic.refresh(ESStringLocalDateTimeMapEntity.class)
         resolved = elastic.refreshOrFail(resolved)
         then:
         resolved.getMap().size() == 1
@@ -53,7 +53,7 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         def test = new ESStringLocalDateTimeMapEntity()
         test.getMap().put("a", LocalDateTime.now().plusDays(2)).put("b", LocalDateTime.now().plusDays(3))
         elastic.update(test)
-        Wait.seconds(2)
+        elastic.refresh(ESStringLocalDateTimeMapEntity.class)
         then:
         elastic.select(ESStringLocalDateTimeMapEntity.class).
                 where(Elastic.FILTERS.nested(ESStringLocalDateTimeMapEntity.MAP).where(Elastic.FILTERS.gt(

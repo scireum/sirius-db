@@ -26,7 +26,7 @@ class ReindexSpec extends BaseSpecification {
         and:
         elastic.update(e)
         and:
-        Wait.seconds(2)
+        elastic.refresh(ElasticTestEntity.class)
         when:
         elastic.getLowLevelClient().reindex(e.getDescriptor(), "reindex-test", {}, {})
         and:
@@ -44,7 +44,7 @@ class ReindexSpec extends BaseSpecification {
         then:
         indicesForAlias.size() == 1 && indicesForAlias.contains("reindex-test")
         and:
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         and:
         elastic.select(ElasticTestEntity.class).eq(ElasticTestEntity.AGE, 10).queryOne().getFirstname() == "test"
     }

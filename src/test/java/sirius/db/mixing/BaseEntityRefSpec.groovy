@@ -41,14 +41,14 @@ class BaseEntityRefSpec extends BaseSpecification {
         RefElasticEntity refElasticEntity = new RefElasticEntity()
         refElasticEntity.getRef().setValue(refEntity)
         elastic.update(refElasticEntity)
-        Wait.seconds(2)
+        elastic.refresh(RefElasticEntity.class)
 
         RefMongoEntity refMongoEntity = new RefMongoEntity()
         refMongoEntity.getRef().setValue(refEntity)
         mango.update(refMongoEntity)
         and:
         oma.delete(refEntity)
-        Wait.seconds(2)
+        elastic.refresh(RefElasticEntity.class)
         then:
         !elastic.find(RefElasticEntity.class, refElasticEntity.getId()).isPresent()
         and:
