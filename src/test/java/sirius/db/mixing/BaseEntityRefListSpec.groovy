@@ -35,10 +35,10 @@ class BaseEntityRefListSpec extends BaseSpecification {
         RefListElasticEntity refElasticEntity = new RefListElasticEntity()
         refElasticEntity.getRef().add(refMongoEntity.getId())
         elastic.update(refElasticEntity)
-        Wait.seconds(2)
+        elastic.refresh(RefListElasticEntity.class)
         and:
         mango.delete(refMongoEntity)
-        Wait.seconds(2)
+        elastic.refresh(RefListElasticEntity.class)
         then:
         !elastic.find(RefListElasticEntity.class, refElasticEntity.getId()).isPresent()
     }
@@ -47,13 +47,13 @@ class BaseEntityRefListSpec extends BaseSpecification {
         when:
         RefListElasticEntity refElasticEntity = new RefListElasticEntity()
         elastic.update(refElasticEntity)
-        Wait.seconds(2)
+        elastic.refresh(RefListElasticEntity.class)
         RefListMongoEntity refMongoEntity = new RefListMongoEntity()
         refMongoEntity.getRef().add(refElasticEntity.getId())
         mango.update(refMongoEntity)
         and:
         elastic.delete(refElasticEntity)
-        Wait.seconds(2)
+        elastic.refresh(RefListElasticEntity.class)
         and:
         def resolved = mango.refreshOrFail(refMongoEntity)
         then:

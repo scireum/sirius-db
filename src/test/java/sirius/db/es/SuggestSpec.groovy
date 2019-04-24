@@ -40,7 +40,7 @@ class SuggestSpec extends BaseSpecification {
             elastic.update(entity2)
         }
         and:
-        Wait.seconds(2)
+        elastic.refresh(SuggestTestEntity.class)
         def suggestParts = elastic.select(SuggestTestEntity.class)
                                   .suggest(new SuggestBuilder(SuggestBuilder.TERM, "test")
                                                    .on(SuggestTestEntity.CONTENT, "HSS dril bitt"))
@@ -69,7 +69,7 @@ class SuggestSpec extends BaseSpecification {
             elastic.update(entity2)
         }
         and:
-        Wait.seconds(2)
+        elastic.refresh(SuggestTestEntity.class)
         def suggestOptions = elastic.select(SuggestTestEntity.class)
                                     .suggest(new SuggestBuilder(SuggestBuilder.PHRASE, "test")
                                                      .on(SuggestTestEntity.CONTENT, "dril potatoes"))
@@ -110,7 +110,7 @@ class SuggestSpec extends BaseSpecification {
 
 
         and:
-        Wait.seconds(2)
+        elastic.refresh(SuggestTestEntity.class)
         def suggestOptions = elastic.select(SuggestTestEntity.class)
                                     .suggest(new SuggestBuilder(SuggestBuilder.PHRASE, "test")
                                                      .on(SuggestTestEntity.CONTENT, "Sals Kartoffeln")

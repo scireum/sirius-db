@@ -32,7 +32,7 @@ class BulkContextSpec extends BaseSpecification {
         btx.tryUpdate(new BatchTestEntity().withValue(2))
         btx.tryUpdate(new BatchTestEntity().withValue(3))
         btx.commit()
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         then:
         elastic.select(BatchTestEntity.class).count() == 3
     }
@@ -43,13 +43,13 @@ class BulkContextSpec extends BaseSpecification {
         when:
         BatchTestEntity modified = new BatchTestEntity().withValue(100)
         elastic.update(modified)
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         BatchTestEntity original = elastic.refreshOrFail(modified)
         elastic.update(modified.withValue(200))
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         btx.tryUpdate(original.withValue(150))
         btx.commit()
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         then:
         elastic.refreshOrFail(original).getValue() == 200
     }
@@ -60,13 +60,13 @@ class BulkContextSpec extends BaseSpecification {
         when:
         BatchTestEntity modified = new BatchTestEntity().withValue(100)
         elastic.update(modified)
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         BatchTestEntity original = elastic.refreshOrFail(modified)
         elastic.update(modified.withValue(200))
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         btx.overwrite(original.withValue(150))
         btx.commit()
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         then:
         elastic.refreshOrFail(original).getValue() == 150
     }
@@ -77,10 +77,10 @@ class BulkContextSpec extends BaseSpecification {
         when:
         BatchTestEntity test = new BatchTestEntity().withValue(100)
         elastic.update(test)
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         btx.tryDelete(test)
         btx.commit()
-        Wait.seconds(2)
+        elastic.refresh(BatchTestEntity.class)
         then:
         !elastic.find(BatchTestEntity.class, test.getId()).isPresent()
     }

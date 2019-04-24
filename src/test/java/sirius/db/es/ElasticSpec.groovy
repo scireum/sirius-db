@@ -32,7 +32,7 @@ class ElasticSpec extends BaseSpecification {
         entity.setAge(12)
         elastic.update(entity)
         and:
-        Wait.seconds(2)
+        elastic.refresh(ElasticTestEntity.class)
         ElasticTestEntity loaded = elastic.findOrFail(ElasticTestEntity.class, entity.getId())
         then:
         loaded.getFirstname() == "Hello"
@@ -41,7 +41,7 @@ class ElasticSpec extends BaseSpecification {
         when:
         elastic.delete(entity)
         and:
-        Wait.seconds(2)
+        elastic.refresh(ElasticTestEntity.class)
         ElasticTestEntity notFound = elastic.find(ElasticTestEntity.class, entity.getId()).orElse(null)
         then:
         notFound == null
@@ -55,7 +55,7 @@ class ElasticSpec extends BaseSpecification {
         entity.setAge(12)
         elastic.update(entity)
         and:
-        Wait.seconds(2)
+        elastic.refresh(RoutedTestEntity.class)
         RoutedTestEntity loaded = elastic.findOrFail(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World"))
         RoutedTestEntity notLoaded = elastic.find(
                 RoutedTestEntity.class,
@@ -76,7 +76,7 @@ class ElasticSpec extends BaseSpecification {
         when:
         elastic.delete(entity)
         and:
-        Wait.seconds(2)
+        elastic.refresh(RoutedTestEntity.class)
         RoutedTestEntity notFound = elastic.find(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World")).
                 orElse(null)
         then:
@@ -89,16 +89,16 @@ class ElasticSpec extends BaseSpecification {
         entity.setValue("Test")
         elastic.update(entity)
         and:
-        Wait.seconds(2)
+        elastic.refresh(LockedTestEntity.class)
         LockedTestEntity copyOfOriginal = elastic.refreshOrFail(entity)
         and:
         entity.setValue("Test2")
         elastic.update(entity)
-        Wait.seconds(2)
+        elastic.refresh(LockedTestEntity.class)
         and:
         entity.setValue("Test3")
         elastic.update(entity)
-        Wait.seconds(2)
+        elastic.refresh(LockedTestEntity.class)
         and:
         copyOfOriginal.setValue("Test2")
         elastic.tryUpdate(copyOfOriginal)
@@ -110,7 +110,7 @@ class ElasticSpec extends BaseSpecification {
         thrown(OptimisticLockException)
         when:
         elastic.forceDelete(copyOfOriginal)
-        Wait.seconds(2)
+        elastic.refresh(LockedTestEntity.class)
         LockedTestEntity notFound = elastic.find(LockedTestEntity.class, entity.getId()).orElse(null)
         then:
         notFound == null

@@ -493,6 +493,17 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         return new ElasticQuery<>(mixing.getDescriptor(type), getLowLevelClient());
     }
 
+    /**
+     * Allows to explicitly refresh the index for the given {@link ElasticEntity}, making all operations performed
+     * since the last refresh available for search.
+     *
+     * @param type the entity type which should be refreshed
+     * @param <E> the concrete type which should be refreshed
+     */
+    public <E extends ElasticEntity> void refresh(Class<E> type) {
+        getLowLevelClient().refresh(determineIndex(mixing.getDescriptor(type)));
+    }
+
     @Override
     public FilterFactory<ElasticConstraint> filters() {
         return FILTERS;

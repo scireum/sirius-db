@@ -23,7 +23,7 @@ class ESNestedListPropertySpec extends BaseSpecification {
         def test = new ESNestedListEntity()
         test.getList().add(new ESNestedListEntity.NestedEntity().withValue1("X").withValue2("Y"))
         elastic.update(test)
-        Wait.seconds(2)
+        elastic.refresh(ESNestedListEntity.class)
         def resolved = elastic.refreshOrFail(test)
         then:
         resolved.getList().size() == 1
@@ -35,7 +35,7 @@ class ESNestedListPropertySpec extends BaseSpecification {
         resolved.getList().modify().get(0).withValue1("Z")
         and:
         elastic.update(resolved)
-        Wait.seconds(2)
+        elastic.refresh(ESNestedListEntity.class)
         and:
         resolved = elastic.refreshOrFail(test)
         then:
@@ -48,7 +48,7 @@ class ESNestedListPropertySpec extends BaseSpecification {
         resolved.getList().modify().remove(0)
         and:
         elastic.update(resolved)
-        Wait.seconds(2)
+        elastic.refresh(ESNestedListEntity.class)
         and:
         resolved = elastic.refreshOrFail(test)
         then:
@@ -71,7 +71,7 @@ class ESNestedListPropertySpec extends BaseSpecification {
         test.getList().add(new ESNestedListEntity.NestedEntity().withValue1("A").withValue2("B"))
         test.getList().add(new ESNestedListEntity.NestedEntity().withValue1("A").withValue2("D"))
         elastic.update(test)
-        Wait.seconds(2)
+        elastic.refresh(ESNestedListEntity.class)
         def query = elastic.select(ESNestedListEntity.class).
                 where(
                         Elastic.FILTERS.nested(ESNestedListEntity.LIST).eq(

@@ -472,4 +472,13 @@ public class LowLevelClient {
                             .handle();
         }
     }
+
+    /**
+     * Allows to explicitly refresh an index, making all operations performed since the last refresh available for search.
+     *
+     * @param index the index which should be refreshed
+     */
+    public void refresh(String index) {
+        performPost().execute(index + "/_refresh").response();
+    }
 }
