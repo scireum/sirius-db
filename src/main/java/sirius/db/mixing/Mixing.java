@@ -185,6 +185,16 @@ public class Mixing implements Initializable {
     }
 
     /**
+     * Returns the descriptor of the given entity class.
+     *
+     * @param aClass the entity class
+     * @return the descriptor of the given entity class as optional
+     */
+    public Optional<EntityDescriptor> findDescriptor(Class<?> aClass) {
+        return Optional.ofNullable(descriptorsByType.get(aClass));
+    }
+
+    /**
      * Returns all known descriptors.
      *
      * @return an unmodifyable list of all known descriptors
