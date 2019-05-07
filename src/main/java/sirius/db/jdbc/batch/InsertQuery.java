@@ -79,6 +79,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                 addBatch();
             } else {
                 stmt.executeUpdate();
+                stmt.getConnection().commit();
                 if (fetchId) {
                     Row keys = dbs.fetchGeneratedKeys(stmt);
                     OMA.loadCreatedId(entity, keys);
