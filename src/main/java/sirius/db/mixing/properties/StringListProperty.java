@@ -74,7 +74,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return ((StringList) super.getValueFromField(entity)).copyList();
+        Object target = accessPath.apply(entity);
+        return ((StringList) super.getValueFromField(target)).copyList();
     }
 
     @SuppressWarnings("unchecked")
