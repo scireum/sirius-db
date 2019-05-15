@@ -37,6 +37,8 @@ import java.util.function.Consumer;
  */
 public class StringListProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
 
+    private static final String[] EMPTY_STRING_ARRAY = {};
+
     /**
      * Factory for generating properties based on their field type
      */
@@ -78,7 +80,6 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
         return ((StringList) super.getValueFromField(target)).copyList();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -110,7 +111,7 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     protected Object transformFromJDBC(Value object) {
-        return Arrays.asList(object.coerce(String[].class, new String[]{}));
+        return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
     }
 
     @Override
