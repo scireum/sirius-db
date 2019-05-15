@@ -285,7 +285,7 @@ public abstract class Property {
      * <p>
      * The internal access path will be used to find the target object which contains the field.
      * <p>
-     * Note that no further value conversion will be performed, therefor the given object must match the expected value.
+     * Note that no further value conversion will be performed, therefore the given object must match the expected value.
      * Use {@link #parseValue(Object, Value)} to utilize automatic transformations.
      *
      * @param entity the entity to write to
