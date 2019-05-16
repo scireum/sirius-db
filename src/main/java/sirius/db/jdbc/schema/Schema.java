@@ -233,31 +233,35 @@ public class Schema implements Startable, Initializable {
     }
 
     private void collectKeys(Table table, EntityDescriptor ed) {
-        ed.getAnnotations(Index.class).forEach(index -> {
-            Key key = new Key();
-            key.setName(index.name());
-            for (int i = 0; i < index.columns().length; i++) {
-                String name = index.columns()[i];
-                Property property = ed.findProperty(name);
-                if (property != null) {
-                    name = property.getPropertyName();
-                } else {
-                    OMA.LOG.WARN("The index %s for type %s (%s) references an unknown column: %s",
-                                 index.name(),
-                                 ed.getType().getName(),
-                                 ed.getRelationName(),
-                                 name);
-                }
-                key.addColumn(i, name);
-            }
-            key.setUnique(index.unique());
+        ed.getAnnotations(Index.class).forEach(index -> parseIndexAnnotation(table, ed, index));
+    }
 
-            // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
-            // Using this approach, indices can be "overwritten" by subclasses.
-            if (table.getKeys().stream().map(Key::getName).noneMatch(name -> Strings.areEqual(name, key.getName()))) {
-                table.getKeys().add(key);
+    private void parseIndexAnnotation(Table table, EntityDescriptor ed, Index index) {
+        Key key = new Key();
+        key.setName(index.name());
+
+        for (int i = 0; i < index.columns().length; i++) {
+            String name = index.columns()[i];
+            Property property = ed.findProperty(name);
+            if (property != null) {
+                name = property.getPropertyName();
+            } else {
+                OMA.LOG.WARN("The index %s for type %s (%s) references an unknown column: %s",
+                             index.name(),
+                             ed.getType().getName(),
+                             ed.getRelationName(),
+                             name);
             }
-        });
+            key.addColumn(i, name);
+        }
+
+        key.setUnique(index.unique());
+
+        // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
+        // Using this approach, indices can be "overwritten" by subclasses.
+        if (table.getKeys().stream().map(Key::getName).noneMatch(name -> Strings.areEqual(name, key.getName()))) {
+            table.getKeys().add(key);
+        }
     }
 
     private void collectColumns(Table table, EntityDescriptor ed) {
