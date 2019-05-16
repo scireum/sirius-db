@@ -12,12 +12,14 @@ import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Collation;
 import org.bson.Document;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
@@ -31,6 +33,10 @@ import java.util.function.Function;
 public class Finder extends QueryBuilder<Finder> {
 
     private static final String KEY_MONGO = "mongo";
+
+    @ConfigValue("mongo.collationLocale")
+    private static String collationLocale;
+
     private Document fields;
     private Document orderBy;
     private int skip;
@@ -38,7 +44,7 @@ public class Finder extends QueryBuilder<Finder> {
     private int batchSize;
 
     protected Finder(Mongo mongo, String database) {
-        super(mongo,database);
+        super(mongo, database);
     }
 
     /**
@@ -191,7 +197,10 @@ public class Finder extends QueryBuilder<Finder> {
     public Optional<Doc> singleIn(String collection) {
         Watch w = Watch.start();
         try {
-            FindIterable<Document> cur = mongo.db(database).getCollection(collection).find(filterObject);
+            FindIterable<Document> cur = mongo.db(database)
+                                              .getCollection(collection)
+                                              .find(filterObject)
+                                              .collation(Collation.builder().locale(collationLocale).build());
             if (fields != null) {
                 cur.projection(fields);
             }
@@ -241,7 +250,10 @@ public class Finder extends QueryBuilder<Finder> {
             Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
         }
 
-        FindIterable<Document> cur = mongo.db(database).getCollection(collection).find(filterObject);
+        FindIterable<Document> cur = mongo.db(database)
+                                          .getCollection(collection)
+                                          .find(filterObject)
+                                          .collation(Collation.builder().locale(collationLocale).build());
         if (fields != null) {
             cur.projection(fields);
         }
