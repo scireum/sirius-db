@@ -23,11 +23,13 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringList;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -134,6 +136,15 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    @Override
+    public void parseValues(Object e, Values values) {
+        List<String> stringData = new ArrayList<>();
+        for (int i = 0; i < values.length(); i++) {
+            stringData.add(values.at(i).toString());
+        }
+        setValue(e, stringData);
     }
 
     @Override
