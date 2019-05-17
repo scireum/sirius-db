@@ -17,6 +17,7 @@ import sirius.db.mixing.annotations.Unique;
 import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Values;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.NLS;
@@ -518,6 +519,16 @@ public abstract class Property {
                             .error(exception)
                             .handle();
         }
+    }
+
+    /**
+     * Parses the given values and applies it to the given entity if possible.
+     *
+     * @param e      the entity to receive the parsed value
+     * @param values the values to parse and apply
+     */
+    public void parseValues(Object e, Values values) {
+        parseValue(e, values.at(0));
     }
 
     /**
