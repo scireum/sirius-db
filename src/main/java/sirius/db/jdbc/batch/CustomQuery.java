@@ -69,6 +69,7 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
     @Nullable
     public Row executeUpdate() throws SQLException {
         prepareStmt().executeUpdate();
+        prepareStmt().getConnection().commit();
         if (fetchId) {
             return dbs.fetchGeneratedKeys(stmt);
         } else {
