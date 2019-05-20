@@ -64,7 +64,7 @@ public class ExternalBatchQuery extends BaseSQLQuery {
     /**
      * Resets all previously set parameters.
      *
-     * @throws SQLException in case of a database error
+     * @return the query itself for fluent method calls
      * @throws SQLException in case of a database error
      */
     public ExternalBatchQuery clearParameters() throws SQLException {
@@ -141,8 +141,6 @@ public class ExternalBatchQuery extends BaseSQLQuery {
 
     @Override
     public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
-        Watch w = Watch.start();
-
         try (ResultSet rs = statement.executeQuery()) {
             TaskContext tc = TaskContext.get();
             processResultSet(handler, limit, rs, tc);

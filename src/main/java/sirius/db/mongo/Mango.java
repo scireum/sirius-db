@@ -221,7 +221,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         mixing.getDesciptors()
               .stream()
               .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
-              .forEach(ed -> createIndices(ed));
+              .forEach(this::createIndices);
     }
 
     private void createIndices(EntityDescriptor ed) {

@@ -24,8 +24,6 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.settings.Extension;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -87,8 +85,6 @@ public class IndexMappings implements Startable {
 
     @Part
     private Elastic elastic;
-
-    private Map<String, Boolean> checkedIndices = new ConcurrentHashMap<>();
 
     @Override
     public void started() {

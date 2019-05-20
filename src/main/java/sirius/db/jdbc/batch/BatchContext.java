@@ -74,7 +74,9 @@ public class BatchContext implements Closeable {
 
     protected Connection createConnection(String realm) {
         try {
-            return oma.getDatabase(realm).getConnection();
+            Connection connection = oma.getDatabase(realm).getConnection();
+            changeAutoCommit(connection, false);
+            return connection;
         } catch (SQLException e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
@@ -105,12 +107,26 @@ public class BatchContext implements Closeable {
 
     private void safeCloseConnection(Connection connection) {
         try {
+            changeAutoCommit(connection, true);
             connection.close();
         } catch (SQLException e) {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
                       .withSystemErrorMessage("An exception occured while closing a database connection: %s (%s)")
+                      .handle();
+        }
+    }
+
+    private void changeAutoCommit(Connection connection, boolean enable) {
+        try {
+            connection.setAutoCommit(enable);
+        } catch (SQLException e) {
+            Exceptions.handle()
+                      .error(e)
+                      .withSystemErrorMessage("An error occurred while changing the auto-commit of %s to %s - %s (%s)",
+                                              connection,
+                                              enable)
                       .handle();
         }
     }

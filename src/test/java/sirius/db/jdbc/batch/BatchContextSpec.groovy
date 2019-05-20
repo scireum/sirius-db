@@ -172,7 +172,7 @@ class BatchContextSpec extends BaseSpecification {
         ctx.close()
     }
 
-    def "delete update works"() {
+    def "delete in batch works"() {
         setup:
         TestEntity e = new TestEntity()
         e.setFirstname("BatchDelete")
