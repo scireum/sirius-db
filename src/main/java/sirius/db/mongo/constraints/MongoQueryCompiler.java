@@ -46,7 +46,7 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
 
     @Override
     protected MongoConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
-        if (field == FULLTEXT_MAPPING) {
+        if (FULLTEXT_MAPPING.equals(field)) {
             return QueryBuilder.FILTERS.text(value.toLowerCase());
         }
 

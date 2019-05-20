@@ -75,6 +75,7 @@ public class Mongo implements Startable, Stoppable {
     /**
      * Determines if access to Mongo DB is configured by checking if a host is given.
      *
+     * @param database the database / configuration to check
      * @return <tt>true</tt> if access to Mongo DB is configured, <tt>false</tt> otherwise
      */
     public boolean isConfigured(String database) {
@@ -115,6 +116,8 @@ public class Mongo implements Startable, Stoppable {
         return db(Mixing.DEFAULT_REALM);
     }
 
+    @SuppressWarnings("squid:S2095")
+    @Explain("We cannot close the client here as it is part of the return value.")
     protected synchronized Tuple<MongoClient, String> setupClient(String database) {
         Extension config = Sirius.getSettings().getExtension("mongo.databases", database);
         List<ServerAddress> hosts = Arrays.stream(config.get("hosts").asString().split(","))
@@ -249,6 +252,7 @@ public class Mongo implements Startable, Stoppable {
     /**
      * Returns a fluent query builder to delete one or more documents in the database.
      *
+     * @param database the name of the database configuration to use.
      * @return a query builder to create a delete statement
      */
     public Deleter delete(String database) {

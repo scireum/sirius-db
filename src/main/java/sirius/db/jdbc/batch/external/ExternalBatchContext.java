@@ -44,6 +44,7 @@ public class ExternalBatchContext implements Closeable {
      *
      * @param description      a provider for a description used for debugging purposes
      * @param expectedDuration the expected duration of the whole batch operation
+     * @param database         the database against which the queries are executed
      */
     public ExternalBatchContext(Supplier<String> description, Duration expectedDuration, Database database) {
         this.database = database;
