@@ -41,7 +41,8 @@ public abstract class BaseMapProperty extends Property {
 
     protected SafeMap<?, ?> getMap(Object entity) {
         try {
-            return (SafeMap<?, ?>) super.getValueFromField(entity);
+            Object target = accessPath.apply(entity);
+            return (SafeMap<?, ?>) super.getValueFromField(target);
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
