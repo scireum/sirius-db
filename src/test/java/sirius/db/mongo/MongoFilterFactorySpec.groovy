@@ -17,6 +17,50 @@ class MongoFilterFactorySpec extends BaseSpecification {
     @Part
     private static Mango mango
 
+    @Part
+    private static Mongo mongo
+
+    def "prefix search works"() {
+        when:
+        PrefixTestEntity test = new PrefixTestEntity()
+        test.setPrefix("test-1")
+        mango.update(test)
+        then:
+        mongo.find().
+                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "te")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+        and:
+        mongo.find().
+                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "test-")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+        and:
+        mongo.find().
+                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "Test-1")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+        and:
+        mongo.find().
+                where(QueryBuilder.FILTERS.text("Test-1")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+        and:
+        mongo.find().
+                where(QueryBuilder.FILTERS.text("Test")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+        and:
+        mongo.find().
+                where(QueryBuilder.FILTERS.text("test-1")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+        and:
+        !mongo.find().
+                where(QueryBuilder.FILTERS.text("te")).
+                singleIn(PrefixTestEntity.class).
+                isPresent()
+    }
     def "oneInField query works"() {
         setup:
         MongoStringListEntity entity = new MongoStringListEntity()
