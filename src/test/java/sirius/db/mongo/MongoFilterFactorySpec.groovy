@@ -20,46 +20,35 @@ class MongoFilterFactorySpec extends BaseSpecification {
     @Part
     private static Mongo mongo
 
+    private Optional<PrefixTestEntity> prefixSearch(String query) {
+        return mongo.find().where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, query))
+                    .singleIn(PrefixTestEntity.class)
+    }
+
+    private Optional<PrefixTestEntity> textSearch(String query) {
+        return mongo.find().where(QueryBuilder.FILTERS.text(query))
+                    .singleIn(PrefixTestEntity.class)
+    }
+
     def "prefix search works"() {
         when:
         PrefixTestEntity test = new PrefixTestEntity()
         test.setPrefix("test-1")
         mango.update(test)
         then:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "te")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("te").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "test-")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("test-").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "Test-1")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("Test-1").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.text("Test-1")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        textSearch("Test-1").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.text("Test")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        textSearch("Test").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.text("test-1")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        textSearch("test-1").isPresent()
         and:
-        !mongo.find().
-                where(QueryBuilder.FILTERS.text("te")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        !textSearch("te").isPresent()
     }
 
     def "prefix with leading number works"() {
@@ -68,25 +57,13 @@ class MongoFilterFactorySpec extends BaseSpecification {
         test.setPrefix("1-test")
         mango.update(test)
         then:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "1")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("1").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "1-t")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("1-t").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "1-test")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("1-test").isPresent()
         and:
-        mongo.find().
-                where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, "1-TEST")).
-                singleIn(PrefixTestEntity.class).
-                isPresent()
+        prefixSearch("1-TEST").isPresent()
     }
 
     def "oneInField query works"() {
