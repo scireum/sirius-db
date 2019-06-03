@@ -552,6 +552,7 @@ public abstract class Property {
             setValue(e, transformValue(value));
         } catch (IllegalArgumentException exception) {
             throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(getName()))
                             .withNLSKey("Property.parseValueErrorMessage")
                             .set("message", exception.getMessage())
                             .error(exception)
@@ -592,6 +593,7 @@ public abstract class Property {
             setValue(e, transformValueFromImport(value));
         } catch (IllegalArgumentException exception) {
             throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(getName()))
                             .withNLSKey("Property.parseValueErrorMessage")
                             .set("message", exception.getMessage())
                             .error(exception)
@@ -621,6 +623,7 @@ public abstract class Property {
      */
     protected HandledException illegalFieldValue(Value value) {
         return Exceptions.createHandled()
+                         .error(new InvalidFieldException(getName()))
                          .withNLSKey("Property.illegalValue")
                          .set("property", getFullLabel())
                          .set("value", NLS.toUserString(value.get()))

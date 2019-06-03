@@ -20,6 +20,7 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Represents the base class for all entities which can be managed using {@link Mixing}.
@@ -136,6 +137,7 @@ public abstract class BaseEntity<I> extends Mixable {
     public void assertUnique(Mapping field, Object value, Mapping... within) {
         if (!isUnique(field, value, within)) {
             throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(field.toString()))
                             .withNLSKey("Property.fieldNotUnique")
                             .set("field", getDescriptor().getProperty(field).getFullLabel())
                             .set("value", NLS.toUserString(value))
