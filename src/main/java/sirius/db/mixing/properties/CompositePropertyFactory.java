@@ -11,7 +11,6 @@ package sirius.db.mixing.properties;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.Composite;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -54,7 +53,7 @@ public class CompositePropertyFactory implements PropertyFactory {
     }
 
     private AccessPath expandAccessPath(AccessPath accessPath, Field field) {
-        return accessPath.append(field.getName() + Mapping.SUBFIELD_SEPARATOR, obj -> {
+        return accessPath.append(field.getName(), obj -> {
             try {
                 return field.get(obj);
             } catch (Exception e) {

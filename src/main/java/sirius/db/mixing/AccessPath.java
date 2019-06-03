@@ -8,6 +8,8 @@
 
 package sirius.db.mixing;
 
+import sirius.kernel.commons.Strings;
+
 import javax.annotation.Nonnull;
 import java.util.function.Function;
 
@@ -31,25 +33,33 @@ public class AccessPath {
     /**
      * Creates a new access path which appends the given prefix and accessor to the current access path.
      *
-     * @param prefix   the prefix to be appended to all field names to make them unique (composites might be
+     * @param name   the prefix to be appended to all field names to make them unique (composites might be
      *                 embedded twice).
      * @param accessor the function used to access the sub entity (composite or mixin) from the current access path
      * @return a new access path which is extended by the given prefix and accessor
      */
     @Nonnull
-    public AccessPath append(@Nonnull String prefix, @Nonnull Function<Object, Object> accessor) {
+    public AccessPath append(@Nonnull String name, @Nonnull Function<Object, Object> accessor) {
         AccessPath result = new AccessPath();
         if (IDENTITY.equals(this)) {
-            result.prefix = prefix;
+            result.prefix = name;
             result.accessor = accessor;
 
             return result;
         }
 
-        result.prefix = this.prefix + prefix;
+        result.prefix = qualify(name);
         result.accessor = this.accessor.andThen(accessor);
 
         return result;
+    }
+
+    public String qualify(String name) {
+        if (Strings.isEmpty(prefix)) {
+            return name;
+        }
+
+        return prefix + Mapping.SUBFIELD_SEPARATOR + name;
     }
 
     /**

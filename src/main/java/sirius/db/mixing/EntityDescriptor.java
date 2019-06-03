@@ -598,7 +598,7 @@ public class EntityDescriptor {
     }
 
     private static AccessPath expandAccessPath(Class<?> mixin, AccessPath accessPath) {
-        return accessPath.append(mixin.getSimpleName() + Mapping.SUBFIELD_SEPARATOR, obj -> ((Mixable) obj).as(mixin));
+        return accessPath.append(mixin.getSimpleName() , obj -> ((Mixable) obj).as(mixin));
     }
 
     private static void addField(EntityDescriptor descriptor,
