@@ -137,7 +137,7 @@ public abstract class BaseEntity<I> extends Mixable {
         if (!isUnique(field, value, within)) {
             throw Exceptions.createHandled()
                             .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getLabel())
+                            .set("field", getDescriptor().getProperty(field).getFullLabel())
                             .set("value", NLS.toUserString(value))
                             .handle();
         }

@@ -77,6 +77,16 @@ public abstract class Property {
     protected String localPropertyKey;
 
     /**
+     * Contains a class local i18n key used to determine the fullLabel of the property.
+     * <p>
+     * The fullLabel is the label which is used in error messages.
+     * <p>
+     * If this property resides in a composite or mixin, this parent property key is filled
+     * and will be used build a full name.
+     */
+    protected String parentPropertyKey;
+
+    /**
      * Contains the alternative i18n key used to determine the label (official name) of the property.
      * <p>
      * This is built like <tt>Model.fieldName</tt>.
@@ -129,9 +139,10 @@ public abstract class Property {
         this.propertyKey = field.getDeclaringClass().getSimpleName() + "." + field.getName();
         this.alternativePropertyKey = "Model." + field.getName();
         this.field.setAccessible(true);
-        this.name = accessPath.prefix() + field.getName();
+        this.name = accessPath.qualify(field.getName());
         if (Strings.isFilled(accessPath.prefix())) {
             this.localPropertyKey = descriptor.getType().getSimpleName() + "." + name;
+            this.parentPropertyKey = descriptor.getType().getSimpleName() + "." + accessPath.prefix();
         }
         this.propertyName = descriptor.rewritePropertyName(name);
         this.nameAsMapping = Mapping.named(name);
@@ -236,8 +247,6 @@ public abstract class Property {
     /**
      * Returns the name of the property which is shown to the user.
      * <p>
-     * This can be used in error messages or for labelling in forms.
-     * <p>
      * The label can be set in three ways:
      * <ol>
      * <li>
@@ -257,17 +266,46 @@ public abstract class Property {
      * </li>
      * </ol>
      *
-     * @return the effective label of the property.
+     * @return the effective label of the property
+     * @see #getFullLabel()
      */
     public String getLabel() {
         String currentLang = NLS.getCurrentLang();
-        if (localPropertyKey != null) {
-            return NLS.getIfExists(localPropertyKey, currentLang)
-                      .orElseGet(() -> NLS.getIfExists(propertyKey, currentLang)
-                                          .orElseGet(() -> NLS.get(alternativePropertyKey)));
-        } else {
-            return NLS.getIfExists(propertyKey, currentLang).orElseGet(() -> NLS.get(alternativePropertyKey));
+        String localLabel = NLS.getIfExists(localPropertyKey, currentLang).orElse(null);
+        if (Strings.isFilled(localLabel)) {
+            return localLabel;
         }
+
+        return NLS.getIfExists(propertyKey, currentLang).orElseGet(() -> NLS.get(alternativePropertyKey));
+    }
+
+    /**
+     * Returns the full label or nme of the property which is shown in error messages etc.
+     * <p>
+     * This will only differ from {@link #getLabel()} for field in composites or mixins. In this case,
+     * we try to lookup the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
+     * to this field. If a property is available for this and none is present for the fully qualified name
+     * (<tt>[entityClass].[compositeName]_[field]</tt>), a label in the form of <tt>getLabel() (NLS.get(parent))</tt>
+     * is shown.
+     *
+     * @return the effective full label for the property
+     * @see #getLabel()
+     */
+    public String getFullLabel() {
+        String currentLang = NLS.getCurrentLang();
+        String result = NLS.getIfExists(localPropertyKey, currentLang).orElse(null);
+        if (Strings.isFilled(result)) {
+            return result;
+        }
+
+        if (Strings.isFilled(parentPropertyKey)) {
+            String parentLabel = NLS.getIfExists(parentPropertyKey, currentLang).orElse(null);
+            if (Strings.isFilled(parentLabel)) {
+                return Strings.apply("%s (%s)", getLabel(), parentLabel);
+            }
+        }
+
+        return getLabel();
     }
 
     /**
@@ -584,7 +622,7 @@ public abstract class Property {
     protected HandledException illegalFieldValue(Value value) {
         return Exceptions.createHandled()
                          .withNLSKey("Property.illegalValue")
-                         .set("property", getLabel())
+                         .set("property", getFullLabel())
                          .set("value", NLS.toUserString(value.get()))
                          .handle();
     }
