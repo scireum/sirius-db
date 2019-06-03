@@ -672,9 +672,22 @@ public abstract class Property {
      * @param propertyValue the value to check
      */
     protected void checkNullability(Object propertyValue) {
-        if (!isNullable() && propertyValue == null) {
-            throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
+        if (!isNullable() && isConsideredNull(propertyValue)) {
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(getName()))
+                            .withNLSKey("Property.fieldNotNullable")
+                            .set("field", getFullLabel())
+                            .handle();
         }
+    }
+
+    /**
+     * Determines if the given value is considered to be <tt>null</tt>.
+     *
+     * @param propertyValue the value to check
+     */
+    protected boolean isConsideredNull(Object propertyValue) {
+        return propertyValue == null;
     }
 
     /**

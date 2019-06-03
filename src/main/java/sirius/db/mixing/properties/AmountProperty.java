@@ -173,12 +173,8 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected void checkNullability(Object propertyValue) {
-        super.checkNullability(propertyValue);
-
-        if (!isNullable() && ((Amount) propertyValue).isEmpty()) {
-            throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
-        }
+    protected boolean isConsideredNull(Object propertyValue) {
+        return propertyValue == null || ((Amount) propertyValue).isEmpty();
     }
 
     @Override

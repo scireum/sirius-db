@@ -144,6 +144,66 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
+     * Asserts that the given field is filled.
+     * <p>
+     * This can be used for conditional <tt>null</tt> checks.
+     *
+     * @param field the field to check
+     * @see Property#isConsideredNull(Object)
+     */
+    public void assertNonNull(Mapping field) {
+        assertNonNull(field, getDescriptor().getProperty(field).getValue(this));
+    }
+
+    /**
+     * Asserts that the given field, containing the given value is filled.
+     * <p>
+     * This can be used for conditional <tt>null</tt> checks.
+     *
+     * @param field the field to check
+     * @param value the value to check. Note that even a "non-null" value here, might be considered null/empty on the
+     *              database layer (e.g. <tt>sirius.db.mixing.properties.AmountProperty.isConsideredNull(Object)</tt>).
+     * @see Property#isConsideredNull(Object)
+     */
+    public void assertNonNull(Mapping field, Object value) {
+        Property property = getDescriptor().getProperty(field);
+        if (property.isConsideredNull(value)) {
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(field.toString()))
+                            .withNLSKey("Property.fieldNotNullable")
+                            .set("field", property.getFullLabel())
+                            .handle();
+        }
+    }
+
+    /**
+     * Emits a validation warning if the given field is considered <tt>null</tt>.
+     *
+     * @param field                     the field to check
+     * @param validationWarningConsumer the consumer to be supplied with validation warnings
+     */
+    public void validateNonNull(Mapping field, Consumer<String> validationWarningConsumer) {
+        validateNonNull(field, getDescriptor().getProperty(field).getValue(this), validationWarningConsumer);
+    }
+
+    /**
+     * Emits a validation warning if the given field with the given value is considered <tt>null</tt>.
+     *
+     * @param field                     the field to check
+     * @param value                     the value to check
+     * @param validationWarningConsumer the consumer to be supplied with validation warnings
+     * @see #assertNonNull(Mapping)
+     */
+    public void validateNonNull(Mapping field, Object value, Consumer<String> validationWarningConsumer) {
+        Property property = getDescriptor().getProperty(field);
+        if (property.isConsideredNull(value)) {
+            validationWarningConsumer.accept(NLS.fmtr("Property.fieldNotNullable")
+                                                .set("field", property.getFullLabel())
+                                                .format());
+        }
+    }
+
+    /**
      * Returns a string representation of the entity ID.
      * <p>
      * If the entity is new, "new" will be returned.
