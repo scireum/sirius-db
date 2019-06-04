@@ -33,27 +33,34 @@ public class AccessPath {
     /**
      * Creates a new access path which appends the given prefix and accessor to the current access path.
      *
-     * @param name   the prefix to be appended to all field names to make them unique (composites might be
-     *                 embedded twice).
-     * @param accessor the function used to access the sub entity (composite or mixin) from the current access path
+     * @param prefixToAppend the prefix to be appended to all field names to make them unique (composites might be
+     *                       embedded twice).
+     * @param accessor       the function used to access the sub entity (composite or mixin) from the current
+     *                       access path
      * @return a new access path which is extended by the given prefix and accessor
      */
     @Nonnull
-    public AccessPath append(@Nonnull String name, @Nonnull Function<Object, Object> accessor) {
+    public AccessPath append(@Nonnull String prefixToAppend, @Nonnull Function<Object, Object> accessor) {
         AccessPath result = new AccessPath();
         if (IDENTITY.equals(this)) {
-            result.prefix = name;
+            result.prefix = prefixToAppend;
             result.accessor = accessor;
 
             return result;
         }
 
-        result.prefix = qualify(name);
+        result.prefix = qualify(prefixToAppend);
         result.accessor = this.accessor.andThen(accessor);
 
         return result;
     }
 
+    /**
+     * Qualifies the given field name by prepending the access path represented by this instance.
+     *
+     * @param name the field name to access.
+     * @return the fully qualified access path (e.g. [composite]_[name]).
+     */
     public String qualify(String name) {
         if (Strings.isEmpty(prefix)) {
             return name;
