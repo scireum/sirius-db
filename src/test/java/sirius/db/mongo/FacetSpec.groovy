@@ -37,8 +37,8 @@ class FacetSpec extends BaseSpecification {
         te3.setAge(999)
         mango.update(te3)
         and:
-        MongoTermFacet firstnameFacet = new MongoTermFacet("firstname", MangoTestEntity.FIRSTNAME, 10)
-        MongoTermFacet lastnameFacet = new MongoTermFacet("lastname", MangoTestEntity.LASTNAME, 10)
+        MongoTermFacet firstnameFacet = new MongoTermFacet("firstname", MangoTestEntity.FIRSTNAME)
+        MongoTermFacet lastnameFacet = new MongoTermFacet("lastname", MangoTestEntity.LASTNAME)
         when:
         mango.select(MangoTestEntity.class)
              .eq(MangoTestEntity.AGE, 999)
