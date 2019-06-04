@@ -25,7 +25,6 @@ import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
@@ -105,11 +104,6 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     protected Object transformToJDBC(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
-    }
-
-    @Override
-    protected Object transformToMongo(Object object) {
-        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
     }
 
     @Override

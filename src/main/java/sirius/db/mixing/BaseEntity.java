@@ -55,6 +55,8 @@ public abstract class BaseEntity<I> extends Mixable {
      */
     public static final String NEW = "new";
 
+    private static final String PARAM_FIELD = "field";
+
     /**
      * Returns the descriptor which maps the entity to the database table.
      *
@@ -139,7 +141,7 @@ public abstract class BaseEntity<I> extends Mixable {
             throw Exceptions.createHandled()
                             .error(new InvalidFieldException(field.toString()))
                             .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getFullLabel())
+                            .set(PARAM_FIELD, getDescriptor().getProperty(field).getFullLabel())
                             .set("value", NLS.toUserString(value))
                             .handle();
         }
@@ -173,7 +175,7 @@ public abstract class BaseEntity<I> extends Mixable {
             throw Exceptions.createHandled()
                             .error(new InvalidFieldException(field.toString()))
                             .withNLSKey("Property.fieldNotNullable")
-                            .set("field", property.getFullLabel())
+                            .set(PARAM_FIELD, property.getFullLabel())
                             .handle();
         }
     }
@@ -200,7 +202,7 @@ public abstract class BaseEntity<I> extends Mixable {
         Property property = getDescriptor().getProperty(field);
         if (property.isConsideredNull(value)) {
             validationWarningConsumer.accept(NLS.fmtr("Property.fieldNotNullable")
-                                                .set("field", property.getFullLabel())
+                                                .set(PARAM_FIELD, property.getFullLabel())
                                                 .format());
         }
     }
