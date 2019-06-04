@@ -14,7 +14,9 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Collation;
 import org.bson.Document;
+import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mongo.facets.MongoFacet;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
@@ -23,6 +25,7 @@ import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -412,7 +415,49 @@ public class Finder extends QueryBuilder<Finder> {
                 w.submitMicroTiming(KEY_MONGO,
                                     "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject);
             }
-            traceIfRequired(collection, w);
+            traceIfRequired("aggregate-" + collection, w);
+        }
+    }
+
+    /**
+     * Executes the given list of facets using the filters specified for this query.
+     *
+     * @param descriptor the entity descriptor to query
+     * @param facets     the facets to execute
+     */
+    public void executeFacets(@Nonnull EntityDescriptor descriptor, List<MongoFacet> facets) {
+        if (facets.isEmpty()) {
+            return;
+        }
+
+        Watch w = Watch.start();
+        String collection = descriptor.getRelationName();
+        BasicDBObject facetStage = new BasicDBObject();
+        for (MongoFacet facet : facets) {
+            facetStage.append(facet.getName(), facet.emitFacet(descriptor));
+        }
+
+        try {
+            MongoCursor<Document> queryResult = mongo.db()
+                                                     .getCollection(collection)
+                                                     .aggregate(ImmutableList.of(new BasicDBObject("$match",
+                                                                                                   filterObject),
+                                                                                 new BasicDBObject("$facet",
+                                                                                                   facetStage)))
+                                                     .iterator();
+
+            if (queryResult.hasNext()) {
+                Doc doc = new Doc(queryResult.next());
+                for (MongoFacet facet : facets) {
+                    facet.digest(doc.getList(facet.getName()));
+                }
+            }
+        } finally {
+            mongo.callDuration.addValue(w.elapsedMillis());
+            if (Microtiming.isEnabled()) {
+                w.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject);
+            }
+            traceIfRequired("facets-" + collection, w);
         }
     }
 }
