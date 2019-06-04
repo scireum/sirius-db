@@ -10,11 +10,16 @@ package sirius.db.mongo;
 
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -129,6 +134,43 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     @Override
     public boolean exists() {
         return finder.selectFields(MongoEntity.ID).singleIn(descriptor.getRelationName()).isPresent();
+    }
+
+    /**
+     * Returns a list of all items in the result, in a random order.
+     * <p>
+     * Internally, this uses a <tt>$sample</tt> aggregation with size equal to {@link #limit}.
+     * Note that large results should be processed using {@link #iterate(Function)} or
+     * {@link #iterateAll(Consumer)} as they are more memory efficient.
+     *
+     * @return a list of items in the query or an empty list if the query did not match any items
+     */
+    public List<E> randomList() {
+        List<E> result = new ArrayList<>();
+
+        // Ensure a sane limit...
+        if (limit > MAX_LIST_SIZE) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("When using 'randomList' as most %s items can be selected. "
+                                                    + "Use 'iterate' for larger results. Query: %s",
+                                                    MAX_LIST_SIZE,
+                                                    this)
+                            .handle();
+        }
+
+        // Install circuit breaker...
+        if (limit == 0) {
+            limit = MAX_LIST_SIZE + 1;
+        }
+
+        finder.sample(descriptor.getRelationName(), doc -> {
+            result.add(Mango.make(descriptor, doc));
+            failOnOverflow(result);
+            return true;
+        });
+
+        return result;
     }
 
     @Override
