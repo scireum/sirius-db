@@ -25,7 +25,6 @@ import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
@@ -108,11 +107,6 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected Object transformToMongo(Object object) {
-        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
-    }
-
-    @Override
     protected Object transformToElastic(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
     }
@@ -173,12 +167,8 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected void checkNullability(Object propertyValue) {
-        super.checkNullability(propertyValue);
-
-        if (!isNullable() && ((Amount) propertyValue).isEmpty()) {
-            throw Exceptions.createHandled().withNLSKey("Property.fieldNotNullable").set("field", getLabel()).handle();
-        }
+    protected boolean isConsideredNull(Object propertyValue) {
+        return propertyValue == null || ((Amount) propertyValue).isEmpty();
     }
 
     @Override

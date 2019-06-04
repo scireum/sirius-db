@@ -17,6 +17,55 @@ class MongoFilterFactorySpec extends BaseSpecification {
     @Part
     private static Mango mango
 
+    @Part
+    private static Mongo mongo
+
+    private Optional<PrefixTestEntity> prefixSearch(String query) {
+        return mongo.find().where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, query))
+                    .singleIn(PrefixTestEntity.class)
+    }
+
+    private Optional<PrefixTestEntity> textSearch(String query) {
+        return mongo.find().where(QueryBuilder.FILTERS.text(query))
+                    .singleIn(PrefixTestEntity.class)
+    }
+
+    def "prefix search works"() {
+        when:
+        PrefixTestEntity test = new PrefixTestEntity()
+        test.setPrefix("test-1")
+        mango.update(test)
+        then:
+        prefixSearch("te").isPresent()
+        and:
+        prefixSearch("test-").isPresent()
+        and:
+        prefixSearch("Test-1").isPresent()
+        and:
+        textSearch("Test-1").isPresent()
+        and:
+        textSearch("Test").isPresent()
+        and:
+        textSearch("test-1").isPresent()
+        and:
+        !textSearch("te").isPresent()
+    }
+
+    def "prefix with leading number works"() {
+        when:
+        PrefixTestEntity test = new PrefixTestEntity()
+        test.setPrefix("1-test")
+        mango.update(test)
+        then:
+        prefixSearch("1").isPresent()
+        and:
+        prefixSearch("1-t").isPresent()
+        and:
+        prefixSearch("1-test").isPresent()
+        and:
+        prefixSearch("1-TEST").isPresent()
+    }
+
     def "oneInField query works"() {
         setup:
         MongoStringListEntity entity = new MongoStringListEntity()

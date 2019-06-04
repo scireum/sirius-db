@@ -76,7 +76,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
                             .to(Mixing.LOG)
                             .withNLSKey("StringProperty.dataTruncation")
                             .set("value", Strings.limit(object, 30))
-                            .set("field", getLabel())
+                            .set("field", getFullLabel())
                             .set("length", ((String) object).length())
                             .set("maxLength", length)
                             .handle();

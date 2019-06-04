@@ -233,7 +233,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
-                            .set("field", getLabel())
+                            .set("field", getFullLabel())
                             .set("type", getReferencedDescriptor().getLabel())
                             .set("source", getDescriptor().getLabel())
                             .handle();
@@ -242,7 +242,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
                             .set("count", count)
-                            .set("field", getLabel())
+                            .set("field", getFullLabel())
                             .set("type", getReferencedDescriptor().getLabel())
                             .set("source", getDescriptor().getLabel())
                             .handle();

@@ -20,6 +20,7 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Represents the base class for all entities which can be managed using {@link Mixing}.
@@ -53,6 +54,8 @@ public abstract class BaseEntity<I> extends Mixable {
      * Contains the constant used to mark a new (unsaved) entity.
      */
     public static final String NEW = "new";
+
+    private static final String PARAM_FIELD = "field";
 
     /**
      * Returns the descriptor which maps the entity to the database table.
@@ -136,10 +139,71 @@ public abstract class BaseEntity<I> extends Mixable {
     public void assertUnique(Mapping field, Object value, Mapping... within) {
         if (!isUnique(field, value, within)) {
             throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(field.toString()))
                             .withNLSKey("Property.fieldNotUnique")
-                            .set("field", getDescriptor().getProperty(field).getLabel())
+                            .set(PARAM_FIELD, getDescriptor().getProperty(field).getFullLabel())
                             .set("value", NLS.toUserString(value))
                             .handle();
+        }
+    }
+
+    /**
+     * Asserts that the given field is filled.
+     * <p>
+     * This can be used for conditional <tt>null</tt> checks.
+     *
+     * @param field the field to check
+     * @see Property#isConsideredNull(Object)
+     */
+    public void assertNonNull(Mapping field) {
+        assertNonNull(field, getDescriptor().getProperty(field).getValue(this));
+    }
+
+    /**
+     * Asserts that the given field, containing the given value is filled.
+     * <p>
+     * This can be used for conditional <tt>null</tt> checks.
+     *
+     * @param field the field to check
+     * @param value the value to check. Note that even a "non-null" value here, might be considered null/empty on the
+     *              database layer (e.g. <tt>sirius.db.mixing.properties.AmountProperty.isConsideredNull(Object)</tt>).
+     * @see Property#isConsideredNull(Object)
+     */
+    public void assertNonNull(Mapping field, Object value) {
+        Property property = getDescriptor().getProperty(field);
+        if (property.isConsideredNull(value)) {
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(field.toString()))
+                            .withNLSKey("Property.fieldNotNullable")
+                            .set(PARAM_FIELD, property.getFullLabel())
+                            .handle();
+        }
+    }
+
+    /**
+     * Emits a validation warning if the given field is considered <tt>null</tt>.
+     *
+     * @param field                     the field to check
+     * @param validationWarningConsumer the consumer to be supplied with validation warnings
+     */
+    public void validateNonNull(Mapping field, Consumer<String> validationWarningConsumer) {
+        validateNonNull(field, getDescriptor().getProperty(field).getValue(this), validationWarningConsumer);
+    }
+
+    /**
+     * Emits a validation warning if the given field with the given value is considered <tt>null</tt>.
+     *
+     * @param field                     the field to check
+     * @param value                     the value to check
+     * @param validationWarningConsumer the consumer to be supplied with validation warnings
+     * @see #assertNonNull(Mapping)
+     */
+    public void validateNonNull(Mapping field, Object value, Consumer<String> validationWarningConsumer) {
+        Property property = getDescriptor().getProperty(field);
+        if (property.isConsideredNull(value)) {
+            validationWarningConsumer.accept(NLS.fmtr("Property.fieldNotNullable")
+                                                .set(PARAM_FIELD, property.getFullLabel())
+                                                .format());
         }
     }
 
