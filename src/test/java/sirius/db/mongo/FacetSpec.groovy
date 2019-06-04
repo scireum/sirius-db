@@ -8,9 +8,14 @@
 
 package sirius.db.mongo
 
+import sirius.db.mixing.DateRange
+import sirius.db.mongo.facets.MongoBooleanFacet
+import sirius.db.mongo.facets.MongoDateRangeFacet
 import sirius.db.mongo.facets.MongoTermFacet
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
+
+import java.time.LocalDateTime
 
 class FacetSpec extends BaseSpecification {
 
@@ -23,12 +28,16 @@ class FacetSpec extends BaseSpecification {
         te1.setFirstname("Hello")
         te1.setLastname("World")
         te1.setAge(999)
+        te1.setBirthday(LocalDateTime.now())
+        te1.setCool(true)
         mango.update(te1)
         and:
         MangoTestEntity te2 = new MangoTestEntity()
         te2.setFirstname("Hello")
         te2.setLastname("Moto")
+        te2.setBirthday(LocalDateTime.now().minusDays(1))
         te2.setAge(999)
+        te2.setCool(true)
         mango.update(te2)
         and:
         MangoTestEntity te3 = new MangoTestEntity()
@@ -37,13 +46,25 @@ class FacetSpec extends BaseSpecification {
         te3.setAge(999)
         mango.update(te3)
         and:
-        MongoTermFacet firstnameFacet = new MongoTermFacet("firstname", MangoTestEntity.FIRSTNAME)
-        MongoTermFacet lastnameFacet = new MongoTermFacet("lastname", MangoTestEntity.LASTNAME)
+        MongoTermFacet firstnameFacet = new MongoTermFacet(MangoTestEntity.FIRSTNAME)
+        MongoTermFacet lastnameFacet = new MongoTermFacet(MangoTestEntity.LASTNAME)
+        MongoBooleanFacet coolFacet = new MongoBooleanFacet(MangoTestEntity.COOL)
+        MongoDateRangeFacet datesFacet = new MongoDateRangeFacet(MangoTestEntity.BIRTHDAY,
+                                                                 Arrays.asList(DateRange.today(),
+                                                                               DateRange.yesterday(),
+                                                                               new DateRange("both",
+                                                                                             "both",
+                                                                                             DateRange.yesterday().
+                                                                                                     getFrom(),
+                                                                                             DateRange.today().
+                                                                                                     getUntil())))
         when:
         mango.select(MangoTestEntity.class)
              .eq(MangoTestEntity.AGE, 999)
              .addFacet(firstnameFacet)
              .addFacet(lastnameFacet)
+             .addFacet(coolFacet)
+             .addFacet(datesFacet)
              .executeFacets()
         then:
         lastnameFacet.getValues().get(0).getFirst() == "Moto"
@@ -55,6 +76,13 @@ class FacetSpec extends BaseSpecification {
         firstnameFacet.getValues().get(0).getSecond() == 2
         firstnameFacet.getValues().get(1).getFirst() == "Loco"
         firstnameFacet.getValues().get(1).getSecond() == 1
+        and:
+        coolFacet.getNumTrue() == 2
+        coolFacet.getNumFalse() == 1
+        and:
+        datesFacet.getRanges().get(0).getSecond() == 1
+        datesFacet.getRanges().get(1).getSecond() == 1
+        datesFacet.getRanges().get(2).getSecond() == 2
     }
 
 

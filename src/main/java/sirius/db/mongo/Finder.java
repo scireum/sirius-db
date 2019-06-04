@@ -434,7 +434,7 @@ public class Finder extends QueryBuilder<Finder> {
         String collection = descriptor.getRelationName();
         BasicDBObject facetStage = new BasicDBObject();
         for (MongoFacet facet : facets) {
-            facetStage.append(facet.getName(), facet.emitFacet(descriptor));
+            facet.emitFacets(descriptor, facetStage::append);
         }
 
         try {
@@ -449,7 +449,7 @@ public class Finder extends QueryBuilder<Finder> {
             if (queryResult.hasNext()) {
                 Doc doc = new Doc(queryResult.next());
                 for (MongoFacet facet : facets) {
-                    facet.digest(doc.getList(facet.getName()));
+                    facet.digest(doc);
                 }
             }
         } finally {

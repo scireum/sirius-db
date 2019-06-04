@@ -15,24 +15,22 @@ import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mongo.Doc;
-import sirius.kernel.commons.Tuple;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Represents a term facet which aggregates a given field (counts individual values).
+ * Represents a facet which aggregates a given boolean field.
  * <p>
  * This will generate a $sortByCount for the given field.
  */
-public class MongoTermFacet extends MongoFacet {
+public class MongoBooleanFacet extends MongoFacet {
 
     private final Mapping field;
-    private List<Tuple<String, Integer>> values;
-    private Consumer<MongoTermFacet> completionCallback;
+    private int numTrue;
+    private int numFalse;
+    private Consumer<MongoBooleanFacet> completionCallback;
 
     /**
      * Generates a facet with the given name, for the given field.
@@ -40,7 +38,7 @@ public class MongoTermFacet extends MongoFacet {
      * @param name  the name of the facet
      * @param field the field to aggregate on
      */
-    public MongoTermFacet(String name, Mapping field) {
+    public MongoBooleanFacet(String name, Mapping field) {
         super(name);
         this.field = field;
     }
@@ -50,7 +48,7 @@ public class MongoTermFacet extends MongoFacet {
      *
      * @param field the field to aggregate on
      */
-    public MongoTermFacet(Mapping field) {
+    public MongoBooleanFacet(Mapping field) {
         this(field.toString(), field);
     }
 
@@ -60,7 +58,7 @@ public class MongoTermFacet extends MongoFacet {
      * @param completionCallback the callback to invoke
      * @return the facet itself for fluent method calls
      */
-    public MongoTermFacet onComplete(Consumer<MongoTermFacet> completionCallback) {
+    public MongoBooleanFacet onComplete(Consumer<MongoBooleanFacet> completionCallback) {
         this.completionCallback = completionCallback;
         return this;
     }
@@ -76,14 +74,15 @@ public class MongoTermFacet extends MongoFacet {
 
     @Override
     public void digest(Doc result) {
-        this.values = new ArrayList<>();
-
         List<Object> results = result.getList(name);
         for (Object resultItem : results) {
             Doc resultDoc = new Doc((Document) resultItem);
-            String term = resultDoc.get("_id").asString();
-            int count = resultDoc.get("count").asInt(-1);
-            values.add(Tuple.create(term, count));
+            int count = resultDoc.get("count").asInt(0);
+            if (resultDoc.get("_id").asBoolean()) {
+                numTrue = count;
+            } else {
+                numFalse = count;
+            }
         }
 
         if (completionCallback != null) {
@@ -92,11 +91,20 @@ public class MongoTermFacet extends MongoFacet {
     }
 
     /**
-     * Returns the list of filter values.
+     * Returns the number of documents which have a <tt>true</tt> in the given field.
      *
-     * @return a list of names (terms) and their number of matches
+     * @return the number of document containing <tt>true</tt>
      */
-    public List<Tuple<String, Integer>> getValues() {
-        return Collections.unmodifiableList(values);
+    public int getNumTrue() {
+        return numTrue;
+    }
+
+    /**
+     * Returns the number of documents which have a <tt>false</tt> in the given field.
+     *
+     * @return the number of document containing <tt>false</tt>
+     */
+    public int getNumFalse() {
+        return numFalse;
     }
 }
