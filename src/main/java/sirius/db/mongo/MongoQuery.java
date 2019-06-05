@@ -14,6 +14,7 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
+import sirius.db.mongo.facets.MongoFacet;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
@@ -30,6 +31,8 @@ import java.util.function.Function;
 public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, MongoConstraint> {
 
     private Finder finder;
+
+    private List<MongoFacet> facets;
 
     @Part
     private static Mango mango;
@@ -181,6 +184,28 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     @Override
     public FilterFactory<MongoConstraint> filters() {
         return QueryBuilder.FILTERS;
+    }
+
+    /**
+     * Adds a facet to be later executed using {@link #executeFacets()}.
+     *
+     * @param facet the facet to add
+     * @return the query itself for fluent method calls
+     */
+    public MongoQuery<E> addFacet(MongoFacet facet) {
+        if (facets == null) {
+            facets = new ArrayList<>();
+        }
+
+        facets.add(facet);
+        return this;
+    }
+
+    /**
+     * Executes all previously attached facets in one go.
+     */
+    public void executeFacets() {
+        finder.executeFacets(descriptor, facets);
     }
 
     /**

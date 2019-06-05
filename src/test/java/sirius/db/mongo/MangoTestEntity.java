@@ -9,6 +9,9 @@
 package sirius.db.mongo;
 
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.NullAllowed;
+
+import java.time.LocalDateTime;
 
 public class MangoTestEntity extends MongoEntity {
 
@@ -20,6 +23,13 @@ public class MangoTestEntity extends MongoEntity {
 
     public static final Mapping AGE = Mapping.named("age");
     private int age;
+
+    public static final Mapping COOL = Mapping.named("cool");
+    private boolean cool;
+
+    public static final Mapping BIRTHDAY = Mapping.named("birthday");
+    @NullAllowed
+    private LocalDateTime birthday;
 
     public String getFirstname() {
         return firstname;
@@ -43,5 +53,21 @@ public class MangoTestEntity extends MongoEntity {
 
     public void setAge(int age) {
         this.age = age;
+    }
+
+    public boolean isCool() {
+        return cool;
+    }
+
+    public void setCool(boolean cool) {
+        this.cool = cool;
+    }
+
+    public LocalDateTime getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(LocalDateTime birthday) {
+        this.birthday = birthday;
     }
 }
