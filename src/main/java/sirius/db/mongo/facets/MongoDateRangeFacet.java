@@ -8,6 +8,7 @@
 
 package sirius.db.mongo.facets;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.Document;
@@ -95,7 +96,9 @@ public class MongoDateRangeFacet extends MongoFacet {
             bucketFacet.append("default", defaultValue);
 
             // Append each range as $bucket aggregation
-            facetConsumer.accept(name + indexCounter.getAndIncrement(), new BasicDBObject("$bucket", bucketFacet));
+            BasicDBList facetAsList = new BasicDBList();
+            facetAsList.add(new BasicDBObject("$bucket", bucketFacet));
+            facetConsumer.accept(name + indexCounter.getAndIncrement(), facetAsList);
         }
     }
 

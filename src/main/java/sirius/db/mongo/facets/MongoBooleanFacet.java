@@ -79,7 +79,7 @@ public class MongoBooleanFacet extends MongoFacet {
         for (Object resultItem : results) {
             Document resultDoc = (Document) resultItem;
             int count = resultDoc.getInteger("count", 0);
-            if (Value.of(resultDoc.getString("_id")).asBoolean()) {
+            if (resultDoc.getBoolean("_id", false)) {
                 numTrue = count;
             } else {
                 numFalse = count;
