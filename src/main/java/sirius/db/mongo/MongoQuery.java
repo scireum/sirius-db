@@ -152,7 +152,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         if (limit <= 0 || limit > MAX_LIST_SIZE) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage("When using 'randomList' as most %s items can be selected. "
+                            .withSystemErrorMessage("When using 'randomList' a limit (below %s) has to be provided. "
                                                     + "Query: %s", MAX_LIST_SIZE, this)
                             .handle();
         }
