@@ -69,6 +69,7 @@ public class MongoTermFacet extends MongoFacet {
     public void emitFacets(EntityDescriptor descriptor, BiConsumer<String, DBObject> facetConsumer) {
         BasicDBList facet = new BasicDBList();
         String fieldName = descriptor.findProperty(field.toString()).getPropertyName();
+        facet.add(new BasicDBObject().append("$unwind", "$" + fieldName));
         facet.add(new BasicDBObject().append("$sortByCount", "$" + fieldName));
 
         facetConsumer.accept(name, facet);
