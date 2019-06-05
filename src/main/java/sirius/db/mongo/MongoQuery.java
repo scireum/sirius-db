@@ -149,19 +149,12 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         List<E> result = new ArrayList<>();
 
         // Ensure a sane limit...
-        if (limit > MAX_LIST_SIZE) {
+        if (limit <= 0 || limit > MAX_LIST_SIZE) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
                             .withSystemErrorMessage("When using 'randomList' as most %s items can be selected. "
-                                                    + "Use 'iterate' for larger results. Query: %s",
-                                                    MAX_LIST_SIZE,
-                                                    this)
+                                                    + "Query: %s", MAX_LIST_SIZE, this)
                             .handle();
-        }
-
-        // Install circuit breaker...
-        if (limit == 0) {
-            limit = MAX_LIST_SIZE + 1;
         }
 
         finder.sample(descriptor.getRelationName(), doc -> {
