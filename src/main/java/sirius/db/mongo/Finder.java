@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.Collation;
 import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
@@ -268,6 +269,46 @@ public class Finder extends QueryBuilder<Finder> {
         if (limit > 0) {
             cur.limit(limit);
         }
+        if (batchSize > 0) {
+            cur.batchSize(batchSize);
+        }
+
+        TaskContext ctx = TaskContext.get();
+        Monoflop mf = Monoflop.create();
+        for (Document doc : cur) {
+            if (mf.firstCall()) {
+                handleTracingAndReporting(collection, w);
+            }
+
+            boolean keepGoing = processor.apply(new Doc(doc));
+            if (!keepGoing || !ctx.isActive()) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Executes the query for the given collection in a random order and calls the given processor for each document as long as it
+     * returns <tt>true</tt>.
+     * <p>
+     * Internally, this uses the <tt>$sample</tt> aggregation.
+     *
+     * @param collection the collection to search in
+     * @param processor  the processor to handle matches, which also controls if further results should be processed
+     */
+    public void sample(String collection, Function<Doc, Boolean> processor) {
+        Watch w = Watch.start();
+
+        if (Mongo.LOG.isFINE()) {
+            Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
+        }
+
+        MongoIterable<Document> cur = mongo.db(database)
+                                           .getCollection(collection)
+                                           .aggregate(ImmutableList.of(new BasicDBObject("$match", filterObject),
+                                                                       new BasicDBObject("$sample",
+                                                                                         new BasicDBObject("size",
+                                                                                                           limit))));
         if (batchSize > 0) {
             cur.batchSize(batchSize);
         }
