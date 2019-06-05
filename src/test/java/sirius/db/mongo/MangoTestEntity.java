@@ -10,6 +10,7 @@ package sirius.db.mongo;
 
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.types.StringList;
 
 import java.time.LocalDateTime;
 
@@ -30,6 +31,9 @@ public class MangoTestEntity extends MongoEntity {
     public static final Mapping BIRTHDAY = Mapping.named("birthday");
     @NullAllowed
     private LocalDateTime birthday;
+    
+    public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
+    private StringList superPowers = new StringList();
 
     public String getFirstname() {
         return firstname;
@@ -69,5 +73,9 @@ public class MangoTestEntity extends MongoEntity {
 
     public void setBirthday(LocalDateTime birthday) {
         this.birthday = birthday;
+    }
+
+    public StringList getSuperPowers() {
+        return superPowers;
     }
 }

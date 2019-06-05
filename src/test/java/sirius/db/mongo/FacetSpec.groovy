@@ -30,6 +30,7 @@ class FacetSpec extends BaseSpecification {
         te1.setAge(999)
         te1.setBirthday(LocalDateTime.now())
         te1.setCool(true)
+        te1.getSuperPowers().modify().addAll(Arrays.asList("Flying", "X-ray vision"))
         mango.update(te1)
         and:
         MangoTestEntity te2 = new MangoTestEntity()
@@ -38,17 +39,20 @@ class FacetSpec extends BaseSpecification {
         te2.setBirthday(LocalDateTime.now().minusDays(1))
         te2.setAge(999)
         te2.setCool(true)
+        te2.getSuperPowers().modify().addAll(Arrays.asList("Flying", "X-ray vision"))
         mango.update(te2)
         and:
         MangoTestEntity te3 = new MangoTestEntity()
         te3.setFirstname("Loco")
         te3.setLastname("Moto")
         te3.setAge(999)
+        te3.getSuperPowers().modify().addAll(Arrays.asList("Flying", "Time travel"))
         mango.update(te3)
         and:
         MongoTermFacet firstnameFacet = new MongoTermFacet(MangoTestEntity.FIRSTNAME)
         MongoTermFacet lastnameFacet = new MongoTermFacet(MangoTestEntity.LASTNAME)
         MongoBooleanFacet coolFacet = new MongoBooleanFacet(MangoTestEntity.COOL)
+        MongoTermFacet superPowersFacet = new MongoTermFacet(MangoTestEntity.SUPER_POWERS)
         MongoDateRangeFacet datesFacet = new MongoDateRangeFacet(MangoTestEntity.BIRTHDAY,
                                                                  Arrays.asList(DateRange.today(),
                                                                                DateRange.yesterday(),
@@ -65,6 +69,7 @@ class FacetSpec extends BaseSpecification {
              .addFacet(lastnameFacet)
              .addFacet(coolFacet)
              .addFacet(datesFacet)
+             .addFacet(superPowersFacet)
              .executeFacets()
         then:
         lastnameFacet.getValues().get(0).getFirst() == "Moto"
@@ -83,6 +88,13 @@ class FacetSpec extends BaseSpecification {
         datesFacet.getRanges().get(0).getSecond() == 1
         datesFacet.getRanges().get(1).getSecond() == 1
         datesFacet.getRanges().get(2).getSecond() == 2
+        and:
+        superPowersFacet.getValues().get(0).getFirst() == "Flying"
+        superPowersFacet.getValues().get(0).getSecond() == 3
+        superPowersFacet.getValues().get(1).getFirst() == "X-ray vision"
+        superPowersFacet.getValues().get(1).getSecond() == 2
+        superPowersFacet.getValues().get(2).getFirst() == "Time travel"
+        superPowersFacet.getValues().get(2).getSecond() == 1
     }
 
 
