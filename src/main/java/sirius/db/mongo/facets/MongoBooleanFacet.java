@@ -15,6 +15,7 @@ import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mongo.Doc;
+import sirius.kernel.commons.Value;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -76,9 +77,9 @@ public class MongoBooleanFacet extends MongoFacet {
     public void digest(Doc result) {
         List<Object> results = result.getList(name);
         for (Object resultItem : results) {
-            Doc resultDoc = new Doc((Document) resultItem);
-            int count = resultDoc.get("count").asInt(0);
-            if (resultDoc.get("_id").asBoolean()) {
+            Document resultDoc = (Document) resultItem;
+            int count = resultDoc.getInteger("count", 0);
+            if (Value.of(resultDoc.getString("_id")).asBoolean()) {
                 numTrue = count;
             } else {
                 numFalse = count;

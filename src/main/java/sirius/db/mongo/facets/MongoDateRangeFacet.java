@@ -8,7 +8,6 @@
 
 package sirius.db.mongo.facets;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.Document;
@@ -22,6 +21,8 @@ import sirius.kernel.commons.Tuple;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -73,42 +74,57 @@ public class MongoDateRangeFacet extends MongoFacet {
 
     @Override
     public void emitFacets(EntityDescriptor descriptor, BiConsumer<String, DBObject> facetConsumer) {
-        int index = 0;
+        AtomicInteger indexCounter = new AtomicInteger();
         for (Tuple<DateRange, Integer> rangeAndCounter : ranges) {
             DateRange range = rangeAndCounter.getFirst();
-            BasicDBList facet = new BasicDBList();
-            String fieldName = descriptor.findProperty(field.toString()).getPropertyName();
 
+            BasicDBObject bucketFacet = new BasicDBObject();
+
+            // We group by the given field...
+            String fieldName = descriptor.findProperty(field.toString()).getPropertyName();
+            bucketFacet.append("groupBy", "$" + fieldName);
+
+            // The boundaries are [min, max) meaning a value has to fullfill: min <= value < max
             List<Object> boundaries = Arrays.asList(QueryBuilder.FILTERS.transform(range.getFrom()),
                                                     QueryBuilder.FILTERS.transform(range.getUntil().plusSeconds(1)));
-            BasicDBObject bucket = new BasicDBObject("groupBy", "$" + fieldName).append("boundaries", boundaries)
-                                                                                .append("default",
-                                                                                        QueryBuilder.FILTERS.transform(
-                                                                                                range.getUntil()
-                                                                                                     .plusSeconds(2)));
+            bucketFacet.append("boundaries", boundaries);
 
-            facet.add(new BasicDBObject().append("$bucket", bucket));
+            // Generate a default value which is used when the document does not contain the requested field.
+            // The exact value doesn't matter, it just has to be outside of the min,max range
+            Object defaultValue = QueryBuilder.FILTERS.transform(range.getUntil().plusSeconds(2));
+            bucketFacet.append("default", defaultValue);
 
-            facetConsumer.accept(name + index, facet);
-            index++;
+            // Append each range as $bucket aggregation
+            facetConsumer.accept(name + indexCounter.getAndIncrement(), new BasicDBObject("$bucket", bucketFacet));
         }
     }
 
     @Override
     public void digest(Doc result) {
-        int index = 0;
+        AtomicInteger indexCounter = new AtomicInteger();
         for (Tuple<DateRange, Integer> range : ranges) {
-            Document document = (Document) result.getList(name + index).stream().findFirst().orElse(null);
-            if (document != null) {
-                Doc doc = new Doc(document);
-                range.setSecond(doc.get("count").asInt(0));
-            }
-            index++;
+            Optional<Document> match = fetchFirst(result.getList(name + indexCounter.getAndIncrement()));
+            match.ifPresent(document -> {
+                range.setSecond(document.getInteger("count", 0));
+            });
         }
 
         if (completionCallback != null) {
             completionCallback.accept(this);
         }
+    }
+
+    private Optional<Document> fetchFirst(List<Object> list) {
+        if (list == null) {
+            return Optional.empty();
+        }
+
+        Object element = list.stream().findFirst().orElse(null);
+        if (!(element instanceof Document)) {
+            return Optional.empty();
+        }
+
+        return Optional.of((Document) element);
     }
 
     /**

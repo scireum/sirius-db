@@ -80,9 +80,9 @@ public class MongoTermFacet extends MongoFacet {
 
         List<Object> results = result.getList(name);
         for (Object resultItem : results) {
-            Doc resultDoc = new Doc((Document) resultItem);
-            String term = resultDoc.get("_id").asString();
-            int count = resultDoc.get("count").asInt(-1);
+            Document resultDoc = (Document) resultItem;
+            String term = resultDoc.getString("_id");
+            int count = resultDoc.getInteger("count", 0);
             values.add(Tuple.create(term, count));
         }
 

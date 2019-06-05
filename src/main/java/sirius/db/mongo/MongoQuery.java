@@ -172,9 +172,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * Executes all previously attached facets in one go.
      */
     public void executeFacets() {
-        if (facets != null) {
-            finder.executeFacets(descriptor, facets);
-        }
+        finder.executeFacets(descriptor, facets);
     }
 
     /**

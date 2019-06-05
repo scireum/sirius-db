@@ -25,6 +25,7 @@ import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -425,8 +426,8 @@ public class Finder extends QueryBuilder<Finder> {
      * @param descriptor the entity descriptor to query
      * @param facets     the facets to execute
      */
-    public void executeFacets(@Nonnull EntityDescriptor descriptor, List<MongoFacet> facets) {
-        if (facets.isEmpty()) {
+    public void executeFacets(@Nonnull EntityDescriptor descriptor, @Nullable List<MongoFacet> facets) {
+        if (facets == null || facets.isEmpty()) {
             return;
         }
 
