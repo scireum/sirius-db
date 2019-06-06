@@ -29,6 +29,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -141,7 +142,18 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
         if (hasDBCapabilityLists()) {
             return object;
         }
-        return Strings.join((Collection<?>) object, ",");
+        String data = Strings.join((Collection<?>) object, ",");
+        if (length > 0 && data.length() > length) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withNLSKey("StringProperty.dataTruncation")
+                            .set("value", Strings.limit(data, 30))
+                            .set("field", getFullLabel())
+                            .set("length", data.length())
+                            .set("maxLength", length)
+                            .handle();
+        }
+        return data;
     }
 
     private boolean hasDBCapabilityLists() {

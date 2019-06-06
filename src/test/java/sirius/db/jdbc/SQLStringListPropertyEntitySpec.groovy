@@ -63,10 +63,7 @@ class SQLStringListPropertyEntitySpec extends BaseSpecification {
         oma.update(entity)
         then:
         def e = thrown(HandledException.class)
-        e.getCause().getClass() ==  MysqlDataTruncation.class
-        e.getCause().getMessage() == "Data truncation: Data too long for column 'shortStringList' at row 1"
-        e.getMessage() == "Ein Fehler ist aufgetreten: Unable to UPDATE new SQLStringListPropertyEntity " +
-                "(SQLStringListPropertyEntity): Data truncation: Data too long for column 'shortStringList' at row 1 " +
-                "(com.mysql.jdbc.MysqlDataTruncation)"
+        e.getMessage() == "Der Wert 'test1,test2,test3,test4' im Feld 'Model.shortStringList' ist mit 23 Zeichen zu " +
+                "lang. Maximal sind 20 Zeichen erlaubt."
     }
 }
