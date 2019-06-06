@@ -12,6 +12,8 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.Capability;
+import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -22,8 +24,10 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringList;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
@@ -31,13 +35,18 @@ import java.lang.reflect.Modifier;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents a {@link StringList} field within a {@link Mixable}.
  */
 public class StringListProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
+
+    @Part
+    private static OMA oma;
 
     private static final String[] EMPTY_STRING_ARRAY = {};
 
@@ -113,12 +122,18 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     protected Object transformFromJDBC(Value object) {
-        return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
+        if (oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.LISTS)) {
+            return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
+        }
+        return Arrays.stream(object.asString().split(",")).filter(Strings::isFilled).collect(Collectors.toList());
     }
 
     @Override
     protected Object transformToJDBC(Object object) {
-        return object;
+        if (oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.LISTS)) {
+            return object;
+        }
+        return Strings.join((Collection<?>) object, ",");
     }
 
     @SuppressWarnings("unchecked")

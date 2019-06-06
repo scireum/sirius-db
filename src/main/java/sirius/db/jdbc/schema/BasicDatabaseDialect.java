@@ -383,6 +383,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         if (Types.BLOB == type || Types.VARBINARY == type || Types.LONGVARBINARY == type) {
             return "LONGBLOB";
         }
+        if (Types.ARRAY == type) {
+            return "VARCHAR(" + ensurePositiveLength(column, 4096) + ")";
+        }
 
         throw new IllegalArgumentException(Strings.apply("The type %s (Property: %s) cannot be used as JDBC type!",
                                                          SchemaTool.getJdbcTypeName(type),
@@ -391,8 +394,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
 
     protected int ensurePositiveLength(TableColumn column, int defaultValue) {
         if (column.getLength() == 0) {
-            OMA.LOG.WARN("The property '%s' doesn't specify a length for its column! Defaulting to 255!",
-                         column.getSource());
+            OMA.LOG.WARN("The property '%s' doesn't specify a length for its column! Defaulting to %s!",
+                         column.getSource(),
+                         defaultValue);
             return defaultValue;
         }
 
