@@ -383,9 +383,6 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         if (Types.BLOB == type || Types.VARBINARY == type || Types.LONGVARBINARY == type) {
             return "LONGBLOB";
         }
-        if (Types.ARRAY == type) {
-            return "VARCHAR(" + ensurePositiveLength(column, 4096) + ")";
-        }
 
         throw new IllegalArgumentException(Strings.apply("The type %s (Property: %s) cannot be used as JDBC type!",
                                                          SchemaTool.getJdbcTypeName(type),

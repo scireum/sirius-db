@@ -179,6 +179,6 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public void contributeToTable(Table table) {
-        table.getColumns().add(new TableColumn(this, Types.ARRAY));
+        table.getColumns().add(new TableColumn(this, hasDBCapabilityLists() ? Types.ARRAY : Types.CHAR));
     }
 }
