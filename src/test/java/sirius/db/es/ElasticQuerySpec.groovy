@@ -13,6 +13,7 @@ import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
 import sirius.kernel.BaseSpecification
+import sirius.kernel.Scope
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
@@ -219,6 +220,7 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "EXISTS").exists()
     }
 
+    @Scope(Scope.SCOPE_NIGHTLY)
     def "scroll query works"() {
         when:
         for (int i = 1; i <= 1500; i++) {
@@ -286,6 +288,7 @@ class ElasticQuerySpec extends BaseSpecification {
         hits.get(entities.get(99).getId()).getDoubleValue("_score") == 198
     }
 
+    @Scope(Scope.SCOPE_NIGHTLY)
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
         elastic.select(ESListTestEntity.class).delete()

@@ -9,6 +9,7 @@
 package sirius.db.es
 
 import sirius.kernel.BaseSpecification
+import sirius.kernel.Scope
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 
@@ -17,6 +18,7 @@ class ReindexSpec extends BaseSpecification {
     @Part
     private static Elastic elastic
 
+    @Scope(Scope.SCOPE_NIGHTLY)
     def "reindex and move alias works"() {
         given:
         ElasticTestEntity e = new ElasticTestEntity()

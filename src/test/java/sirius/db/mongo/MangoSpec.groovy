@@ -11,6 +11,7 @@ package sirius.db.mongo
 
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
+import sirius.kernel.Scope
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
@@ -118,6 +119,7 @@ class MangoSpec extends BaseSpecification {
         notFound == null
     }
 
+    @Scope(Scope.SCOPE_NIGHTLY)
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
         mango.select(MangoListTestEntity.class).delete()
