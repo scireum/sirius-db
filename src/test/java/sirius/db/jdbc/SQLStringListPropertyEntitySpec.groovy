@@ -8,8 +8,10 @@
 
 package sirius.db.jdbc
 
+import com.mysql.jdbc.MysqlDataTruncation
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 class SQLStringListPropertyEntitySpec extends BaseSpecification {
 
@@ -51,5 +53,20 @@ class SQLStringListPropertyEntitySpec extends BaseSpecification {
         then:
         def result = oma.find(SQLStringListPropertyEntity.class, entity.getId()).get()
         result.getStringList().size() == 0
+    }
+
+    def "test exception is thrown, if the list is to long for the field"() {
+        when:
+        SQLStringListPropertyEntity entity = new SQLStringListPropertyEntity()
+        entity.getShortStringList().add("test1").add("test2").add("test3").add("test4")
+        and:
+        oma.update(entity)
+        then:
+        def e = thrown(HandledException.class)
+        e.getCause().getClass() ==  MysqlDataTruncation.class
+        e.getCause().getMessage() == "Data truncation: Data too long for column 'shortStringList' at row 1"
+        e.getMessage() == "Ein Fehler ist aufgetreten: Unable to UPDATE new SQLStringListPropertyEntity " +
+                "(SQLStringListPropertyEntity): Data truncation: Data too long for column 'shortStringList' at row 1 " +
+                "(com.mysql.jdbc.MysqlDataTruncation)"
     }
 }

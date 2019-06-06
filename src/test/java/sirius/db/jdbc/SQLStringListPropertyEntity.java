@@ -18,7 +18,15 @@ public class SQLStringListPropertyEntity extends SQLEntity {
     @Length(4096)
     private final StringList stringList = new StringList();
 
+    public static final Mapping SHORT_STRING_LIST = Mapping.named("shortStringList");
+    @Length(20)
+    private final StringList shortStringList = new StringList();
+
     public StringList getStringList() {
         return stringList;
+    }
+
+    public StringList getShortStringList() {
+        return shortStringList;
     }
 }
