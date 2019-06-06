@@ -50,6 +50,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     private static final String[] EMPTY_STRING_ARRAY = {};
 
+    private Boolean dbHasCapabilityLists;
+
     /**
      * Factory for generating properties based on their field type
      */
@@ -122,7 +124,7 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     protected Object transformFromJDBC(Value object) {
-        if (oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.LISTS)) {
+        if (hasDBCapabilityLists()) {
             return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
         }
         return Arrays.stream(object.asString().split(",")).filter(Strings::isFilled).collect(Collectors.toList());
@@ -130,10 +132,17 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     protected Object transformToJDBC(Object object) {
-        if (oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.LISTS)) {
+        if (hasDBCapabilityLists()) {
             return object;
         }
         return Strings.join((Collection<?>) object, ",");
+    }
+
+    private boolean hasDBCapabilityLists() {
+        if (dbHasCapabilityLists == null) {
+            dbHasCapabilityLists = oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.LISTS);
+        }
+        return dbHasCapabilityLists;
     }
 
     @SuppressWarnings("unchecked")
