@@ -65,7 +65,7 @@ public class SchemaTool {
     public List<Table> getSchema(Database db) throws SQLException {
         List<Table> tables = Lists.newArrayList();
         try (Connection c = db.getConnection()) {
-            try (ResultSet rs = c.getMetaData().getTables(c.getSchema(), null, null, null)) {
+            try (ResultSet rs = c.getMetaData().getTables(c.getSchema(), c.getSchema(), null, null)) {
                 while (rs.next()) {
                     readTableRow(tables, c, rs);
                 }
@@ -345,7 +345,6 @@ public class SchemaTool {
         }
     }
 
-
     private void syncForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
             ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
@@ -376,7 +375,8 @@ public class SchemaTool {
                                   ForeignKey targetKey,
                                   ForeignKey otherKey) {
         if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
-            || !keyListEqual(targetKey.getForeignColumns(), otherKey.getForeignColumns())
+            || !keyListEqual(targetKey.getForeignColumns(),
+                             otherKey.getForeignColumns())
             || !targetKey.getForeignTable().equalsIgnoreCase(otherKey.getForeignTable())) {
             List<String> sql = dialect.generateAlterForeignKey(targetTable, otherKey, targetKey);
             if (!sql.isEmpty()) {
