@@ -44,7 +44,7 @@ public enum Capability {
     NULL_SAFE_OPERATOR,
 
     /**
-     * Signals that the database supports lists.
+     * Signals that the database supports storing lists as field values.
      */
     LISTS,
 
