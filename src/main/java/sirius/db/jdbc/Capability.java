@@ -48,6 +48,9 @@ public enum Capability {
      */
     LISTS,
 
+    /**
+     * Signals that the database supports generating keys.
+     */
     GENERATED_KEYS;
 
     /**
