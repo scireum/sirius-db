@@ -42,6 +42,12 @@ import java.util.stream.Collectors;
 
 /**
  * Represents a {@link StringList} field within a {@link Mixable}.
+ * <p>
+ * This property works for elastic search, mongo and sql.
+ * <p>
+ * If the SQL database does not support lists, the list will be stored as text as comma seperated values. The length
+ * limit defined via the {@link sirius.db.mixing.annotations.Length Length annotation} will be applied to the text
+ * field.
  */
 public class StringListProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
 
