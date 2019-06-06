@@ -43,6 +43,14 @@ public enum Capability {
      */
     NULL_SAFE_OPERATOR,
 
+    /**
+     * Signals that the database supports storing lists as field values.
+     */
+    LISTS,
+
+    /**
+     * Signals that the database supports generating keys.
+     */
     GENERATED_KEYS;
 
     /**
@@ -64,5 +72,5 @@ public enum Capability {
     /**
      * Contains the capabilities of a Clickhouse database
      */
-    public static final Set<Capability> CLICKHOUSE_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT));
+    public static final Set<Capability> CLICKHOUSE_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS));
 }

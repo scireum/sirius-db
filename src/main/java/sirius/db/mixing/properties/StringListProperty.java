@@ -12,6 +12,8 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.Capability;
+import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -22,24 +24,40 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringList;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents a {@link StringList} field within a {@link Mixable}.
+ * <p>
+ * This property works for elastic search, mongo and sql.
+ * <p>
+ * If the SQL database does not support lists, the list will be stored as text as comma seperated values. The length
+ * limit defined via the {@link sirius.db.mixing.annotations.Length Length annotation} will be applied to the text
+ * field.
  */
 public class StringListProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
 
+    @Part
+    private static OMA oma;
+
     private static final String[] EMPTY_STRING_ARRAY = {};
+
+    private Boolean dbHasCapabilityLists;
 
     /**
      * Factory for generating properties based on their field type
@@ -113,12 +131,36 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     protected Object transformFromJDBC(Value object) {
-        return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
+        if (hasDBCapabilityLists()) {
+            return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
+        }
+        return Arrays.stream(object.asString().split(",")).filter(Strings::isFilled).collect(Collectors.toList());
     }
 
     @Override
     protected Object transformToJDBC(Object object) {
-        return object;
+        if (hasDBCapabilityLists()) {
+            return object;
+        }
+        String data = Strings.join((Collection<?>) object, ",");
+        if (length > 0 && data.length() > length) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withNLSKey("StringProperty.dataTruncation")
+                            .set("value", Strings.limit(data, 30))
+                            .set("field", getFullLabel())
+                            .set("length", data.length())
+                            .set("maxLength", length)
+                            .handle();
+        }
+        return data;
+    }
+
+    private boolean hasDBCapabilityLists() {
+        if (dbHasCapabilityLists == null) {
+            dbHasCapabilityLists = oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.LISTS);
+        }
+        return dbHasCapabilityLists;
     }
 
     @SuppressWarnings("unchecked")
@@ -149,6 +191,6 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public void contributeToTable(Table table) {
-        table.getColumns().add(new TableColumn(this, Types.ARRAY));
+        table.getColumns().add(new TableColumn(this, hasDBCapabilityLists() ? Types.ARRAY : Types.CHAR));
     }
 }
