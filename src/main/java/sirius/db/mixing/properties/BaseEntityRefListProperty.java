@@ -114,7 +114,6 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         return getEntityRefList(entity).copyList();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -183,7 +182,6 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void link() {
         super.link();
 

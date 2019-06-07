@@ -100,7 +100,6 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         return getEntityRef(target).getId();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -181,7 +180,6 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void link() {
         super.link();
 
