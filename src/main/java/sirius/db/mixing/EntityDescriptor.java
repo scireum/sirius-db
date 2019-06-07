@@ -15,6 +15,7 @@ import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
 import sirius.db.mixing.annotations.BeforeSave;
+import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Realm;
@@ -90,6 +91,13 @@ public class EntityDescriptor {
      * Contains a reference instance required by runtime inspections.
      */
     private Object referenceInstance;
+
+    /**
+     * Determines if entities of this type are complex to delete.
+     *
+     * @see #isComplexDelete()
+     */
+    private boolean complexDelete;
 
     /**
      * Contains all properties (defined via fields, composites or mixins)
@@ -281,6 +289,13 @@ public class EntityDescriptor {
     }
 
     /**
+     * Completes the initialization of this descriptor once the entity model is completely linked.
+     */
+    protected void finishSetup() {
+        getAnnotation(ComplexDelete.class).ifPresent(annotation -> complexDelete = annotation.value());
+    }
+
+    /**
      * Returns all properties known by this descriptor.
      * <p>
      * These are either properties declared by the type (class) of the entity and its superclasses or once defined
@@ -426,6 +441,7 @@ public class EntityDescriptor {
      */
     public void addCascadeDeleteHandler(Consumer<Object> handler) {
         cascadeDeleteHandlers.add(handler);
+        markAsComplexDelete();
     }
 
     /**
@@ -553,13 +569,27 @@ public class EntityDescriptor {
         if (method.isAnnotationPresent(BeforeDelete.class)) {
             warnOnWrongVisibility(method);
             descriptor.beforeDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
+            handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(AfterDelete.class)) {
             warnOnWrongVisibility(method);
             descriptor.afterDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
+            handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(OnValidate.class)) {
             handleOnValidateMethod(descriptor, accessPath, method);
+        }
+    }
+
+    private static void handleComplexDelete(EntityDescriptor descriptor, Method method) {
+        if (method.isAnnotationPresent(ComplexDelete.class)) {
+            if (!method.getAnnotation(ComplexDelete.class).value()) {
+                Mixing.LOG.WARN("Handler %s.%s is wears ComplexDelete but with value = false. This will be ignored!",
+                                method.getDeclaringClass().getName(),
+                                method.getName());
+            }
+
+            descriptor.markAsComplexDelete();
         }
     }
 
@@ -620,7 +650,7 @@ public class EntityDescriptor {
     }
 
     private static AccessPath expandAccessPath(Class<?> mixin, AccessPath accessPath) {
-        return accessPath.append(mixin.getSimpleName() , obj -> ((Mixable) obj).as(mixin));
+        return accessPath.append(mixin.getSimpleName(), obj -> ((Mixable) obj).as(mixin));
     }
 
     private static void addField(EntityDescriptor descriptor,
@@ -898,5 +928,37 @@ public class EntityDescriptor {
      */
     public boolean isVersioned() {
         return versioned;
+    }
+
+    /**
+     * Toggles the complexDelete flag to <tt>true</tt>.
+     *
+     * @see #isComplexDelete()
+     * @see ComplexDelete
+     */
+    private void markAsComplexDelete() {
+        complexDelete = true;
+    }
+
+    /**
+     * Determines if entities belonging to this descriptor are "complex" to delete.
+     * <p>
+     * By default, all entities with either a cascading delete action or ones that wear
+     * the {@link ComplexDelete} annotation (with <tt>value</tt> set to <tt>true</tt>)
+     * are considered complex to delete.
+     * <p>
+     * Also note that each {@link BeforeDelete} and {@link AfterDelete} can be also annotated
+     * with a {@link ComplexDelete} annotation. This way even a <b>Mixin</b> can mark an entity
+     * as complex.
+     * <p>
+     * If an entity has cascade delete actions but should not be considered complex, an annotation with
+     * <tt>value</tt> set to <tt>false</tt> can be placed on the entity class.
+     *
+     * @return <tt>true</tt> if entities of this descriptor are complex to delete, <tt>false</tt>
+     * otherwise
+     * @see ComplexDelete
+     */
+    public boolean isComplexDelete() {
+        return complexDelete;
     }
 }

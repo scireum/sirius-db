@@ -57,6 +57,7 @@ public class Mixing implements Initializable {
 
     private void linkSchema() {
         descriptorsByType.values().forEach(EntityDescriptor::link);
+        descriptorsByType.values().forEach(EntityDescriptor::finishSetup);
     }
 
     private void loadEntities() {
