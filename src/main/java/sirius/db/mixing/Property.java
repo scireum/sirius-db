@@ -136,13 +136,15 @@ public abstract class Property {
         this.descriptor = descriptor;
         this.accessPath = accessPath;
         this.field = field;
-        this.propertyKey = field.getDeclaringClass().getSimpleName() + "." + field.getName();
+        this.propertyKey = EntityDescriptor.determineTranslationSource(field.getDeclaringClass()).getSimpleName()
+                           + "."
+                           + field.getName();
         this.alternativePropertyKey = "Model." + field.getName();
         this.field.setAccessible(true);
         this.name = accessPath.qualify(field.getName());
         if (Strings.isFilled(accessPath.prefix())) {
-            this.localPropertyKey = descriptor.getType().getSimpleName() + "." + name;
-            this.parentPropertyKey = descriptor.getType().getSimpleName() + "." + accessPath.prefix();
+            this.localPropertyKey = descriptor.getTranslationSource().getSimpleName() + "." + name;
+            this.parentPropertyKey = descriptor.getTranslationSource().getSimpleName() + "." + accessPath.prefix();
         }
         this.propertyName = descriptor.rewritePropertyName(name);
         this.nameAsMapping = Mapping.named(name);
@@ -276,7 +278,9 @@ public abstract class Property {
             return localLabel;
         }
 
-        return NLS.getIfExists(propertyKey, currentLang).orElseGet(() -> NLS.get(alternativePropertyKey));
+        return NLS.getIfExists(propertyKey, currentLang)
+                                     .orElseGet(() -> NLS.getIfExists(alternativePropertyKey, currentLang)
+                                                         .orElseGet(() -> NLS.get(propertyKey)));
     }
 
     /**

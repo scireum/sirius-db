@@ -20,6 +20,7 @@ import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Realm;
 import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
+import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
@@ -79,6 +80,11 @@ public class EntityDescriptor {
      * Contains the entity class
      */
     protected final Class<?> type;
+
+    /**
+     * Contains the entity class
+     */
+    protected final Class<?> translationSource;
 
     /**
      * Contains a reference instance required by runtime inspections.
@@ -162,6 +168,7 @@ public class EntityDescriptor {
      */
     protected EntityDescriptor(Class<?> type) {
         this.type = type;
+        this.translationSource = determineTranslationSource(type);
         this.relationName =
                 getAnnotation(RelationName.class).map(RelationName::value).orElse(type.getSimpleName().toLowerCase());
         this.realm = getAnnotation(Realm.class).map(Realm::value).orElse(Mixing.DEFAULT_REALM);
@@ -179,6 +186,21 @@ public class EntityDescriptor {
         }
 
         loadLegacyInfo(type);
+    }
+
+    /**
+     * Determines the effective class to used when computing an i18n key for the given type.
+     *
+     * @param type the entity type to resolve
+     * @return either the type itself or the effective translation source to use
+     * @see TranslationSource
+     */
+    public static Class<?> determineTranslationSource(Class<?> type) {
+        if (type.isAnnotationPresent(TranslationSource.class)) {
+            return type.getAnnotation(TranslationSource.class).value();
+        }
+
+        return type;
     }
 
     private void loadLegacyInfo(Class<?> type) {
@@ -234,8 +256,8 @@ public class EntityDescriptor {
      * @return a translated name which can be shown to the end user
      */
     public String getLabel() {
-        return NLS.getIfExists(getType().getName(), NLS.getCurrentLang())
-                  .orElseGet(() -> NLS.get("Model." + type.getSimpleName().toLowerCase()));
+        return NLS.getIfExists(translationSource.getSimpleName(), NLS.getCurrentLang())
+                  .orElseGet(() -> NLS.get("Model." + translationSource.getSimpleName().toLowerCase()));
     }
 
     /**
@@ -246,7 +268,7 @@ public class EntityDescriptor {
      * @return a translated plural which can be shown to the end user
      */
     public String getPluralLabel() {
-        return NLS.get(getType().getSimpleName() + ".plural");
+        return NLS.get(translationSource.getSimpleName() + ".plural");
     }
 
     /**
@@ -694,6 +716,16 @@ public class EntityDescriptor {
      */
     public Class<?> getType() {
         return type;
+    }
+
+    /**
+     * Returns the effective type / class used to derive i18n keys.
+     *
+     * @return the class to be used as prefix when computing i18n keys. This is most probably the
+     * {@link #getType() type} but might be replaced when using {@link TranslationSource}.
+     */
+    public Class<?> getTranslationSource() {
+        return translationSource;
     }
 
     /**
