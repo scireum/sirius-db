@@ -9,9 +9,11 @@
 package sirius.db.mixing;
 
 import sirius.db.es.ElasticEntity;
+import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.db.mongo.types.MongoRefList;
 
+@ComplexDelete(false)
 public class RefListElasticEntity extends ElasticEntity {
 
     private final MongoRefList<RefListMongoEntity> ref =
