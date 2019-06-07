@@ -106,6 +106,8 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * @return the builder itself for fluent method calls
      */
     public MongoQuery<E> limit(int skip, int limit) {
+        this.skip = skip;
+        this.limit = limit;
         finder.limit(skip, limit);
 
         return this;
@@ -113,14 +115,15 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     @Override
     public MongoQuery<E> skip(int skip) {
+        this.skip = skip;
         finder.skip(skip);
         return this;
     }
 
     @Override
     public MongoQuery<E> limit(int limit) {
+        this.limit = limit;
         finder.limit(limit);
-
         return this;
     }
 
