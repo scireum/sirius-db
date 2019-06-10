@@ -13,6 +13,7 @@ import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -199,8 +200,10 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         try {
             EntityDescriptor ed = entity.getDescriptor();
             ed.beforeDelete(entity);
-            deleteEntity(entity, force, ed);
-            ed.afterDelete(entity);
+            if (TaskContext.get().isActive()) {
+                deleteEntity(entity, force, ed);
+                ed.afterDelete(entity);
+            }
         } catch (OptimisticLockException e) {
             throw e;
         } catch (Exception e) {
@@ -389,7 +392,6 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @return a new instance of the given entity with the most current data from the database or the original entity,
      * if the entity does no longer exist in the database.
      */
-    @SuppressWarnings("unchecked")
     public <E extends B> E tryRefresh(E entity) {
         if (entity != null) {
             Optional<E> result = findEntity(entity);
@@ -412,7 +414,6 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @return a new instance of the given entity with the most current data from the database.
      * @throws HandledException if the entity no longer exists in the database.
      */
-    @SuppressWarnings("unchecked")
     public <E extends B> E refreshOrFail(E entity) {
         if (entity == null) {
             return null;

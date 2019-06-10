@@ -116,6 +116,16 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     }
 
     /**
+     * Returns a string representation of the entity ID.
+     *
+     * @return the id of the referenced entity as String or <tt>null</tt> if no entity is referenced.
+     */
+    @Nullable
+    public String getIdAsString() {
+        return id == null ? null : String.valueOf(id);
+    }
+
+    /**
      * Returns the <tt>Unique Object Name</tt> for the referenced entity.
      *
      * @return the unique object name of the referenced entity or <tt>null</tt> if the reference is empty.
