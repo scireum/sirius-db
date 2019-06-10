@@ -197,7 +197,7 @@ public class EntityDescriptor {
     }
 
     /**
-     * Determines the effective class to used when computing an i18n key for the given type.
+     * Determines the effective class to be used when computing an i18n key for the given type.
      *
      * @param type the entity type to resolve
      * @return either the type itself or the effective translation source to use
