@@ -99,7 +99,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return getEntityRefList(entity).copyList();
+        return getEntityRefList(accessPath.apply(entity)).copyList();
     }
 
     @SuppressWarnings("unchecked")
