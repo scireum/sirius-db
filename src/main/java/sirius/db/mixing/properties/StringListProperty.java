@@ -184,7 +184,7 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     public void parseValues(Object e, Values values) {
         List<String> stringData = new ArrayList<>();
         for (int i = 0; i < values.length(); i++) {
-            stringData.add(values.at(i).toString());
+            values.at(i).ifFilled(value -> stringData.add(value.toString()));
         }
         setValue(e, stringData);
     }
