@@ -28,6 +28,7 @@ import sirius.kernel.Sirius;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -36,6 +37,7 @@ import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -158,6 +160,15 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    @Override
+    public void parseValues(Object e, Values values) {
+        List<String> stringData = new ArrayList<>();
+        for (int i = 0; i < values.length(); i++) {
+            values.at(i).ifFilled(value -> stringData.add(value.toString()));
+        }
+        setValue(e, stringData);
     }
 
     protected BaseEntityRefList<?, ?> getReferenceEntityRefList() {

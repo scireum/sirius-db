@@ -360,7 +360,7 @@ public class Schema implements Startable, Initializable {
             }
         }
 
-        tasks.defaultExecutor().fork(this::updateSchemaAtStartup);
+        updateSchemaAtStartup();
     }
 
     private Optional<Database> determineSecondary(Extension ext) {
