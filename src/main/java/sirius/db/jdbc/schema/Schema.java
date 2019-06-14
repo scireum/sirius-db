@@ -213,6 +213,7 @@ public class Schema implements Startable, Initializable {
 
         collectColumns(table, ed);
         collectKeys(table, ed);
+        applyColumnRenamings(table);
 
         return table;
     }
