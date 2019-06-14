@@ -440,6 +440,7 @@ public class SchemaTool {
                                     TableColumn otherCol) {
         usedColumns.add(otherCol.getName());
         String reason = dialect.areColumnsEqual(targetCol, otherCol);
+        boolean dataLossPossible = true;
         // Check for renaming...
         if (reason == null
             && !Strings.areEqual(targetCol.getName(), otherCol.getName())
@@ -449,6 +450,7 @@ public class SchemaTool {
                         .set("newName", targetCol.getName())
                         .set(KEY_TABLE, targetTable.getName())
                         .format();
+            dataLossPossible = false;
         } else if (reason != null) {
             reason = NLS.fmtr("SchemaTool.columnNeedsChange")
                         .set(KEY_COLUMN, otherCol.getName())
@@ -461,7 +463,7 @@ public class SchemaTool {
             if (!sql.isEmpty()) {
                 SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(reason);
-                action.setDataLossPossible(true);
+                action.setDataLossPossible(dataLossPossible);
                 action.setSql(sql);
                 result.add(action);
             }
