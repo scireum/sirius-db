@@ -329,7 +329,7 @@ public class EntityDescriptor {
      * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
-        return isChanged(entity, property, Object::equals);
+        return isChanged(entity, property, Objects::equals);
     }
 
     /**
