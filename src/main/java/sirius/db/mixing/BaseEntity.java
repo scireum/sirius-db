@@ -9,7 +9,6 @@
 package sirius.db.mixing;
 
 import com.google.common.collect.Maps;
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
@@ -238,7 +237,7 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
-     * Checks whether any {@link Mapping} of the current {@link SQLEntity} changed.
+     * Checks whether any {@link Mapping} of the current {@link BaseEntity} changed.
      *
      * @return <tt>true</tt> if at least one column was changed, <tt>false</tt> otherwise.
      */
