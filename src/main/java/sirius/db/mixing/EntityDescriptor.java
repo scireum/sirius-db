@@ -57,6 +57,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -328,7 +329,26 @@ public class EntityDescriptor {
      * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
-        return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
+        return isChanged(entity, property, Objects::equals);
+    }
+
+    /**
+     * Determines if the value for the property was changed since it was last fetched from the database.
+     * <p>
+     * If a property wears an {@link sirius.db.mixing.annotations.Trim} annotation or if "" and <tt>null</tt>
+     * should be considered equal, {@link Strings#areEqual(Object, Object)}
+     * or {@link Strings#areTrimmedEqual(Object, Object)} can be used as <tt>equalsFunction</tt>.
+     *
+     * @param entity         the entity to check
+     * @param property       the property to check for
+     * @param equalsFunction the function which compares the current and the previously persisted value and returns
+     *                       <tt>true</tt> if they are equal or <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
+     */
+    public boolean isChanged(BaseEntity<?> entity,
+                             Property property,
+                             BiFunction<? super Object, ? super Object, Boolean> equalsFunction) {
+        return !equalsFunction.apply(entity.persistedData.get(property), property.getValue(entity));
     }
 
     /**

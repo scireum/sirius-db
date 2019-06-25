@@ -9,7 +9,6 @@
 package sirius.db.mixing;
 
 import com.google.common.collect.Maps;
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
@@ -20,6 +19,7 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
@@ -222,7 +222,25 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
-     * Determines if at least one of the given {@link Mapping}s were changed in this {@link SQLEntity} since it was last
+     * Determines the given {@link Mapping}s were changed in this {@link BaseEntity} since it was last
+     * fetched from the database.
+     * <p>
+     * If a property wears an {@link sirius.db.mixing.annotations.Trim} annotation or if "" and <tt>null</tt>
+     * should be considered equal, {@link Strings#areEqual(Object, Object)}
+     * or {@link Strings#areTrimmedEqual(Object, Object)} can be used as <tt>equalsFunction</tt>.
+     *
+     * @param mappingToCheck the columns to check whether they were changed
+     * @param equalsFunction the function which compares the current and the previously persisted value and returns
+     *                       <tt>true</tt> if they are equal or <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the requested property changed, <tt>false</tt> otherwise
+     */
+    public boolean isChanged(Mapping mappingToCheck,
+                             BiFunction<? super Object, ? super Object, Boolean> equalsFunction) {
+        return getDescriptor().isChanged(this, getDescriptor().getProperty(mappingToCheck), equalsFunction);
+    }
+
+    /**
+     * Determines if at least one of the given {@link Mapping}s were changed in this {@link BaseEntity} since it was last
      * fetched from the database.
      *
      * @param mappingsToCheck the columns to check whether they were changed
@@ -238,7 +256,7 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
-     * Checks whether any {@link Mapping} of the current {@link SQLEntity} changed.
+     * Checks whether any {@link Mapping} of the current {@link BaseEntity} changed.
      *
      * @return <tt>true</tt> if at least one column was changed, <tt>false</tt> otherwise.
      */
