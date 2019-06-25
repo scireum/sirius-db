@@ -265,7 +265,9 @@ public class EntityDescriptor {
      */
     public String getLabel() {
         return NLS.getIfExists(translationSource.getSimpleName(), NLS.getCurrentLang())
-                  .orElseGet(() -> NLS.get("Model." + translationSource.getSimpleName().toLowerCase()));
+                  .orElseGet(() -> NLS.getIfExists("Model." + translationSource.getSimpleName().toLowerCase(),
+                                                   NLS.getCurrentLang())
+                                      .orElseGet(() -> NLS.get("Model." + translationSource.getSimpleName())));
     }
 
     /**
