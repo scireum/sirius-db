@@ -391,8 +391,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
 
     protected int ensurePositiveLength(TableColumn column, int defaultValue) {
         if (column.getLength() == 0) {
-            OMA.LOG.WARN("The property '%s' doesn't specify a length for its column! Defaulting to 255!",
-                         column.getSource());
+            OMA.LOG.WARN("The property '%s' doesn't specify a length for its column! Defaulting to %s!",
+                         column.getSource(),
+                         defaultValue);
             return defaultValue;
         }
 

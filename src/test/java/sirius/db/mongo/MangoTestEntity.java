@@ -33,7 +33,7 @@ public class MangoTestEntity extends MongoEntity {
     private LocalDateTime birthday;
     
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
-    private StringList superPowers = new StringList();
+    private final StringList superPowers = new StringList();
 
     public String getFirstname() {
         return firstname;

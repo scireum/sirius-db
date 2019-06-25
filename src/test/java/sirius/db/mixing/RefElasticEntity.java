@@ -10,9 +10,11 @@ package sirius.db.mixing;
 
 import sirius.db.es.ElasticEntity;
 import sirius.db.jdbc.SQLEntityRef;
+import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.BaseEntityRef;
 
+@ComplexDelete(false)
 public class RefElasticEntity extends ElasticEntity {
 
     @NullAllowed

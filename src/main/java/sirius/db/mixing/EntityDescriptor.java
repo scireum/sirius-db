@@ -15,11 +15,13 @@ import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
 import sirius.db.mixing.annotations.BeforeSave;
+import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Realm;
 import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
+import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
@@ -55,6 +57,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -81,9 +84,21 @@ public class EntityDescriptor {
     protected final Class<?> type;
 
     /**
+     * Contains the entity class
+     */
+    protected final Class<?> translationSource;
+
+    /**
      * Contains a reference instance required by runtime inspections.
      */
     private Object referenceInstance;
+
+    /**
+     * Determines if entities of this type are complex to delete.
+     *
+     * @see #isComplexDelete()
+     */
+    private boolean complexDelete;
 
     /**
      * Contains all properties (defined via fields, composites or mixins)
@@ -162,6 +177,7 @@ public class EntityDescriptor {
      */
     protected EntityDescriptor(Class<?> type) {
         this.type = type;
+        this.translationSource = determineTranslationSource(type);
         this.relationName =
                 getAnnotation(RelationName.class).map(RelationName::value).orElse(type.getSimpleName().toLowerCase());
         this.realm = getAnnotation(Realm.class).map(Realm::value).orElse(Mixing.DEFAULT_REALM);
@@ -179,6 +195,21 @@ public class EntityDescriptor {
         }
 
         loadLegacyInfo(type);
+    }
+
+    /**
+     * Determines the effective class to be used when computing an i18n key for the given type.
+     *
+     * @param type the entity type to resolve
+     * @return either the type itself or the effective translation source to use
+     * @see TranslationSource
+     */
+    public static Class<?> determineTranslationSource(Class<?> type) {
+        if (type.isAnnotationPresent(TranslationSource.class)) {
+            return type.getAnnotation(TranslationSource.class).value();
+        }
+
+        return type;
     }
 
     private void loadLegacyInfo(Class<?> type) {
@@ -234,8 +265,13 @@ public class EntityDescriptor {
      * @return a translated name which can be shown to the end user
      */
     public String getLabel() {
-        return NLS.getIfExists(getType().getName(), NLS.getCurrentLang())
-                  .orElseGet(() -> NLS.get("Model." + type.getSimpleName().toLowerCase()));
+        String className = translationSource.getSimpleName();
+        String currentLang = NLS.getCurrentLang();
+        return NLS.getIfExists(className, currentLang)
+                  .orElseGet(() -> NLS.getIfExists("Model."
+                                                   + Character.toLowerCase(className.charAt(0))
+                                                   + className.substring(1), currentLang)
+                                      .orElseGet(() -> NLS.get("Model." + className)));
     }
 
     /**
@@ -246,7 +282,7 @@ public class EntityDescriptor {
      * @return a translated plural which can be shown to the end user
      */
     public String getPluralLabel() {
-        return NLS.get(getType().getSimpleName() + ".plural");
+        return NLS.get(translationSource.getSimpleName() + ".plural");
     }
 
     /**
@@ -256,6 +292,13 @@ public class EntityDescriptor {
         for (Property p : properties.values()) {
             p.link();
         }
+    }
+
+    /**
+     * Completes the initialization of this descriptor once the entity model is completely linked.
+     */
+    protected void finishSetup() {
+        getAnnotation(ComplexDelete.class).ifPresent(annotation -> complexDelete = annotation.value());
     }
 
     /**
@@ -291,7 +334,26 @@ public class EntityDescriptor {
      * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
-        return !Objects.equals(entity.persistedData.get(property), property.getValue(entity));
+        return isChanged(entity, property, Objects::equals);
+    }
+
+    /**
+     * Determines if the value for the property was changed since it was last fetched from the database.
+     * <p>
+     * If a property wears an {@link sirius.db.mixing.annotations.Trim} annotation or if "" and <tt>null</tt>
+     * should be considered equal, {@link Strings#areEqual(Object, Object)}
+     * or {@link Strings#areTrimmedEqual(Object, Object)} can be used as <tt>equalsFunction</tt>.
+     *
+     * @param entity         the entity to check
+     * @param property       the property to check for
+     * @param equalsFunction the function which compares the current and the previously persisted value and returns
+     *                       <tt>true</tt> if they are equal or <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
+     */
+    public boolean isChanged(BaseEntity<?> entity,
+                             Property property,
+                             BiFunction<? super Object, ? super Object, Boolean> equalsFunction) {
+        return !equalsFunction.apply(entity.persistedData.get(property), property.getValue(entity));
     }
 
     /**
@@ -404,6 +466,7 @@ public class EntityDescriptor {
      */
     public void addCascadeDeleteHandler(Consumer<Object> handler) {
         cascadeDeleteHandlers.add(handler);
+        markAsComplexDelete();
     }
 
     /**
@@ -531,13 +594,27 @@ public class EntityDescriptor {
         if (method.isAnnotationPresent(BeforeDelete.class)) {
             warnOnWrongVisibility(method);
             descriptor.beforeDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
+            handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(AfterDelete.class)) {
             warnOnWrongVisibility(method);
             descriptor.afterDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
+            handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(OnValidate.class)) {
             handleOnValidateMethod(descriptor, accessPath, method);
+        }
+    }
+
+    private static void handleComplexDelete(EntityDescriptor descriptor, Method method) {
+        if (method.isAnnotationPresent(ComplexDelete.class)) {
+            if (!method.getAnnotation(ComplexDelete.class).value()) {
+                Mixing.LOG.WARN("Handler %s.%s is wears ComplexDelete but with value = false. This will be ignored!",
+                                method.getDeclaringClass().getName(),
+                                method.getName());
+            }
+
+            descriptor.markAsComplexDelete();
         }
     }
 
@@ -598,7 +675,7 @@ public class EntityDescriptor {
     }
 
     private static AccessPath expandAccessPath(Class<?> mixin, AccessPath accessPath) {
-        return accessPath.append(mixin.getSimpleName() , obj -> ((Mixable) obj).as(mixin));
+        return accessPath.append(mixin.getSimpleName(), obj -> ((Mixable) obj).as(mixin));
     }
 
     private static void addField(EntityDescriptor descriptor,
@@ -694,6 +771,16 @@ public class EntityDescriptor {
      */
     public Class<?> getType() {
         return type;
+    }
+
+    /**
+     * Returns the effective type / class used to derive i18n keys.
+     *
+     * @return the class to be used as prefix when computing i18n keys. This is most probably the
+     * {@link #getType() type} but might be replaced when using {@link TranslationSource}.
+     */
+    public Class<?> getTranslationSource() {
+        return translationSource;
     }
 
     /**
@@ -866,5 +953,37 @@ public class EntityDescriptor {
      */
     public boolean isVersioned() {
         return versioned;
+    }
+
+    /**
+     * Toggles the complexDelete flag to <tt>true</tt>.
+     *
+     * @see #isComplexDelete()
+     * @see ComplexDelete
+     */
+    private void markAsComplexDelete() {
+        complexDelete = true;
+    }
+
+    /**
+     * Determines if entities belonging to this descriptor are "complex" to delete.
+     * <p>
+     * By default, all entities with either a cascading delete action or ones that wear
+     * the {@link ComplexDelete} annotation (with <tt>value</tt> set to <tt>true</tt>)
+     * are considered complex to delete.
+     * <p>
+     * Also note that each {@link BeforeDelete} and {@link AfterDelete} can be also annotated
+     * with a {@link ComplexDelete} annotation. This way even a <b>Mixin</b> can mark an entity
+     * as complex.
+     * <p>
+     * If an entity has cascade delete actions but should not be considered complex, an annotation with
+     * <tt>value</tt> set to <tt>false</tt> can be placed on the entity class.
+     *
+     * @return <tt>true</tt> if entities of this descriptor are complex to delete, <tt>false</tt>
+     * otherwise
+     * @see ComplexDelete
+     */
+    public boolean isComplexDelete() {
+        return complexDelete;
     }
 }

@@ -19,17 +19,25 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.db.mixing.types.BaseEntityRefList;
 import sirius.db.mongo.Mongo;
 import sirius.db.mongo.MongoEntity;
+import sirius.kernel.Sirius;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Values;
+import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -37,6 +45,12 @@ import java.util.function.Consumer;
  * Represents an {@link BaseEntityRefList} field within a {@link Mixable}.
  */
 public class BaseEntityRefListProperty extends Property implements ESPropertyInfo {
+
+    private static final String PARAM_TYPE = "type";
+    private static final String PARAM_OWNER = "owner";
+    private static final String PARAM_FIELD = "field";
+    private static final String PARAM_SOURCE = "source";
+    private static final String PARAM_COUNT = "count";
 
     @Part
     private static Mixing mixing;
@@ -99,10 +113,9 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return getEntityRefList(entity).copyList();
+        return getEntityRefList(accessPath.apply(entity)).copyList();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -149,6 +162,15 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
                        description);
     }
 
+    @Override
+    public void parseValues(Object e, Values values) {
+        List<String> stringData = new ArrayList<>();
+        for (int i = 0; i < values.length(); i++) {
+            values.at(i).ifFilled(value -> stringData.add(value.toString()));
+        }
+        setValue(e, stringData);
+    }
+
     protected BaseEntityRefList<?, ?> getReferenceEntityRefList() {
         if (entityRefList == null) {
             this.entityRefList = getEntityRefList(accessPath.apply(descriptor.getReferenceInstance()));
@@ -171,7 +193,6 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void link() {
         super.link();
 
@@ -181,6 +202,20 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
                 Mixing.LOG.WARN("Error in property % for %s is not a subclass of BaseEntity."
                                 + " The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
                 return;
+            }
+
+            // If a cascade delete handler is present and the referenced entity is not explicitely marked as
+            // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
+            // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
+            // errors. (Otherwise this might be missed while developing or testing the system..)
+            if (getReferencedDescriptor().getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
+                || deleteHandler == BaseEntityRef.OnDelete.REJECT) {
+                if (Sirius.isDev() || Sirius.isStartedAsTest()) {
+                    getDescriptor().getPluralLabel();
+                    getReferencedDescriptor().getLabel();
+                    getLabel();
+                    getFullLabel();
+                }
             }
         }
 
@@ -194,6 +229,13 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     }
 
     protected void onDeleteSetNull(Object e) {
+        TaskContext taskContext = TaskContext.get();
+        taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeSetNull")
+                                             .set(PARAM_TYPE, getDescriptor().getPluralLabel())
+                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_FIELD, getLabel())
+                                             .format());
+
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
 
         Object idBeingDeleted = ((BaseEntity<?>) e).getId();
@@ -207,21 +249,36 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             referenceInstance.getMapper()
                              .select(referenceInstance.getClass())
                              .eq(nameAsMapping, idBeingDeleted)
-                             .iterateAll(other -> {
-                                 getEntityRefList(accessPath.apply(other)).modify().remove(idBeingDeleted);
-                                 other.getMapper().update(other);
-                             });
+                             .iterateAll(other -> cascadeSetNull(taskContext, idBeingDeleted, other));
         }
     }
 
+    private void cascadeSetNull(TaskContext taskContext, Object idBeingDeleted, BaseEntity<?> other) {
+        Watch watch = Watch.start();
+        getEntityRefList(accessPath.apply(other)).modify().remove(idBeingDeleted);
+        other.getMapper().update(other);
+        taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedSetNull"), watch.elapsedMillis());
+    }
+
     protected void onDeleteCascade(Object e) {
+        TaskContext taskContext = TaskContext.get();
+        taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeDelete")
+                                             .set(PARAM_TYPE, getDescriptor().getPluralLabel())
+                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_FIELD, getLabel())
+                                             .format());
+
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
                          .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
-                         .iterateAll(other -> {
-                             other.getMapper().delete(other);
-                         });
+                         .iterateAll(other -> cascadeDelete(taskContext, other));
+    }
+
+    private void cascadeDelete(TaskContext taskContext, BaseEntity<?> other) {
+        Watch watch = Watch.start();
+        other.getMapper().delete(other);
+        taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedDelete"), watch.elapsedMillis());
     }
 
     protected void onDeleteReject(Object e) {
@@ -233,18 +290,18 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
-                            .set("field", getFullLabel())
-                            .set("type", getReferencedDescriptor().getLabel())
-                            .set("source", getDescriptor().getLabel())
+                            .set(PARAM_FIELD, getFullLabel())
+                            .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
+                            .set(PARAM_SOURCE, getDescriptor().getLabel())
                             .handle();
         }
         if (count > 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
-                            .set("count", count)
-                            .set("field", getFullLabel())
-                            .set("type", getReferencedDescriptor().getLabel())
-                            .set("source", getDescriptor().getLabel())
+                            .set(PARAM_COUNT, count)
+                            .set(PARAM_FIELD, getFullLabel())
+                            .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
+                            .set(PARAM_SOURCE, getDescriptor().getLabel())
                             .handle();
         }
     }

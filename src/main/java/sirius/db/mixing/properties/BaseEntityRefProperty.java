@@ -15,10 +15,16 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.types.BaseEntityRef;
+import sirius.kernel.Sirius;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.util.Optional;
@@ -32,6 +38,12 @@ import java.util.Optional;
  */
 public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extends BaseEntityRef<I, E>>
         extends Property {
+
+    private static final String PARAM_TYPE = "type";
+    private static final String PARAM_OWNER = "owner";
+    private static final String PARAM_FIELD = "field";
+    private static final String PARAM_SOURCE = "source";
+    private static final String PARAM_COUNT = "count";
 
     @Part
     protected static Mixing mixing;
@@ -88,7 +100,6 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         return getEntityRef(target).getId();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -169,7 +180,6 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void link() {
         super.link();
 
@@ -179,6 +189,20 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
                 Mixing.LOG.WARN("Error in property % for %s is not a subclass of BaseEntity."
                                 + "The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
                 return;
+            }
+
+            // If a cascade delete handler is present and the referenced entity is not explicitely marked as
+            // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
+            // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
+            // errors. (Otherwise this might be missed while developing or testing the system..)
+            if (getReferencedDescriptor().getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
+                || deleteHandler == BaseEntityRef.OnDelete.REJECT) {
+                if (Sirius.isDev() || Sirius.isStartedAsTest()) {
+                    getDescriptor().getPluralLabel();
+                    getReferencedDescriptor().getLabel();
+                    getLabel();
+                    getFullLabel();
+                }
             }
         }
 
@@ -192,24 +216,47 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     }
 
     protected void onDeleteSetNull(Object e) {
+        TaskContext taskContext = TaskContext.get();
+        taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeSetNull")
+                                             .set(PARAM_TYPE, getDescriptor().getPluralLabel())
+                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_FIELD, getLabel())
+                                             .format());
+
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
                          .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
-                         .iterateAll(other -> {
-                             setValue(other, null);
-                             other.getMapper().update(other);
-                         });
+                         .iterateAll(other -> cascadeSetNull(taskContext, other));
+    }
+
+    private void cascadeSetNull(TaskContext taskContext, BaseEntity<?> other) {
+        Watch watch = Watch.start();
+        setValue(other, null);
+        other.getMapper().update(other);
+        taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedSetNull"), watch.elapsedMillis());
     }
 
     protected void onDeleteCascade(Object e) {
+        TaskContext taskContext = TaskContext.get();
+
+        taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeDelete")
+                                             .set(PARAM_TYPE, getDescriptor().getPluralLabel())
+                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_FIELD, getLabel())
+                                             .format());
+
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
                          .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
-                         .iterateAll(other -> {
-                             other.getMapper().delete(other);
-                         });
+                         .iterateAll(other -> cascadeDelete(taskContext, other));
+    }
+
+    private void cascadeDelete(TaskContext taskContext, BaseEntity<?> other) {
+        Watch watch = Watch.start();
+        other.getMapper().delete(other);
+        taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedDelete"), watch.elapsedMillis());
     }
 
     protected void onDeleteReject(Object e) {
@@ -221,18 +268,18 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
-                            .set("field", getFullLabel())
-                            .set("type", getReferencedDescriptor().getLabel())
-                            .set("source", getDescriptor().getLabel())
+                            .set(PARAM_FIELD, getFullLabel())
+                            .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
+                            .set(PARAM_SOURCE, getDescriptor().getLabel())
                             .handle();
         }
         if (count > 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
-                            .set("count", count)
-                            .set("field", getFullLabel())
-                            .set("type", getReferencedDescriptor().getLabel())
-                            .set("source", getDescriptor().getLabel())
+                            .set(PARAM_COUNT, count)
+                            .set(PARAM_FIELD, getFullLabel())
+                            .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
+                            .set(PARAM_SOURCE, getDescriptor().getLabel())
                             .handle();
         }
     }

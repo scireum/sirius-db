@@ -213,6 +213,7 @@ public class Schema implements Startable, Initializable {
 
         collectColumns(table, ed);
         collectKeys(table, ed);
+        applyColumnRenamings(table);
 
         return table;
     }
@@ -360,7 +361,7 @@ public class Schema implements Startable, Initializable {
             }
         }
 
-        tasks.defaultExecutor().fork(this::updateSchemaAtStartup);
+        updateSchemaAtStartup();
     }
 
     private Optional<Database> determineSecondary(Extension ext) {
