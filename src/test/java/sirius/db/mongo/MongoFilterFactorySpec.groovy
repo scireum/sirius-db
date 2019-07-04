@@ -120,6 +120,11 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .eq(MongoEntity.ID, entity.getId())
              .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).build())
              .count() == 0
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).orEmpty().build())
+             .queryOne().getId() == entityEmpty.getId()
     }
 
     def "noneInField query works"() {
