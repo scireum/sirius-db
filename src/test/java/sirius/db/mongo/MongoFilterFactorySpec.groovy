@@ -11,6 +11,7 @@ package sirius.db.mongo
 import sirius.db.mongo.properties.MongoStringListEntity
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
+import sirius.kernel.commons.Value
 
 class MongoFilterFactorySpec extends BaseSpecification {
 
@@ -94,6 +95,31 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .eq(MongoEntity.ID, entityEmpty.getId())
              .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, ["4", "5", "6"]).orEmpty().build())
              .queryOne().getId() == entityEmpty.getId()
+    }
+
+    def "containsAny query works"() {
+        setup:
+        MongoStringListEntity entity = new MongoStringListEntity()
+        entity.getList().modify().addAll(["1", "2", "3"])
+        MongoStringListEntity entityEmpty = new MongoStringListEntity()
+        when:
+        mango.update(entity)
+        mango.update(entityEmpty)
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entity.getId())
+             .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("2,4,5")).build())
+             .queryOne().getId() == entity.getId()
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entity.getId())
+             .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("2,3,4")).build())
+             .queryOne().getId() == entity.getId()
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entity.getId())
+             .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).build())
+             .count() == 0
     }
 
     def "noneInField query works"() {
