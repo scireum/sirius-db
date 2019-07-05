@@ -264,7 +264,7 @@ class ElasticQuerySpec extends BaseSpecification {
         when:
         elastic.update(entity)
         elastic.update(entityEmpty)
-        elastic.refresh(QueryTestEntity.class)
+        elastic.refresh(ESStringListEntity.class)
         then:
         elastic.select(ESStringListEntity.class)
              .eq(ESStringListEntity.ID, entity.getId())
