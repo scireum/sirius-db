@@ -92,7 +92,9 @@ public abstract class QueryBuilder<S> {
             }
 
             filterObject.remove(filter.getKey());
-            return where(new MongoConstraint("$and", Arrays.asList(other, filter.getObject())));
+            return where(new MongoConstraint("$and",
+                                             Arrays.asList(new BasicDBObject(filter.getKey(), other),
+                                                           new BasicDBObject(filter.getKey(), filter.getObject()))));
         }
 
         filterObject.put(filter.getKey(), filter.getObject());

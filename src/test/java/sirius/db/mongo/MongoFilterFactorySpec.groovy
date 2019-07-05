@@ -10,8 +10,8 @@ package sirius.db.mongo
 
 import sirius.db.mongo.properties.MongoStringListEntity
 import sirius.kernel.BaseSpecification
-import sirius.kernel.di.std.Part
 import sirius.kernel.commons.Value
+import sirius.kernel.di.std.Part
 
 class MongoFilterFactorySpec extends BaseSpecification {
 
@@ -136,9 +136,13 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mango.update(entityEmpty)
         when:
         mango.select(MongoStringListEntity.class)
-             .eq(MongoEntity.ID, entityEmpty.getId())
-             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).build()))
-             .queryOne()
+             .
+                eq(MongoEntity.ID, entityEmpty.getId())
+             .
+                where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
+                                                                                Value.of("4,5,6")).build()))
+             .
+                queryOne()
         then:
         thrown IllegalArgumentException
     }
@@ -182,5 +186,63 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .eq(MongoEntity.ID, entity.getId())
              .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, ["1", "2"]))
              .queryOne().getId() == entity.getId()
+    }
+
+    def "automatic and works for fields"() {
+        when:
+        MangoTestEntity e1 = new MangoTestEntity()
+        e1.setFirstname("AND")
+        e1.setLastname("WORKS")
+        mango.update(e1)
+        then:
+        mongo.find().
+                where(MangoTestEntity.LASTNAME, "WORKS").
+                countIn(MangoTestEntity.class) == 1
+        then:
+        mongo.find().
+                where(MangoTestEntity.LASTNAME, "WORKS").
+                where(MangoTestEntity.LASTNAME, "FAILS").
+                countIn(MangoTestEntity.class) == 0
+        then:
+        mongo.find().
+                where(MangoTestEntity.LASTNAME, "WORKS").
+                where(MangoTestEntity.FIRSTNAME, "AND").
+                countIn(MangoTestEntity.class) == 1
+        then:
+        mongo.find().
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND"))).
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "FAILS"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND"))).
+                countIn(MangoTestEntity.class) == 0
+        then:
+        mongo.find().
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND"))).
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND"))).
+                countIn(MangoTestEntity.class) == 1
+    }
+
+    def "automatic and works for multiple ands"() {
+        when:
+        MangoTestEntity e1 = new MangoTestEntity()
+        e1.setFirstname("AND1")
+        e1.setLastname("WORKS1")
+        mango.update(e1)
+        then:
+        mongo.find().
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1"))).
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "FAILS"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1"))).
+                countIn(MangoTestEntity.class) == 0
+        then:
+        mongo.find().
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1"))).
+                where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
+                                               QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1"))).
+                countIn(MangoTestEntity.class) == 1
     }
 }
