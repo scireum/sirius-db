@@ -16,12 +16,13 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.async.ExecutionPoint;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -79,14 +80,21 @@ public abstract class QueryBuilder<S> {
      */
     @SuppressWarnings("unchecked")
     public S where(MongoConstraint filter) {
-        if (filterObject.containsField(filter.getKey()) && !Objects.equals(filterObject.get(filter.getKey()),
-                                                                           filter.getObject())) {
-            throw new IllegalArgumentException(Strings.apply("A constraint for %s was already specified. "
-                                                             + "Please use Filter.and to combine multiple constraints "
-                                                             + "on one field. Filter: %s",
-                                                             filter.getKey(),
-                                                             filterObject.toString()));
+        if (filterObject.containsField(filter.getKey())) {
+            Object other = filterObject.get(filter.getKey());
+            if ("$and".equals(filter.getKey())) {
+                ((List<MongoConstraint>) other).addAll((List<MongoConstraint>) filter.getObject());
+                return (S) this;
+            }
+
+            if (Objects.equals(other, filter.getObject())) {
+                return (S) this;
+            }
+
+            filterObject.remove(filter.getKey());
+            return where(new MongoConstraint("$and", Arrays.asList(other, filter.getObject())));
         }
+
         filterObject.put(filter.getKey(), filter.getObject());
         return (S) this;
     }
