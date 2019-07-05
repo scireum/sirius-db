@@ -119,10 +119,10 @@ public class CSVFilter<C extends Constraint> {
             constraints.add(factory.eq(field, val));
         }
 
-        C orEmptyConstraint = orEmpty ? factory.notFilled(field) : null;
+        C orEmptyConstraint = orEmpty ? factory.isEmptyArray(field) : null;
 
         if (mode == Mode.CONTAINS_ANY) {
-            constraints.add(factory.notFilled(field));
+            constraints.add(factory.isEmptyArray(field));
             return factory.or(constraints);
         }
 
