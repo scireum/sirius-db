@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -89,6 +90,11 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     @Override
     public MongoConstraint notFilled(Mapping field) {
         return eqValue(field, null);
+    }
+
+    @Override
+    public MongoConstraint isEmptyArray(Mapping field) {
+        return new MongoOneInField(this, field, Arrays.asList(null, new BasicDBList())).build();
     }
 
     /**
