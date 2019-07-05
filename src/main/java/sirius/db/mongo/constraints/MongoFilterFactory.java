@@ -113,6 +113,10 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected MongoConstraint invert(MongoConstraint constraint) {
+        if (constraint.getKey().startsWith("$")) {
+            throw new IllegalArgumentException(Strings.apply("The %s constraint can't be easily inverted!",
+                                                             constraint.getKey()));
+        }
         return new MongoConstraint(constraint.getKey(), new Document("$not", constraint.getObject()));
     }
 

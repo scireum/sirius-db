@@ -127,6 +127,22 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .queryOne().getId() == entityEmpty.getId()
     }
 
+    def "complex constraint cant be inverted"() {
+        setup:
+        MongoStringListEntity entity = new MongoStringListEntity()
+        entity.getList().modify().addAll(["1", "2", "3"])
+        MongoStringListEntity entityEmpty = new MongoStringListEntity()
+        mango.update(entity)
+        mango.update(entityEmpty)
+        when:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).build()))
+             .queryOne()
+        then:
+        thrown IllegalArgumentException
+    }
+
     def "noneInField query works"() {
         setup:
         MongoStringListEntity entity = new MongoStringListEntity()
