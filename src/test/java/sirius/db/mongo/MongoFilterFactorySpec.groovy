@@ -136,13 +136,10 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mango.update(entityEmpty)
         when:
         mango.select(MongoStringListEntity.class)
-             .
-                eq(MongoEntity.ID, entityEmpty.getId())
-             .
-                where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
-                                                                                Value.of("4,5,6")).build()))
-             .
-                queryOne()
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
+                                                                              Value.of("4,5,6")).build()))
+             .queryOne()
         then:
         thrown IllegalArgumentException
     }
