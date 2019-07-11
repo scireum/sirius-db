@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -91,6 +92,11 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         return eqValue(field, null);
     }
 
+    @Override
+    public MongoConstraint isEmptyArray(Mapping field) {
+        return new MongoOneInField(this, field, Arrays.asList(null, new BasicDBList())).build();
+    }
+
     /**
      * Checks whether the given field is present, independent of the field value (specially <tt>null</tt>).
      *
@@ -113,6 +119,10 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected MongoConstraint invert(MongoConstraint constraint) {
+        if (constraint.getKey().startsWith("$")) {
+            throw new IllegalArgumentException(Strings.apply("The %s constraint can't be easily inverted!",
+                                                             constraint.getKey()));
+        }
         return new MongoConstraint(constraint.getKey(), new Document("$not", constraint.getObject()));
     }
 

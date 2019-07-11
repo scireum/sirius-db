@@ -372,8 +372,12 @@ public class EntityDescriptor {
 
     private List<Consumer<Object>> getSortedBeforeSaveHandlers() {
         if (sortedBeforeSaveHandlers == null) {
-            sortedBeforeSaveHandlers = beforeSaveHandlerCollector.getData();
-            beforeSaveHandlerCollector = null;
+            synchronized (this) {
+                if (beforeSaveHandlerCollector != null) {
+                    sortedBeforeSaveHandlers = beforeSaveHandlerCollector.getData();
+                    beforeSaveHandlerCollector = null;
+                }
+            }
         }
 
         return sortedBeforeSaveHandlers;

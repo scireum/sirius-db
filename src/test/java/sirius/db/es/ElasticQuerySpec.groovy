@@ -9,11 +9,14 @@
 package sirius.db.es
 
 import com.alibaba.fastjson.JSONObject
+import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
 import sirius.kernel.BaseSpecification
+import sirius.kernel.Scope
 import sirius.kernel.commons.Strings
+import sirius.kernel.commons.Value
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
@@ -219,6 +222,7 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "EXISTS").exists()
     }
 
+    @Scope(Scope.SCOPE_NIGHTLY)
     def "scroll query works"() {
         when:
         for (int i = 1; i <= 1500; i++) {
@@ -250,6 +254,32 @@ class ElasticQuerySpec extends BaseSpecification {
         def entities = elastic.select(QueryTestEntity.class).where(Elastic.FILTERS.or(constraint, constraint)).queryList()
         then:
         entities.size() == 1
+    }
+
+    def "containsAny query works"() {
+        setup:
+        ESStringListEntity entity = new ESStringListEntity()
+        entity.getList().modify().addAll(["1", "2", "3"])
+        ESStringListEntity entityEmpty = new ESStringListEntity()
+        when:
+        elastic.update(entity)
+        elastic.update(entityEmpty)
+        elastic.refresh(ESStringListEntity.class)
+        then:
+        elastic.select(ESStringListEntity.class)
+             .eq(ESStringListEntity.ID, entity.getId())
+             .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("2,4,5")).build())
+             .queryOne().getId() == entity.getId()
+        then:
+        elastic.select(ESStringListEntity.class)
+             .eq(ESStringListEntity.ID, entity.getId())
+             .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("4,5,6")).build())
+             .count() == 0
+        then:
+        elastic.select(ESStringListEntity.class)
+             .eq(ESStringListEntity.ID, entityEmpty.getId())
+             .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("4,5,6")).orEmpty().build())
+             .queryOne().getId() == entityEmpty.getId()
     }
 
     def "function score queries work"() {
@@ -286,6 +316,7 @@ class ElasticQuerySpec extends BaseSpecification {
         hits.get(entities.get(99).getId()).getDoubleValue("_score") == 198
     }
 
+    @Scope(Scope.SCOPE_NIGHTLY)
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
         elastic.select(ESListTestEntity.class).delete()

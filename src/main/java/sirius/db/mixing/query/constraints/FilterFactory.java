@@ -335,6 +335,14 @@ public abstract class FilterFactory<C extends Constraint> {
     public abstract C notFilled(Mapping field);
 
     /**
+     * Generates a constraint which ensures that the given list field is not filled (empty)
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     */
+    public abstract C isEmptyArray(Mapping field);
+
+    /**
      * Inverts the given constraint.
      *
      * @param constraint the constraint to invert.

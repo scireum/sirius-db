@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Maps;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -35,22 +34,6 @@ public class Row {
     @Nonnull
     public Collection<Tuple<String, Object>> getFieldsList() {
         return fields.values();
-    }
-
-    /**
-     * Returns the underlying row as map.
-     *
-     * @return a map containing all fields and values represented by this row
-     * @deprecated use {@link #getFieldsList()} which honors the field names in terms of upper- and lowercase.
-     */
-    @Nonnull
-    @Deprecated
-    public Map<String, Object> getFields() {
-        Map<String, Object> result = Maps.newTreeMap();
-        for (Map.Entry<String, Tuple<String, Object>> field : fields.entrySet()) {
-            result.put(field.getKey(), field.getValue().getSecond());
-        }
-        return Collections.unmodifiableMap(result);
     }
 
     /**

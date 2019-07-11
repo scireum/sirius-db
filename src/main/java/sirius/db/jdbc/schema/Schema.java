@@ -392,6 +392,9 @@ public class Schema implements Startable, Initializable {
             } catch (SQLException e) {
                 Exceptions.ignore(e);
                 Wait.seconds(waitInSeconds++);
+            } catch (Exception e) {
+                Exceptions.handle(OMA.LOG, e);
+                return;
             }
         }
     }
