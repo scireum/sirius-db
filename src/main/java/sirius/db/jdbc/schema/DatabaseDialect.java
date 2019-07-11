@@ -9,6 +9,8 @@
 package sirius.db.jdbc.schema;
 
 import javax.annotation.Nullable;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
@@ -196,4 +198,13 @@ public interface DatabaseDialect {
      * @return the effective name for the key
      */
     String getEffectiveKeyName(Table targetTable, Key key);
+
+    /**
+     * Determines the default value for the given column
+     *
+     * @param rs the result set of the column
+     * @return the default value, can be <tt>null</tt>
+     * @throws SQLException in case of a database error
+     */
+    String getDefaultValue(ResultSet rs) throws SQLException;
 }

@@ -152,7 +152,7 @@ public class SchemaTool {
             column.setLength(rs.getInt("COLUMN_SIZE"));
             column.setPrecision(rs.getInt("COLUMN_SIZE"));
             column.setScale(rs.getInt("DECIMAL_DIGITS"));
-            column.setDefaultValue(rs.getString("COLUMN_DEF"));
+            column.setDefaultValue(dialect.getDefaultValue(rs));
             table.getColumns().add(column);
         }
         rs.close();
