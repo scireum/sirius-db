@@ -20,6 +20,8 @@ import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -416,5 +418,10 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
      */
     protected int getConstraintCharacterLimit() {
         return DEFAULT_MAX_CONSTRAINT_NAME_LENGTH;
+    }
+
+    @Override
+    public String getDefaultValue(ResultSet rs) throws SQLException {
+        return rs.getString("COLUMN_DEF");
     }
 }

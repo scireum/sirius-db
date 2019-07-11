@@ -152,20 +152,10 @@ public class SchemaTool {
             column.setLength(rs.getInt("COLUMN_SIZE"));
             column.setPrecision(rs.getInt("COLUMN_SIZE"));
             column.setScale(rs.getInt("DECIMAL_DIGITS"));
-            column.setDefaultValue(getDefaultValue(rs));
+            column.setDefaultValue(dialect.getDefaultValue(rs));
             table.getColumns().add(column);
         }
         rs.close();
-    }
-
-    private String getDefaultValue(ResultSet rs) throws SQLException {
-        String defaultValue = rs.getString("COLUMN_DEF");
-
-        if ("NULL".equals(defaultValue)) {
-            return null;
-        }
-
-        return defaultValue;
     }
 
     /**
