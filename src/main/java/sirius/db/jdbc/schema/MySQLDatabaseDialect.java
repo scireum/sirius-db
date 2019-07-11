@@ -10,6 +10,8 @@ package sirius.db.jdbc.schema;
 
 import sirius.kernel.di.std.Register;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -128,5 +130,16 @@ public class MySQLDatabaseDialect extends BasicDatabaseDialect {
     @Override
     protected int getConstraintCharacterLimit() {
         return 64;
+    }
+
+    @Override
+    public String getDefaultValue(ResultSet rs) throws SQLException {
+        String defaultValue = super.getDefaultValue(rs);
+
+        if ("NULL".equals(defaultValue)) {
+            return null;
+        }
+
+        return defaultValue;
     }
 }
