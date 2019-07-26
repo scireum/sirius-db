@@ -194,7 +194,7 @@ public class DateRange {
     public static DateRange beforeThisYear() {
         return new DateRange("beforeThisYear",
                              NLS.get("DateRange.beforeThisYear"),
-                             null,
+                             LocalDate.of(1900, 01, 01).atStartOfDay(),
                              LocalDate.now().withDayOfYear(1).atStartOfDay());
     }
 
@@ -206,7 +206,7 @@ public class DateRange {
     public static DateRange beforeLastYear() {
         return new DateRange("beforeLastYear",
                              NLS.get("DateRange.beforeLastYear"),
-                             null,
+                             LocalDate.of(1900, 01, 01).atStartOfDay(),
                              LocalDate.now().minusYears(1).withDayOfYear(1).atStartOfDay());
     }
 
