@@ -15,11 +15,13 @@ import sirius.db.jdbc.schema.Schema;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
@@ -387,5 +389,19 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     @Override
     protected <E extends SQLEntity> Optional<E> findEntity(E entity) {
         return find((Class<E>) entity.getClass(), entity.getId());
+    }
+
+    @Override
+    public Value fetchField(Class<? extends SQLEntity> type, Object id, Mapping field) throws Exception {
+        if (Strings.isEmpty(id)) {
+            return Value.EMPTY;
+        }
+
+        return select(type).fields(field)
+                           .limit(1)
+                           .eq(SQLEntity.ID, id)
+                           .asSQLQuery()
+                           .queryFirst()
+                           .getValue(field.toString());
     }
 }
