@@ -17,7 +17,6 @@ import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 import spock.lang.Stepwise
 
-import java.time.Duration
 import java.util.function.Function
 import java.util.stream.Collectors
 
@@ -28,7 +27,11 @@ class SmartQuerySpec extends BaseSpecification {
     static OMA oma
 
     def setupSpec() {
-        oma.getReadyFuture().await(Duration.ofSeconds(60))
+        oma.select(SmartQueryTestEntity.class).delete()
+        oma.select(SmartQueryTestParentEntity.class).delete()
+        oma.select(SmartQueryTestChildEntity.class).delete()
+        oma.select(SmartQueryTestChildChildEntity.class).delete()
+
         fillSmartQueryTestEntity()
         fillSmartQueryTestChildAndParentEntity()
     }
