@@ -14,6 +14,7 @@ import sirius.db.mongo.Mango
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
+import sirius.kernel.nls.NLS
 
 import java.time.Duration
 
@@ -35,6 +36,7 @@ class BaseEntityRefSpec extends BaseSpecification {
 
     def "cascade from JDBC to ES and Mongo works"() {
         when:
+        NLS.get("BullShit") // TODO revert this
         RefEntity refEntity = new RefEntity()
         oma.update(refEntity)
 
