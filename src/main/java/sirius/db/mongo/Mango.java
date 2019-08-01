@@ -14,12 +14,14 @@ import org.bson.Document;
 import sirius.db.KeyGenerator;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.kernel.Startable;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -275,5 +277,20 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                                               ed.getRelationName())
                       .handle();
         }
+    }
+
+    @Override
+    public Value fetchField(Class<? extends MongoEntity> type, Object id, Mapping field) throws Exception {
+        if (Strings.isEmpty(id)) {
+            return Value.EMPTY;
+        }
+
+        EntityDescriptor descriptor = mixing.getDescriptor(type);
+        return mongo.find(descriptor.getRealm())
+                    .selectFields(field)
+                    .where(MongoEntity.ID, id)
+                    .singleIn(descriptor.getRelationName())
+                    .map(doc -> doc.get(field))
+                    .orElse(Value.EMPTY);
     }
 }

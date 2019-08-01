@@ -13,6 +13,7 @@ import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -447,4 +448,18 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @return the filter factory used by this mapper
      */
     public abstract FilterFactory<C> filters();
+
+    /**
+     * Provides the most efficient way of retrieving the field value of the requested entity.
+     * <p>
+     * Note that it is probably advisable to not call this method directly but rather
+     * {@link FieldLookupCache#lookup(BaseEntityRef, String)} which provides a cache.
+     *
+     * @param type  the type of the entity
+     * @param id    the id of the entity
+     * @param field the field to resolve
+     * @return the field value
+     * @throws Exception in case of an error during a lookup
+     */
+    public abstract Value fetchField(Class<? extends B> type, Object id, Mapping field) throws Exception;
 }

@@ -19,6 +19,7 @@ import sirius.db.es.constraints.ElasticFilterFactory;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
@@ -507,5 +508,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     public FilterFactory<ElasticConstraint> filters() {
         return FILTERS;
+    }
+
+    @Override
+    public Value fetchField(Class<? extends ElasticEntity> type, Object id, Mapping field) throws Exception {
+        throw new UnsupportedOperationException();
     }
 }
