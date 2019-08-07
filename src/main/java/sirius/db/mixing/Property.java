@@ -18,6 +18,8 @@ import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
+import sirius.kernel.di.transformers.Composable;
+import sirius.kernel.di.transformers.Transformable;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.NLS;
@@ -35,7 +37,7 @@ import java.util.Optional;
  * A property is responsible for mapping (converting) a value between a field ({@link Field} and a database column.
  * It is also responsible for checking the consistency of this field.
  */
-public abstract class Property {
+public abstract class Property extends Composable {
 
     /**
      * Contains the effective property name. If the field, for which this property was created, resides
@@ -279,8 +281,8 @@ public abstract class Property {
         }
 
         return NLS.getIfExists(propertyKey, currentLang)
-                                     .orElseGet(() -> NLS.getIfExists(alternativePropertyKey, currentLang)
-                                                         .orElseGet(() -> NLS.get(propertyKey)));
+                  .orElseGet(() -> NLS.getIfExists(alternativePropertyKey, currentLang)
+                                      .orElseGet(() -> NLS.get(propertyKey)));
     }
 
     /**
