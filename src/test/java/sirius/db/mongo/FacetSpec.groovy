@@ -61,7 +61,8 @@ class FacetSpec extends BaseSpecification {
                                                                                              DateRange.yesterday().
                                                                                                      getFrom(),
                                                                                              DateRange.today().
-                                                                                                     getUntil())))
+                                                                                                     getUntil()),
+                                                                               DateRange.beforeLastYear()))
         when:
         mango.select(MangoTestEntity.class)
              .eq(MangoTestEntity.AGE, 999)
@@ -88,6 +89,7 @@ class FacetSpec extends BaseSpecification {
         datesFacet.getRanges().get(0).getSecond() == 1
         datesFacet.getRanges().get(1).getSecond() == 1
         datesFacet.getRanges().get(2).getSecond() == 2
+        datesFacet.getRanges().get(3).getSecond() == 0
         and:
         superPowersFacet.getValues().get(0).getFirst() == "Flying"
         superPowersFacet.getValues().get(0).getSecond() == 3
@@ -96,6 +98,4 @@ class FacetSpec extends BaseSpecification {
         superPowersFacet.getValues().get(2).getFirst() == "Time travel"
         superPowersFacet.getValues().get(2).getSecond() == 1
     }
-
-
 }

@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
  */
 public class MongoDateRangeFacet extends MongoFacet {
 
+    private static final String DEFAULT_BUCKET_ID = "default-bucket-id";
+
     private final Mapping field;
     private List<Tuple<DateRange, Integer>> ranges;
     private Consumer<MongoDateRangeFacet> completionCallback;
@@ -90,10 +92,8 @@ public class MongoDateRangeFacet extends MongoFacet {
                                                     QueryBuilder.FILTERS.transform(range.getUntil().plusSeconds(1)));
             bucketFacet.append("boundaries", boundaries);
 
-            // Generate a default value which is used when the document does not contain the requested field.
-            // The exact value doesn't matter, it just has to be outside of the min,max range
-            Object defaultValue = QueryBuilder.FILTERS.transform(range.getUntil().plusSeconds(2));
-            bucketFacet.append("default", defaultValue);
+            // the bucket id for the results not in the given range
+            bucketFacet.append("default", DEFAULT_BUCKET_ID);
 
             // Append each range as $bucket aggregation
             BasicDBList facetAsList = new BasicDBList();
@@ -106,7 +106,7 @@ public class MongoDateRangeFacet extends MongoFacet {
     public void digest(Doc result) {
         AtomicInteger indexCounter = new AtomicInteger();
         for (Tuple<DateRange, Integer> range : ranges) {
-            Optional<Document> match = fetchFirst(result.getList(name + indexCounter.getAndIncrement()));
+            Optional<Document> match = getRangeBucket(result.getList(name + indexCounter.getAndIncrement()));
             match.ifPresent(document -> {
                 range.setSecond(document.getInteger("count", 0));
             });
@@ -117,17 +117,16 @@ public class MongoDateRangeFacet extends MongoFacet {
         }
     }
 
-    private Optional<Document> fetchFirst(List<Object> list) {
+    private Optional<Document> getRangeBucket(List<Object> list) {
         if (list == null) {
             return Optional.empty();
         }
 
-        Object element = list.stream().findFirst().orElse(null);
-        if (!(element instanceof Document)) {
-            return Optional.empty();
-        }
-
-        return Optional.of((Document) element);
+        return list.stream()
+                   .filter(object -> object instanceof Document)
+                   .map(object -> (Document) object)
+                   .filter(document -> !DEFAULT_BUCKET_ID.equals(document.get("_id")))
+                   .findFirst();
     }
 
     /**
