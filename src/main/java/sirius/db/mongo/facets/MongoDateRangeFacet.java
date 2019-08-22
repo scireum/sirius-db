@@ -107,9 +107,7 @@ public class MongoDateRangeFacet extends MongoFacet {
         AtomicInteger indexCounter = new AtomicInteger();
         for (Tuple<DateRange, Integer> range : ranges) {
             Optional<Document> match = getRangeBucket(result.getList(name + indexCounter.getAndIncrement()));
-            match.ifPresent(document -> {
-                range.setSecond(document.getInteger("count", 0));
-            });
+            match.ifPresent(document -> range.setSecond(document.getInteger("count", 0)));
         }
 
         if (completionCallback != null) {
