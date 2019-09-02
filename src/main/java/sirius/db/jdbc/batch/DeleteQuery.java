@@ -43,6 +43,10 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
      */
     @SuppressWarnings("unchecked")
     public void delete(@Nonnull E example, boolean invokeChecks, boolean addBatch) {
+        if (example.isNew()) {
+            return;
+        }
+
         try {
             if (this.type == null) {
                 this.type = (Class<E>) example.getClass();
