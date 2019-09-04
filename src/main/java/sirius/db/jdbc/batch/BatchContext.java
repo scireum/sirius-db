@@ -300,8 +300,21 @@ public class BatchContext implements Closeable {
         op.close();
     }
 
+    /**
+     * Determines if the batch context is empty.
+     *
+     * @return <tt>true</tt> if there are no queries registered at all, <tt>false</tt> otherwise
+     */
+    public boolean isEmpty() {
+        return this.queries.stream().anyMatch(BatchQuery::isQueryAvailable);
+    }
+
     @Override
     public String toString() {
+        if (isEmpty()) {
+            return "Empty batch context";
+        }
+
         StringBuilder sb = new StringBuilder("Batch Context\n");
         sb.append("----------------------------------------\n");
         for (BatchQuery<?> query : queries) {
