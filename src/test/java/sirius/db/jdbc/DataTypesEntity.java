@@ -20,7 +20,7 @@ import java.time.LocalTime;
 public class DataTypesEntity extends SQLEntity {
 
     public enum TestEnum {
-        Test1, Test2
+        Test1, TestTest, Test2
     }
 
     @DefaultValue("100")
@@ -56,6 +56,10 @@ public class DataTypesEntity extends SQLEntity {
     @DefaultValue("Test2")
     @NullAllowed
     private TestEnum enumValue;
+
+    @NullAllowed
+    @Length(10)
+    private TestEnum enumValueFixedLength;
 
     private int intValue2 = 5;
 

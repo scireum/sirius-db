@@ -98,4 +98,12 @@ class DataTypesSpec extends BaseSpecification {
         test.getLocalDateValue().getDayOfMonth() == 1
         test.getTestEnum() == DataTypesEntity.TestEnum.Test2
     }
+
+    def "determining the length of enums work"() {
+        when:
+        DataTypesEntity test = new DataTypesEntity()
+        then:
+        test.getDescriptor().getProperty("enumValue").getLength() == 8
+        test.getDescriptor().getProperty("enumValueFixedLength").getLength() == 10
+    }
 }

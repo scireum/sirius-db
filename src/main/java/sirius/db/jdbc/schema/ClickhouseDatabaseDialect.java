@@ -8,6 +8,8 @@
 
 package sirius.db.jdbc.schema;
 
+import sirius.db.mixing.annotations.Length;
+import sirius.db.mixing.properties.EnumProperty;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Register;
@@ -116,7 +118,22 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
                                                          column.getSource()));
     }
 
+    /**
+     * Determines the type for string columns.
+     * <p>
+     * {@link EnumProperty enum properties} should use the type <tt>String</tt>. Only if the length is explicitly
+     * given via the {@link Length} annotation we use <tt>FixedString</tt>.
+     *
+     * @param column the table column
+     * @return the clickhouse type
+     */
     private String getStringType(TableColumn column) {
+        if (column.getSource() instanceof EnumProperty && !column.getSource()
+                                                                 .getField()
+                                                                 .isAnnotationPresent(Length.class)) {
+            return "String";
+        }
+
         if (column.getLength() == 0) {
             return "String";
         } else {

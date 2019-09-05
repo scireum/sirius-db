@@ -19,6 +19,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Ordinal;
@@ -77,8 +78,24 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
     @SuppressWarnings("unchecked")
     @Override
     protected void determineLengths() {
+        super.determineLengths();
+
+        int maxLength = 0;
+
         for (Enum<?> e : ((Class<Enum<?>>) field.getType()).getEnumConstants()) {
-            this.length = Math.max(this.length, e.name().length());
+            maxLength = Math.max(maxLength, e.name().length());
+        }
+
+        if (this.length == 0) {
+            this.length = maxLength;
+        }
+
+        if (maxLength > this.length) {
+            Mixing.LOG.SEVERE(Strings.apply(
+                    "Length of enum property '%s' (from '%s') isn't large enough to fit maximum size %s",
+                    getName(),
+                    getDefinition(),
+                    maxLength));
         }
     }
 
