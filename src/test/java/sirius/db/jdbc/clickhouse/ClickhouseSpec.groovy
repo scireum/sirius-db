@@ -43,6 +43,7 @@ class ClickhouseSpec extends BaseSpecification {
         e.setaBooleanSetToTrue(true)
         e.setaBooleanSetToFalse(false)
         e.getStringList().add("string1").add("string2")
+        e.setEnumValue(ClickhouseTestEntity.EnumTest.TEST2)
         when:
         oma.update(e)
         then:
@@ -61,6 +62,7 @@ class ClickhouseSpec extends BaseSpecification {
         readBack.getDate() == LocalDate.now()
         readBack.getDateTime() == now
         readBack.getStringList().data() == ["string1", "string2"]
+        readBack.getEnumValue() == ClickhouseTestEntity.EnumTest.TEST2
     }
 
     def "batch insert into clickhouse works"() {
@@ -81,6 +83,7 @@ class ClickhouseSpec extends BaseSpecification {
             e.setString("Test")
             e.setFixedString("B")
             e.setInt8WithDefault(0)
+            e.setEnumValue(ClickhouseTestEntity.EnumTest.TEST1)
             insert.insert(e, true, true)
         }
         and:
