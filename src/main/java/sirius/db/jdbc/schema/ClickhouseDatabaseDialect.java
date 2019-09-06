@@ -121,7 +121,7 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     /**
      * Determines the type for string columns.
      * <p>
-     * {@link EnumProperty enum properties} should use the type <tt>String</tt>. Only if the length is explicitly
+     * {@link EnumProperty Enum properties} should use the type <tt>String</tt>. Only if the length is explicitly
      * given via the {@link Length} annotation we use <tt>FixedString</tt>.
      *
      * @param column the table column
