@@ -306,7 +306,7 @@ public class BatchContext implements Closeable {
      * @return <tt>true</tt> if there are no queries registered at all, <tt>false</tt> otherwise
      */
     public boolean isEmpty() {
-        return this.queries.stream().anyMatch(BatchQuery::isQueryAvailable);
+        return this.queries.stream().noneMatch(BatchQuery::isQueryAvailable);
     }
 
     @Override
