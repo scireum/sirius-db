@@ -21,6 +21,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -32,7 +33,7 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link Integer} field within a {@link Mixable}.
  */
-public class IntegerProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
+public class IntegerProperty extends NumberProperty implements SQLPropertyInfo, ESPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -79,7 +80,7 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
             return Integer.valueOf(((Long) object.get()).intValue());
         }
 
-        if (object.is(String.class) ) {
+        if (object.is(String.class)) {
             return object.getInteger();
         }
 
@@ -105,5 +106,11 @@ public class IntegerProperty extends Property implements SQLPropertyInfo, ESProp
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    @Override
+    protected void onBeforeSaveChecks(Object entity) {
+        super.onBeforeSaveChecks(entity);
+        assertValueIsInRange(Amount.of((Integer) getValue(entity)));
     }
 }

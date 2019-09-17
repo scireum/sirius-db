@@ -35,7 +35,7 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link Amount} field within a {@link Mixable}.
  */
-public class AmountProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
+public class AmountProperty extends NumberProperty implements SQLPropertyInfo, ESPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -124,11 +124,6 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected Object transformFromMongo(Value object) {
-        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
-    }
-
-    @Override
     protected Object transformFromElastic(Value data) {
         String valueAsString = data.asString();
         if (Strings.isEmpty(valueAsString)) {
@@ -180,5 +175,11 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    @Override
+    protected void onBeforeSaveChecks(Object entity) {
+        super.onBeforeSaveChecks(entity);
+        assertValueIsInRange((Amount) getValue(entity));
     }
 }
