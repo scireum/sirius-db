@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link Long} field within a {@link Mixable}.
  */
-public class LongProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
+public class LongProperty extends NumberProperty implements SQLPropertyInfo, ESPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -79,7 +79,7 @@ public class LongProperty extends Property implements SQLPropertyInfo, ESPropert
             return Long.valueOf((Integer) object.get());
         }
 
-        if (object.is(String.class) ) {
+        if (object.is(String.class)) {
             return object.getLong();
         }
 

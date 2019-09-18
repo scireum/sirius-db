@@ -35,7 +35,7 @@ import java.util.function.Consumer;
 /**
  * Represents an {@link Amount} field within a {@link Mixable}.
  */
-public class AmountProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
+public class AmountProperty extends NumberProperty implements SQLPropertyInfo, ESPropertyInfo {
 
     /**
      * Factory for generating properties based on their field type
@@ -121,11 +121,6 @@ public class AmountProperty extends Property implements SQLPropertyInfo, ESPrope
             return Amount.of((Double) object);
         }
         return Amount.of((BigDecimal) object);
-    }
-
-    @Override
-    protected Object transformFromMongo(Value object) {
-        throw new UnsupportedOperationException(getClass().getName() + " does not yet support MongoDB!");
     }
 
     @Override
