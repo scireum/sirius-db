@@ -45,7 +45,7 @@ public class MongoIntEntity extends MongoEntity {
 
     public static final Mapping TEST_INT_TWENTYS = Mapping.named("testIntTwentys");
     @MinValue(20)
-    @MaxValue(29)
+    @MaxValue(9)
     @NullAllowed
     private Integer testIntTwentys;
 

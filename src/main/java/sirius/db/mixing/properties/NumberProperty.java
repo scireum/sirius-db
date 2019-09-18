@@ -11,6 +11,7 @@ package sirius.db.mixing.properties;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
+import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.MaxValue;
 import sirius.db.mixing.annotations.MinValue;
@@ -33,6 +34,10 @@ public abstract class NumberProperty extends Property {
      */
     private Amount minValue = Amount.NOTHING;
     /**
+     * If true, this property must have a positive value
+     */
+    private boolean onlyPositive = false;
+    /**
      * Maximal value (including) of this property, calculated from the Annotations present on the field.
      */
     private Amount maxValue = Amount.NOTHING;
@@ -53,15 +58,34 @@ public abstract class NumberProperty extends Property {
 
     private void setupRange(@Nonnull Field field) {
         if (field.isAnnotationPresent(Positive.class)) {
-            minValue = field.getAnnotation(Positive.class).includeZero() ? Amount.ZERO : Amount.ONE;
+            //0 + positive is the same as  >= 0, no extra check needed
+            minValue = Amount.ZERO;
+            if (!field.getAnnotation(Positive.class).includeZero()) {
+                onlyPositive = true;
+            }
         }
         MinValue minValueAnnotation = field.getAnnotation(MinValue.class);
-        if (minValueAnnotation != null && Amount.of(minValueAnnotation.value()).isGreaterThan(minValue)) {
-            minValue = Amount.of(minValueAnnotation.value());
+        if (minValueAnnotation != null) {
+            if (Amount.of(minValueAnnotation.value()).isLessThan(minValue)) {
+                Mixing.LOG.WARN(
+                        "MinValue %s for Field %s in %s is redundant, as the Field is already marked as only positive.",
+                        minValueAnnotation.value(),
+                        field.getName(),
+                        field.getDeclaringClass().getName());
+            } else {
+                minValue = Amount.of(minValueAnnotation.value());
+            }
         }
         MaxValue maxValueAnnotation = field.getAnnotation(MaxValue.class);
         if (maxValueAnnotation != null) {
-            maxValue = Amount.of(maxValueAnnotation.value());
+            if (Amount.of(maxValueAnnotation.value()).isLessThan(minValue)) {
+                Mixing.LOG.WARN("Can not apply MaxValue %s for Field %s in %s as its smaller than the MinValue set for the Field.",
+                                maxValueAnnotation.value(),
+                                field.getName(),
+                                field.getDeclaringClass().getName());
+            } else {
+                maxValue = Amount.of(maxValueAnnotation.value());
+            }
         }
     }
 
@@ -78,6 +102,9 @@ public abstract class NumberProperty extends Property {
             throw illegalFieldValue(Value.of(amount));
         }
         if (maxValue.isFilled() && maxValue.isLessThan(amount)) {
+            throw illegalFieldValue(Value.of(amount));
+        }
+        if (onlyPositive && !amount.isPositive()) {
             throw illegalFieldValue(Value.of(amount));
         }
     }
