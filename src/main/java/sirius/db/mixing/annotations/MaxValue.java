@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 public @interface MaxValue {
 
     /**
-     * The maximal value (including) of this property.
+     * The maximal value of this property.
      *
      * @return the maximal value
      */

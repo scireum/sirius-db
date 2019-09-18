@@ -21,7 +21,6 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -106,11 +105,5 @@ public class IntegerProperty extends NumberProperty implements SQLPropertyInfo, 
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
-    }
-
-    @Override
-    protected void onBeforeSaveChecks(Object entity) {
-        super.onBeforeSaveChecks(entity);
-        assertValueIsInRange(Amount.of((Integer) getValue(entity)));
     }
 }

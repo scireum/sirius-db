@@ -20,7 +20,6 @@ import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
-import java.util.Objects;
 
 /**
  * Base class for number fields within a {@link Mixable}.
@@ -68,11 +67,14 @@ public abstract class NumberProperty extends Property {
 
     /**
      * Ensure the given value is within the range described by this fields annotations.
-     * 
+     *
      * @param amount the value of the of the field, wrapped in an {@link Amount}
      */
     protected void assertValueIsInRange(Amount amount) {
-        if (minValue.isFilled() && minValue.isGreaterThan(amount) && !(amount.isEmpty() && isNullable())) {
+        if (amount.isEmpty()) {
+            return;
+        }
+        if (minValue.isFilled() && minValue.isGreaterThan(amount)) {
             throw illegalFieldValue(Value.of(amount));
         }
         if (maxValue.isFilled() && maxValue.isLessThan(amount)) {
@@ -81,24 +83,8 @@ public abstract class NumberProperty extends Property {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof NumberProperty)) {
-            return false;
-        }
-        if (!((NumberProperty) obj).maxValue.equals(maxValue) || !((NumberProperty) obj).minValue.equals(minValue)) {
-            return false;
-        }
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(maxValue, minValue, descriptor, name);
+    protected void onBeforeSaveChecks(Object entity) {
+        super.onBeforeSaveChecks(entity);
+        assertValueIsInRange(Value.of(getValue(entity)).getAmount());
     }
 }

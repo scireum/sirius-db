@@ -176,10 +176,4 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
                        IndexMode::docValues,
                        description);
     }
-
-    @Override
-    protected void onBeforeSaveChecks(Object entity) {
-        super.onBeforeSaveChecks(entity);
-        assertValueIsInRange((Amount) getValue(entity));
-    }
 }
