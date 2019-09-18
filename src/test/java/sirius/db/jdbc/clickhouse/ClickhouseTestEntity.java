@@ -22,6 +22,10 @@ import java.time.LocalDate;
 @Realm("clickhouse")
 public class ClickhouseTestEntity extends SQLEntity {
 
+    public enum TestEnum {
+        Test1, Test2
+    }
+
     public static final Mapping DATE_TIME = Mapping.named("dateTime");
     private Instant dateTime;
 
@@ -68,6 +72,10 @@ public class ClickhouseTestEntity extends SQLEntity {
     public static final Mapping NULLABLE = Mapping.named("nullable");
     @NullAllowed
     private Long nullable = null;
+
+    public static final Mapping ENUM_VALUE = Mapping.named("enumValue");
+    @NullAllowed
+    private TestEnum enumValue = null;
 
     public Instant getDateTime() {
         return dateTime;
@@ -167,5 +175,13 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public void setNullable(Long nullable) {
         this.nullable = nullable;
+    }
+
+    public TestEnum getEnumValue() {
+        return enumValue;
+    }
+
+    public void setEnumValue(TestEnum enumValue) {
+        this.enumValue = enumValue;
     }
 }
