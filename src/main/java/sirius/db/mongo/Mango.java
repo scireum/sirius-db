@@ -11,7 +11,6 @@ package sirius.db.mongo;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
-import sirius.db.KeyGenerator;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -61,14 +60,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     @Part
     private Mongo mongo;
 
-    @Part
-    private KeyGenerator keyGen;
-
     @Override
     protected void createEntity(MongoEntity entity, EntityDescriptor ed) throws Exception {
         Inserter insert = mongo.insert();
-        String generateId = keyGen.generateId();
-        insert.set(MongoEntity.ID, generateId);
+        String generatedId = entity.generateId();
+        insert.set(MongoEntity.ID, generatedId);
         if (ed.isVersioned()) {
             insert.set(VERSION, 1);
         }
@@ -80,7 +76,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         insert.into(ed.getRelationName());
-        entity.setId(generateId);
+        entity.setId(generatedId);
         if (ed.isVersioned()) {
             entity.setVersion(1);
         }

@@ -8,6 +8,7 @@
 
 package sirius.db.mongo;
 
+import sirius.db.KeyGenerator;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
@@ -38,6 +39,9 @@ public abstract class MongoEntity extends BaseEntity<String> {
     @Part
     protected static Mango mango;
 
+    @Part
+    protected static KeyGenerator keyGen;
+
     @Override
     public boolean isUnique(Mapping field, Object value, Mapping... within) {
         Finder finder = mongo.find().where(field, value);
@@ -63,5 +67,9 @@ public abstract class MongoEntity extends BaseEntity<String> {
 
     protected void setId(String id) {
         this.id = id;
+    }
+
+    protected String generateId() {
+        return keyGen.generateId();
     }
 }
