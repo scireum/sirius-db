@@ -25,6 +25,15 @@ steps:
       event:
       - push
 
+  - name: cron_unit_tests
+    image: scireum/sirius-build
+    commands:
+      - mvn clean test -Dtests.nightly=true
+    volumes: *scireum_volumes
+    when:
+      event:
+      - cron
+
   - name: test
     image: scireum/sirius-build
     commands:
