@@ -69,6 +69,11 @@ public abstract class MongoEntity extends BaseEntity<String> {
         this.id = id;
     }
 
+    /**
+     * Generates an id to use in {@link #ID} when creating a new entity.
+     *
+     * @return the generated id
+     */
     protected String generateId() {
         return keyGen.generateId();
     }
