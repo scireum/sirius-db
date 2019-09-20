@@ -16,7 +16,7 @@ import sirius.kernel.di.std.Register;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Used generate IDs or keys in distributed environments where numeric sequences aren't suitable.
+ * Used to generate IDs or keys in distributed environments where numeric sequences aren't suitable.
  */
 @Register(classes = KeyGenerator.class)
 public class KeyGenerator {
