@@ -199,6 +199,8 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mongo.find()
              .where(MangoTestEntity.LASTNAME, "WORKS")
              .where(MangoTestEntity.LASTNAME, "FAILS")
+             .where(MangoTestEntity.LASTNAME, "FAILS-YET-AGAIN")
+             .where(MangoTestEntity.LASTNAME, "FAILS-THE-LAST-TIME")
              .countIn(MangoTestEntity.class) == 0
         then:
         mongo.find().where(MangoTestEntity.LASTNAME, "WORKS")
