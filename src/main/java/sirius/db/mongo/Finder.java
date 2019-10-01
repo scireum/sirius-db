@@ -370,7 +370,7 @@ public class Finder extends QueryBuilder<Finder> {
     public long countIn(String collection) {
         Watch w = Watch.start();
         try {
-            return mongo.db().getCollection(collection).count(filterObject);
+            return mongo.db().getCollection(collection).countDocuments(filterObject);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
