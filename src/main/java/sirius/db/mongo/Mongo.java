@@ -8,7 +8,6 @@
 
 package sirius.db.mongo;
 
-import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
@@ -35,7 +34,6 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +64,6 @@ public class Mongo implements Startable, Stoppable {
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
 
-    protected volatile boolean tracing;
-    protected volatile int traceLimit;
-    protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
     protected Average callDuration = new Average();
     protected Counter numSlowQueries = new Counter();
 
