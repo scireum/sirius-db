@@ -210,15 +210,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     public void executeFacets() {
         finder.executeFacets(descriptor, facets);
     }
-
-    /**
-     * Returns an <tt>$explain</tt> for this query.
-     *
-     * @return the explanation delivered by MongoDB
-     */
-    public Doc explain() {
-        return finder.explain(descriptor.getRelationName());
-    }
+    
 
     @Override
     public String toString() {
