@@ -200,19 +200,9 @@ public class Finder extends QueryBuilder<Finder> {
      * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
      */
     public Optional<Doc> singleIn(String collection) {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try {
-            FindIterable<Document> cur = mongo.db(database)
-                                              .getCollection(collection)
-                                              .find(filterObject)
-                                              .collation(Collation.builder().locale(collationLocale).build());
-            if (fields != null) {
-                cur.projection(fields);
-            }
-            if (orderBy != null) {
-                cur.sort(orderBy);
-            }
-            cur.skip(skip);
+            FindIterable<Document> cur = buildCursor(collection);
 
             Document obj = cur.first();
 
@@ -222,12 +212,27 @@ public class Finder extends QueryBuilder<Finder> {
                 return Optional.of(new Doc(obj));
             }
         } finally {
-            mongo.callDuration.addValue(w.elapsedMillis());
+            mongo.callDuration.addValue(watch.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(KEY_MONGO, "FIND ONE - " + collection + ": " + filterObject);
+                watch.submitMicroTiming(KEY_MONGO, "FIND ONE - " + collection + ": " + filterObject);
             }
-            traceIfRequired(collection, w);
+            traceIfRequired(collection, watch);
         }
+    }
+
+    private FindIterable<Document> buildCursor(String collection) {
+        FindIterable<Document> cursor = mongo.db(database)
+                                             .getCollection(collection)
+                                             .find(filterObject)
+                                             .collation(Collation.builder().locale(collationLocale).build());
+        if (fields != null) {
+            cursor.projection(fields);
+        }
+        if (orderBy != null) {
+            cursor.sort(orderBy);
+        }
+        cursor.skip(skip);
+        return cursor;
     }
 
     /**
@@ -249,35 +254,34 @@ public class Finder extends QueryBuilder<Finder> {
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
     public void eachIn(String collection, Function<Doc, Boolean> processor) {
-        Watch w = Watch.start();
-
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
         }
 
-        FindIterable<Document> cur = mongo.db(database)
-                                          .getCollection(collection)
-                                          .find(filterObject)
-                                          .collation(Collation.builder().locale(collationLocale).build());
-        if (fields != null) {
-            cur.projection(fields);
-        }
-        if (orderBy != null) {
-            cur.sort(orderBy);
-        }
-        cur.skip(skip);
+        FindIterable<Document> cursor = buildCursor(collection);
         if (limit > 0) {
-            cur.limit(limit);
+            cursor.limit(limit);
         }
-        if (batchSize > 0) {
-            cur.batchSize(batchSize);
-        }
+        applyBatchSize(cursor);
 
+        processCursor(cursor, processor, collection);
+    }
+
+    private void applyBatchSize(MongoIterable<Document> cursor) {
+        if (batchSize > 0) {
+            cursor.batchSize(batchSize);
+        }
+    }
+
+    private void processCursor(MongoIterable<Document> cursor,
+                               Function<Doc, Boolean> processor,
+                               String collection) {
+        Watch watch = Watch.start();
         TaskContext ctx = TaskContext.get();
         Monoflop mf = Monoflop.create();
-        for (Document doc : cur) {
+        for (Document doc : cursor) {
             if (mf.firstCall()) {
-                handleTracingAndReporting(collection, w);
+                handleTracingAndReporting(collection, watch);
             }
 
             boolean keepGoing = processor.apply(new Doc(doc));
@@ -297,51 +301,19 @@ public class Finder extends QueryBuilder<Finder> {
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
     public void sample(String collection, Function<Doc, Boolean> processor) {
-        Watch w = Watch.start();
-
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
         }
 
-        MongoIterable<Document> cur = mongo.db(database)
+        MongoIterable<Document> cursor = mongo.db(database)
                                            .getCollection(collection)
                                            .aggregate(ImmutableList.of(new BasicDBObject("$match", filterObject),
                                                                        new BasicDBObject("$sample",
                                                                                          new BasicDBObject("size",
                                                                                                            limit))));
-        if (batchSize > 0) {
-            cur.batchSize(batchSize);
-        }
 
-        TaskContext ctx = TaskContext.get();
-        Monoflop mf = Monoflop.create();
-        for (Document doc : cur) {
-            if (mf.firstCall()) {
-                handleTracingAndReporting(collection, w);
-            }
-
-            boolean keepGoing = processor.apply(new Doc(doc));
-            if (!keepGoing || !ctx.isActive()) {
-                return;
-            }
-        }
-    }
-
-    @Override
-    public Doc explain(String collection) {
-        FindIterable<Document> cur = mongo.db().getCollection(collection).find(filterObject);
-        if (fields != null) {
-            cur.projection(fields);
-        }
-        if (orderBy != null) {
-            cur.sort(orderBy);
-        }
-        cur.skip(skip);
-        if (limit > 0) {
-            cur.limit(limit);
-        }
-
-        return new Doc(cur.modifiers(new Document("$explain", true)).first());
+        applyBatchSize(cursor);
+        processCursor(cursor, processor, collection);
     }
 
     private void handleTracingAndReporting(String collection, Watch w) {
@@ -398,7 +370,7 @@ public class Finder extends QueryBuilder<Finder> {
     public long countIn(String collection) {
         Watch w = Watch.start();
         try {
-            return mongo.db().getCollection(collection).count(filterObject);
+            return mongo.db().getCollection(collection).countDocuments(filterObject);
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {

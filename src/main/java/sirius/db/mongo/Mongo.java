@@ -8,7 +8,6 @@
 
 package sirius.db.mongo;
 
-import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
@@ -35,7 +34,6 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +64,6 @@ public class Mongo implements Startable, Stoppable {
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
 
-    protected volatile boolean tracing;
-    protected volatile int traceLimit;
-    protected Map<String, Tuple<String, String>> traceData = Maps.newConcurrentMap();
     protected Average callDuration = new Average();
     protected Counter numSlowQueries = new Counter();
 
@@ -127,25 +122,23 @@ public class Mongo implements Startable, Stoppable {
                                                                                 hostAndPort.getSecond()))
                                           .filter(Objects::nonNull)
                                           .collect(Collectors.toList());
-        List<MongoCredential> credentials = determineCredentials(config);
+        MongoCredential credentials = determineCredentials(config);
         MongoClientOptions options = MongoClientOptions.builder().build();
-        MongoClient mongoClient = new MongoClient(hosts, credentials, options);
+        MongoClient mongoClient =
+                credentials == null ? new MongoClient(hosts, options) : new MongoClient(hosts, credentials, options);
 
         createIndices(database, mongoClient.getDatabase(config.get("db").asString()));
         return Tuple.create(mongoClient, config.get("db").asString());
     }
 
-    private List<MongoCredential> determineCredentials(Extension config) {
+    private MongoCredential determineCredentials(Extension config) {
         if (config.get("user").isEmptyString() || config.get("password").isEmptyString()) {
-            return Collections.emptyList();
+            return null;
         }
 
-        return Collections.singletonList(MongoCredential.createCredential(config.get("user").asString(),
-                                                                          config.get("userDatabase")
-                                                                                .asString(config.get("db").asString()),
-                                                                          config.get("password")
-                                                                                .asString()
-                                                                                .toCharArray()));
+        return MongoCredential.createCredential(config.get("user").asString(),
+                                                config.get("userDatabase").asString(config.get("db").asString()),
+                                                config.get("password").asString().toCharArray());
     }
 
     private void createIndices(String database, MongoDatabase db) {
