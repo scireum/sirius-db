@@ -23,6 +23,7 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.types.StringList;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -59,6 +60,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     private Boolean dbHasCapabilityLists;
 
+    private final boolean lob;
+
     /**
      * Factory for generating properties based on their field type
      */
@@ -87,6 +90,7 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     protected StringListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+        this.lob = field.isAnnotationPresent(Lob.class);
     }
 
     @Override
@@ -191,6 +195,12 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public void contributeToTable(Table table) {
-        table.getColumns().add(new TableColumn(this, hasDBCapabilityLists() ? Types.ARRAY : Types.CHAR));
+        if (hasDBCapabilityLists()) {
+            table.getColumns().add(new TableColumn(this, Types.ARRAY));
+        } else if (lob) {
+            table.getColumns().add(new TableColumn(this, Types.CLOB));
+        } else {
+            table.getColumns().add(new TableColumn(this, Types.CHAR));
+        }
     }
 }
