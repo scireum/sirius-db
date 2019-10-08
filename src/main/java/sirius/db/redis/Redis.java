@@ -11,6 +11,7 @@ package sirius.db.redis;
 import com.google.common.collect.Lists;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.params.SetParams;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
@@ -370,8 +371,9 @@ public class Redis implements Startable, Stoppable {
             do {
                 boolean locked = query(() -> "Try to Lock: " + lock, redis -> {
                     String key = PREFIX_LOCK + lock;
-                    String response =
-                            redis.set(key, CallContext.getNodeName(), "NX", "EX", (int) lockTimeout.getSeconds());
+                    String response = redis.set(key,
+                                                CallContext.getNodeName(),
+                                                SetParams.setParams().nx().ex((int) lockTimeout.getSeconds()));
                     if ("OK".equals(response)) {
                         redis.setex(key + SUFFIX_DATE, (int) lockTimeout.getSeconds(), LocalDateTime.now().toString());
                         return true;
