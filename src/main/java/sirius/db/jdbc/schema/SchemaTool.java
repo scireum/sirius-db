@@ -459,7 +459,7 @@ public class SchemaTool {
                         .format();
         }
         if (reason != null) {
-            List<String> sql = dialect.generateAlterColumnTo(targetTable, targetCol.getOldName(), targetCol);
+            List<String> sql = dialect.generateAlterColumnTo(targetTable, otherCol.getName(), targetCol);
             if (!sql.isEmpty()) {
                 SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(reason);
