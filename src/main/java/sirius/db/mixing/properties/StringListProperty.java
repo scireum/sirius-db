@@ -34,6 +34,8 @@ import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.sql.Array;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,15 +138,32 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     @Override
     protected Object transformFromJDBC(Value object) {
         if (hasDBCapabilityLists()) {
-            return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
+            if (object.isFilled()) {
+                return unpackListOrArray(object);
+            } else {
+                return EMPTY_STRING_ARRAY;
+            }
         }
         return Arrays.stream(object.asString().split(",")).filter(Strings::isFilled).collect(Collectors.toList());
     }
 
+    private Object unpackListOrArray(Value object) {
+        if (object.get() instanceof Array) {
+            try {
+                return Arrays.asList((String[]) ((Array) object.get()).getArray());
+            } catch (SQLException e) {
+                throw Exceptions.handle(Mixing.LOG, e);
+            }
+        } else {
+            return Arrays.asList(object.coerce(String[].class, EMPTY_STRING_ARRAY));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
     protected Object transformToJDBC(Object object) {
-        if (hasDBCapabilityLists()) {
-            return object;
+        if (hasDBCapabilityLists() && object instanceof Collection) {
+            return ((Collection<String>) object).toArray();
         }
         String data = Strings.join((Collection<?>) object, ",");
         if (length > 0 && data.length() > length) {
