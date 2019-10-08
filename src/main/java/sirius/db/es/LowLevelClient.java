@@ -11,6 +11,7 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
@@ -251,7 +252,7 @@ public class LowLevelClient {
      */
     public boolean aliasExists(String alias) {
         try {
-            return restClient.performRequest("HEAD", API_ALIAS + "/" + alias).getStatusLine().getStatusCode() == 200;
+            return restClient.performRequest(new Request("HEAD", API_ALIAS + "/" + alias)).getStatusLine().getStatusCode() == 200;
         } catch (ResponseException e) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
@@ -457,7 +458,7 @@ public class LowLevelClient {
      */
     public boolean indexExists(String index) {
         try {
-            return restClient.performRequest("HEAD", index).getStatusLine().getStatusCode() == 200;
+            return restClient.performRequest(new Request("HEAD", index)).getStatusLine().getStatusCode() == 200;
         } catch (ResponseException e) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
