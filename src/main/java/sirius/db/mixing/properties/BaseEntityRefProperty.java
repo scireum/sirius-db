@@ -173,7 +173,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
                                     "Cannot save '%s' (%s) because the referenced entity '%s' in '%s' was not persisted yet.",
                                     entity,
                                     entity.getClass().getName(),
-                                    ref.getValue(),
+                                    ref.getValueIfPresent().orElse(null),
                                     getName())
                             .handle();
         }
