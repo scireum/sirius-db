@@ -145,14 +145,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             RestClientBuilder.RequestConfigCallback configCallback =
                     requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(0);
 
-            HttpHost[] hosts = Arrays.stream(this.hosts.split(","))
+            HttpHost[] httpHosts = Arrays.stream(this.hosts.split(","))
                                      .map(String::trim)
                                      .map(host -> Strings.splitAtLast(host, ":"))
                                      .map(this::parsePort)
                                      .map(this::mapPort)
                                      .map(this::makeHttpHost)
                                      .toArray(size -> new HttpHost[size]);
-            client = new LowLevelClient(RestClient.builder(hosts).setRequestConfigCallback(configCallback).build());
+            client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configCallback).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.

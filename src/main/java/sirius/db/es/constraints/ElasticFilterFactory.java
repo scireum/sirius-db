@@ -11,7 +11,6 @@ package sirius.db.es.constraints;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
-import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.properties.StringMapProperty;
@@ -120,7 +119,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     public ElasticConstraint isEmptyArray(Mapping field) {
         return notFilled(field);
     }
-    
+
     /**
      * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
      *

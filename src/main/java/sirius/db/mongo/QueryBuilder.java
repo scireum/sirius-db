@@ -10,14 +10,12 @@ package sirius.db.mongo;
 
 import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
-import org.bson.Document;
 import sirius.db.DB;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.async.ExecutionPoint;
-import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;

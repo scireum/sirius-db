@@ -46,6 +46,8 @@ public abstract class MongoFacet {
 
     /**
      * Digests the facet result provided by the database.
+     *
+     * @param result the document to digest
      */
     public abstract void digest(Doc result);
 }
