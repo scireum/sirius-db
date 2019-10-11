@@ -11,6 +11,7 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import sirius.db.KeyGenerator;
@@ -144,15 +145,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             RestClientBuilder.RequestConfigCallback configCallback =
                     requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(0);
 
-            client = new LowLevelClient(RestClient.builder(Arrays.stream(hosts.split(","))
-                                                                 .map(String::trim)
-                                                                 .map(host -> Strings.splitAtLast(host, ":"))
-                                                                 .map(this::parsePort)
-                                                                 .map(this::mapPort)
-                                                                 .map(this::makeHttpHost)
-                                                                 .toArray(size -> new HttpHost[size]))
-                                                  .setRequestConfigCallback(configCallback)
-                                                  .build());
+            HttpHost[] hosts = Arrays.stream(this.hosts.split(","))
+                                     .map(String::trim)
+                                     .map(host -> Strings.splitAtLast(host, ":"))
+                                     .map(this::parsePort)
+                                     .map(this::mapPort)
+                                     .map(this::makeHttpHost)
+                                     .toArray(size -> new HttpHost[size]);
+            client = new LowLevelClient(RestClient.builder(hosts).setRequestConfigCallback(configCallback).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.
@@ -166,8 +166,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         int retries = 15;
         while (retries-- > 0) {
             try {
-                if (client.getRestClient().performRequest("GET", "/_cat/indices").getStatusLine().getStatusCode()
-                    == 200) {
+                if (client.getRestClient()
+                          .performRequest(new Request("GET", "/_cat/indices"))
+                          .getStatusLine()
+                          .getStatusCode() == 200) {
                     return;
                 }
             } catch (Exception e) {
@@ -499,7 +501,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * since the last refresh available for search.
      *
      * @param type the entity type which should be refreshed
-     * @param <E> the concrete type which should be refreshed
+     * @param <E>  the concrete type which should be refreshed
      */
     public <E extends ElasticEntity> void refresh(Class<E> type) {
         getLowLevelClient().refresh(determineIndex(mixing.getDescriptor(type)));

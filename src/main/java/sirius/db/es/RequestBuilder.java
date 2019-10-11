@@ -15,6 +15,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.ResponseListener;
@@ -110,11 +111,14 @@ class RequestBuilder {
                                                                            MAX_CONTENT_LONG_LENGTH));
             }
 
+            Request request = new Request(method, uri);
+            request.addParameters(determineParams());
             NStringEntity requestContent =
                     buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON))
                                   .orElse(null);
-            Response response = restClient.performRequest(method, uri, determineParams(), requestContent);
-            responseEntity = response.getEntity();
+            request.setEntity(requestContent);
+
+            responseEntity = restClient.performRequest(request).getEntity();
             return this;
         } catch (ResponseException e) {
             return handleResponseException(e);
@@ -198,10 +202,13 @@ class RequestBuilder {
                                                                        MAX_CONTENT_LONG_LENGTH));
         }
 
+        Request request = new Request(method, uri);
+        request.addParameters(determineParams());
         NStringEntity requestContent =
                 buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON)).orElse(null);
+        request.setEntity(requestContent);
 
-        restClient.performRequestAsync(method, uri, determineParams(), requestContent, new ResponseListener() {
+        restClient.performRequestAsync(request, new ResponseListener() {
             @Override
             public void onSuccess(Response response) {
                 onSuccess.accept(response);
