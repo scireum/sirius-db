@@ -166,7 +166,6 @@ public class GuardedUpdateQuery {
      * Adds an equals constraint to the query.
      * <p>
      * This will essentially generate a condition like {@code field = value}.
-     * </p>
      *
      * @param field the field to check
      * @param value the value to enforce
@@ -203,9 +202,6 @@ public class GuardedUpdateQuery {
 
     /**
      * Adds an equals constraint to the query is the given condition is fulfilled (<tt>true</tt>).
-     * <p>
-     * This will essentially generate a condition like {@code field = value}.
-     * </p>
      *
      * @param field     the field to check
      * @param value     the value to enforce
@@ -222,9 +218,6 @@ public class GuardedUpdateQuery {
 
     /**
      * Adds an equals constraint to the query unless the given value is <tt>null</tt>.
-     * <p>
-     * This will essentially generate a condition like {@code field = value}.
-     * </p>
      *
      * @param field the field to check
      * @param value the value to enforce
