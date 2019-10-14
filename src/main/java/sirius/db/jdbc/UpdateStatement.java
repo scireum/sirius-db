@@ -193,6 +193,8 @@ public class UpdateStatement {
         append(determineEffectiveColumnName(field));
         if (value == null && op == Operator.EQ) {
             append(" IS NULL");
+        } else  if (value == null && op == Operator.NE) {
+            append(" IS NOT NULL");
         } else {
             append(" ");
             append(op.toString());
