@@ -299,11 +299,11 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (!nativeLimit && limit.getTotalItems() > 0) {
             stmt.setMaxRows(limit.getTotalItems());
         }
-        if (limit.getTotalItems() > 1000 || limit.getTotalItems() <= 0) {
+        if (limit.getTotalItems() > SQLQuery.DEFAULT_FETCH_SIZE || limit.getTotalItems() <= 0) {
             if (db.hasCapability(Capability.STREAMING)) {
                 stmt.setFetchSize(Integer.MIN_VALUE);
             } else {
-                stmt.setFetchSize(1000);
+                stmt.setFetchSize(SQLQuery.DEFAULT_FETCH_SIZE);
             }
         }
     }
