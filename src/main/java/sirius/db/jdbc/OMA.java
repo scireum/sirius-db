@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.jdbc.constraints.SQLFilterFactory;
 import sirius.db.jdbc.schema.Schema;
-import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -68,6 +67,9 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
 
     /**
      * Provides the underlying database instance used to perform the actual statements.
+     * <p>
+     * Note that there is a helper available which can generate efficient UPDATE statements which are bound
+     * to various conditions. See {@link #updateStatement(Class)} for further information.
      *
      * @param realm the realm to determine the database for
      * @return the database used by the framework
@@ -125,6 +127,20 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         }
 
         return ready.booleanValue();
+    }
+
+    /**
+     * Creates a guarded update which can update one or more fields based on a given set of constraints.
+     * <p>
+     * This should be used to generate efficient UPDATE statements with nearly no framework overhead (this
+     * is essentially a build for a prepared statement.
+     *
+     * @param entityType the type to update
+     * @return the number of updated entities
+     */
+    public UpdateStatement updateStatement(Class<? extends SQLEntity> entityType) {
+        EntityDescriptor descriptor = mixing.getDescriptor(entityType);
+        return new UpdateStatement(descriptor, getDatabase(descriptor.getRealm()));
     }
 
     @Override
@@ -285,7 +301,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * Creates a query for the given type using the <tt>secondary</tt> datasource.
      * <p>
      * Note that an entity fetched from a secondary database shoudln't be updated back into the
-     * primary database. Call {@link #tryRefresh(BaseEntity)} to obtain a up-to-date copy from
+     * primary database. Call {@link #tryRefresh(E)} to obtain a up-to-date copy from
      * the primary or use <tt>optimistic locking</tt> to prevent re-inserting stale data into the primary db.
      *
      * @param type the type of entities to query for.

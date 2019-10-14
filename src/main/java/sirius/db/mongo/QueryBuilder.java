@@ -65,9 +65,36 @@ public abstract class QueryBuilder<S> {
      * @param value the value to filter on
      * @return the builder itself for fluent method calls
      */
-    @SuppressWarnings("unchecked")
     public S where(String key, Object value) {
         return where(FILTERS.eq(Mapping.named(key), value));
+    }
+
+    /**
+     * Adds an equals constraint to the query is the given condition is fulfilled (<tt>true</tt>).
+     *
+     * @param field     the name of the field to filter on
+     * @param value     the value to filter on
+     * @param condition the condition which must be <tt>true</tt> in order to create the constraint
+     * @return the builder itself for fluent method calls
+     */
+    @SuppressWarnings("unchecked")
+    public S whereIf(Mapping field, Object value, boolean condition) {
+        if (condition) {
+            where(field, value);
+        }
+
+        return (S) this;
+    }
+
+    /**
+     * Adds an equals constraint to the query unless the given value is <tt>null</tt>.
+     *
+     * @param field the name of the field to filter on
+     * @param value the value to filter on
+     * @return the builder itself for fluent method calls
+     */
+    public S whereIgnoreNull(Mapping field, Object value) {
+        return whereIf(field, value, value != null);
     }
 
     /**

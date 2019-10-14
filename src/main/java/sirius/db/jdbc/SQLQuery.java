@@ -38,8 +38,15 @@ import java.util.function.Function;
  */
 public class SQLQuery extends BaseSQLQuery {
 
+    /**
+     * Specifies the default fetch size (number of rows to fetch at once) for a query.
+     * <p>
+     * Note that some databases (MySQL / Maria DB) no not support this. If possible ({@link Capability#STREAMING})
+     * these are set to a minimal fethc size to enable streaming of large results.
+     */
+    public static final int DEFAULT_FETCH_SIZE = 1000;
+
     private static final String MICROTIMING_KEY = "SQL-QUERY";
-    private static final int DEFAULT_FETCH_SIZE = 1000;
     private final Database ds;
     private final String sql;
     private Context params = Context.create();
