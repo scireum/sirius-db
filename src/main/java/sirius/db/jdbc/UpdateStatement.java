@@ -277,8 +277,9 @@ public class UpdateStatement {
         try (Connection c = db.getConnection()) {
             try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 for (int i = 0; i < parameters.size(); i++) {
-                    stmt.setObject(i + 1, parameters.get(i));
+                    stmt.setObject(i + 1, Databases.convertValue(parameters.get(i)));
                 }
+
                 return stmt.executeUpdate();
             }
         } finally {
