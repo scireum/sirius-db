@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.jdbc.constraints.SQLFilterFactory;
 import sirius.db.jdbc.schema.Schema;
-import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -302,7 +301,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * Creates a query for the given type using the <tt>secondary</tt> datasource.
      * <p>
      * Note that an entity fetched from a secondary database shoudln't be updated back into the
-     * primary database. Call {@link #tryRefresh(BaseEntity)} to obtain a up-to-date copy from
+     * primary database. Call {@link #tryRefresh(E)} to obtain a up-to-date copy from
      * the primary or use <tt>optimistic locking</tt> to prevent re-inserting stale data into the primary db.
      *
      * @param type the type of entities to query for.
