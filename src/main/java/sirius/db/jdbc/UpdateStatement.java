@@ -10,6 +10,7 @@ package sirius.db.jdbc;
 
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
 
 import java.sql.Connection;
@@ -21,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Provides a simple helper to generate efficient update queries on {@link SQLEntity entities}.
+ * Provides a simple helper to generate update statements with multiple where conditions on {@link SQLEntity entities}.
  * <p>
  * <b>Note that this will not execute any {@link sirius.db.mixing.annotations.BeforeSave} handlers.</b>
  * <p>
@@ -33,15 +34,15 @@ import java.util.List;
  * Note that this, being a builder class with minimal state overhead, does not support to add another update
  * via {@link #set(Mapping, Object)} once the first constraint has been added via {@link #where(Mapping, Object)}.
  */
-public class GuardedUpdateQuery {
+public class UpdateStatement {
 
     private static final String MICROTIMING_KEY = "SQL-GUARDED-UPDATE";
     private final EntityDescriptor descriptor;
     private final Database db;
     private StringBuilder queryBuilder = new StringBuilder();
-    private boolean wherePart;
-    private boolean setPart;
-    private List<Object> parameters = new ArrayList<>();
+    private final Monoflop wherePartStarted = Monoflop.create();
+    private final Monoflop setPartStarted = Monoflop.create();
+    private final List<Object> parameters = new ArrayList<>();
 
     /**
      * Creates a new query instance.
@@ -51,7 +52,7 @@ public class GuardedUpdateQuery {
      * @param descriptor the descriptor of the type to query
      * @param db         the database to operate on
      */
-    protected GuardedUpdateQuery(EntityDescriptor descriptor, Database db) {
+    protected UpdateStatement(EntityDescriptor descriptor, Database db) {
         this.descriptor = descriptor;
         this.db = db;
     }
@@ -63,7 +64,7 @@ public class GuardedUpdateQuery {
      * @param value the value to place in the field
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery set(Mapping field, Object value) {
+    public UpdateStatement set(Mapping field, Object value) {
         prepareSet();
         append(determineEffectiveColumnName(field));
         append(" = ?");
@@ -72,11 +73,10 @@ public class GuardedUpdateQuery {
     }
 
     private void prepareSet() {
-        if (wherePart) {
+        if (wherePartStarted.isToggled()) {
             throw new IllegalStateException("Cannot append to the SET part when already building the WHERE part");
         }
-        if (!setPart) {
-            setPart = true;
+        if (setPartStarted.firstCall()) {
             append("UPDATE ");
             append(descriptor.getRelationName());
             append(" SET ");
@@ -101,7 +101,7 @@ public class GuardedUpdateQuery {
      * @param field the field to increment
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery inc(Mapping field) {
+    public UpdateStatement inc(Mapping field) {
         prepareSet();
         String columnName = determineEffectiveColumnName(field);
         append(columnName);
@@ -123,7 +123,7 @@ public class GuardedUpdateQuery {
      *                  in the field.
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery setIf(Mapping field, Object value, boolean condition) {
+    public UpdateStatement setIf(Mapping field, Object value, boolean condition) {
         if (condition) {
             set(field, value);
         }
@@ -138,7 +138,7 @@ public class GuardedUpdateQuery {
      * @param value the value to place in the field
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery setIgnoringNull(Mapping field, Object value) {
+    public UpdateStatement setIgnoringNull(Mapping field, Object value) {
         return setIf(field, value, value != null);
     }
 
@@ -148,7 +148,7 @@ public class GuardedUpdateQuery {
      * @param field the field to update
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery setToNow(Mapping field) {
+    public UpdateStatement setToNow(Mapping field) {
         return set(field, LocalDateTime.now());
     }
 
@@ -158,7 +158,7 @@ public class GuardedUpdateQuery {
      * @param field the field to update
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery setToToday(Mapping field) {
+    public UpdateStatement setToToday(Mapping field) {
         return set(field, LocalDate.now());
     }
 
@@ -171,7 +171,7 @@ public class GuardedUpdateQuery {
      * @param value the value to enforce
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery where(Mapping field, Object value) {
+    public UpdateStatement where(Mapping field, Object value) {
         prepareWhere();
         append(determineEffectiveColumnName(field));
         if (value == null) {
@@ -192,8 +192,7 @@ public class GuardedUpdateQuery {
     }
 
     private void prepareWhere() {
-        if (!wherePart) {
-            wherePart = true;
+        if (wherePartStarted.firstCall()) {
             append(" WHERE ");
         } else {
             append(", ");
@@ -208,7 +207,7 @@ public class GuardedUpdateQuery {
      * @param condition the condition which must be <tt>true</tt> in order to create the constraint
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery whereIf(Mapping field, Object value, boolean condition) {
+    public UpdateStatement whereIf(Mapping field, Object value, boolean condition) {
         if (condition) {
             where(field, value);
         }
@@ -223,7 +222,7 @@ public class GuardedUpdateQuery {
      * @param value the value to enforce
      * @return the query itself for fluent method calls
      */
-    public GuardedUpdateQuery whereIgnoreNull(Mapping field, Object value) {
+    public UpdateStatement whereIgnoreNull(Mapping field, Object value) {
         return whereIf(field, value, value != null);
     }
 
@@ -234,7 +233,7 @@ public class GuardedUpdateQuery {
      * @throws SQLException in case of a database error
      */
     public int executeUpdate() throws SQLException {
-        if (!setPart) {
+        if (!setPartStarted.isToggled()) {
             return 0;
         }
 

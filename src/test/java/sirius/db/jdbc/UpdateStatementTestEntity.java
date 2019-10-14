@@ -16,10 +16,10 @@ import sirius.db.mixing.types.BaseEntityRef;
 import javax.annotation.Nullable;
 
 /**
- * Testentity for GuardedUpdateQuerySpec
+ * Testentity for UpdateStatementSpec
  */
 @ComplexDelete(false)
-public class GuardedUpdateQueryTestEntity extends SQLEntity {
+public class UpdateStatementTestEntity extends SQLEntity {
 
     public static final Mapping VALUE = Mapping.named("value");
     @Length(50)

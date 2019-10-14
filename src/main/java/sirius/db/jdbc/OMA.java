@@ -69,7 +69,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * Provides the underlying database instance used to perform the actual statements.
      * <p>
      * Note that there is a helper available which can generate efficient UPDATE statements which are bound
-     * to various conditions. See {@link #guardedUpdate(Class)} for further information.
+     * to various conditions. See {@link #updateStatement(Class)} for further information.
      *
      * @param realm the realm to determine the database for
      * @return the database used by the framework
@@ -138,9 +138,9 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * @param entityType the type to update
      * @return the number of updated entities
      */
-    public GuardedUpdateQuery guardedUpdate(Class<? extends SQLEntity> entityType) {
+    public UpdateStatement updateStatement(Class<? extends SQLEntity> entityType) {
         EntityDescriptor descriptor = mixing.getDescriptor(entityType);
-        return new GuardedUpdateQuery(descriptor, getDatabase(descriptor.getRealm()));
+        return new UpdateStatement(descriptor, getDatabase(descriptor.getRealm()));
     }
 
     @Override
