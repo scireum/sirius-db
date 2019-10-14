@@ -87,7 +87,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @return the generated constraint
      */
 
-    protected abstract C eqValue(Mapping field, @Nonnull Object value);
+    protected abstract C eqValue(Mapping field, Object value);
 
     /**
      * Represents <tt>field = value</tt> as constraint
@@ -142,7 +142,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param value the value to filter with
      * @return the generated constraint
      */
-    protected abstract C neValue(Mapping field, @Nonnull Object value);
+    protected abstract C neValue(Mapping field, Object value);
 
     /**
      * Represents <tt>field &gt; value</tt> as constraint
