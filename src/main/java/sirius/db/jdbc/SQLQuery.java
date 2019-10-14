@@ -112,24 +112,6 @@ public class SQLQuery extends BaseSQLQuery {
         }
     }
 
-    @Override
-    protected void processResultSet(Function<Row, Boolean> handler,
-                                    Limit effectiveLimit,
-                                    ResultSet resultSet,
-                                    TaskContext taskContext) throws SQLException {
-        while (resultSet.next() && taskContext.isActive()) {
-            Row row = loadIntoRow(resultSet);
-            if (effectiveLimit.nextRow()) {
-                if (!handler.apply(row)) {
-                    return;
-                }
-            }
-            if (!effectiveLimit.shouldContinue()) {
-                return;
-            }
-        }
-    }
-
     protected PreparedStatement createPreparedStatement(Connection c) throws SQLException {
         StatementCompiler compiler = new StatementCompiler(c, false);
         compiler.buildParameterizedStatement(sql, params);
