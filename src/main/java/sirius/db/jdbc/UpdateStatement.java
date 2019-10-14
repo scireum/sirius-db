@@ -45,6 +45,24 @@ public class UpdateStatement {
     private final List<Object> parameters = new ArrayList<>();
 
     /**
+     * Enumerates the operators supported by {@link #where(Mapping, Operator, Object)}.
+     */
+    public enum Operator {
+        LT("<"), LT_EQ("<="), EQ("="), GT_EQ(">="), GT(">"), NE("<>");
+
+        private final String operation;
+
+        Operator(String operation) {
+            this.operation = operation;
+        }
+
+        @Override
+        public String toString() {
+            return operation;
+        }
+    }
+
+    /**
      * Creates a new query instance.
      * <p>
      * Use {@link OMA#select(Class)} to create a new query.
@@ -163,6 +181,29 @@ public class UpdateStatement {
     }
 
     /**
+     * Adds the given constraint to the query.
+     *
+     * @param field the field to check
+     * @param op    the operator to use
+     * @param value the value to enforce
+     * @return the query itself for fluent method calls
+     */
+    public UpdateStatement where(Mapping field, Operator op, Object value) {
+        prepareWhere();
+        append(determineEffectiveColumnName(field));
+        if (value == null && op == Operator.EQ) {
+            append(" IS NULL");
+        } else {
+            append(" ");
+            append(op.toString());
+            append(" ?");
+
+            parameters.add(value);
+        }
+        return this;
+    }
+
+    /**
      * Adds an equals constraint to the query.
      * <p>
      * This will essentially generate a condition like {@code field = value}.
@@ -172,15 +213,7 @@ public class UpdateStatement {
      * @return the query itself for fluent method calls
      */
     public UpdateStatement where(Mapping field, Object value) {
-        prepareWhere();
-        append(determineEffectiveColumnName(field));
-        if (value == null) {
-            append(" IS NULL");
-        } else {
-            append(" = ?");
-            parameters.add(value);
-        }
-        return this;
+        return where(field, Operator.EQ, value);
     }
 
     private String determineEffectiveColumnName(Mapping field) {
@@ -209,7 +242,7 @@ public class UpdateStatement {
      */
     public UpdateStatement whereIf(Mapping field, Object value, boolean condition) {
         if (condition) {
-            where(field, value);
+            where(field, Operator.EQ, value);
         }
 
         return this;
