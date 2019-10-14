@@ -19,7 +19,6 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
 import sirius.kernel.di.transformers.Composable;
-import sirius.kernel.di.transformers.Transformable;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 import sirius.kernel.nls.NLS;

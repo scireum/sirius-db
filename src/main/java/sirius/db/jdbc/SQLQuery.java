@@ -39,12 +39,18 @@ import java.util.function.Function;
 public class SQLQuery extends BaseSQLQuery {
 
     private static final String MICROTIMING_KEY = "SQL-QUERY";
+    private static final int DEFAULT_FETCH_SIZE = 1000;
     private final Database ds;
     private final String sql;
     private Context params = Context.create();
 
-    /*
-     * Create a new instance using Databases.createQuery(sql)
+    /**
+     * Creates a new instance for the given datasource and query.
+     * <p>
+     * Create a new instance using {@code Databases.createQuery(sql)}.
+     *
+     * @param ds  the datasource to query
+     * @param sql the query to execute
      */
     protected SQLQuery(Database ds, String sql) {
         this.ds = ds;
@@ -103,29 +109,11 @@ public class SQLQuery extends BaseSQLQuery {
     }
 
     protected void applyFetchSize(PreparedStatement stmt, Limit effectiveLimit) throws SQLException {
-        if (effectiveLimit.getTotalItems() > 1000 || effectiveLimit.getTotalItems() <= 0) {
+        if (effectiveLimit.getTotalItems() > DEFAULT_FETCH_SIZE || effectiveLimit.getTotalItems() <= 0) {
             if (ds.hasCapability(Capability.STREAMING)) {
                 stmt.setFetchSize(Integer.MIN_VALUE);
             } else {
-                stmt.setFetchSize(1000);
-            }
-        }
-    }
-
-    @Override
-    protected void processResultSet(Function<Row, Boolean> handler,
-                                    Limit effectiveLimit,
-                                    ResultSet resultSet,
-                                    TaskContext taskContext) throws SQLException {
-        while (resultSet.next() && taskContext.isActive()) {
-            Row row = loadIntoRow(resultSet);
-            if (effectiveLimit.nextRow()) {
-                if (!handler.apply(row)) {
-                    return;
-                }
-            }
-            if (!effectiveLimit.shouldContinue()) {
-                return;
+                stmt.setFetchSize(DEFAULT_FETCH_SIZE);
             }
         }
     }

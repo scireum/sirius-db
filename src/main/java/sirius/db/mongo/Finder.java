@@ -38,6 +38,8 @@ import java.util.function.Function;
 public class Finder extends QueryBuilder<Finder> {
 
     private static final String KEY_MONGO = "mongo";
+    private static final String OPERATOR_MATCH = "$match";
+    private static final String OPERATOR_SAMPLE = "$sample";
 
     @ConfigValue("mongo.collationLocale")
     private static String collationLocale;
@@ -273,9 +275,7 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
-    private void processCursor(MongoIterable<Document> cursor,
-                               Function<Doc, Boolean> processor,
-                               String collection) {
+    private void processCursor(MongoIterable<Document> cursor, Function<Doc, Boolean> processor, String collection) {
         Watch watch = Watch.start();
         TaskContext ctx = TaskContext.get();
         Monoflop mf = Monoflop.create();
@@ -306,11 +306,11 @@ public class Finder extends QueryBuilder<Finder> {
         }
 
         MongoIterable<Document> cursor = mongo.db(database)
-                                           .getCollection(collection)
-                                           .aggregate(ImmutableList.of(new BasicDBObject("$match", filterObject),
-                                                                       new BasicDBObject("$sample",
-                                                                                         new BasicDBObject("size",
-                                                                                                           limit))));
+                                              .getCollection(collection)
+                                              .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH, filterObject),
+                                                                          new BasicDBObject(OPERATOR_SAMPLE,
+                                                                                            new BasicDBObject("size",
+                                                                                                              limit))));
 
         applyBatchSize(cursor);
         processCursor(cursor, processor, collection);
@@ -413,7 +413,7 @@ public class Finder extends QueryBuilder<Finder> {
                                                           .append("result", new BasicDBObject(operator, "$" + field));
             MongoCursor<Document> queryResult = mongo.db()
                                                      .getCollection(collection)
-                                                     .aggregate(ImmutableList.of(new BasicDBObject("$match",
+                                                     .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH,
                                                                                                    filterObject),
                                                                                  new BasicDBObject("$group",
                                                                                                    groupStage)))
@@ -454,7 +454,7 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             MongoCursor<Document> queryResult = mongo.db()
                                                      .getCollection(collection)
-                                                     .aggregate(ImmutableList.of(new BasicDBObject("$match",
+                                                     .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH,
                                                                                                    filterObject),
                                                                                  new BasicDBObject("$facet",
                                                                                                    facetStage)))
