@@ -143,6 +143,20 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         return new UpdateStatement(descriptor, getDatabase(descriptor.getRealm()));
     }
 
+    /**
+     * Creates a DELETE statement which delete entities based on a given set of constraints.
+     * <p>
+     * This should be used to generate efficient DELETE statements with nearly no framework overhead (this
+     * is essentially a build for a prepared statement.
+     *
+     * @param entityType the type to delete
+     * @return the statement builder
+     */
+    public DeleteStatement deleteStatement(Class<? extends SQLEntity> entityType) {
+        EntityDescriptor descriptor = mixing.getDescriptor(entityType);
+        return new DeleteStatement(descriptor, getDatabase(descriptor.getRealm()));
+    }
+
     @Override
     protected void createEntity(SQLEntity entity, EntityDescriptor ed) throws Exception {
         Context insertData = Context.create();
