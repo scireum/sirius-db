@@ -13,6 +13,7 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -153,6 +154,7 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     @Nullable
     @Deprecated
     public E getValue() {
+        Exceptions.logDeprecatedMethodUse();
         return fetchValue();
     }
 
