@@ -130,13 +130,13 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     /**
-     * Creates a guarded update which can update one or more fields based on a given set of constraints.
+     * Creates an UPDATE statement which can update one or more fields based on a given set of constraints.
      * <p>
      * This should be used to generate efficient UPDATE statements with nearly no framework overhead (this
      * is essentially a build for a prepared statement.
      *
      * @param entityType the type to update
-     * @return the number of updated entities
+     * @return the statement builder
      */
     public UpdateStatement updateStatement(Class<? extends SQLEntity> entityType) {
         EntityDescriptor descriptor = mixing.getDescriptor(entityType);
