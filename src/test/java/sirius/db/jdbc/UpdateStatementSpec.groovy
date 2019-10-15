@@ -16,22 +16,22 @@ class UpdateStatementSpec extends BaseSpecification {
     @Part
     private static OMA oma;
 
-    def "a guarded query updates the expected entities"() {
+    def "an update statement updates the expected entities"() {
         given:
-        UpdateStatementTestEntity e1 = new UpdateStatementTestEntity()
+        GeneratedStatementTestEntity e1 = new GeneratedStatementTestEntity()
         e1.setTestNumber(1)
         e1.setValue("2")
         oma.update(e1)
         and:
-        UpdateStatementTestEntity e2 = new UpdateStatementTestEntity()
+        GeneratedStatementTestEntity e2 = new GeneratedStatementTestEntity()
         e2.setTestNumber(3)
         e2.setValue("4")
         oma.update(e2)
         when:
         int changes = oma.
-                updateStatement(UpdateStatementTestEntity.class).
-                set(UpdateStatementTestEntity.VALUE, "5").
-                where(UpdateStatementTestEntity.TEST_NUMBER, 1).
+                updateStatement(GeneratedStatementTestEntity.class).
+                set(GeneratedStatementTestEntity.VALUE, "5").
+                where(GeneratedStatementTestEntity.TEST_NUMBER, 1).
                 executeUpdate()
         then: "One entity was changed"
         changes == 1
@@ -41,26 +41,26 @@ class UpdateStatementSpec extends BaseSpecification {
         oma.refreshOrFail(e2).getValue() == "4"
     }
 
-    def "a guarded query reports illegal use (set after where)"() {
+    def "a update statement reports illegal use (set after where)"() {
         when:
-        oma.updateStatement(UpdateStatementTestEntity.class).
-                where(UpdateStatementTestEntity.TEST_NUMBER, 1).
-                set(UpdateStatementTestEntity.VALUE, "5").
+        oma.updateStatement(GeneratedStatementTestEntity.class).
+                where(GeneratedStatementTestEntity.TEST_NUMBER, 1).
+                set(GeneratedStatementTestEntity.VALUE, "5").
                 executeUpdate()
         then:
         thrown(IllegalStateException)
     }
 
-    def "a guarded query ignores an empty update without errors"() {
+    def "a update statement ignores an empty update without errors"() {
         when:
-        int changes = oma.updateStatement(UpdateStatementTestEntity.class).
-                where(UpdateStatementTestEntity.TEST_NUMBER, 1).
+        int changes = oma.updateStatement(GeneratedStatementTestEntity.class).
+                where(GeneratedStatementTestEntity.TEST_NUMBER, 1).
                 executeUpdate()
         then: "Nothing really happens"
         changes == 0
     }
 
-    def "a guarded query detects and reports join columns as errors"() {
+    def "a update statement detects and reports join columns as errors"() {
         when:
         oma.updateStatement(SmartQueryTestChildEntity.class).
                 set(SmartQueryTestChildEntity.NAME, "X").
