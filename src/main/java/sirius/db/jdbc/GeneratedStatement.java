@@ -162,7 +162,7 @@ abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
         if (wherePartStarted.firstCall()) {
             beginWHERE();
         } else {
-            append(", ");
+            append(" AND ");
         }
     }
 
