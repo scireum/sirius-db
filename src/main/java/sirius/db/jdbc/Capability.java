@@ -61,6 +61,11 @@ public enum Capability {
     DECIMAL_TYPE;
 
     /**
+     * Contains the default capabilities of unknown databases.
+     */
+    public static final Set<Capability> DEFAULT_CAPABILITIES =
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
+    /**
      * Contains the capabilities of a MySQL database
      */
     @SuppressWarnings("squid:S1641")
