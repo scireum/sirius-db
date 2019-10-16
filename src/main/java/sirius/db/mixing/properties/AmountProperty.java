@@ -12,6 +12,9 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
+import sirius.db.jdbc.Capability;
+import sirius.db.jdbc.Database;
+import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -24,6 +27,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
@@ -54,6 +58,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
                            Field field,
                            Consumer<Property> propertyConsumer) {
             AmountProperty amountProperty = new AmountProperty(descriptor, accessPath, field);
+
             try {
                 if (field.get(descriptor.getType().getDeclaredConstructor().newInstance()) == null) {
                     Mixing.LOG.WARN("Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING"
@@ -72,6 +77,9 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
             propertyConsumer.accept(amountProperty);
         }
     }
+
+    @Part
+    private static OMA oma;
 
     AmountProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
@@ -134,31 +142,43 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     @Override
     public void contributeToTable(Table table) {
-        TableColumn column = new TableColumn(this, Types.DECIMAL);
-        if (column.getLength() > 0) {
-            Mixing.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property must not specify a length!",
-                            getName(),
-                            field.getName(),
-                            field.getDeclaringClass().getName());
-        }
-        if (column.getPrecision() <= 0) {
-            Mixing.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property needs a precision!"
-                            + " Use @Numeric to specify one. Defaulting to 15.",
-                            getName(),
-                            field.getName(),
-                            field.getDeclaringClass().getName());
-            column.setPrecision(15);
-        }
-        if (column.getScale() > column.getPrecision()) {
-            Mixing.LOG.WARN(
-                    "Error in property '%s' ('%s' of '%s'): An 'Amount' must not have a higher scale than precision",
-                    getName(),
-                    field.getName(),
-                    field.getDeclaringClass().getName());
-            column.setScale(column.getPrecision());
+        int sqlType = determineJDBCDatatype();
+        TableColumn column = new TableColumn(this, sqlType);
+        if (sqlType == Types.DECIMAL) {
+            if (column.getLength() > 0) {
+                Mixing.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property must not specify a length!",
+                                getName(),
+                                field.getName(),
+                                field.getDeclaringClass().getName());
+            }
+            if (column.getPrecision() <= 0) {
+                Mixing.LOG.WARN("Error in property '%s' ('%s' of '%s'): An 'Amount' property needs a precision!"
+                                + " Use @Numeric to specify one. Defaulting to 15.",
+                                getName(),
+                                field.getName(),
+                                field.getDeclaringClass().getName());
+                column.setPrecision(15);
+            }
+            if (column.getScale() > column.getPrecision()) {
+                Mixing.LOG.WARN(
+                        "Error in property '%s' ('%s' of '%s'): An 'Amount' must not have a higher scale than precision",
+                        getName(),
+                        field.getName(),
+                        field.getDeclaringClass().getName());
+                column.setScale(column.getPrecision());
+            }
         }
 
         table.getColumns().add(column);
+    }
+
+    private int determineJDBCDatatype() {
+        Database database = oma.getDatabase(descriptor.getRealm());
+        if (database.hasCapability(Capability.DECIMAL_TYPE)) {
+            return Types.DECIMAL;
+        }
+
+        return Types.DOUBLE;
     }
 
     @Override
