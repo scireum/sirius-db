@@ -8,6 +8,8 @@
 
 package sirius.db.jdbc;
 
+import sirius.kernel.commons.Explain;
+
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -61,6 +63,8 @@ public enum Capability {
     /**
      * Contains the capabilities of a MySQL database
      */
+    @SuppressWarnings("squid:S1641")
+    @Explain("False positive - this is an EnumSet")
     public static final Set<Capability> MYSQL_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(
             LOWER_CASE_TABLE_NAMES,
             STREAMING,
