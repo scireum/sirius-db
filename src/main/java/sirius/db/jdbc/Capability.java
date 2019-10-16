@@ -51,7 +51,12 @@ public enum Capability {
     /**
      * Signals that the database supports generating keys.
      */
-    GENERATED_KEYS;
+    GENERATED_KEYS,
+
+    /**
+     * Signales that the database supports DECIMAL fields.
+     */
+    DECIMAL_TYPE;
 
     /**
      * Contains the capabilities of a MySQL database
@@ -61,13 +66,14 @@ public enum Capability {
             STREAMING,
             LIMIT,
             GENERATED_KEYS,
-            NULL_SAFE_OPERATOR));
+            NULL_SAFE_OPERATOR,
+            DECIMAL_TYPE));
 
     /**
      * Contains the capabilities of a Postgres database
      */
     public static final Set<Capability> POSTGRES_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
 
     /**
      * Contains the capabilities of a Clickhouse database
