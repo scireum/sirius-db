@@ -13,6 +13,7 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -145,9 +146,26 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
      * Note, this might cause a database lookup if the entity is not prefetched.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     * @deprecated Naming a method which might perform a database lookup "getXXX" is a bad
+     * practice as a developer would assume calling a getter is essentially side-effect free.
+     * Use {@link #fetchValue()} instead or {@link #getValueIfPresent()} if you want to
+     * suppress a DB lookup.
      */
     @Nullable
+    @Deprecated
     public E getValue() {
+        Exceptions.logDeprecatedMethodUse();
+        return fetchValue();
+    }
+
+    /**
+     * Returns the effective entity object which is referenced.
+     * <p>
+     * Note, this might cause a database lookup if the entity is not prefetched.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E fetchValue() {
         if (value == null && id != null) {
             Optional<E> entity = find(type, id);
             if (entity.isPresent()) {
@@ -157,6 +175,20 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
             }
         }
         return value;
+    }
+
+    /**
+     * Returns the effective entity object which has been referenced, if it was loaded from the database.
+     * <p>
+     * Note that this will not perform a database lookup but only return the entity if is was already
+     * loaded from somewhere else. Note that therefore an empty reference and a reference with no value
+     * loaded cannot be distinguished.
+     *
+     * @return the referenced entity wrapped as optional or an empty optional if either no entity is referenced
+     * or if the entity was not yet loaded from the database
+     */
+    public Optional<E> getValueIfPresent() {
+        return Optional.ofNullable(value);
     }
 
     /**

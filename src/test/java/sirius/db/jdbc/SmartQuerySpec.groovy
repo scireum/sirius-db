@@ -202,7 +202,7 @@ class SmartQuerySpec extends BaseSpecification {
         def result = qry.queryList()
         then:
         result.stream().
-                map({ x -> x.getParent().getValue().getName() } as Function).
+                map({ x -> x.getParent().fetchValue().getName() } as Function).
                 collect(Collectors.toList()) == ["Parent 1", "Parent 2"]
     }
 
@@ -231,7 +231,7 @@ class SmartQuerySpec extends BaseSpecification {
         def result = qry.queryList()
         then:
         result.stream().
-                map({ x -> x.getParent().getValue().getName() + x.getOtherParent().getValue().getName() } as Function).
+                map({ x -> x.getParent().fetchValue().getName() + x.getOtherParent().fetchValue().getName() } as Function).
                 collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
     }
 
@@ -250,7 +250,7 @@ class SmartQuerySpec extends BaseSpecification {
         def result = qry.queryList()
         then:
         result.stream().
-                map({ x -> x.getParentChild().getValue().getParent().getValue().getName() } as Function).
+                map({ x -> x.getParentChild().fetchValue().getParent().fetchValue().getName() } as Function).
                 collect(Collectors.toList()) == ["Parent 1"]
     }
 
@@ -355,9 +355,9 @@ class SmartQuerySpec extends BaseSpecification {
         then:
         found.getParent().isFilled()
         and:
-        !found.getParent().getValue().isNew()
+        !found.getParent().fetchValue().isNew()
         and:
-        Strings.isFilled(found.getParent().getValue().getName())
+        Strings.isFilled(found.getParent().fetchValue().getName())
     }
 
     def "select a entity with attached mixin by value in mixin"() {
