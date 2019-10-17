@@ -29,7 +29,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.Duration;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -411,7 +410,7 @@ public class Database {
             } else if ("ru.yandex.clickhouse.ClickHouseDriver".equalsIgnoreCase(driver)) {
                 capabilities = Capability.CLICKHOUSE_CAPABILITIES;
             } else {
-                capabilities = EnumSet.noneOf(Capability.class);
+                capabilities = Capability.DEFAULT_CAPABILITIES;
             }
         }
 

@@ -8,6 +8,8 @@
 
 package sirius.db.jdbc;
 
+import sirius.kernel.commons.Explain;
+
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -51,23 +53,36 @@ public enum Capability {
     /**
      * Signals that the database supports generating keys.
      */
-    GENERATED_KEYS;
+    GENERATED_KEYS,
 
+    /**
+     * Signales that the database supports DECIMAL fields.
+     */
+    DECIMAL_TYPE;
+
+    /**
+     * Contains the default capabilities of unknown databases.
+     */
+    public static final Set<Capability> DEFAULT_CAPABILITIES =
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
     /**
      * Contains the capabilities of a MySQL database
      */
+    @SuppressWarnings("squid:S1641")
+    @Explain("False positive - this is an EnumSet")
     public static final Set<Capability> MYSQL_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(
             LOWER_CASE_TABLE_NAMES,
             STREAMING,
             LIMIT,
             GENERATED_KEYS,
-            NULL_SAFE_OPERATOR));
+            NULL_SAFE_OPERATOR,
+            DECIMAL_TYPE));
 
     /**
      * Contains the capabilities of a Postgres database
      */
     public static final Set<Capability> POSTGRES_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
 
     /**
      * Contains the capabilities of a Clickhouse database
