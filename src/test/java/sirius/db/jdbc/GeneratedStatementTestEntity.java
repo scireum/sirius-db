@@ -19,7 +19,7 @@ import javax.annotation.Nullable;
  * Testentity for UpdateStatementSpec
  */
 @ComplexDelete(false)
-public class UpdateStatementTestEntity extends SQLEntity {
+public class GeneratedStatementTestEntity extends SQLEntity {
 
     public static final Mapping VALUE = Mapping.named("value");
     @Length(50)

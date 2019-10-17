@@ -187,21 +187,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     @Override
     public void truncate() {
-        Watch w = Watch.start();
-        Compiler compiler = compileDELETE();
-        try {
-            try (Connection c = db.getConnection()) {
-                try (PreparedStatement stmt = compiler.prepareStatement(c)) {
-                    stmt.executeUpdate();
-                }
-            } finally {
-                if (Microtiming.isEnabled()) {
-                    w.submitMicroTiming("OMA", compiler.toString());
-                }
-            }
-        } catch (Exception e) {
-            throw queryError(compiler, e);
-        }
+        throw new UnsupportedOperationException(
+                "Truncate is not supported by OMA. Use as OMA.deleteStatement or SmartQuery.delete()");
     }
 
     /**
@@ -564,13 +551,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         return compiler;
     }
 
-    private Compiler compileDELETE() {
-        Compiler compiler = createDelete();
-        from(compiler);
-        where(compiler);
-        return compiler;
-    }
-
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
@@ -639,12 +619,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         } else {
             c.getSELECTBuilder().append("SELECT COUNT(*)");
         }
-        return c;
-    }
-
-    private Compiler createDelete() {
-        Compiler c = new Compiler(descriptor);
-        c.getSELECTBuilder().append("DELETE");
         return c;
     }
 
