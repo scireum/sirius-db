@@ -56,11 +56,22 @@ public class BatchContext implements Closeable {
     }
 
     private <Q extends BatchQuery<?>> Q register(Q query) {
+        if (queries == null) {
+            reportIllegalState();
+        }
         this.queries.add(query);
+
         return query;
     }
 
+    private void reportIllegalState() {
+        throw new IllegalStateException("This batch context has already been closed.");
+    }
+
     protected void unregister(BatchQuery<?> query) {
+        if (queries == null) {
+            reportIllegalState();
+        }
         this.queries.remove(query);
     }
 
@@ -69,6 +80,10 @@ public class BatchContext implements Closeable {
     }
 
     protected Connection getConnection(String realm) {
+        if (connectionsPerRealm == null) {
+            reportIllegalState();
+        }
+
         return connectionsPerRealm.computeIfAbsent(realm, this::createConnection);
     }
 
@@ -99,10 +114,10 @@ public class BatchContext implements Closeable {
 
             query.safeClose();
         }
-        queries.clear();
+//        queries = null;
 
         connectionsPerRealm.values().forEach(this::safeCloseConnection);
-        connectionsPerRealm.clear();
+//        connectionsPerRealm = null;
     }
 
     private void safeCloseConnection(Connection connection) {
@@ -240,7 +255,6 @@ public class BatchContext implements Closeable {
      * @param <E>              the generic type of the entities to update
      * @return the query used to update entities in the database
      */
-    @SuppressWarnings("unchecked")
     public <E extends SQLEntity> UpdateQuery<E> updateByIdQuery(Class<E> type, Mapping... mappingsToUpdate) {
         return register(new UpdateQuery<>(this, type, new String[]{SQLEntity.ID.getName()})).withUpdatedMappings(
                 mappingsToUpdate);
@@ -253,7 +267,6 @@ public class BatchContext implements Closeable {
      * @return the query used to update entities in the database
      * @see #autoFindQuery(String...)
      */
-    @SuppressWarnings("unchecked")
     public UpdateQuery<?> autoUpdateByIdQuery(String... mappingsToUpdate) {
         return register(new UpdateQuery<>(this, null, new String[]{SQLEntity.ID.getName()}).withUpdatedMappings(
                 mappingsToUpdate));
