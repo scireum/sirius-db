@@ -114,10 +114,10 @@ public class BatchContext implements Closeable {
 
             query.safeClose();
         }
-//        queries = null;
+        queries = null;
 
         connectionsPerRealm.values().forEach(this::safeCloseConnection);
-//        connectionsPerRealm = null;
+        connectionsPerRealm = null;
     }
 
     private void safeCloseConnection(Connection connection) {
