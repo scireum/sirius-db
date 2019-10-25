@@ -10,8 +10,10 @@ package sirius.db.jdbc.batch
 
 import sirius.db.jdbc.OMA
 import sirius.db.jdbc.TestEntity
+import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 import java.time.Duration
 
@@ -214,6 +216,43 @@ class BatchContextSpec extends BaseSpecification {
         cleanup:
         OMA.LOG.INFO(ctx)
         ctx.close()
+    }
+
+    def "use after close is prevented"() {
+        setup:
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        when: "the context is closed"
+        ctx.close()
+        and: "query is created afterwards"
+        InsertQuery<TestEntity> insert = ctx.insertQuery(
+                TestEntity.class,
+                TestEntity.FIRSTNAME,
+                TestEntity.LASTNAME,
+                TestEntity.AGE)
+        then: "an exception is thrown"
+        thrown(IllegalStateException)
+        and: "no connection is leaked"
+        oma.getDatabase(Mixing.DEFAULT_REALM).getNumActive() == 0
+    }
+
+    def "use of query after close is prevented"() {
+        setup:
+        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+
+        when: "a query is created"
+        InsertQuery<TestEntity> insert = ctx.insertQuery(
+                TestEntity.class,
+                TestEntity.FIRSTNAME,
+                TestEntity.LASTNAME,
+                TestEntity.AGE)
+        and: "the context is closed"
+        ctx.close()
+        and:
+        insert.insert(new TestEntity(), false, true)
+        then: "an exception is thrown"
+        thrown(HandledException)
+        and: "no connection is leaked"
+        oma.getDatabase(Mixing.DEFAULT_REALM).getNumActive() == 0
     }
 
 }
