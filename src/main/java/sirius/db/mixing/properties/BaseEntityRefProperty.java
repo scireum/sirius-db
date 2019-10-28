@@ -168,7 +168,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         R ref = getEntityRef(accessPath.apply(entity));
         if (ref.containsNonpersistentValue()) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage(
                                     "Cannot save '%s' (%s) because the referenced entity '%s' in '%s' was not persisted yet.",
                                     entity,
