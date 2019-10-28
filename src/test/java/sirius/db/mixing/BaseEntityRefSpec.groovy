@@ -14,6 +14,7 @@ import sirius.db.mongo.Mango
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 import java.time.Duration
 
@@ -79,6 +80,39 @@ class BaseEntityRefSpec extends BaseSpecification {
         mango.delete(refMongoEntity)
         then:
         !oma.find(RefEntity.class, refEntity.getId()).isPresent()
+    }
+
+    def "writeOnce semantics are enforced"() {
+        when:
+        WriteOnceParentEntity parent = new WriteOnceParentEntity()
+        oma.update(parent)
+        and:
+        WriteOnceChildEntity child = new WriteOnceChildEntity()
+        child.getParent().setValue(parent)
+        oma.update(child)
+        and:
+        WriteOnceParentEntity anotherParent = new WriteOnceParentEntity()
+        oma.update(anotherParent)
+        and:
+        child.getParent().setValue(anotherParent)
+        oma.update(child)
+        then:
+        thrown(HandledException)
+    }
+
+    def "writeOnce semantics permit a non-changing update"() {
+        when:
+        WriteOnceParentEntity parent = new WriteOnceParentEntity()
+        oma.update(parent)
+        and:
+        WriteOnceChildEntity child = new WriteOnceChildEntity()
+        child.getParent().setValue(parent)
+        oma.update(child)
+        and:
+        child.getParent().setValue(parent)
+        oma.update(child)
+        then:
+        notThrown(HandledException)
     }
 
 }
