@@ -202,7 +202,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
         if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
             if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
-                Mixing.LOG.WARN("Error in property % for %s is not a subclass of BaseEntity."
+                Mixing.LOG.WARN("Error in property %: %s is not a subclass of BaseEntity."
                                 + "The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
                 return;
             }
