@@ -177,6 +177,22 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
                                     getName())
                             .handle();
         }
+
+        if (!BaseEntity.class.isAssignableFrom(entity.getClass())) {
+            return;
+        }
+
+        BaseEntity<?> baseEntity = (BaseEntity<?>) entity;
+        if (!baseEntity.isNew() && ref.hasWriteOnceSemantics() && baseEntity.isChanged(nameAsMapping)) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .withSystemErrorMessage(
+                                    "Cannot save '%s' (%s) because the property '%s' has write once semantics but was changed!",
+                                    entity,
+                                    entity.getClass().getName(),
+                                    getName())
+                            .handle();
+        }
     }
 
     @Override

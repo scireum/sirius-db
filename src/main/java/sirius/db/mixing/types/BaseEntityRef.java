@@ -58,15 +58,17 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
 
     protected Class<E> type;
     protected OnDelete deleteHandler;
+    protected boolean writeOnce;
     protected I id;
     protected E value;
 
     @Part
     private static Mixing mixing;
 
-    protected BaseEntityRef(Class<E> type, OnDelete deleteHandler) {
+    protected BaseEntityRef(Class<E> type, OnDelete deleteHandler, boolean writeOnce) {
         this.type = type;
         this.deleteHandler = deleteHandler;
+        this.writeOnce = writeOnce;
     }
 
     /**
@@ -85,6 +87,19 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
      */
     public OnDelete getDeleteHandler() {
         return deleteHandler;
+    }
+
+    /**
+     * Determines if this reference has a <b>write once</b> semantic.
+     * <p>
+     * A write once field can only be filled once when the entity is created but not changed afterwards. This of
+     * an <tt>item</tt> within an <tt>incoive</tt>. The <b>incoive</b> reference would have a write once semantic
+     * as an item of an inovice is never moved to another invoice.
+     *
+     * @return <tt>true</tt> if the reference has write once semantics, <tt>false</tt> otherwise
+     */
+    public boolean hasWriteOnceSemantics() {
+        return writeOnce;
     }
 
     /**

@@ -27,8 +27,8 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
     @Part
     private static OMA oma;
 
-    protected SQLEntityRef(Class<E> type, OnDelete deleteHandler) {
-        super(type, deleteHandler);
+    protected SQLEntityRef(Class<E> type, OnDelete deleteHandler, boolean writeOnce) {
+        super(type, deleteHandler, writeOnce);
     }
 
     /**
@@ -40,7 +40,22 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
      * @return a new entity ref, representing the given settings
      */
     public static <E extends SQLEntity> SQLEntityRef<E> on(Class<E> type, OnDelete deleteHandler) {
-        return new SQLEntityRef<>(type, deleteHandler);
+        return new SQLEntityRef<>(type, deleteHandler, false);
+    }
+
+    /**
+     * Generates an entity reference to the given entity type which has <b>write once semantics</b>.
+     * <p>
+     * A write once reference can only be set when the entity is new and never be changed afterwads.
+     *
+     * @param type          the target type to reference
+     * @param deleteHandler determines what happens if the referenced entity is deleted
+     * @param <E>           the generic type of the referenced entity
+     * @return a new entity ref, representing the given settings
+     * @see BaseEntityRef#hasWriteOnceSemantics()
+     */
+    public static <E extends SQLEntity> SQLEntityRef<E> writeOnceOn(Class<E> type, OnDelete deleteHandler) {
+        return new SQLEntityRef<>(type, deleteHandler, true);
     }
 
     @Override
