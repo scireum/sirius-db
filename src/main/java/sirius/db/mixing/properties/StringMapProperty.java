@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 /**
  * Represents an {@link StringMap} field within an {@link ElasticEntity} or a {@link sirius.db.mongo.MongoEntity}.
  * <p>
- * Note that maps are stored as a list of nested objects which co@ntain a <tt>key</tt> and
+ * Note that maps are stored as a list of nested objects which contain a <tt>key</tt> and
  * a <tt>value</tt>. This is used to prevent a mapping explosion within ES while still permitting to
  * search and filter using nested queries. Use {@link IndexMode#indexed()} (set to FALSE) to
  * set the type to <tt>object</tt> - which will still create key/value pairs but stored as objects.
