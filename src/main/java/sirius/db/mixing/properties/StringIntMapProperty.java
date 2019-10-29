@@ -26,8 +26,6 @@ import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -67,7 +65,6 @@ public class StringIntMapProperty extends BaseMapProperty implements ESPropertyI
     StringIntMapProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
-
 
     @Override
     protected Object transformToElastic(Object object) {
