@@ -68,16 +68,6 @@ public class StringIntMapProperty extends BaseMapProperty implements ESPropertyI
         super(descriptor, accessPath, field);
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    protected Object transformFromElastic(Value object) {
-        Map<Object, Object> result = new HashMap<>();
-        Object value = object.get();
-        if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
-        }
-        return result;
-    }
 
     @Override
     protected Object transformToElastic(Object object) {

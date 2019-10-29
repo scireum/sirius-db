@@ -80,4 +80,15 @@ public abstract class BaseMapProperty extends Property {
     protected void setValueToField(Object value, Object target) {
         ((SafeMap<Object, Object>) getMap(target)).setData((Map<Object, Object>) value);
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object transformFromElastic(Value object) {
+        Map<Object, Object> result = new HashMap<>();
+        Object value = object.get();
+        if (value instanceof Collection) {
+            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
+        }
+        return result;
+    }
 }

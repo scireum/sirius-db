@@ -74,17 +74,6 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    protected Object transformFromElastic(Value object) {
-        Map<Object, Object> result = new HashMap<>();
-        Object value = object.get();
-        if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
-        }
-        return result;
-    }
-
-    @Override
     protected Object transformFromMongo(Value object) {
         return object.get();
     }
