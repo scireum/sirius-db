@@ -50,7 +50,6 @@ public abstract class BaseMapProperty extends Property {
         return ((SafeMap<?, ?>) super.getValueFromField(target)).copyMap();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {

@@ -107,7 +107,6 @@ public class StringNestedMapProperty extends BaseMapProperty {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Object transformFromMongo(Value object) {
         Map<String, Nested> result = new LinkedHashMap<>();
