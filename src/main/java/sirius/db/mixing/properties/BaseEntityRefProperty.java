@@ -202,7 +202,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
         if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
             if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
-                Mixing.LOG.WARN("Error in property %: %s is not a subclass of BaseEntity."
+                Mixing.LOG.WARN("Error in property %s: %s is not a subclass of BaseEntity."
                                 + "The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
                 return;
             }
@@ -226,11 +226,11 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
         } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
             if (!isNullable()) {
-                Mixing.LOG.WARN("Error in property % of %s. The field is not marked as NullAllowed,"
+                Mixing.LOG.WARN("Error in property %s of %s. The field is not marked as NullAllowed,"
                                 + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
             }
             if (entityRef.hasWriteOnceSemantics()) {
-                Mixing.LOG.WARN("Error in property % of %s. The field has write once semantics,"
+                Mixing.LOG.WARN("Error in property %s of %s. The field has write once semantics,"
                                 + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
             }
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
