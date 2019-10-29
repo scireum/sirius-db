@@ -13,7 +13,7 @@ import sirius.db.mixing.types.StringMap;
 public class MongoComposite extends Composite {
 
     public static final Mapping MAP = Mapping.named("map");
-    private StringMap map = new StringMap();
+    private final StringMap map = new StringMap();
 
     public StringMap getMap() {
         return map;
