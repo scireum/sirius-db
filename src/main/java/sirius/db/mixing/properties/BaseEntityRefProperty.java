@@ -185,7 +185,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         BaseEntity<?> baseEntity = (BaseEntity<?>) entity;
         if (!baseEntity.isNew() && ref.hasWriteOnceSemantics() && baseEntity.isChanged(nameAsMapping)) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage(
                                     "Cannot save '%s' (%s) because the property '%s' has write once semantics but was changed!",
                                     entity,
