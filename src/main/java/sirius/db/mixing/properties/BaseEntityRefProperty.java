@@ -227,10 +227,10 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     protected static void ensureLabelsArePresent(Property property,
                                                  EntityDescriptor referencedDescriptor,
                                                  BaseEntityRef.OnDelete deleteHandler) {
-        // If a cascade delete handler is present and the referenced entity is not explicitely marked as
+        // If a cascade delete handler is present and the referenced entity is not explicitly marked as
         // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
         // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
-        // errors. (Otherwise this might be missed while developing or testing the system..)
+        // errors (otherwise this might be missed while developing or testing the system).
         if (referencedDescriptor.getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
             || deleteHandler == BaseEntityRef.OnDelete.REJECT) {
             if (Sirius.isDev() || Sirius.isStartedAsTest()) {
