@@ -8,22 +8,13 @@
 
 package sirius.db.mixing
 
-import sirius.db.es.Elastic
-import sirius.db.jdbc.OMA
+
 import sirius.db.mongo.Mango
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
-import java.time.Duration
-
 class CompositeSpec extends BaseSpecification {
-
-    @Part
-    private static Elastic elastic
-
-    @Part
-    private static OMA oma
 
     @Part
     private static Mango mango
