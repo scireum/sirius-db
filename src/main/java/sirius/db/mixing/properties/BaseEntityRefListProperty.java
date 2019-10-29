@@ -19,12 +19,10 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
-import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.db.mixing.types.BaseEntityRefList;
 import sirius.db.mongo.Mongo;
 import sirius.db.mongo.MongoEntity;
-import sirius.kernel.Sirius;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -198,25 +196,11 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
 
         BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRefList().getDeleteHandler();
         if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
-            if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
-                Mixing.LOG.WARN("Error in property % for %s is not a subclass of BaseEntity."
-                                + " The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
+            if (!BaseEntityRefProperty.ensureProperReferenceType(this, getReferencedDescriptor())) {
                 return;
             }
 
-            // If a cascade delete handler is present and the referenced entity is not explicitely marked as
-            // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
-            // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
-            // errors. (Otherwise this might be missed while developing or testing the system..)
-            if (getReferencedDescriptor().getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
-                || deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-                if (Sirius.isDev() || Sirius.isStartedAsTest()) {
-                    getDescriptor().getPluralLabel();
-                    getReferencedDescriptor().getLabel();
-                    getLabel();
-                    getFullLabel();
-                }
-            }
+            BaseEntityRefProperty.ensureLabelsArePresent(this, referencedDescriptor, deleteHandler);
         }
 
         if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {

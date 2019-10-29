@@ -8,7 +8,6 @@
 
 package sirius.db.mixing.properties;
 
-import sirius.db.jdbc.OMA;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
@@ -168,7 +167,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         R ref = getEntityRef(accessPath.apply(entity));
         if (ref.containsNonpersistentValue()) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage(
                                     "Cannot save '%s' (%s) because the referenced entity '%s' in '%s' was not persisted yet.",
                                     entity,
@@ -185,7 +184,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
         BaseEntity<?> baseEntity = (BaseEntity<?>) entity;
         if (!baseEntity.isNew() && ref.hasWriteOnceSemantics() && baseEntity.isChanged(nameAsMapping)) {
             throw Exceptions.handle()
-                            .to(OMA.LOG)
+                            .to(Mixing.LOG)
                             .withSystemErrorMessage(
                                     "Cannot save '%s' (%s) because the property '%s' has write once semantics but was changed!",
                                     entity,
@@ -201,34 +200,55 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
 
         BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
         if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
-            if (!BaseEntity.class.isAssignableFrom(descriptor.getType())) {
-                Mixing.LOG.WARN("Error in property % for %s is not a subclass of BaseEntity."
-                                + "The only supported DeleteHandler is IGNORE!.", this, getDescriptor());
+            if (!ensureProperReferenceType(this, getReferencedDescriptor())) {
                 return;
             }
 
-            // If a cascade delete handler is present and the referenced entity is not explicitely marked as
-            // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
-            // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
-            // errors. (Otherwise this might be missed while developing or testing the system..)
-            if (getReferencedDescriptor().getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
-                || deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-                if (Sirius.isDev() || Sirius.isStartedAsTest()) {
-                    getDescriptor().getPluralLabel();
-                    getReferencedDescriptor().getLabel();
-                    getLabel();
-                    getFullLabel();
-                }
-            }
+            ensureLabelsArePresent(this, referencedDescriptor, deleteHandler);
         }
 
         if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
         } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
+            if (!isNullable()) {
+                Mixing.LOG.WARN("Error in property %s of %s. The field is not marked as NullAllowed,"
+                                + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
+            }
+            if (entityRef.hasWriteOnceSemantics()) {
+                Mixing.LOG.WARN("Error in property %s of %s. The field has write once semantics,"
+                                + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
+            }
             getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
         } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
             getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
         }
+    }
+
+    protected static void ensureLabelsArePresent(Property property,
+                                                 EntityDescriptor referencedDescriptor,
+                                                 BaseEntityRef.OnDelete deleteHandler) {
+        // If a cascade delete handler is present and the referenced entity is not explicitly marked as
+        // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
+        // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
+        // errors (otherwise this might be missed while developing or testing the system).
+        if (referencedDescriptor.getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
+            || deleteHandler == BaseEntityRef.OnDelete.REJECT) {
+            if (Sirius.isDev() || Sirius.isStartedAsTest()) {
+                property.getDescriptor().getPluralLabel();
+                referencedDescriptor.getLabel();
+                property.getLabel();
+                property.getFullLabel();
+            }
+        }
+    }
+
+    protected static boolean ensureProperReferenceType(Property property, EntityDescriptor referencedDescriptor) {
+        if (!BaseEntity.class.isAssignableFrom(referencedDescriptor.getType())) {
+            Mixing.LOG.WARN("Error in property %s: %s is not a subclass of BaseEntity."
+                            + "The only supported DeleteHandler is IGNORE!.", property, property.getDescriptor());
+            return false;
+        }
+        return true;
     }
 
     protected void onDeleteSetNull(Object e) {
