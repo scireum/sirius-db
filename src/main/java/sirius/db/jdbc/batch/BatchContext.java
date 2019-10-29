@@ -103,6 +103,10 @@ public class BatchContext implements Closeable {
     }
 
     protected void safeClose() {
+        if (queries == null) {
+            return;
+        }
+
         for (BatchQuery<?> query : queries) {
             try {
                 query.tryCommit(false);
