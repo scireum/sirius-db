@@ -103,6 +103,10 @@ public class BatchContext implements Closeable {
     }
 
     protected void safeClose() {
+        if (queries == null) {
+            return;
+        }
+
         for (BatchQuery<?> query : queries) {
             try {
                 query.tryCommit(false);
@@ -305,6 +309,30 @@ public class BatchContext implements Closeable {
      */
     public CustomQuery customQuery(Class<? extends SQLEntity> type, boolean fetchId, String sql) {
         return register(new CustomQuery(this, type, fetchId, sql));
+    }
+
+    /**
+     * Invokes {@link BatchQuery#tryCommit(boolean)} for all open queries.
+     * <p>
+     * Note that in most cases the automatic commit control of the batch context takes good control over when to
+     * commit which query. This is mostly useful for edge cases or tests.
+     */
+    public void tryCommit() {
+        if (queries == null) {
+            return;
+        }
+
+        for (BatchQuery<?> query : queries) {
+            try {
+                query.tryCommit(false);
+            } catch (Exception e) {
+                throw Exceptions.handle()
+                                .to(OMA.LOG)
+                                .error(e)
+                                .withSystemErrorMessage("An error occurred when flushing the BatchContext: %s (%s)")
+                                .handle();
+            }
+        }
     }
 
     @Override
