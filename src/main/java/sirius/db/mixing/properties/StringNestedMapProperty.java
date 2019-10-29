@@ -73,12 +73,22 @@ public class StringNestedMapProperty extends BaseMapProperty {
     }
 
     protected EntityDescriptor getNestedDescriptor() {
-        if (nestedDescriptor == null) {
-            nestedDescriptor =
-                    mixing.getDescriptor(((StringNestedMap<?>) getMap(descriptor.getReferenceInstance())).getNestedType());
-        }
+        try {
+            if (nestedDescriptor == null) {
+                Object target = accessPath.apply(descriptor.getReferenceInstance());
+                nestedDescriptor = mixing.getDescriptor(((StringNestedMap<?>) field.get(target)).getNestedType());
+            }
 
-        return nestedDescriptor;
+            return nestedDescriptor;
+        } catch (IllegalAccessException e) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
+                                                    getName(),
+                                                    getDefinition())
+                            .handle();
+        }
     }
 
     @SuppressWarnings("unchecked")
