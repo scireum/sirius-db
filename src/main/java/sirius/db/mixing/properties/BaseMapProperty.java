@@ -11,13 +11,13 @@ package sirius.db.mixing.properties;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
-import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.types.SafeMap;
 import sirius.kernel.commons.Value;
-import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -39,33 +39,17 @@ public abstract class BaseMapProperty extends Property {
         super(descriptor, accessPath, field);
     }
 
-    protected SafeMap<?, ?> getMap(Object entity) {
-        try {
-            Object target = accessPath.apply(entity);
-            return (SafeMap<?, ?>) super.getValueFromField(target);
-        } catch (Exception e) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .error(e)
-                            .withSystemErrorMessage(
-                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
-                                    getName(),
-                                    descriptor.getType().getName())
-                            .handle();
-        }
-    }
-
     @Override
     protected Object getValueFromField(Object target) {
-        return getMap(target).data();
+        return ((SafeMap<?, ?>) super.getValueFromField(target)).data();
     }
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return getMap(entity).copyMap();
+        Object target = accessPath.apply(entity);
+        return ((SafeMap<?, ?>) super.getValueFromField(target)).copyMap();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -78,6 +62,17 @@ public abstract class BaseMapProperty extends Property {
     @SuppressWarnings("unchecked")
     @Override
     protected void setValueToField(Object value, Object target) {
-        ((SafeMap<Object, Object>) getMap(target)).setData((Map<Object, Object>) value);
+        ((SafeMap<Object, Object>) super.getValueFromField(target)).setData((Map<Object, Object>) value);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object transformFromElastic(Value object) {
+        Map<Object, Object> result = new HashMap<>();
+        Object value = object.get();
+        if (value instanceof Collection) {
+            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(KEY), entry.get(VALUE)));
+        }
+        return result;
     }
 }
