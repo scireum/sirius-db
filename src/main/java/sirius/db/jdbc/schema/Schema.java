@@ -279,6 +279,7 @@ public class Schema implements Startable, Initializable {
             versionColumn.setName(BaseMapper.VERSION);
             versionColumn.setType(Types.INTEGER);
             versionColumn.setLength(8);
+            versionColumn.setDefaultValue("1");
             table.getColumns().add(versionColumn);
         }
 

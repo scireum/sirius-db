@@ -77,12 +77,34 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         queryCompiler.compile().toString() == "((NOT(firstname IS NULL)))"
     }
 
+    def "compiling '-firstname:' yields a constraint"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "-firstname:",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((NOT(firstname IS NULL)))"
+    }
+
     def "compiling '!firstname:X OR lastname:Y' works as expected"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
                 OMA.FILTERS,
                 mixing.getDescriptor(TestEntity.class),
                 "!firstname:X OR lastname:Y",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((NOT(firstname = X)) OR (lastname = Y))"
+    }
+
+    def "compiling '-firstname:X OR lastname:Y' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "-firstname:X OR lastname:Y",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
         queryCompiler.compile().toString() == "((NOT(firstname = X)) OR (lastname = Y))"
@@ -97,6 +119,50 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
         queryCompiler.compile().toString() == "((NOT(((firstname = X) OR (lastname = Y)))))"
+    }
+
+    def "compiling '-(firstname:X OR lastname:Y)' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "-(firstname:X OR lastname:Y)",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((NOT(((firstname = X) OR (lastname = Y)))))"
+    }
+
+    def "compiling '-X' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "-X",
+                Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((NOT(((firstname = X)))))"
+    }
+
+    def "compiling '\"-X\"' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "\"-X\"",
+                Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((((firstname = -X))))"
+    }
+
+    def "compiling 'Y-X' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "Y-X",
+                Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "((((firstname = Y-X))))"
     }
 
     def "compiling 'firstname:test' works as expected"() {
