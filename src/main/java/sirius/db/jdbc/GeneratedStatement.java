@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @param <S> the effective statement class to support fluent method calls
  */
-abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
+public abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
 
     /**
      * Contains the descriptor of the entities being modified.
