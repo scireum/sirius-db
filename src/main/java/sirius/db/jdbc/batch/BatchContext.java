@@ -356,6 +356,9 @@ public class BatchContext implements Closeable {
 
     @Override
     public String toString() {
+        if (this.queries == null) {
+            return "Closed";
+        }
         if (isEmpty()) {
             return "Empty batch context";
         }
