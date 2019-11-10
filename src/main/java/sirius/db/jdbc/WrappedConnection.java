@@ -28,6 +28,7 @@ class WrappedConnection extends DelegatingConnection<Connection> {
     protected final Database database;
     private final Watch watch = Watch.start();
     private final ExecutionPoint connected = ExecutionPoint.fastSnapshot();
+    private boolean longRunning;
 
     WrappedConnection(Connection c, Database database) {
         super(c);
@@ -38,6 +39,18 @@ class WrappedConnection extends DelegatingConnection<Connection> {
     @Override
     public String toString() {
         return "WrappedConnection [" + database.getUrl() + "] (" + delegate.toString() + ")";
+    }
+
+    /**
+     * Marks this connection as potentially long running.
+     * <p>
+     * This suppresses the "long running connection" warning emitted by {@link #close()}.
+     *
+     * @return the connection itself for fluent method calls
+     */
+    public WrappedConnection markAsLongRunning() {
+        this.longRunning = true;
+        return this;
     }
 
     @Override
@@ -54,7 +67,7 @@ class WrappedConnection extends DelegatingConnection<Connection> {
             Databases.LOG.INFO(e);
         } finally {
             watch.submitMicroTiming("SQL", "Connection Duration: " + database.name);
-            if (watch.elapsedMillis() > Databases.getLogConnectionThresholdMillis()) {
+            if (!longRunning && watch.elapsedMillis() > Databases.getLogConnectionThresholdMillis()) {
                 DB.SLOW_DB_LOG.INFO("A long running connection was detected (%s): Opened:\n%s\n\nClosed:\n%s",
                                     watch.duration(),
                                     connected.toString(),

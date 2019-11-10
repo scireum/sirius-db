@@ -181,6 +181,23 @@ public class Database {
     }
 
     /**
+     * Creates a new connection to the database.
+     * <p>
+     * This connection behaves entirely the same as one returned by {@link #getConnection()}. However, for this
+     * connection, the checks are disabled which ensure that connections aren't borrowed for too long. Although,
+     * this check is very helpful under normal conditions, it generates false warning when performing long running
+     * {@link sirius.db.jdbc.batch.BatchContext batch operations} - which provide their own way of monitoring.
+     *
+     * @return a new {@link Connection} to the database
+     * @throws SQLException in case of a database error
+     */
+    public Connection getLongRunningConnection() throws SQLException {
+        try (Operation op = new Operation(() -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5))) {
+            return new WrappedConnection(getDatasource().getConnection(), this).markAsLongRunning();
+        }
+    }
+
+    /**
      * Tries to obtain a host connection which is not bound to a specific database or schema.
      * <p>
      * This is used to setup test databases by executing an initial statement like <tt>CREATE DATABASE test</tt>.

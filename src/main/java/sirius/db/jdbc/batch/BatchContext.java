@@ -89,7 +89,7 @@ public class BatchContext implements Closeable {
 
     protected Connection createConnection(String realm) {
         try {
-            Connection connection = oma.getDatabase(realm).getConnection();
+            Connection connection = oma.getDatabase(realm).getLongRunningConnection();
             changeAutoCommit(connection, false);
             return connection;
         } catch (SQLException e) {
