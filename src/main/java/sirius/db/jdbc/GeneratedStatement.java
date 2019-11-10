@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @param <S> the effective statement class to support fluent method calls
  */
-public abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
+abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
 
     /**
      * Contains the descriptor of the entities being modified.
@@ -50,24 +50,6 @@ public abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
      * Contains the list of parameters to pass into the generated {@link PreparedStatement}.
      */
     protected final List<Object> parameters = new ArrayList<>();
-
-    /**
-     * Enumerates the operators supported by {@link #where(Mapping, Operator, Object)}.
-     */
-    public enum Operator {
-        LT("<"), LT_EQ("<="), EQ("="), GT_EQ(">="), GT(">"), NE("<>");
-
-        private final String operation;
-
-        Operator(String operation) {
-            this.operation = operation;
-        }
-
-        @Override
-        public String toString() {
-            return operation;
-        }
-    }
 
     /**
      * Creates a new instance for the given descriptor and database.
