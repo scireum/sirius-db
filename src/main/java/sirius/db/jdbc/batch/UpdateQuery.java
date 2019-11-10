@@ -8,13 +8,16 @@
 
 package sirius.db.jdbc.batch;
 
+import com.google.common.collect.ImmutableList;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 
@@ -23,7 +26,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents a batch query which updates an entity in the database.
@@ -32,11 +34,10 @@ import java.util.stream.Collectors;
  */
 public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
 
-    private String[] mappingsToUpdate;
-    private List<Property> propertiesToUpdate;
+    private ImmutableList<Property> propertiesToUpdate;
 
-    protected UpdateQuery(BatchContext context, Class<E> type, String[] mappings) {
-        super(context, type, mappings);
+    protected UpdateQuery(BatchContext context, Class<E> type, List<Tuple<Operator, String>> filters) {
+        super(context, type, filters);
     }
 
     /**
@@ -48,30 +49,17 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      * @return the query itself for fluent method calls
      */
     public UpdateQuery<E> withUpdatedMappings(Mapping... mappingsToUpdate) {
-        this.mappingsToUpdate = BatchContext.simplifyMappings(mappingsToUpdate);
-        return this;
-    }
-
-    /**
-     * Specifies the list of mappings to update.
-     * <p>
-     * Note that this must be called once before this first entity is updated and cannot be changed later.
-     *
-     * @param mappingsToUpdate a list of mappings to update
-     * @return the query itself for fluent method calls
-     */
-    public UpdateQuery<E> withUpdatedMappings(String... mappingsToUpdate) {
-        this.mappingsToUpdate = mappingsToUpdate;
+        EntityDescriptor ed = getDescriptor();
+        this.propertiesToUpdate = Arrays.stream(mappingsToUpdate)
+                                        .map(Mapping::getName)
+                                        .map(ed::getProperty)
+                                        .collect(ImmutableList.toImmutableList());
         return this;
     }
 
     protected List<Property> getPropertiesToUpdate() {
         if (propertiesToUpdate == null) {
-            if (mappingsToUpdate == null) {
-                throw new IllegalStateException("No mappings to update were specified. Use '.withUpdatedMappings'!");
-            }
-            EntityDescriptor ed = getDescriptor();
-            propertiesToUpdate = Arrays.stream(mappingsToUpdate).map(ed::getProperty).collect(Collectors.toList());
+            throw new IllegalStateException("No mappings to update were specified. Use '.withUpdatedMappings'!");
         }
 
         return propertiesToUpdate;
@@ -144,8 +132,8 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             stmt.setObject(i++, entity.getVersion() + 1);
         }
 
-        for (Property property : getProperties()) {
-            stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+        for (Tuple<Operator, Property> filter : getPropertyFilters()) {
+            stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, entity));
         }
 
         if (descriptor.isVersioned()) {

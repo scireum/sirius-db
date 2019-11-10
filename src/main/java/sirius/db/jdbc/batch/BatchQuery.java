@@ -8,14 +8,17 @@
 
 package sirius.db.jdbc.batch;
 
+import com.google.common.collect.ImmutableList;
 import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Average;
@@ -27,9 +30,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link BatchContext}.
@@ -48,8 +50,8 @@ public abstract class BatchQuery<E extends SQLEntity> {
     protected int batchBacklog;
     protected int batchBacklogLimit = MAX_BATCH_BACKLOG;
     protected Class<E> type;
-    protected final String[] mappings;
-    protected List<Property> properties;
+    protected final List<Tuple<Operator, String>> filters;
+    protected ImmutableList<Tuple<Operator, Property>> properties;
     protected EntityDescriptor descriptor;
     protected String query;
     protected Average avarage = new Average();
@@ -63,14 +65,14 @@ public abstract class BatchQuery<E extends SQLEntity> {
     /**
      * Creates a new instance for the given context, type and mappings.
      *
-     * @param context  the batch context to participate in
-     * @param type     the type of entities being processed
-     * @param mappings the mappings to process
+     * @param context the batch context to participate in
+     * @param type    the type of entities being processed
+     * @param filters the filters to apply
      */
-    protected BatchQuery(BatchContext context, Class<E> type, String[] mappings) {
+    protected BatchQuery(BatchContext context, Class<E> type, List<Tuple<Operator, String>> filters) {
         this.context = context;
         this.type = type;
-        this.mappings = mappings;
+        this.filters = Collections.unmodifiableList(filters);
     }
 
     /**
@@ -186,10 +188,12 @@ public abstract class BatchQuery<E extends SQLEntity> {
      *
      * @return the list of properties defined by the given list of mappings
      */
-    protected List<Property> getProperties() {
+    protected List<Tuple<Operator, Property>> getPropertyFilters() {
         if (properties == null) {
             EntityDescriptor ed = getDescriptor();
-            properties = Arrays.stream(mappings).map(ed::getProperty).collect(Collectors.toList());
+            properties = filters.stream()
+                                .map(filter -> Tuple.create(filter.getFirst(), ed.getProperty(filter.getSecond())))
+                                .collect(ImmutableList.toImmutableList());
         }
 
         return properties;
@@ -282,16 +286,22 @@ public abstract class BatchQuery<E extends SQLEntity> {
     }
 
     protected void buildWhere(StringBuilder sql, boolean addVersionConstraint) {
-        String compareOperator = isNullSafeOperator() ? " <=> ?" : " = ?";
+        String compareOperator = isNullSafeOperator() ? "<=>" : "=";
 
         sql.append(" WHERE ");
         Monoflop mf = Monoflop.create();
-        for (Property p : getProperties()) {
+        for (Tuple<Operator, Property> filter : getPropertyFilters()) {
             if (mf.successiveCall()) {
                 sql.append(" AND ");
             }
-            sql.append(p.getPropertyName());
-            sql.append(compareOperator);
+            sql.append(filter.getSecond().getPropertyName());
+            sql.append(" ");
+            if (filter.getFirst() == Operator.EQ) {
+                sql.append(compareOperator);
+            } else {
+                sql.append(filter.getFirst());
+            }
+            sql.append(" ?");
         }
 
         if (!addVersionConstraint) {

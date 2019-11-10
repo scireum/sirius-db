@@ -10,9 +10,11 @@ package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
@@ -22,7 +24,6 @@ import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,8 +41,8 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
     @Part
     private static Databases dbs;
 
-    protected FindQuery(BatchContext context, Class<E> type, String[] mappings) {
-        super(context, type, mappings);
+    protected FindQuery(BatchContext context, Class<E> type, List<Tuple<Operator, String>> filters) {
+        super(context, type, filters);
     }
 
     /**
@@ -61,8 +62,8 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
             Watch w = Watch.start();
             PreparedStatement stmt = prepareStmt();
             int i = 1;
-            for (Property property : getProperties()) {
-                stmt.setObject(i++, property.getValueForDatasource(OMA.class, example));
+            for (Tuple<Operator, Property> filter : getPropertyFilters()) {
+                stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, example));
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -99,7 +100,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
      * @return the mappings on which this query filters
      */
     public List<String> getFilterMappings() {
-        return Arrays.asList(mappings);
+        return Tuple.seconds(filters);
     }
 
     private SQLEntity make(ResultSet rs) throws Exception {

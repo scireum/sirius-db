@@ -9,14 +9,17 @@
 package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Represents a batch query which deletes one or more entities from the database.
@@ -28,8 +31,8 @@ import java.sql.SQLException;
  */
 public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
 
-    protected DeleteQuery(BatchContext context, Class<E> type, String[] mappings) {
-        super(context, type, mappings);
+    protected DeleteQuery(BatchContext context, Class<E> type, List<Tuple<Operator, String>> filters) {
+        super(context, type, filters);
     }
 
     /**
@@ -59,8 +62,8 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
 
             PreparedStatement stmt = prepareStmt();
             int i = 1;
-            for (Property property : getProperties()) {
-                stmt.setObject(i++, property.getValueForDatasource(OMA.class, example));
+            for (Tuple<Operator, Property> filter : getPropertyFilters()) {
+                stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, example));
             }
 
             if (descriptor.isVersioned()) {

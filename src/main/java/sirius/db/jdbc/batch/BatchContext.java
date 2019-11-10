@@ -9,9 +9,11 @@
 package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.OMA;
+import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.async.Operation;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -24,10 +26,12 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Bundles the preparation and execution of a bunch of {@link BatchQuery batch queries}.
@@ -75,8 +79,17 @@ public class BatchContext implements Closeable {
         this.queries.remove(query);
     }
 
-    protected static String[] simplifyMappings(Mapping[] mappingsToCompare) {
-        return Arrays.stream(mappingsToCompare).map(Mapping::toString).toArray(n -> new String[n]);
+    protected static List<Tuple<Operator, String>> simplifyMappings(Mapping[] mappingsToCompare) {
+        return Arrays.stream(mappingsToCompare)
+                     .map(Mapping::toString)
+                     .map(mapping -> Tuple.create(Operator.EQ, mapping))
+                     .collect(Collectors.toList());
+    }
+
+    protected static List<Tuple<Operator, String>> simplifyMappings(Tuple<Operator, Mapping>[] filters) {
+        return Arrays.stream(filters)
+                     .map(filter -> Tuple.create(filter.getFirst(), filter.getSecond().toString()))
+                     .collect(Collectors.toList());
     }
 
     protected Connection getConnection(String realm) {
@@ -161,6 +174,19 @@ public class BatchContext implements Closeable {
     }
 
     /**
+     * Creates a {@link FindQuery find query}.
+     *
+     * @param type    the type of entities to find
+     * @param filters the mappings to compare in order to find an entity
+     * @param <E>     the generic type of the entities to find
+     * @return the query used to find entities
+     */
+    @SafeVarargs
+    public final <E extends SQLEntity> FindQuery<E> findQuery(Class<E> type, Tuple<Operator, Mapping>... filters) {
+        return register(new FindQuery<>(this, type, simplifyMappings(filters)));
+    }
+
+    /**
      * Creates a new {@link InsertQuery insert query}.
      *
      * @param type             the type of entities to insert
@@ -205,6 +231,19 @@ public class BatchContext implements Closeable {
     }
 
     /**
+     * Creates a new {@link UpdateQuery update query}.
+     *
+     * @param type    the type of entities to update
+     * @param filters the mappings to compare in order to find the entity to update
+     * @param <E>     the generic type of the entities to update
+     * @return the query used to update entities in the database
+     */
+    @SafeVarargs
+    public final <E extends SQLEntity> UpdateQuery<E> updateQuery(Class<E> type, Tuple<Operator, Mapping>... filters) {
+        return register(new UpdateQuery<>(this, type, simplifyMappings(filters)));
+    }
+
+    /**
      * Creates a new {@link UpdateQuery update query} which uses {@link SQLEntity#ID} as mapping to compare.
      *
      * @param type             the type of entities to insert
@@ -231,6 +270,19 @@ public class BatchContext implements Closeable {
      */
     public <E extends SQLEntity> DeleteQuery<E> deleteQuery(Class<E> type, Mapping... mappingsToCompare) {
         return register(new DeleteQuery<>(this, type, simplifyMappings(mappingsToCompare)));
+    }
+
+    /**
+     * Creates a new {@link DeleteQuery delete query}.
+     *
+     * @param type    the type of entities to delete
+     * @param filters the mappings to compare in order to find the entity to delete
+     * @param <E>     the generic type of the entities to delete
+     * @return the query used to delete entities in the database
+     */
+    @SafeVarargs
+    public final <E extends SQLEntity> DeleteQuery<E> deleteQuery(Class<E> type, Tuple<Operator, Mapping>... filters) {
+        return register(new DeleteQuery<>(this, type, simplifyMappings(filters)));
     }
 
     /**

@@ -16,6 +16,7 @@ import sirius.kernel.di.std.Part;
 import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
 
 /**
  * Wraps a SQL statement as {@link BatchSQLQuery}.
@@ -31,7 +32,7 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
 
     @SuppressWarnings("unchecked")
     protected CustomQuery(BatchContext context, Class<? extends SQLEntity> type, boolean fetchId, String sql) {
-        super(context, (Class<SQLEntity>) type, null);
+        super(context, (Class<SQLEntity>) type, Collections.emptyList());
 
         this.fetchId = fetchId;
         this.sql = sql;

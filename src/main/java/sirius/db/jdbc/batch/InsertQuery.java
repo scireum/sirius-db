@@ -23,7 +23,7 @@ import sirius.kernel.health.Exceptions;
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,13 +35,23 @@ import java.util.stream.Collectors;
 public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     private boolean fetchId;
+    private List<Property> propertiesToUpdate;
 
     @Part
     private static Databases dbs;
 
-    protected InsertQuery(BatchContext context, Class<E> type, boolean fetchId, String[] mappings) {
-        super(context, type, mappings);
+    protected InsertQuery(BatchContext context, Class<E> type, boolean fetchId, List<String> mappingsToUpdate) {
+        super(context, type, Collections.emptyList());
         this.fetchId = fetchId;
+        EntityDescriptor ed = getDescriptor();
+        if (mappingsToUpdate.isEmpty()) {
+            this.propertiesToUpdate = ed.getProperties()
+                                        .stream()
+                                        .filter(p -> !SQLEntity.ID.getName().equals(p.getName()))
+                                        .collect(Collectors.toList());
+        } else {
+            this.propertiesToUpdate = mappingsToUpdate.stream().map(ed::getProperty).collect(Collectors.toList());
+        }
     }
 
     /**
@@ -67,7 +77,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
 
             PreparedStatement stmt = prepareStmt();
             int i = 1;
-            for (Property property : getProperties()) {
+            for (Property property : propertiesToUpdate) {
                 stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
             }
 
@@ -112,30 +122,13 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
     }
 
     @Override
-    protected List<Property> getProperties() {
-        if (properties == null) {
-            EntityDescriptor ed = getDescriptor();
-            if (mappings.length == 0) {
-                properties = ed.getProperties()
-                               .stream()
-                               .filter(p -> !SQLEntity.ID.getName().equals(p.getName()))
-                               .collect(Collectors.toList());
-            } else {
-                properties = Arrays.stream(mappings).map(ed::getProperty).collect(Collectors.toList());
-            }
-        }
-
-        return properties;
-    }
-
-    @Override
     protected void buildSQL() throws SQLException {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         StringBuilder values = new StringBuilder(" VALUES(");
         sql.append(getDescriptor().getRelationName());
         sql.append(" (");
         Monoflop mf = Monoflop.create();
-        for (Property p : getProperties()) {
+        for (Property p : propertiesToUpdate) {
             if (mf.successiveCall()) {
                 sql.append(", ");
                 values.append(", ?");
