@@ -118,10 +118,8 @@ public class BatchContext implements Closeable {
 
             query.safeClose();
         }
-        queries = null;
 
         connectionsPerRealm.values().forEach(this::safeCloseConnection);
-        connectionsPerRealm = null;
     }
 
     private void safeCloseConnection(Connection connection) {
@@ -338,6 +336,12 @@ public class BatchContext implements Closeable {
     @Override
     public void close() throws IOException {
         safeClose();
+
+        // Mark this context as closed so that no further queries or connections can be opened after
+        // this has been completed...
+        queries = null;
+        connectionsPerRealm = null;
+
         op.close();
     }
 
