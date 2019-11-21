@@ -123,14 +123,12 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (trim) {
-            if (value != null) {
-                value = value.trim();
-                if (value.isEmpty()) {
-                    value = null;
-                }
-                setValue(entity, value);
+        if (trim && value != null) {
+            value = value.trim();
+            if (value.isEmpty()) {
+                value = null;
             }
+            setValue(entity, value);
         }
         super.onBeforeSaveChecks(entity);
 
