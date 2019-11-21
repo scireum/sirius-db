@@ -71,16 +71,6 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
     @Override
     protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
-        if (length > 0 && !lob && object != null && ((String) object).length() > length) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withNLSKey("StringProperty.dataTruncation")
-                            .set("value", Strings.limit(object, 30))
-                            .set("field", getFullLabel())
-                            .set("length", ((String) object).length())
-                            .set("maxLength", length)
-                            .handle();
-        }
         return object;
     }
 
@@ -132,17 +122,25 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
     @Override
     public void onBeforeSaveChecks(Object entity) {
-        if (trim) {
-            String value = (String) getValue(entity);
-            if (value != null) {
-                value = value.trim();
-                if (value.isEmpty()) {
-                    value = null;
-                }
-                setValue(entity, value);
+        String value = (String) getValue(entity);
+        if (trim && value != null) {
+            value = value.trim();
+            if (value.isEmpty()) {
+                value = null;
             }
+            setValue(entity, value);
         }
         super.onBeforeSaveChecks(entity);
+
+        if (length > 0 && value != null && value.length() > length) {
+            throw Exceptions.createHandled()
+                            .withNLSKey("StringProperty.dataTruncation")
+                            .set("value", Strings.limit(value, 30))
+                            .set("field", getFullLabel())
+                            .set("length", value.length())
+                            .set("maxLength", length)
+                            .handle();
+        }
     }
 
     @Override
