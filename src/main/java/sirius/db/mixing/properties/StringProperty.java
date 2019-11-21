@@ -72,8 +72,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     protected Object transformToDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object object) {
         if (length > 0 && !lob && object != null && ((String) object).length() > length) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
+            throw Exceptions.createHandled()
                             .withNLSKey("StringProperty.dataTruncation")
                             .set("value", Strings.limit(object, 30))
                             .set("field", getFullLabel())
