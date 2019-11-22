@@ -714,7 +714,7 @@ public abstract class Property extends Composable {
         }
 
         if (!(entity instanceof BaseEntity<?>)) {
-            throw new IllegalArgumentException("Only subcalsses of BaseEntity can have unique fields!");
+            throw new IllegalArgumentException("Only subclasses of BaseEntity can have unique fields!");
         }
 
         Mapping[] withinColumns = Arrays.stream(unique.within()).map(Mapping::named).toArray(Mapping[]::new);
