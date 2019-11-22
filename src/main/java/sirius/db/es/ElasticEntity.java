@@ -21,6 +21,10 @@ import java.util.Set;
 
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
+ * <p>
+ * If possible, it is highly recommended to mark a field to use as routing for this entity to increase performance noticeably.
+ * This is done by annotating the field with {@link sirius.db.es.annotations.RoutedBy}.
+ * For more info on why its a good idea to use custom routing, visit https://www.elastic.co/blog/customizing-your-document-routing.
  */
 public abstract class ElasticEntity extends BaseEntity<String> {
 
