@@ -198,29 +198,34 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     public void link() {
         super.link();
 
-        BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
-        if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
-            if (!ensureProperReferenceType(this, getReferencedDescriptor())) {
-                return;
+        try {
+            BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRef().getDeleteHandler();
+            if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
+                if (!ensureProperReferenceType(this, getReferencedDescriptor())) {
+                    return;
+                }
+
+                ensureLabelsArePresent(this, referencedDescriptor, deleteHandler);
             }
 
-            ensureLabelsArePresent(this, referencedDescriptor, deleteHandler);
-        }
+            if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {
+                getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
+            } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
+                if (!isNullable()) {
+                    Mixing.LOG.WARN("Error in property %s of %s: The field is not marked as NullAllowed,"
+                                    + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
+                }
 
-        if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {
-            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
-        } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
-            if (!isNullable()) {
-                Mixing.LOG.WARN("Error in property %s of %s. The field is not marked as NullAllowed,"
-                                + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
+                getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
+            } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
+                getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
             }
-            if (entityRef.hasWriteOnceSemantics()) {
-                Mixing.LOG.WARN("Error in property %s of %s. The field has write once semantics,"
-                                + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
-            }
-            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
-        } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-            getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+        } catch (Exception e) {
+            Mixing.LOG.WARN("Error when linking property %s of %s: %s (%s)",
+                            this,
+                            getDescriptor(),
+                            e.getMessage(),
+                            e.getClass().getSimpleName());
         }
     }
 
