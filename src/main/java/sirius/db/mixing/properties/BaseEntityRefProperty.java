@@ -215,6 +215,10 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
                     Mixing.LOG.WARN("Error in property %s of %s: The field is not marked as NullAllowed,"
                                     + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
                 }
+                if (entityRef.hasWriteOnceSemantics()) {
+                    Mixing.LOG.WARN("Error in property %s of %s. The field has write once semantics,"
+                                    + " therefore SET_NULL is not a valid delete handler!", this, getDescriptor());
+                }
 
                 getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
             } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
