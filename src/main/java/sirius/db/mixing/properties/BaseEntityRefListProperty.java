@@ -194,21 +194,29 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     public void link() {
         super.link();
 
-        BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRefList().getDeleteHandler();
-        if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
-            if (!BaseEntityRefProperty.ensureProperReferenceType(this, getReferencedDescriptor())) {
-                return;
+        try {
+            BaseEntityRef.OnDelete deleteHandler = getReferenceEntityRefList().getDeleteHandler();
+            if (deleteHandler != BaseEntityRef.OnDelete.IGNORE) {
+                if (!BaseEntityRefProperty.ensureProperReferenceType(this, getReferencedDescriptor())) {
+                    return;
+                }
+
+                BaseEntityRefProperty.ensureLabelsArePresent(this, referencedDescriptor, deleteHandler);
             }
 
-            BaseEntityRefProperty.ensureLabelsArePresent(this, referencedDescriptor, deleteHandler);
-        }
-
-        if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {
-            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
-        } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
-            getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
-        } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-            getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+            if (deleteHandler == BaseEntityRef.OnDelete.CASCADE) {
+                getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteCascade);
+            } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
+                getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
+            } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
+                getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+            }
+        } catch (Exception e) {
+            Mixing.LOG.WARN("Error when linking property %s of %s: %s (%s)",
+                            this,
+                            getDescriptor(),
+                            e.getMessage(),
+                            e.getClass().getSimpleName());
         }
     }
 
