@@ -256,6 +256,21 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
+     * Outputs the persisted data for the given property.
+     * <p>
+     * The persisted data is the value which was/is present in the database and commonly compared to the current
+     * value in the entity to perform change tracking for differential updates and journaling.
+     *
+     * @param property the property to lookup
+     * @return the value which has been loaded from the database or <tt>null</tt> if either no value was present
+     * or if the property wasn't loaded
+     */
+    @Nullable
+    public Object getPersistedValue(Property property) {
+        return persistedData.get(property);
+    }
+
+    /**
      * Checks whether any {@link Mapping} of the current {@link BaseEntity} changed.
      *
      * @return <tt>true</tt> if at least one column was changed, <tt>false</tt> otherwise.
