@@ -37,7 +37,7 @@ class LowLevelClientSpec extends BaseSpecification {
         elastic.getLowLevelClient().createIndex("test1", 1, 1)
         when:
         elastic.getLowLevelClient().
-                index("test1", "TEST", null, null, new JSONObject().fluentPut("Hello", "World"))
+                index("test1", "TEST", null, null, null, new JSONObject().fluentPut("Hello", "World"))
         then:
         def data = elastic.getLowLevelClient().get("test1", "TEST", null, true)
         and:
@@ -45,7 +45,7 @@ class LowLevelClientSpec extends BaseSpecification {
         data._source.Hello == 'World'
 
         when:
-        elastic.getLowLevelClient().delete("test1", "TEST", null, null)
+        elastic.getLowLevelClient().delete("test1", "TEST", null, null, null)
         and:
         data = elastic.getLowLevelClient().get("test1", "TEST", null, true)
         then:

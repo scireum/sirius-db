@@ -106,20 +106,27 @@ public class LowLevelClient {
     /**
      * Tells Elasticsearch to create or update the given document with the given data.
      *
-     * @param index   the target index
-     * @param id      the ID to use
-     * @param routing the routing to use
-     * @param version the version to use for optimistic locking during the update
-     * @param data    the actual payload to store
+     * @param index       the target index
+     * @param id          the ID to use
+     * @param routing     the routing to use
+     * @param primaryTerm the primaryTerm to use for optimistic locking during the update
+     * @param seqNo       the seqNo to use for optimistic locking during the update
+     * @param data        the actual payload to store
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
     public JSONObject index(String index,
                             String id,
                             @Nullable String routing,
-                            @Nullable Integer version,
+                            @Nullable Long primaryTerm,
+                            @Nullable Long seqNo,
                             JSONObject data) throws OptimisticLockException {
-        return performPut().routing(routing).version(version).data(data).tryExecute(index + "/_doc/" + id).response();
+        return performPut().routing(routing)
+                           .primaryTerm(primaryTerm)
+                           .seqNo(seqNo)
+                           .data(data)
+                           .tryExecute(index + "/_doc/" + id)
+                           .response();
     }
 
     /**
@@ -142,15 +149,21 @@ public class LowLevelClient {
     /**
      * Deletes the given document.
      *
-     * @param index   the target index
-     * @param id      the ID to use
-     * @param routing the routing to use
-     * @param version the version to use for optimistic locking during the update
+     * @param index       the target index
+     * @param id          the ID to use
+     * @param routing     the routing to use
+     * @param primaryTerm the primaryTerm to use for optimistic locking during the delete
+     * @param seqNo       the seqNo to use for optimistic locking during the delete
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
-    public JSONObject delete(String index, String id, String routing, Integer version) throws OptimisticLockException {
-        return performDelete().routing(routing).version(version).tryExecute(index + "/_doc/" + id).response();
+    public JSONObject delete(String index, String id, String routing, Long primaryTerm, Long seqNo)
+            throws OptimisticLockException {
+        return performDelete().routing(routing)
+                              .primaryTerm(primaryTerm)
+                              .seqNo(seqNo)
+                              .tryExecute(index + "/_doc/" + id)
+                              .response();
     }
 
     protected HttpEntity handleNotFoundAsResponse(ResponseException e) {

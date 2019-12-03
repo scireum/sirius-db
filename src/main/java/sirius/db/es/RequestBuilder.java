@@ -47,7 +47,8 @@ class RequestBuilder {
     private static final String PARAM_REASON = "reason";
     private static final String PARAM_TYPE = "type";
     private static final String PARAM_ROUTING = "routing";
-    private static final String PARAM_VERSION = "version";
+    private static final String PARAM_IF_PRIMARY_TERM = "if_primary_term";
+    private static final String PARAM_IF_SEQ_NO = "if_seq_no";
     private static final String PARAM_ERROR = "error";
     private static final int MAX_CONTENT_LONG_LENGTH = 256;
 
@@ -99,8 +100,12 @@ class RequestBuilder {
         return withParam(PARAM_ROUTING, routing);
     }
 
-    protected RequestBuilder version(Object version) {
-        return withParam(PARAM_VERSION, version);
+    protected RequestBuilder primaryTerm(Object primaryTerm) {
+        return withParam(PARAM_IF_PRIMARY_TERM, primaryTerm);
+    }
+
+    protected RequestBuilder seqNo(Object seqNo) {
+        return withParam(PARAM_IF_SEQ_NO, seqNo);
     }
 
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {

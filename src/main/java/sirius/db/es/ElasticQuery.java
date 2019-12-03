@@ -15,7 +15,6 @@ import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.es.suggest.SuggestBuilder;
 import sirius.db.es.suggest.SuggestOption;
 import sirius.db.es.suggest.SuggestPart;
-import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -84,6 +83,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_TO = "to";
     private static final String KEY_EXPLAIN = "explain";
     private static final String KEY_SUGGEST = "suggest";
+    private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
 
     @Part
     private static Elastic elastic;
@@ -536,7 +536,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private JSONObject buildPayload() {
         JSONObject payload = new JSONObject();
         if (descriptor.isVersioned()) {
-            payload.put(BaseMapper.VERSION, true);
+            payload.put(KEY_SEQ_NO_PRIMARY_TERM, true);
         }
 
         if (explain) {
@@ -617,9 +617,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         checkRouting();
 
-        JSONObject countResponse = client.count(elastic.determineAlias(descriptor),
-                                                routing,
-                                                buildSimplePayload());
+        JSONObject countResponse = client.count(elastic.determineAlias(descriptor), routing, buildSimplePayload());
         return countResponse.getLong(KEY_COUNT);
     }
 
@@ -649,10 +647,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         checkRouting();
 
-        JSONObject existsResponse = client.exists(elastic.determineAlias(descriptor),
-                                                  routing,
-                                                  buildSimplePayload());
-        return existsResponse.getJSONObject(KEY_HITS).getInteger(KEY_TOTAL) >= 1;
+        JSONObject existsResponse = client.exists(elastic.determineAlias(descriptor), routing, buildSimplePayload());
+        return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue("value") >= 1;
     }
 
     @SuppressWarnings("unchecked")
@@ -949,10 +945,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void truncate() {
-        elastic.getLowLevelClient()
-               .deleteByQuery(elastic.determineAlias(descriptor),
-                              routing,
-                              buildSimplePayload());
+        elastic.getLowLevelClient().deleteByQuery(elastic.determineAlias(descriptor), routing, buildSimplePayload());
     }
 
     @Override
