@@ -226,7 +226,7 @@ public class IndexMappings implements Startable {
                          mappingName,
                          ed.getType().getSimpleName(),
                          indexName);
-        elastic.getLowLevelClient().putMapping(indexName, mappingName, mapping);
+        elastic.getLowLevelClient().putMapping(indexName, mapping);
     }
 
     private boolean isExcludeFromSource(Property p) {

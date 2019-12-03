@@ -137,7 +137,6 @@ public class BulkContext implements Closeable {
 
         entity.setId(elastic.determineId(entity));
         meta.put(KEY_INDEX, elastic.determineAlias(ed));
-        meta.put(KEY_TYPE, elastic.determineTypeName(ed));
         meta.put(KEY_ID, entity.getId());
 
         String routing = elastic.determineRouting(ed, entity);
@@ -173,7 +172,6 @@ public class BulkContext implements Closeable {
 
         entity.setId(elastic.determineId(entity));
         meta.put(KEY_INDEX, elastic.determineAlias(ed));
-        meta.put(KEY_TYPE, elastic.determineTypeName(ed));
         meta.put(KEY_ID, entity.getId());
 
         String routing = elastic.determineRouting(ed, entity);

@@ -146,12 +146,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                     requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(0);
 
             HttpHost[] httpHosts = Arrays.stream(this.hosts.split(","))
-                                     .map(String::trim)
-                                     .map(host -> Strings.splitAtLast(host, ":"))
-                                     .map(this::parsePort)
-                                     .map(this::mapPort)
-                                     .map(this::makeHttpHost)
-                                     .toArray(size -> new HttpHost[size]);
+                                         .map(String::trim)
+                                         .map(host -> Strings.splitAtLast(host, ":"))
+                                         .map(this::parsePort)
+                                         .map(this::mapPort)
+                                         .map(this::makeHttpHost)
+                                         .toArray(size -> new HttpHost[size]);
             client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configCallback).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
@@ -219,12 +219,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         toJSON(ed, entity, data);
 
         String id = determineId(entity);
-        JSONObject response = getLowLevelClient().index(determineAlias(ed),
-                                                        determineTypeName(ed),
-                                                        id,
-                                                        determineRouting(ed, entity),
-                                                        null,
-                                                        data);
+        JSONObject response =
+                getLowLevelClient().index(determineAlias(ed), id, determineRouting(ed, entity), null, data);
         entity.setId(id);
         if (ed.isVersioned()) {
             entity.setVersion(response.getInteger(RESPONSE_VERSION));
@@ -259,7 +255,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         }
 
         JSONObject response = getLowLevelClient().index(determineAlias(ed),
-                                                        determineTypeName(ed),
                                                         determineId(entity),
                                                         determineRouting(ed, entity),
                                                         determineVersion(force, ed, entity),
@@ -368,7 +363,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         getLowLevelClient().delete(determineAlias(ed),
-                                   determineTypeName(ed),
                                    entity.getId(),
                                    determineRouting(ed, entity),
                                    determineVersion(force, ed, entity));
@@ -428,8 +422,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                      ExecutionPoint.snapshot());
         }
 
-        JSONObject obj =
-                getLowLevelClient().get(determineAlias(ed), determineTypeName(ed), id.toString(), routing, true);
+        JSONObject obj = getLowLevelClient().get(determineAlias(ed), id.toString(), routing, true);
 
         if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
             return Optional.empty();

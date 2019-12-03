@@ -618,7 +618,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         checkRouting();
 
         JSONObject countResponse = client.count(elastic.determineAlias(descriptor),
-                                                elastic.determineTypeName(descriptor),
                                                 routing,
                                                 buildSimplePayload());
         return countResponse.getLong(KEY_COUNT);
@@ -651,7 +650,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         checkRouting();
 
         JSONObject existsResponse = client.exists(elastic.determineAlias(descriptor),
-                                                  elastic.determineTypeName(descriptor),
                                                   routing,
                                                   buildSimplePayload());
         return existsResponse.getJSONObject(KEY_HITS).getInteger(KEY_TOTAL) >= 1;
@@ -667,12 +665,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         checkRouting();
 
-        this.response = client.search(elastic.determineAlias(descriptor),
-                                      elastic.determineTypeName(descriptor),
-                                      routing,
-                                      skip,
-                                      limit,
-                                      buildPayload());
+        this.response = client.search(elastic.determineAlias(descriptor), routing, skip, limit, buildPayload());
         for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
             if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
@@ -706,12 +699,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                             .handle();
         }
 
-        this.response = client.search(elastic.determineAlias(descriptor),
-                                      elastic.determineTypeName(descriptor),
-                                      routing,
-                                      skip,
-                                      limit,
-                                      buildPayload());
+        this.response = client.search(elastic.determineAlias(descriptor), routing, skip, limit, buildPayload());
     }
 
     /**
@@ -829,12 +817,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (response == null) {
             checkRouting();
 
-            this.response = client.search(elastic.determineAlias(descriptor),
-                                          elastic.determineTypeName(descriptor),
-                                          routing,
-                                          skip,
-                                          limit,
-                                          buildPayload());
+            this.response = client.search(elastic.determineAlias(descriptor), routing, skip, limit, buildPayload());
         }
 
         JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
@@ -867,7 +850,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             checkRouting();
 
             JSONObject scrollResponse = client.createScroll(elastic.determineAlias(descriptor),
-                                                            elastic.determineTypeName(descriptor),
                                                             routing,
                                                             0,
                                                             routing == null ?
@@ -969,7 +951,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public void truncate() {
         elastic.getLowLevelClient()
                .deleteByQuery(elastic.determineAlias(descriptor),
-                              elastic.determineTypeName(descriptor),
                               routing,
                               buildSimplePayload());
     }

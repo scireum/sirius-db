@@ -107,7 +107,6 @@ public class LowLevelClient {
      * Tells Elasticsearch to create or update the given document with the given data.
      *
      * @param index   the target index
-     * @param type    the target type
      * @param id      the ID to use
      * @param routing the routing to use
      * @param version the version to use for optimistic locking during the update
@@ -116,33 +115,27 @@ public class LowLevelClient {
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
     public JSONObject index(String index,
-                            String type,
                             String id,
                             @Nullable String routing,
                             @Nullable Integer version,
                             JSONObject data) throws OptimisticLockException {
-        return performPut().routing(routing)
-                           .version(version)
-                           .data(data)
-                           .tryExecute(index + "/" + type + "/" + id)
-                           .response();
+        return performPut().routing(routing).version(version).data(data).tryExecute(index + "/_doc/" + id).response();
     }
 
     /**
      * Performs a lookup for the given document.
      *
      * @param index      the index to search in
-     * @param type       the type to search in
      * @param id         the ID to search by
      * @param routing    the routing value to use
      * @param withSource <tt>true</tt> to also load the <tt>_source</tt> of the document, <tt>false</tt> otherwise
      * @return the response of the call
      */
-    public JSONObject get(String index, String type, String id, @Nullable String routing, boolean withSource) {
+    public JSONObject get(String index, String id, @Nullable String routing, boolean withSource) {
         return performGet().withCustomErrorHandler(this::handleNotFoundAsResponse)
                            .routing(routing)
                            .disable("_source", withSource)
-                           .execute(index + "/" + type + "/" + id)
+                           .execute(index + "/_doc/" + id)
                            .response();
     }
 
@@ -150,16 +143,14 @@ public class LowLevelClient {
      * Deletes the given document.
      *
      * @param index   the target index
-     * @param type    the target type
      * @param id      the ID to use
      * @param routing the routing to use
      * @param version the version to use for optimistic locking during the update
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
-    public JSONObject delete(String index, String type, String id, String routing, Integer version)
-            throws OptimisticLockException {
-        return performDelete().routing(routing).version(version).tryExecute(index + "/" + type + "/" + id).response();
+    public JSONObject delete(String index, String id, String routing, Integer version) throws OptimisticLockException {
+        return performDelete().routing(routing).version(version).tryExecute(index + "/_doc/" + id).response();
     }
 
     protected HttpEntity handleNotFoundAsResponse(ResponseException e) {
@@ -174,37 +165,30 @@ public class LowLevelClient {
      * Deletes all documents matched by the given query.
      *
      * @param alias   the alias which determines the indices to search in
-     * @param type    the document type to search
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject deleteByQuery(String alias, String type, @Nullable String routing, JSONObject query) {
-        return performPost().routing(routing).data(query).execute(alias + "/" + type + API_DELETE_BY_QUERY).response();
+    public JSONObject deleteByQuery(String alias, @Nullable String routing, JSONObject query) {
+        return performPost().routing(routing).data(query).execute(alias + API_DELETE_BY_QUERY).response();
     }
 
     /**
      * Executes a search.
      *
      * @param alias   the alias which determines the indices to search in
-     * @param type    the document type to search
      * @param routing the routing to use
      * @param from    the number of items to skip
      * @param size    the maximal result length
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject search(String alias,
-                             String type,
-                             @Nullable String routing,
-                             int from,
-                             int size,
-                             JSONObject query) {
+    public JSONObject search(String alias, @Nullable String routing, int from, int size, JSONObject query) {
         return performGet().routing(routing)
                            .withParam("size", size)
                            .withParam("from", from)
                            .data(query)
-                           .execute(alias + "/" + type + API_SEARCH)
+                           .execute(alias + API_SEARCH)
                            .response();
     }
 
@@ -252,7 +236,9 @@ public class LowLevelClient {
      */
     public boolean aliasExists(String alias) {
         try {
-            return restClient.performRequest(new Request("HEAD", API_ALIAS + "/" + alias)).getStatusLine().getStatusCode() == 200;
+            return restClient.performRequest(new Request("HEAD", API_ALIAS + "/" + alias))
+                             .getStatusLine()
+                             .getStatusCode() == 200;
         } catch (ResponseException e) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
@@ -327,7 +313,6 @@ public class LowLevelClient {
      * Creates a scroll search.
      *
      * @param alias        the alias which determines the indices to search in
-     * @param type         the document type to search
      * @param routing      the routing to use
      * @param from         the number of items to skip
      * @param sizePerShard the maximal number of results per shard
@@ -336,7 +321,6 @@ public class LowLevelClient {
      * @return the response of the call
      */
     public JSONObject createScroll(String alias,
-                                   String type,
                                    String routing,
                                    int from,
                                    int sizePerShard,
@@ -347,7 +331,7 @@ public class LowLevelClient {
                            .withParam("from", from)
                            .withParam("scroll", ttlSeconds + "s")
                            .data(query)
-                           .execute(alias + "/" + type + API_SEARCH)
+                           .execute(alias + API_SEARCH)
                            .response();
     }
 
@@ -381,17 +365,16 @@ public class LowLevelClient {
      * Determines if a given query has at least one result.
      *
      * @param alias   the alias which determines the indices to search in
-     * @param type    the document type to search
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject exists(String alias, String type, String routing, JSONObject query) {
+    public JSONObject exists(String alias, String routing, JSONObject query) {
         return performGet().routing(routing)
                            .withParam("size", 0)
                            .withParam("terminate_after", 1)
                            .data(query)
-                           .execute(alias + "/" + type + API_SEARCH)
+                           .execute(alias + API_SEARCH)
                            .response();
     }
 
@@ -399,13 +382,12 @@ public class LowLevelClient {
      * Determines the number of hits for a given query.
      *
      * @param alias   the alias which determines the indices to search in
-     * @param type    the document type to search
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject count(String alias, String type, String routing, JSONObject query) {
-        return performGet().routing(routing).data(query).execute(alias + "/" + type + "/_count").response();
+    public JSONObject count(String alias, String routing, JSONObject query) {
+        return performGet().routing(routing).data(query).execute(alias + "/_count").response();
     }
 
     /**
@@ -442,12 +424,11 @@ public class LowLevelClient {
      * Creates the given mapping.
      *
      * @param index the name of the index
-     * @param type  the name of the type
      * @param data  the mapping to create
      * @return the response of the call
      */
-    public JSONObject putMapping(String index, String type, JSONObject data) {
-        return performPut().data(data).execute(index + "/_mapping/" + type).response();
+    public JSONObject putMapping(String index, JSONObject data) {
+        return performPut().data(data).execute(index + "/_mapping").response();
     }
 
     /**
