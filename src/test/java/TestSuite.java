@@ -24,6 +24,7 @@ import sirius.kernel.Scope;
         scope = Scope.SCOPE_NIGHTLY)
 @Scenario(file = "test-redis-latest.conf", includes = "sirius\\.db\\.redis.*", scope = Scope.SCOPE_NIGHTLY)
 @Scenario(file = "test-mongo-latest.conf", includes = "sirius\\.db\\.mongo.*", scope = Scope.SCOPE_NIGHTLY)
+@Scenario(file = "test-es-sellsite.conf", includes = "sirius\\.db\\.es.*", scope = Scope.SCOPE_NIGHTLY)
 public class TestSuite {
 
 }
