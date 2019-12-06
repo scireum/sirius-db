@@ -45,6 +45,9 @@ public abstract class SQLEntity extends BaseEntity<Long> {
     protected long id = NON_PERSISTENT_ENTITY_ID;
 
     @Transient
+    protected int version = 0;
+
+    @Transient
     protected Row fetchRow;
 
     @Override
@@ -78,6 +81,24 @@ public abstract class SQLEntity extends BaseEntity<Long> {
      */
     public void setId(long id) {
         this.id = id;
+    }
+
+    /**
+     * Returns the version of the entity.
+     *
+     * @return the version of the entity
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Note that only the framework must use this to specify the version of the entity.
+     *
+     * @param version the version of this entity
+     */
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     /**

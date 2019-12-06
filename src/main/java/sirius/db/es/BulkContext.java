@@ -41,9 +41,9 @@ public class BulkContext implements Closeable {
     private static final int DEFAULT_BATCH_SIZE = 256;
 
     private static final String KEY_INDEX = "_index";
-    private static final String KEY_TYPE = "_type";
     private static final String KEY_ID = "_id";
-    private static final String KEY_VERSION = "_version";
+    private static final String KEY_PRIMARY_TERM = "if_primary_term";
+    private static final String KEY_SEQ_NO = "if_seq_no";
     private static final String KEY_ROUTING = "_routing";
     private static final String KEY_ERROR = "error";
     private static final String KEY_ITEMS = "items";
@@ -132,12 +132,12 @@ public class BulkContext implements Closeable {
         JSONObject meta = new JSONObject();
 
         if (!force && !entity.isNew() && ed.isVersioned()) {
-            meta.put(KEY_VERSION, entity.getVersion());
+            meta.put(KEY_PRIMARY_TERM, entity.getPrimaryTerm());
+            meta.put(KEY_SEQ_NO, entity.getSeqNo());
         }
 
         entity.setId(elastic.determineId(entity));
         meta.put(KEY_INDEX, elastic.determineAlias(ed));
-        meta.put(KEY_TYPE, elastic.determineTypeName(ed));
         meta.put(KEY_ID, entity.getId());
 
         String routing = elastic.determineRouting(ed, entity);
@@ -168,12 +168,12 @@ public class BulkContext implements Closeable {
         JSONObject meta = new JSONObject();
 
         if (!force && ed.isVersioned()) {
-            meta.put(KEY_VERSION, entity.getVersion());
+            meta.put(KEY_PRIMARY_TERM, entity.getPrimaryTerm());
+            meta.put(KEY_SEQ_NO, entity.getSeqNo());
         }
 
         entity.setId(elastic.determineId(entity));
         meta.put(KEY_INDEX, elastic.determineAlias(ed));
-        meta.put(KEY_TYPE, elastic.determineTypeName(ed));
         meta.put(KEY_ID, entity.getId());
 
         String routing = elastic.determineRouting(ed, entity);

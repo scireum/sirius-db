@@ -60,7 +60,7 @@ class ElasticSpec extends BaseSpecification {
         RoutedTestEntity notLoaded = elastic.find(
                 RoutedTestEntity.class,
                 entity.getId(),
-                Elastic.routedBy("badRouting")).orElse(null)
+                Elastic.routedBy("XX_badRouting")).orElse(null)
         then:
         loaded.getFirstname() == "Hello"
         loaded.getLastname() == "World"

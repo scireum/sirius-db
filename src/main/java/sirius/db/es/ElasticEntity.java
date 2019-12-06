@@ -17,6 +17,7 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -39,6 +40,12 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     private String id;
+
+    @Transient
+    protected long primaryTerm = 0;
+
+    @Transient
+    protected long seqNo = 0;
 
     @Transient
     private Set<String> matchedQueries;
@@ -83,7 +90,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the list of named queries which matched this entity.
      */
     public Set<String> getMatchedQueries() {
-        return matchedQueries;
+        return Collections.unmodifiableSet(matchedQueries);
     }
 
     /**
@@ -95,7 +102,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @param matchedQueries the list of named queries which matched this entity
      */
     protected void setMatchedQueries(Set<String> matchedQueries) {
-        this.matchedQueries = matchedQueries;
+        this.matchedQueries = Collections.unmodifiableSet(matchedQueries);
     }
 
     /**
@@ -110,5 +117,21 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         }
 
         return matchedQueries.contains(queryName);
+    }
+
+    public long getPrimaryTerm() {
+        return primaryTerm;
+    }
+
+    public void setPrimaryTerm(long primaryTerm) {
+        this.primaryTerm = primaryTerm;
+    }
+
+    public long getSeqNo() {
+        return seqNo;
+    }
+
+    public void setSeqNo(long seqNo) {
+        this.seqNo = seqNo;
     }
 }

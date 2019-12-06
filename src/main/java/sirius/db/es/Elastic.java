@@ -71,7 +71,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     private static final String CONTEXT_ROUTING = "routing";
 
-    private static final String RESPONSE_VERSION = "_version";
+    private static final String RESPONSE_PRIMARY_TERM = "_primary_term";
+    private static final String RESPONSE_SEQ_NO = "_seq_no";
     private static final String RESPONSE_FOUND = "found";
     private static final String RESPONSE_SOURCE = "_source";
     private static final String MATCHED_QUERIES = "matched_queries";
@@ -146,12 +147,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                     requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(0);
 
             HttpHost[] httpHosts = Arrays.stream(this.hosts.split(","))
-                                     .map(String::trim)
-                                     .map(host -> Strings.splitAtLast(host, ":"))
-                                     .map(this::parsePort)
-                                     .map(this::mapPort)
-                                     .map(this::makeHttpHost)
-                                     .toArray(size -> new HttpHost[size]);
+                                         .map(String::trim)
+                                         .map(host -> Strings.splitAtLast(host, ":"))
+                                         .map(this::parsePort)
+                                         .map(this::mapPort)
+                                         .map(this::makeHttpHost)
+                                         .toArray(size -> new HttpHost[size]);
             client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configCallback).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
@@ -219,15 +220,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         toJSON(ed, entity, data);
 
         String id = determineId(entity);
-        JSONObject response = getLowLevelClient().index(determineAlias(ed),
-                                                        determineTypeName(ed),
-                                                        id,
-                                                        determineRouting(ed, entity),
-                                                        null,
-                                                        data);
+        JSONObject response =
+                getLowLevelClient().index(determineAlias(ed), id, determineRouting(ed, entity), null, null, data);
         entity.setId(id);
         if (ed.isVersioned()) {
-            entity.setVersion(response.getInteger(RESPONSE_VERSION));
+            entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
+            entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
         }
     }
 
@@ -259,14 +257,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         }
 
         JSONObject response = getLowLevelClient().index(determineAlias(ed),
-                                                        determineTypeName(ed),
                                                         determineId(entity),
                                                         determineRouting(ed, entity),
-                                                        determineVersion(force, ed, entity),
+                                                        determinePrimaryTerm(force, ed, entity),
+                                                        determineSeqNo(force, ed, entity),
                                                         data);
 
         if (ed.isVersioned()) {
-            entity.setVersion(response.getInteger(RESPONSE_VERSION));
+            entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
+            entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
         }
     }
 
@@ -350,16 +349,32 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Determines the version value to use for a given entity.
+     * Determines the primary term to use for a given entity.
      *
      * @param force  <tt>true</tt> if an update should be forced
-     * @param entity the entity to determine the version from
+     * @param entity the entity to determine the primary term from
      * @return <tt>null</tt> if an update is forced or if the entity isn't
-     * {@link sirius.db.mixing.annotations.Versioned}, the actual entity version otherwise.
+     * {@link sirius.db.mixing.annotations.Versioned}, the actual primary term otherwise.
      */
-    private Integer determineVersion(boolean force, EntityDescriptor ed, ElasticEntity entity) {
+    private Long determinePrimaryTerm(boolean force, EntityDescriptor ed, ElasticEntity entity) {
         if (ed.isVersioned() && !force) {
-            return entity.getVersion();
+            return entity.getPrimaryTerm();
+        }
+
+        return null;
+    }
+
+    /**
+     * Determines the sequence number to use for a given entity.
+     *
+     * @param force  <tt>true</tt> if an update should be forced
+     * @param entity the entity to determine the sequence number from
+     * @return <tt>null</tt> if an update is forced or if the entity isn't
+     * {@link sirius.db.mixing.annotations.Versioned}, the actual sequence number otherwise.
+     */
+    private Long determineSeqNo(boolean force, EntityDescriptor ed, ElasticEntity entity) {
+        if (ed.isVersioned() && !force) {
+            return entity.getSeqNo();
         }
 
         return null;
@@ -368,10 +383,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         getLowLevelClient().delete(determineAlias(ed),
-                                   determineTypeName(ed),
                                    entity.getId(),
                                    determineRouting(ed, entity),
-                                   determineVersion(force, ed, entity));
+                                   determinePrimaryTerm(force, ed, entity),
+                                   determineSeqNo(force, ed, entity));
     }
 
     /**
@@ -394,7 +409,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             }
 
             if (ed.isVersioned()) {
-                result.setVersion(obj.getInteger(RESPONSE_VERSION));
+                result.setPrimaryTerm(obj.getLong(RESPONSE_PRIMARY_TERM));
+                result.setSeqNo(obj.getLong(RESPONSE_SEQ_NO));
             }
 
             return result;
@@ -428,8 +444,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                      ExecutionPoint.snapshot());
         }
 
-        JSONObject obj =
-                getLowLevelClient().get(determineAlias(ed), determineTypeName(ed), id.toString(), routing, true);
+        JSONObject obj = getLowLevelClient().get(determineAlias(ed), id.toString(), routing, true);
 
         if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
             return Optional.empty();

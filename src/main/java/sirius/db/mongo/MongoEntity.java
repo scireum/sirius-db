@@ -14,6 +14,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.di.std.Part;
@@ -32,6 +33,9 @@ public abstract class MongoEntity extends BaseEntity<String> {
     public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     protected String id;
+
+    @Transient
+    protected int version = 0;
 
     @Part
     protected static Mongo mongo;
@@ -76,5 +80,23 @@ public abstract class MongoEntity extends BaseEntity<String> {
      */
     protected String generateId() {
         return keyGen.generateId();
+    }
+
+    /**
+     * Returns the version of the entity.
+     *
+     * @return the version of the entity
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Note that only the framework must use this to specify the version of the entity.
+     *
+     * @param version the version of this entity
+     */
+    public void setVersion(int version) {
+        this.version = version;
     }
 }
