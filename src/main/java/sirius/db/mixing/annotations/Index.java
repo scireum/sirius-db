@@ -10,6 +10,9 @@ package sirius.db.mixing.annotations;
 
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.schema.Schema;
+import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mongo.Mango;
+import sirius.db.mongo.MongoEntity;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -18,9 +21,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Defines an additional index on an {@link SQLEntity}.
+ * Defines an additional index on an {@link SQLEntity} or {@link MongoEntity}.
  * <p>
- * The index will be picked up and created by {@link Schema#computeRequiredSchemaChanges()}
+ * The index will be picked up and created by {@link Schema#computeRequiredSchemaChanges()} or {@link Mango#createIndices(EntityDescriptor)}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -44,7 +47,7 @@ public @interface Index {
     /**
      * Contains a list of column settings to be used for <tt>Mongo DB</tt>.
      * <p>
-     * Use {@link sirius.db.mongo.Mango#INDEX_ASCENDING} or {@link sirius.db.mongo.Mango#INDEX_DESCENDING} for
+     * Use {@link Mango#INDEX_ASCENDING} or {@link Mango#INDEX_DESCENDING} for
      * common use cases. Use appropriate strings determined by the Mongo DB documentation for special
      * indices (e.g. geospatial ones).
      *
