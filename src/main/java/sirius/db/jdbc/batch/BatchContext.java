@@ -103,7 +103,7 @@ public class BatchContext implements Closeable {
     protected Connection createConnection(String realm) {
         try {
             Connection connection = oma.getDatabase(realm).getLongRunningConnection();
-            changeAutoCommit(connection, false);
+            changeAutoCommit(connection, false, false);
             return connection;
         } catch (SQLException e) {
             throw Exceptions.handle()
@@ -137,7 +137,7 @@ public class BatchContext implements Closeable {
 
     private void safeCloseConnection(Connection connection) {
         try {
-            changeAutoCommit(connection, true);
+            changeAutoCommit(connection, true, true);
             connection.close();
         } catch (SQLException e) {
             Exceptions.handle()
@@ -148,16 +148,33 @@ public class BatchContext implements Closeable {
         }
     }
 
-    private void changeAutoCommit(Connection connection, boolean enable) {
+    /**
+     * Toggles the auto-commit setting for the given connection.
+     * <p>
+     * This is required, as otherwise batching doesn't work properly at all (if auto-commit isn't disabled).
+     *
+     * @param connection   the connection to update
+     * @param enable       the flag which determines if auto-commit should be enabled or disabled
+     * @param ignoreErrors controls whether exceptions during the change are reported or ignored. As this is invoked
+     *                     when a connection is closed, we ignore any error as closing the connection might already
+     *                     be part of handling a previous error (e.g. GaleraDB doesn't like changinf the auto-commit
+     *                     setting after a transaction has been aborted due to a deadlock).
+     */
+    private void changeAutoCommit(Connection connection, boolean enable, boolean ignoreErrors) {
         try {
             connection.setAutoCommit(enable);
         } catch (SQLException e) {
-            Exceptions.handle()
-                      .error(e)
-                      .withSystemErrorMessage("An error occurred while changing the auto-commit of %s to %s - %s (%s)",
-                                              connection,
-                                              enable)
-                      .handle();
+            if (ignoreErrors) {
+                Exceptions.ignore(e);
+            } else {
+                Exceptions.handle()
+                          .error(e)
+                          .withSystemErrorMessage(
+                                  "An error occurred while changing the auto-commit of %s to %s - %s (%s)",
+                                  connection,
+                                  enable)
+                          .handle();
+            }
         }
     }
 
