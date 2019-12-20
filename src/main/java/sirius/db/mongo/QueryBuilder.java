@@ -16,7 +16,6 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.async.ExecutionPoint;
-import sirius.kernel.commons.Values;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 
@@ -146,24 +145,6 @@ public abstract class QueryBuilder<S> {
                                 filterObject,
                                 ExecutionPoint.snapshot().toString());
         }
-    }
-
-    private String determineLocation() {
-        // Tries to find the most useful (neither generic, nor reflection nor our framework) point in the stacktrace
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        int idx = 1;
-        while (idx++ < stackTrace.length) {
-            StackTraceElement currentElement = stackTrace[idx];
-            if (!currentElement.getClassName().startsWith("sirius.db")
-                && !currentElement.getClassName()
-                                  .startsWith("com.sun")
-                && !currentElement.getClassName().startsWith("java.")) {
-                return currentElement.toString();
-            }
-        }
-
-        // That's the best guess anyway
-        return Values.of(stackTrace).at(5).asString("<unknown>");
     }
 
     protected static String getRelationName(Class<?> type) {
