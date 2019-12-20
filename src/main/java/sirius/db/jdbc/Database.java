@@ -195,6 +195,8 @@ public class Database {
      * @return a new {@link Connection} to the database
      * @throws SQLException in case of a database error
      */
+    @SuppressWarnings("squid:S2095")
+    @Explain("We return this method - therefore properly calling close is the responsibility of the caller.")
     public Connection getLongRunningConnection() throws SQLException {
         try (Operation op = createOperation("getLongRunningConnection()")) {
             return new WrappedConnection(getDatasource().getConnection(), this).markAsLongRunning();
