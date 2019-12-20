@@ -173,10 +173,8 @@ public class Schema implements Startable, Initializable {
     public void computeRequiredSchemaChanges() {
         MultiMap<String, Table> targetByRealm = MultiMap.create();
         for (EntityDescriptor ed : mixing.getDesciptors()) {
-            if (SQLEntity.class.isAssignableFrom(ed.getType())) {
-                if (databases.containsKey(ed.getRealm())) {
-                    targetByRealm.put(ed.getRealm(), createTable(ed));
-                }
+            if (SQLEntity.class.isAssignableFrom(ed.getType()) && databases.containsKey(ed.getRealm())) {
+                targetByRealm.put(ed.getRealm(), createTable(ed));
             }
         }
 
@@ -202,13 +200,12 @@ public class Schema implements Startable, Initializable {
         Table table = new Table(ed);
         table.setName(ed.getRelationName());
 
-        if (getDatabase(ed.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)) {
-            if (!Strings.areEqual(ed.getRelationName(), ed.getRelationName().toLowerCase())) {
-                OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
-                             + " This might lead to trouble with the type of DBMS you are using!",
-                             ed.getType().getName(),
-                             ed.getRelationName());
-            }
+        if (getDatabase(ed.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)
+            && !Strings.areEqual(ed.getRelationName(), ed.getRelationName().toLowerCase())) {
+            OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
+                         + " This might lead to trouble with the type of DBMS you are using!",
+                         ed.getType().getName(),
+                         ed.getRelationName());
         }
 
         collectColumns(table, ed);

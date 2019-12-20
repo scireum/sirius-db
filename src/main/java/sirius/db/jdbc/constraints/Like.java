@@ -77,10 +77,8 @@ public class Like {
      */
     public Like startsWith(String value) {
         String effectiveValue = value;
-        if (Strings.isFilled(effectiveValue)) {
-            if (!effectiveValue.endsWith(WILDCARD)) {
-                effectiveValue = effectiveValue + WILDCARD;
-            }
+        if (Strings.isFilled(effectiveValue) && !effectiveValue.endsWith(WILDCARD)) {
+            effectiveValue = effectiveValue + WILDCARD;
         }
         this.value = effectiveValue;
         return this;
