@@ -9,7 +9,6 @@
 package sirius.db.es
 
 import sirius.kernel.BaseSpecification
-import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
@@ -105,8 +104,12 @@ class BulkContextSpec extends BaseSpecification {
         elastic.update(test)
         def refreshed = elastic.refreshOrFail(test)
         elastic.update(test.withValue(2))
-        def errors = btx.tryUpdate(refreshed.withValue(3)).tryUpdate(test2).commit()
+        def result = btx.tryUpdate(refreshed.withValue(3)).tryUpdate(test2).commit()
         then:
-        errors && btx.getFailedIds().size() == 1 && btx.getFailedIds().contains(refreshed.getId())
+        !result.isSuccessful()
+        and:
+        result.getFailedIds().size() == 1
+        and:
+        result.getFailedIds().contains(refreshed.getId())
     }
 }
