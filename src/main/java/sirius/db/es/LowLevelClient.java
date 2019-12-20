@@ -213,20 +213,14 @@ public class LowLevelClient {
      * @param onSuccess    is called if the request is successfully finished
      * @param onFailure    is called if a exception occurs while performing the request
      */
-
     public void reindex(EntityDescriptor ed,
                         String newIndexName,
                         Consumer<Response> onSuccess,
                         Consumer<Exception> onFailure) {
         performPost().data(new JSONObject().fluentPut("source",
                                                       new JSONObject().fluentPut(PARAM_INDEX,
-                                                                                 elastic.determineAlias(ed))
-                                                                      .fluentPut(PARAM_TYPE,
-                                                                                 elastic.determineTypeName(ed)))
-                                           .fluentPut("dest",
-                                                      new JSONObject().fluentPut(PARAM_INDEX, newIndexName)
-                                                                      .fluentPut(PARAM_TYPE,
-                                                                                 elastic.determineTypeName(ed))))
+                                                                                 elastic.determineAlias(ed)))
+                                           .fluentPut("dest", new JSONObject().fluentPut(PARAM_INDEX, newIndexName)))
                      .executeAsync(API_REINDEX, onSuccess, onFailure);
     }
 
