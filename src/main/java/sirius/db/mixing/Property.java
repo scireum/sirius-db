@@ -656,11 +656,10 @@ public abstract class Property extends Composable {
         Object propertyValue = getValue(entity);
         checkNullability(propertyValue);
 
-        if (entity instanceof BaseEntity<?>) {
-            if (((BaseEntity<?>) entity).isNew() || ((BaseEntity<?>) entity).isChanged(nameAsMapping)) {
-                // Only enforce uniqueness if the value actually changed...
-                checkUniqueness(entity, propertyValue);
-            }
+        if (entity instanceof BaseEntity<?> && (((BaseEntity<?>) entity).isNew() || ((BaseEntity<?>) entity).isChanged(
+                nameAsMapping))) {
+            // Only enforce uniqueness if the value actually changed...
+            checkUniqueness(entity, propertyValue);
         }
     }
 

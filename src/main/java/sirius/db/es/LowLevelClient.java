@@ -40,6 +40,7 @@ public class LowLevelClient {
     private static final String API_ALIASES = "/_aliases";
     private static final String API_SEARCH = "/_search";
     private static final String API_DELETE_BY_QUERY = "/_delete_by_query";
+    private static final String API_PREFIX_DOC = "/_doc/";
 
     private static final String PARAM_INDEX = "index";
     private static final String PARAM_TYPE = "type";
@@ -125,7 +126,7 @@ public class LowLevelClient {
                            .primaryTerm(primaryTerm)
                            .seqNo(seqNo)
                            .data(data)
-                           .tryExecute(index + "/_doc/" + id)
+                           .tryExecute(index + API_PREFIX_DOC + id)
                            .response();
     }
 
@@ -142,7 +143,7 @@ public class LowLevelClient {
         return performGet().withCustomErrorHandler(this::handleNotFoundAsResponse)
                            .routing(routing)
                            .disable("_source", withSource)
-                           .execute(index + "/_doc/" + id)
+                           .execute(index + API_PREFIX_DOC + id)
                            .response();
     }
 
@@ -162,7 +163,7 @@ public class LowLevelClient {
         return performDelete().routing(routing)
                               .primaryTerm(primaryTerm)
                               .seqNo(seqNo)
-                              .tryExecute(index + "/_doc/" + id)
+                              .tryExecute(index + API_PREFIX_DOC + id)
                               .response();
     }
 
