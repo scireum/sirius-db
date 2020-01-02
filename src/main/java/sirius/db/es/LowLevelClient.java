@@ -43,7 +43,6 @@ public class LowLevelClient {
     private static final String API_PREFIX_DOC = "/_doc/";
 
     private static final String PARAM_INDEX = "index";
-    private static final String PARAM_TYPE = "type";
 
     private RestClient restClient;
 
