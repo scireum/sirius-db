@@ -132,6 +132,7 @@ public class BatchContext implements Closeable {
 
         if (connectionsPerRealm != null) {
             connectionsPerRealm.values().forEach(this::safeCloseConnection);
+            connectionsPerRealm.clear();
         }
     }
 
