@@ -126,17 +126,24 @@ public class Schema implements Startable, Initializable {
     }
 
     protected void updateSchemaAtStartup() {
+        performSchemaUpdate();
+        readyFuture.success();
+    }
+
+    private void performSchemaUpdate() {
+        if (!mixing.shouldExecuteSafeSchemaChanges()) {
+            return;
+        }
+
+        OMA.LOG.INFO("Computing required schema updates....");
         computeRequiredSchemaChanges();
-        OMA.LOG.INFO("Executing Schema Updates....");
-        TaskContext ctx = TaskContext.get();
+
+        OMA.LOG.INFO("Executing schema updates....");
         int skipped = 0;
         int executed = 0;
         int failed = 0;
         for (SchemaUpdateAction action : getSchemaUpdateActions()) {
-            if (!ctx.isActive()) {
-                break;
-            }
-            if (!action.isDataLossPossible()) {
+            if (!action.isDataLossPossible() || mixing.shouldExecuteUnsafeSchemaChanges()) {
                 executed++;
                 action.execute(getDatabase(action.getRealm()));
                 if (action.isFailed()) {
@@ -150,6 +157,7 @@ public class Schema implements Startable, Initializable {
                 skipped++;
             }
         }
+
         if (failed > 0 || skipped > 0) {
             OMA.LOG.WARN(
                     "Executed %d schema change actions of which %d failed. %d were skipped due to possible dataloss",
@@ -161,8 +169,6 @@ public class Schema implements Startable, Initializable {
         } else {
             OMA.LOG.INFO("Schema is up to date, no changes required");
         }
-
-        readyFuture.success();
     }
 
     /**
