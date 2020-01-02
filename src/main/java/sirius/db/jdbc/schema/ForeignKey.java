@@ -98,9 +98,11 @@ public class ForeignKey {
         if (obj == null) {
             return false;
         }
+
         if (!(obj instanceof ForeignKey)) {
             return false;
         }
+
         return ((ForeignKey) obj).name.equalsIgnoreCase(name);
     }
 
@@ -110,7 +112,7 @@ public class ForeignKey {
     }
 
     /**
-     * Adds a column to the key
+     * Adds a column to the key.
      *
      * @param pos   the position to add at
      * @param field the field or column to add
