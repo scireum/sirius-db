@@ -22,7 +22,6 @@ import sirius.db.mixing.annotations.Index;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.async.Future;
-import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.Strings;
