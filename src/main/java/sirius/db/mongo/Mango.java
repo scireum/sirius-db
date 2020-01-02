@@ -143,10 +143,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         long numDeleted = deleter.singleFrom(ed.getRelationName()).getDeletedCount();
-        if (numDeleted == 0 && !force && ed.isVersioned()) {
-            if (mongo.find().where(MongoEntity.ID, entity.getId()).countIn(ed.getRelationName()) > 0) {
-                throw new OptimisticLockException();
-            }
+        if (numDeleted == 0
+            && !force
+            && ed.isVersioned()
+            && mongo.find().where(MongoEntity.ID, entity.getId()).countIn(ed.getRelationName()) > 0) {
+            throw new OptimisticLockException();
         }
     }
 

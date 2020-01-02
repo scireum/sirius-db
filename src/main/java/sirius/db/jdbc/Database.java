@@ -175,9 +175,13 @@ public class Database {
      * @throws SQLException in case of a database error
      */
     public Connection getConnection() throws SQLException {
-        try (Operation op = new Operation(() -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5))) {
+        try (Operation op = createOperation("getConnection()")) {
             return new WrappedConnection(getDatasource().getConnection(), this);
         }
+    }
+
+    private Operation createOperation(String methodName) {
+        return new Operation(() -> "Database: " + name + "." + methodName, Duration.ofSeconds(5));
     }
 
     /**
@@ -191,8 +195,10 @@ public class Database {
      * @return a new {@link Connection} to the database
      * @throws SQLException in case of a database error
      */
+    @SuppressWarnings("squid:S2095")
+    @Explain("We return this method - therefore properly calling close is the responsibility of the caller.")
     public Connection getLongRunningConnection() throws SQLException {
-        try (Operation op = new Operation(() -> "Database: " + name + ".getConnection()", Duration.ofSeconds(5))) {
+        try (Operation op = createOperation("getLongRunningConnection()")) {
             return new WrappedConnection(getDatasource().getConnection(), this).markAsLongRunning();
         }
     }
@@ -210,7 +216,7 @@ public class Database {
             return getConnection();
         }
 
-        try (Operation op = new Operation(() -> "Database: " + name + ".getHostConnection()", Duration.ofSeconds(5))) {
+        try (Operation op = createOperation("getHostConnection()")) {
             try {
                 Class.forName(driver);
             } catch (ClassNotFoundException e) {

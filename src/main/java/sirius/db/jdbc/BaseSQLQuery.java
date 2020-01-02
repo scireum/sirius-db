@@ -98,10 +98,8 @@ public abstract class BaseSQLQuery {
                                     TaskContext taskContext) throws SQLException {
         while (resultSet.next() && taskContext.isActive()) {
             Row row = loadIntoRow(resultSet);
-            if (effectiveLimit.nextRow()) {
-                if (!handler.apply(row)) {
-                    return;
-                }
+            if (effectiveLimit.nextRow() && !handler.apply(row)) {
+                return;
             }
             if (!effectiveLimit.shouldContinue()) {
                 return;
