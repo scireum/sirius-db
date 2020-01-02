@@ -22,7 +22,7 @@ import sirius.kernel.di.std.Part;
 /**
  * Represents the base class for all entities which are managed via {@link Mango} and stored in MongoDB.
  */
-@Index(name = "id", columns = "id", columnSettings = Mango.INDEX_ASCENDING)
+@Index(name = "id", columns = "id", columnSettings = Mango.INDEX_ASCENDING, unique = true)
 public abstract class MongoEntity extends BaseEntity<String> {
 
     /**
