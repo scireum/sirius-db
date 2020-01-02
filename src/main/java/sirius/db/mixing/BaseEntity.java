@@ -17,8 +17,10 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -169,12 +171,16 @@ public abstract class BaseEntity<I> extends Mixable {
     public void assertNonNull(Mapping field, Object value) {
         Property property = getDescriptor().getProperty(field);
         if (property.isConsideredNull(value)) {
-            throw Exceptions.createHandled()
-                            .error(new InvalidFieldException(field.toString()))
-                            .withNLSKey("Property.fieldNotNullable")
-                            .set(PARAM_FIELD, property.getFullLabel())
-                            .handle();
+            throwEmptyFieldError(field, property);
         }
+    }
+
+    private void throwEmptyFieldError(Mapping field, Property property) {
+        throw Exceptions.createHandled()
+                        .error(new InvalidFieldException(field.toString()))
+                        .withNLSKey("Property.fieldNotNullable")
+                        .set(PARAM_FIELD, property.getFullLabel())
+                        .handle();
     }
 
     /**
@@ -198,10 +204,14 @@ public abstract class BaseEntity<I> extends Mixable {
     public void validateNonNull(Mapping field, Object value, Consumer<String> validationWarningConsumer) {
         Property property = getDescriptor().getProperty(field);
         if (property.isConsideredNull(value)) {
-            validationWarningConsumer.accept(NLS.fmtr("Property.fieldNotNullable")
-                                                .set(PARAM_FIELD, property.getFullLabel())
-                                                .format());
+            emitEmptyFieldWarning(validationWarningConsumer, property);
         }
+    }
+
+    private void emitEmptyFieldWarning(Consumer<String> validationWarningConsumer, Property property) {
+        validationWarningConsumer.accept(NLS.fmtr("Property.fieldNotNullable")
+                                            .set(PARAM_FIELD, property.getFullLabel())
+                                            .format());
     }
 
     /**
@@ -219,7 +229,7 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
-     * Determines the given {@link Mapping}s were changed in this {@link BaseEntity} since it was last
+     * Determines the given {@link Mapping mappings} were changed in this {@link BaseEntity} since it was last
      * fetched from the database.
      * <p>
      * If a property wears an {@link sirius.db.mixing.annotations.Trim} annotation or if "" and <tt>null</tt>
@@ -250,6 +260,87 @@ public abstract class BaseEntity<I> extends Mixable {
             }
         }
         return false;
+    }
+
+    /**
+     * Provides a boilerplate way of only executing a lambda if the referenced mapping has changed.
+     * <p>
+     * This is most probably useful for deciding if a check in a {@link sirius.db.mixing.annotations.BeforeSave}
+     * handler should be executed or not.
+     *
+     * @param mappingToCheck the mapping to check
+     * @param codeToExecute  the lambda to execute if the mapping has changed
+     * @see #ifChangedAndFilled(Mapping, Runnable)
+     */
+    public void ifChanged(Mapping mappingToCheck, Runnable codeToExecute) {
+        if (isChanged(mappingToCheck)) {
+            codeToExecute.run();
+        }
+    }
+
+    /**
+     * Provides a boilerplate way of only executing a lambda if the referenced mapping has changed and contains a
+     * non-null value.
+     * <p>
+     * This is most probably useful for deciding if a check in a {@link sirius.db.mixing.annotations.BeforeSave}
+     * handler should be executed or not.
+     *
+     * @param mappingToCheck the mapping to check
+     * @param codeToExecute  the lambda to execute if the mapping has changed
+     * @see #ifChangedAndFilled(Mapping, Runnable)
+     */
+    public void ifChangedAndFilled(@Nonnull Mapping mappingToCheck, @Nonnull Runnable codeToExecute) {
+        checkIfChangedOrEmpty(mappingToCheck, codeToExecute, null);
+    }
+
+    protected void checkIfChangedOrEmpty(@Nonnull Mapping mappingToCheck,
+                                         @Nonnull Runnable check,
+                                         @Nullable Runnable emptyHandler) {
+        Property property = getDescriptor().getProperty(mappingToCheck);
+        Object propertyValue = property.getValue(this);
+        if (property.isConsideredNull(propertyValue)) {
+            if (emptyHandler != null) {
+                emptyHandler.run();
+            }
+            return;
+        }
+
+        if (Objects.equals(persistedData.get(property), property)) {
+            return;
+        }
+
+        check.run();
+    }
+
+    /**
+     * Provides a boilerplate way of executing a check if the requested field is changed and filled or otherwise emit an
+     * error if the field is empty.
+     *
+     * @param mappingToCheck the mapping to check
+     * @param codeToExecute  the lambda to execute if the mapping has changed
+     * @throws sirius.kernel.health.HandledException if the field is empty
+     */
+    public void verifyIfChangedFailIfEmpty(@Nonnull Mapping mappingToCheck, @Nonnull Runnable codeToExecute) {
+        checkIfChangedOrEmpty(mappingToCheck, codeToExecute, () -> {
+            Property property = getDescriptor().getProperty(mappingToCheck);
+            throwEmptyFieldError(mappingToCheck, property);
+        });
+    }
+
+    /**
+     * Provides a boilerplate way of executing a validation to ensure that the requested field is changed and filled
+     * or otherwise emit a validation warning if the field is empty.
+     *
+     * @param mappingToCheck the mapping to check
+     * @param codeToExecute  the lambda to execute if the mapping has changed
+     */
+    public void validateIfChangedFailIfEmpty(@Nonnull Mapping mappingToCheck,
+                                             @Nonnull Consumer<String> validationConsumer,
+                                             @Nonnull Consumer<Consumer<String>> codeToExecute) {
+        checkIfChangedOrEmpty(mappingToCheck, () -> codeToExecute.accept(validationConsumer), () -> {
+            Property property = getDescriptor().getProperty(mappingToCheck);
+            emitEmptyFieldWarning(validationConsumer, property);
+        });
     }
 
     /**
