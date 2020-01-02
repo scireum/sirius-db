@@ -107,7 +107,6 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
                        description);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Optional<SQLEntity> find(Class<SQLEntity> type, Value value) {
         return oma.find(type, value.get());
