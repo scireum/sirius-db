@@ -331,8 +331,10 @@ public abstract class BaseEntity<I> extends Mixable {
      * Provides a boilerplate way of executing a validation to ensure that the requested field is changed and filled
      * or otherwise emit a validation warning if the field is empty.
      *
-     * @param mappingToCheck the mapping to check
-     * @param codeToExecute  the lambda to execute if the mapping has changed
+     * @param mappingToCheck     the mapping to check
+     * @param validationConsumer the validation consumer which is passed into the
+     *                           {@link sirius.db.mixing.annotations.OnValidate} method.
+     * @param codeToExecute      the lambda to execute if the mapping has changed
      */
     public void validateIfChangedFailIfEmpty(@Nonnull Mapping mappingToCheck,
                                              @Nonnull Consumer<String> validationConsumer,
