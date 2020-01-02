@@ -42,6 +42,8 @@ import java.util.function.Consumer;
 public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity, SQLEntityRef<SQLEntity>>
         implements SQLPropertyInfo, ESPropertyInfo {
 
+    private static final int MAX_FOREIGN_KEY_NAME_LENGTH = 32;
+
     @Part
     private static OMA oma;
 
@@ -83,12 +85,7 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
         if (SQLEntity.class.isAssignableFrom(getReferencedType()) && Strings.areEqual(getDescriptor().getRealm(),
                                                                                       getReferencedDescriptor().getRealm())) {
             ForeignKey fk = new ForeignKey();
-            fk.setName("fk_"
-                       + descriptor.getRelationName()
-                       + "_"
-                       + getPropertyName()
-                       + "_"
-                       + referencedDescriptor.getRelationName());
+            fk.setName(Strings.limit("fk_" + getPropertyName(), MAX_FOREIGN_KEY_NAME_LENGTH, false));
             fk.setForeignTable(getReferencedDescriptor().getRelationName());
             fk.addForeignColumn(1, SQLEntity.ID.getName());
             fk.addColumn(1, getPropertyName());
