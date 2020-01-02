@@ -116,23 +116,24 @@ public class BatchContext implements Closeable {
     }
 
     protected void safeClose() {
-        if (queries == null) {
-            return;
-        }
+        if (queries != null) {
+            for (BatchQuery<?> query : queries) {
+                try {
+                    query.tryCommit(false);
+                } catch (HandledException e) {
+                    Exceptions.ignore(e);
+                } catch (Exception e) {
+                    Exceptions.handle(OMA.LOG, e);
+                }
 
-        for (BatchQuery<?> query : queries) {
-            try {
-                query.tryCommit(false);
-            } catch (HandledException e) {
-                Exceptions.ignore(e);
-            } catch (Exception e) {
-                Exceptions.handle(OMA.LOG, e);
+                query.safeClose();
             }
-
-            query.safeClose();
         }
 
-        connectionsPerRealm.values().forEach(this::safeCloseConnection);
+        if (connectionsPerRealm != null) {
+            connectionsPerRealm.values().forEach(this::safeCloseConnection);
+            connectionsPerRealm.clear();
+        }
     }
 
     private void safeCloseConnection(Connection connection) {

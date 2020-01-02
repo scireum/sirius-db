@@ -8,62 +8,52 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Simplifies bulk inserts, updates and deletes against Elasticsearch.
  * <p>
  * Permits to execute an arbitrary number of requests. Which will internally executed as blocks using the bulk API
- * of Elasticsearch.
+ * of Elasticsearch. A certain number of commands is queued before the whole request is sent to the server. Note that
+ * bulk updates may fail (e.g. due to optimistic locking). If an auto-commit fails, it will produce an exception.
  * <p>
- * Note that this instance isn't threadsafe.
+ * Invoke {@link #commit()} manually every once in a while (ask {@link #shouldCommitManually()}). One can also
+ * determine the current number of commands using {@link #countQueuedCommands()} and determine when
+ * {@link #autocommit()} will be invoked (when reaching {@link #MAX_BATCH_SIZE}.
  * <p>
  * Note that {@link sirius.db.mixing.annotations.AfterSave} and {@link sirius.db.mixing.types.BaseEntityRef.OnDelete}
  * handlers are <tt>not</tt> executed!
+ * <p>
+ * This class is not thread-safe.
  */
 @NotThreadSafe
 public class BulkContext implements Closeable {
 
-    private static final int DEFAULT_BATCH_SIZE = 256;
+    private static final int MAX_BATCH_SIZE = 1024;
+    private static final int RECOMMENDED_BATCH_SIZE = 256;
 
     private static final String KEY_INDEX = "_index";
-    private static final String KEY_ID = "_id";
+    protected static final String KEY_ID = "_id";
     private static final String KEY_PRIMARY_TERM = "if_primary_term";
     private static final String KEY_SEQ_NO = "if_seq_no";
     private static final String KEY_ROUTING = "_routing";
-    private static final String KEY_ERROR = "error";
-    private static final String KEY_ITEMS = "items";
 
-    private static final String COMMAND_INDEX = "index";
-    private static final String COMMAND_DELETE = "delete";
-    private static final String COMMAND_CREATE = "create";
-    private static final String COMMAND_UPDATE = "update";
+    protected static final String COMMAND_INDEX = "index";
+    protected static final String COMMAND_DELETE = "delete";
+    protected static final String COMMAND_CREATE = "create";
+    protected static final String COMMAND_UPDATE = "update";
 
-    private static final String RESPONSE_INDEX = "index";
-    private static final String RESPONSE_TYPE = "type";
-    private static final String RESPONSE_REASON = "reason";
-    private static final String RESPONSE_CAUSED_BY = "caused_by";
-
-    private final int maxBatchSize;
     private LowLevelClient client;
     private List<JSONObject> commands;
-    private JSONObject response;
-    private Set<String> failedIds;
-    private String failureMessage;
 
     @Part
     private static Elastic elastic;
@@ -75,13 +65,12 @@ public class BulkContext implements Closeable {
      * @see Elastic#batch()
      */
     protected BulkContext(LowLevelClient client) {
-        this.maxBatchSize = DEFAULT_BATCH_SIZE;
         this.client = client;
         this.commands = new ArrayList<>();
     }
 
     /**
-     * Queues an {@link Elastic#tryUpdate(BaseEntity)} in the batch context.
+     * Queues an {@link Elastic#tryUpdate(ElasticEntity)} in the batch context.
      *
      * @param entity the entity to create or update
      * @return the batch context itself for fluent method calls
@@ -92,7 +81,7 @@ public class BulkContext implements Closeable {
     }
 
     /**
-     * Queues an {@link Elastic#override(BaseEntity)} in the batch context.
+     * Queues an {@link Elastic#override(ElasticEntity)} in the batch context.
      *
      * @param entity the entity to create or update
      * @return the batch context itself for fluent method calls
@@ -103,7 +92,7 @@ public class BulkContext implements Closeable {
     }
 
     /**
-     * Queues an {@link Elastic#tryDelete(BaseEntity)} in the batch context.
+     * Queues an {@link Elastic#tryDelete(ElasticEntity)} in the batch context.
      *
      * @param entity the entity to delete
      * @return the batch context itself for fluent method calls
@@ -114,7 +103,7 @@ public class BulkContext implements Closeable {
     }
 
     /**
-     * Queues an {@link Elastic#forceDelete(BaseEntity)} in the batch context.
+     * Queues an {@link Elastic#forceDelete(ElasticEntity)} in the batch context.
      *
      * @param entity the entity to delete
      * @return the batch context itself for fluent method calls
@@ -129,6 +118,27 @@ public class BulkContext implements Closeable {
 
         ed.beforeSave(entity);
 
+        JSONObject meta = builtMetadata(entity, force, ed);
+        JSONObject data = new JSONObject();
+        boolean changed = elastic.toJSON(ed, entity, data);
+
+        if (!changed) {
+            return;
+        }
+
+        commands.add(new JSONObject().fluentPut(COMMAND_INDEX, meta));
+        commands.add(data);
+        autocommit();
+    }
+
+    private void autocommit() {
+        if (commands.size() >= MAX_BATCH_SIZE) {
+            commit().throwFailures();
+        }
+    }
+
+    @Nonnull
+    private JSONObject builtMetadata(ElasticEntity entity, boolean force, EntityDescriptor ed) {
         JSONObject meta = new JSONObject();
 
         if (!force && !entity.isNew() && ed.isVersioned()) {
@@ -144,16 +154,7 @@ public class BulkContext implements Closeable {
         if (routing != null) {
             meta.put(KEY_ROUTING, routing);
         }
-
-        JSONObject data = new JSONObject();
-        boolean changed = elastic.toJSON(ed, entity, data);
-
-        if (!changed) {
-            return;
-        }
-
-        commands.add(new JSONObject().fluentPut(COMMAND_INDEX, meta));
-        commands.add(data);
+        return meta;
     }
 
     private void delete(ElasticEntity entity, boolean force) {
@@ -161,155 +162,64 @@ public class BulkContext implements Closeable {
             return;
         }
 
-        EntityDescriptor ed = entity.getDescriptor();
+        EntityDescriptor entityDescriptor = entity.getDescriptor();
+        entityDescriptor.beforeDelete(entity);
 
-        ed.beforeDelete(entity);
-
-        JSONObject meta = new JSONObject();
-
-        if (!force && ed.isVersioned()) {
-            meta.put(KEY_PRIMARY_TERM, entity.getPrimaryTerm());
-            meta.put(KEY_SEQ_NO, entity.getSeqNo());
-        }
-
-        entity.setId(elastic.determineId(entity));
-        meta.put(KEY_INDEX, elastic.determineAlias(ed));
-        meta.put(KEY_ID, entity.getId());
-
-        String routing = elastic.determineRouting(ed, entity);
-        if (routing != null) {
-            meta.put(KEY_ROUTING, routing);
-        }
-
+        JSONObject meta = builtMetadata(entity, force, entityDescriptor);
         commands.add(new JSONObject().fluentPut(COMMAND_DELETE, meta));
-    }
-
-    private void autocommit() {
-        if (commands.size() >= maxBatchSize) {
-            commit();
-        }
+        autocommit();
     }
 
     /**
      * Forces the execution of a bulk update (if statements are queued).
      *
-     * @return <tt>true</tt> if errors occurred, <tt>false</tt> otherwise
+     * @return a result which can be used to determine if errors have occurred. If an exception should be thrown for
+     * any error, use {@link BulkResult#throwFailures()}.
      */
-    public boolean commit() {
+    public BulkResult commit() {
         if (commands.isEmpty()) {
-            return false;
+            return new BulkResult(null);
         }
 
         try {
-            failedIds = null;
-
             JSONObject bulkResponse = client.bulk(commands);
             if (Elastic.LOG.isFINE()) {
                 Elastic.LOG.FINE(bulkResponse);
             }
 
-            this.response = bulkResponse;
-            boolean hasErrors = bulkResponse.getBooleanValue("errors");
-
-            if (Strings.isFilled(getFailureMessage())) {
-                Exceptions.handle().withSystemErrorMessage(getFailureMessage()).handle();
-            }
-
-            return hasErrors;
+            return new BulkResult(bulkResponse);
         } catch (Exception e) {
-            Exceptions.handle()
-                      .to(Elastic.LOG)
-                      .error(e)
-                      .withSystemErrorMessage(
-                              "An error occurred while executing a bulk update against Elasticsearch: %s (%s)")
-                      .handle();
-            return true;
+            throw Exceptions.handle()
+                            .to(Elastic.LOG)
+                            .error(e)
+                            .withSystemErrorMessage(
+                                    "An error occurred while executing a bulk update against Elasticsearch: %s (%s)")
+                            .handle();
         } finally {
             commands.clear();
         }
     }
 
     /**
-     * Returns all _id-fields of sub-requests which failed within this bulk request.
+     * Returns the number of queued commands.
      *
-     * @return a {@link Set} of _ids for which the bulk request failed.
+     * @return the number of currently queued command
      */
-    public Set<String> getFailedIds() {
-        if (response == null || !response.getBooleanValue("errors")) {
-            return Collections.emptySet();
-        }
-
-        if (failedIds != null) {
-            return Collections.unmodifiableSet(failedIds);
-        }
-
-        StringBuilder failureMessageBuilder = new StringBuilder();
-        this.failedIds = new HashSet<>();
-        JSONArray items = response.getJSONArray(KEY_ITEMS);
-
-        for (int i = 0; i < items.size(); i++) {
-            JSONObject current = getObject(items.getJSONObject(i));
-            JSONObject error = current.getJSONObject(KEY_ERROR);
-            if (error != null) {
-                failedIds.add(current.getString(KEY_ID));
-                failureMessageBuilder.append("index: ")
-                                     .append(error.getString(RESPONSE_INDEX))
-                                     .append(" type: ")
-                                     .append(error.getString(RESPONSE_TYPE))
-                                     .append(" reason: ")
-                                     .append(error.getString(RESPONSE_REASON));
-                if (error.getJSONObject(RESPONSE_CAUSED_BY) != null) {
-                    failureMessageBuilder.append(" cause: ")
-                                         .append(error.getJSONObject(RESPONSE_CAUSED_BY).getString(RESPONSE_REASON));
-                }
-                failureMessageBuilder.append("\n");
-            }
-        }
-
-        failureMessage = failureMessageBuilder.toString();
-
-        return Collections.unmodifiableSet(failedIds);
+    public int countQueuedCommands() {
+        return commands.size();
     }
 
     /**
-     * Returns the failure message for this bulk request.
+     * Determines if {@link #commit()} whould be invoked manually if the caller is interested in properly handling
+     * update errors.
+     * <p>
+     * Note that there is no need to do this. {@link #autocommit()} will invoke {@link #commit()} in sane and regular
+     * intervals. However it will always throw an exception in case of any error being encountered.
      *
-     * @return the failure message if errors occured. Otherwise an empty string.
+     * @return <tt>true</tt> if {@link #commit()} should be called manually, <tt>false</tt> otherwise
      */
-    public String getFailureMessage() {
-        if (failedIds == null) {
-            getFailedIds();
-        }
-
-        if (Strings.isEmpty(failureMessage)) {
-            return "";
-        }
-
-        return failureMessage;
-    }
-
-    private JSONObject getObject(JSONObject currentObject) {
-        JSONObject object = currentObject.getJSONObject(COMMAND_INDEX);
-        if (object != null) {
-            return object;
-        }
-
-        object = currentObject.getJSONObject(COMMAND_DELETE);
-        if (object != null) {
-            return object;
-        }
-
-        object = currentObject.getJSONObject(COMMAND_CREATE);
-        if (object != null) {
-            return object;
-        }
-
-        object = currentObject.getJSONObject(COMMAND_UPDATE);
-        if (object != null) {
-            return object;
-        }
-
-        throw Exceptions.handle().withSystemErrorMessage("Unknown object type within bulk-response!").handle();
+    public boolean shouldCommitManually() {
+        return countQueuedCommands() >= RECOMMENDED_BATCH_SIZE;
     }
 
     /**
@@ -326,6 +236,6 @@ public class BulkContext implements Closeable {
      */
     @Override
     public void close() {
-        commit();
+        commit().throwFailures();
     }
 }
