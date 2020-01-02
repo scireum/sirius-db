@@ -256,14 +256,21 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     private void createIndex(EntityDescriptor ed, MongoDatabase client, Index index) {
         try {
+            boolean textColumnSeen = false;
             Document document = new Document();
             for (int i = 0; i < index.columns().length; i++) {
                 Value setting = Value.of(index.columnSettings()[i]);
                 document.append(index.columns()[i], setting.isNumeric() ? setting.asInt(1) : setting.asString());
+                textColumnSeen |= Mango.INDEX_AS_FULLTEXT.equals(setting.getString());
             }
 
-            Mongo.LOG.INFO("Creating MongoDB index %s for: %s...", index.name(), ed.getRelationName());
-            client.getCollection(ed.getRelationName()).createIndex(document, new IndexOptions().unique(index.unique()));
+            IndexOptions indexOptions = new IndexOptions().unique(index.unique());
+            if (!textColumnSeen) {
+                indexOptions.collation(mongo.determineCollation());
+            }
+
+            Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), ed.getRelationName());
+            client.getCollection(ed.getRelationName()).createIndex(document, indexOptions);
         } catch (Exception e) {
             Exceptions.handle()
                       .error(e)
