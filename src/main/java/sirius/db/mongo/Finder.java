@@ -13,6 +13,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
+import com.mongodb.client.model.CountOptions;
 import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -364,7 +365,9 @@ public class Finder extends QueryBuilder<Finder> {
     public long countIn(String collection) {
         Watch w = Watch.start();
         try {
-            return mongo.db().getCollection(collection).countDocuments(filterObject);
+            return mongo.db()
+                        .getCollection(collection)
+                        .countDocuments(filterObject, new CountOptions().collation(mongo.determineCollation()));
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -411,6 +414,7 @@ public class Finder extends QueryBuilder<Finder> {
                                                                                                    filterObject),
                                                                                  new BasicDBObject("$group",
                                                                                                    groupStage)))
+                                                     .collation(mongo.determineCollation())
                                                      .iterator();
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
@@ -452,6 +456,7 @@ public class Finder extends QueryBuilder<Finder> {
                                                                                                    filterObject),
                                                                                  new BasicDBObject("$facet",
                                                                                                    facetStage)))
+                                                     .collation(mongo.determineCollation())
                                                      .iterator();
 
             if (queryResult.hasNext()) {
