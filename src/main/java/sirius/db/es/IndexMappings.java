@@ -92,6 +92,16 @@ public class IndexMappings implements Startable {
             return;
         }
 
+        checkAndUpdateIndices();
+        elastic.readyFuture.success();
+    }
+
+    protected void checkAndUpdateIndices() {
+        if (!mixing.shouldExecuteSafeSchemaChanges()) {
+            Elastic.LOG.INFO("Elastic is started without checking the database schema...");
+            return;
+        }
+
         Elastic.LOG.INFO("Elastic is starting up and checking the database schema...");
 
         int numSuccess = 0;
@@ -107,8 +117,6 @@ public class IndexMappings implements Startable {
         }
 
         Elastic.LOG.INFO("Setup completed: Updated %s indices / %s failures occurred", numSuccess, numFailed);
-
-        elastic.readyFuture.success();
     }
 
     protected boolean setupEntity(EntityDescriptor ed) {
@@ -116,7 +124,7 @@ public class IndexMappings implements Startable {
             boolean addedAlias = setupAlias(ed);
             determineRouting(ed);
 
-            Elastic.LOG.INFO("Updating mapping %s for %s...",
+            Elastic.LOG.FINE("Updating mapping %s for %s...",
                              elastic.determineTypeName(ed),
                              ed.getType().getSimpleName());
 
@@ -141,12 +149,12 @@ public class IndexMappings implements Startable {
 
     private boolean setupAlias(EntityDescriptor ed) {
         if (elastic.getLowLevelClient().aliasExists(elastic.determineAlias(ed))) {
-            Elastic.LOG.INFO("Alias for mapping '%s' already present.", elastic.determineTypeName(ed));
+            Elastic.LOG.FINE("Alias for mapping '%s' already present.", elastic.determineTypeName(ed));
         } else {
             if (elastic.getLowLevelClient().indexExists(elastic.determineIndex(ed))) {
                 createAliasForIndex(ed);
             } else {
-                Elastic.LOG.INFO("Found no index to attach an alias to for mapping '%s'.",
+                Elastic.LOG.FINE("Found no index to attach an alias to for mapping '%s'.",
                                  elastic.determineTypeName(ed));
                 return false;
             }
@@ -156,7 +164,7 @@ public class IndexMappings implements Startable {
     }
 
     private void createAliasForIndex(EntityDescriptor ed) {
-        Elastic.LOG.INFO("Creating alias for index %s. ", elastic.determineIndex(ed));
+        Elastic.LOG.FINE("Creating alias for index %s. ", elastic.determineIndex(ed));
         elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineAlias(ed));
     }
 
@@ -214,7 +222,7 @@ public class IndexMappings implements Startable {
 
         Extension realmConfig = Sirius.getSettings().getExtension("elasticsearch.settings", ed.getRealm());
         if (!elastic.getLowLevelClient().indexExists(indexName)) {
-            Elastic.LOG.INFO("Creating index %s in Elasticsearch....", indexName);
+            Elastic.LOG.FINE("Creating index %s in Elasticsearch....", indexName);
             elastic.getLowLevelClient()
                    .createIndex(indexName,
                                 realmConfig.getInt("numberOfShards"),
@@ -222,7 +230,7 @@ public class IndexMappings implements Startable {
         }
 
         String mappingName = elastic.determineTypeName(ed);
-        Elastic.LOG.INFO("Creating mapping %s for %s in index %s in Elasticsearch....",
+        Elastic.LOG.FINE("Creating mapping %s for %s in index %s in Elasticsearch....",
                          mappingName,
                          ed.getType().getSimpleName(),
                          indexName);
