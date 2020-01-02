@@ -41,8 +41,7 @@ public class Finder extends QueryBuilder<Finder> {
     private static final String OPERATOR_MATCH = "$match";
     private static final String OPERATOR_SAMPLE = "$sample";
 
-    @ConfigValue("mongo.collationLocale")
-    private static String collationLocale;
+
 
     private Document fields;
     private Document orderBy;
@@ -226,7 +225,7 @@ public class Finder extends QueryBuilder<Finder> {
         FindIterable<Document> cursor = mongo.db(database)
                                              .getCollection(collection)
                                              .find(filterObject)
-                                             .collation(Collation.builder().locale(collationLocale).build());
+                                             .collation(mongo.determineCollation());
         if (fields != null) {
             cursor.projection(fields);
         }
