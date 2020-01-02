@@ -13,7 +13,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
-import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CountOptions;
 import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -22,7 +22,6 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
-import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
@@ -40,9 +39,6 @@ public class Finder extends QueryBuilder<Finder> {
     private static final String KEY_MONGO = "mongo";
     private static final String OPERATOR_MATCH = "$match";
     private static final String OPERATOR_SAMPLE = "$sample";
-
-    @ConfigValue("mongo.collationLocale")
-    private static String collationLocale;
 
     private Document fields;
     private Document orderBy;
@@ -223,10 +219,8 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     private FindIterable<Document> buildCursor(String collection) {
-        FindIterable<Document> cursor = mongo.db(database)
-                                             .getCollection(collection)
-                                             .find(filterObject)
-                                             .collation(Collation.builder().locale(collationLocale).build());
+        FindIterable<Document> cursor =
+                mongo.db(database).getCollection(collection).find(filterObject).collation(mongo.determineCollation());
         if (fields != null) {
             cursor.projection(fields);
         }
@@ -307,7 +301,8 @@ public class Finder extends QueryBuilder<Finder> {
 
         MongoIterable<Document> cursor = mongo.db(database)
                                               .getCollection(collection)
-                                              .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH, filterObject),
+                                              .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH,
+                                                                                            filterObject),
                                                                           new BasicDBObject(OPERATOR_SAMPLE,
                                                                                             new BasicDBObject("size",
                                                                                                               limit))));
@@ -370,7 +365,9 @@ public class Finder extends QueryBuilder<Finder> {
     public long countIn(String collection) {
         Watch w = Watch.start();
         try {
-            return mongo.db().getCollection(collection).countDocuments(filterObject);
+            return mongo.db()
+                        .getCollection(collection)
+                        .countDocuments(filterObject, new CountOptions().collation(mongo.determineCollation()));
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -417,6 +414,7 @@ public class Finder extends QueryBuilder<Finder> {
                                                                                                    filterObject),
                                                                                  new BasicDBObject("$group",
                                                                                                    groupStage)))
+                                                     .collation(mongo.determineCollation())
                                                      .iterator();
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
@@ -458,6 +456,7 @@ public class Finder extends QueryBuilder<Finder> {
                                                                                                    filterObject),
                                                                                  new BasicDBObject("$facet",
                                                                                                    facetStage)))
+                                                     .collation(mongo.determineCollation())
                                                      .iterator();
 
             if (queryResult.hasNext()) {

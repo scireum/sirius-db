@@ -27,6 +27,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
 import java.util.HashSet;
+import java.util.IntSummaryStatistics;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -217,19 +218,26 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     @Override
     public void started() {
-        mixing.getDesciptors()
-              .stream()
-              .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
-              .forEach(this::createIndices);
+        if (!mixing.shouldExecuteSafeSchemaChanges()) {
+            Mongo.LOG.INFO("Skipping index checks on this node...");
+            return;
+        }
+
+        IntSummaryStatistics createdIndices = mixing.getDesciptors()
+                                                    .stream()
+                                                    .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
+                                                    .mapToInt(this::createIndices)
+                                                    .summaryStatistics();
+        Mongo.LOG.INFO("Initialized %s indices for %s collections", createdIndices.getSum(), createdIndices.getCount());
     }
 
-    private void createIndices(EntityDescriptor ed) {
+    private int createIndices(EntityDescriptor ed) {
         String database = ed.getRealm();
         if (!mongo.isConfigured(database)) {
             Mongo.LOG.WARN("Skipping MongoDB indices for: %s as no configuration for database %s is present...",
                            ed.getRelationName(),
                            database);
-            return;
+            return 0;
         }
 
         Set<String> seenIndices = new HashSet<>();
@@ -252,18 +260,27 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                 }
             }
         });
+
+        return seenIndices.size();
     }
 
     private void createIndex(EntityDescriptor ed, MongoDatabase client, Index index) {
         try {
+            boolean textColumnSeen = false;
             Document document = new Document();
             for (int i = 0; i < index.columns().length; i++) {
                 Value setting = Value.of(index.columnSettings()[i]);
                 document.append(index.columns()[i], setting.isNumeric() ? setting.asInt(1) : setting.asString());
+                textColumnSeen |= Mango.INDEX_AS_FULLTEXT.equals(setting.getString());
             }
 
-            Mongo.LOG.INFO("Creating MongoDB index %s for: %s...", index.name(), ed.getRelationName());
-            client.getCollection(ed.getRelationName()).createIndex(document, new IndexOptions().unique(index.unique()));
+            IndexOptions indexOptions = new IndexOptions().unique(index.unique());
+            if (!textColumnSeen) {
+                indexOptions.collation(mongo.determineCollation());
+            }
+
+            Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), ed.getRelationName());
+            client.getCollection(ed.getRelationName()).createIndex(document, indexOptions);
         } catch (Exception e) {
             Exceptions.handle()
                       .error(e)

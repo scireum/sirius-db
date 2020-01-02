@@ -12,7 +12,6 @@ import sirius.db.jdbc.Database;
 import sirius.db.jdbc.OMA;
 import sirius.kernel.async.TaskContext;
 
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -121,7 +120,7 @@ public class SchemaUpdateAction {
                 try {
                     OMA.LOG.FINE("Executing Schema Update: %s", statement);
                     db.createQuery(statement).executeUpdate();
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     error = e.getMessage();
                 }
             }

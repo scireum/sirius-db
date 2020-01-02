@@ -8,6 +8,7 @@
 
 package sirius.db.mongo;
 
+import com.mongodb.client.model.DeleteOptions;
 import com.mongodb.client.result.DeleteResult;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Microtiming;
@@ -44,7 +45,9 @@ public class Deleter extends QueryBuilder<Deleter> {
                 Mongo.LOG.FINE("DELETE: %s\nFilter: %s", collection, filterObject);
             }
 
-            return mongo.db(database).getCollection(collection).deleteOne(filterObject);
+            return mongo.db(database)
+                        .getCollection(collection)
+                        .deleteOne(filterObject, new DeleteOptions().collation(mongo.determineCollation()));
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -77,7 +80,9 @@ public class Deleter extends QueryBuilder<Deleter> {
                 Mongo.LOG.FINE("DELETE: %s\nFilter: %s", collection, filterObject);
             }
 
-            return mongo.db(database).getCollection(collection).deleteMany(filterObject);
+            return mongo.db(database)
+                        .getCollection(collection)
+                        .deleteMany(filterObject, new DeleteOptions().collation(mongo.determineCollation()));
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {

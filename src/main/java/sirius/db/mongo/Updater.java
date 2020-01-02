@@ -37,7 +37,7 @@ public class Updater extends QueryBuilder<Updater> {
     private boolean many = false;
 
     protected Updater(Mongo mongo, String database) {
-        super(mongo,database);
+        super(mongo, database);
     }
 
     /**
@@ -327,11 +327,15 @@ public class Updater extends QueryBuilder<Updater> {
             if (Mongo.LOG.isFINE()) {
                 Mongo.LOG.FINE("UPDATE: %s\nFilter: %s\n Update:%s", collection, filterObject, updateObject);
             }
-            UpdateOptions updateOptions = new UpdateOptions().upsert(this.upsert);
+            UpdateOptions updateOptions = new UpdateOptions().upsert(this.upsert).collation(mongo.determineCollation());
             if (many) {
-                return mongo.db(database).getCollection(collection).updateMany(filterObject, updateObject, updateOptions);
+                return mongo.db(database)
+                            .getCollection(collection)
+                            .updateMany(filterObject, updateObject, updateOptions);
             } else {
-                return mongo.db(database).getCollection(collection).updateOne(filterObject, updateObject, updateOptions);
+                return mongo.db(database)
+                            .getCollection(collection)
+                            .updateOne(filterObject, updateObject, updateOptions);
             }
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());

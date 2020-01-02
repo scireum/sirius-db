@@ -13,6 +13,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.Initializable;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -40,6 +41,13 @@ public class Mixing implements Initializable {
     @Explain("Constants have different semantics.")
     public static final Log LOG = Log.get("mixing");
 
+    private static final String UPDATE_SCHEMA_MODE_SAFE = "safe";
+    private static final String UPDATE_SCHEMA_MODE_ALL = "all";
+    private static final String UPDATE_SCHEMA_MODE_OFF = "off";
+
+    @ConfigValue("mixing.autoUpdateSchema")
+    private String autoUpdateSchemaMode;
+
     private Map<Class<?>, EntityDescriptor> descriptorsByType = new HashMap<>();
     private Map<String, EntityDescriptor> descriptorsByName = new HashMap<>();
 
@@ -53,6 +61,29 @@ public class Mixing implements Initializable {
         loadEntities();
         loadNesteds();
         linkSchema();
+
+        checkAutoUpdateSchemaMode();
+    }
+
+    private void checkAutoUpdateSchemaMode() {
+        if (UPDATE_SCHEMA_MODE_OFF.equals(autoUpdateSchemaMode)) {
+            LOG.INFO("Automatic schema updates are disabled on this node...");
+            return;
+        }
+
+        if (UPDATE_SCHEMA_MODE_SAFE.equals(autoUpdateSchemaMode)) {
+            LOG.INFO("Safe schema updates are enabled on this node...");
+            return;
+        }
+
+        if (UPDATE_SCHEMA_MODE_ALL.equals(autoUpdateSchemaMode)) {
+            LOG.WARN("All (including some with possible dataloss) schema updates are enabled on this node...");
+            return;
+        }
+
+        LOG.WARN(
+                "'mixing.autoUpdateSchema' contains an invalid value (%s) - please select either off, safe, all - Using 'off' as fallback...",
+                autoUpdateSchemaMode);
     }
 
     private void linkSchema() {
@@ -202,5 +233,24 @@ public class Mixing implements Initializable {
      */
     public Collection<EntityDescriptor> getDesciptors() {
         return descriptorsByType.values();
+    }
+
+    /**
+     * Determines if the database specific schema synchronization should execute safe updates during the startup.
+     *
+     * @return <tt>true</tt> if actions with no dataloss should be executed during startup, <tt>false</tt> otherwise
+     */
+    public boolean shouldExecuteSafeSchemaChanges() {
+        return UPDATE_SCHEMA_MODE_SAFE.equals(autoUpdateSchemaMode) || shouldExecuteUnsafeSchemaChanges();
+    }
+
+    /**
+     * Determines if the database specific schema synchronization should execute ALL updates during the startup.
+     *
+     * @return <tt>true</tt> if actions, even ones with dataloss, should be executed during startup,
+     * <tt>false</tt> otherwise
+     */
+    public boolean shouldExecuteUnsafeSchemaChanges() {
+        return UPDATE_SCHEMA_MODE_ALL.equals(autoUpdateSchemaMode);
     }
 }
