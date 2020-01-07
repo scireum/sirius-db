@@ -228,8 +228,14 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
                      .filter(Objects::nonNull)
                      .collect(Collectors.toList());
     }
+
+    @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(String.class)) {
+            return performAutoparse(value);
         }
-        setValue(e, stringData);
+
+        return super.transformValueFromImport(value);
     }
 
     @Override
