@@ -32,6 +32,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Array;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -63,6 +65,7 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     private Boolean dbHasCapabilityLists;
 
     private final boolean lob;
+    private final boolean autoparse;
 
     /**
      * Factory for generating properties based on their field type
@@ -93,6 +96,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     protected StringListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.lob = field.isAnnotationPresent(Lob.class);
+        this.autoparse =
+                ((StringList) super.getValueFromField(accessPath.apply(this.descriptor.getReferenceInstance()))).isAutoparse();
     }
 
     @Override
@@ -205,11 +210,32 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public void parseValues(Object e, Values values) {
-        List<String> stringData = new ArrayList<>();
-        for (int i = 0; i < values.length(); i++) {
-            values.at(i).ifFilled(value -> stringData.add(value.toString()));
+        if (autoparse && values.length() == 1) {
+            setValue(e, performAutoparse(values.at(0)));
+        } else {
+            List<String> stringData = new ArrayList<>();
+            for (int i = 0; i < values.length(); i++) {
+                values.at(i).ifFilled(value -> stringData.add(value.getString()));
+            }
+            setValue(e, stringData);
         }
-        setValue(e, stringData);
+    }
+
+    @Nonnull
+    private List<String> performAutoparse(Value value) {
+        return Arrays.stream(value.asString().split(","))
+                     .map(Strings::trim)
+                     .filter(Objects::nonNull)
+                     .collect(Collectors.toList());
+    }
+
+    @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(String.class)) {
+            return performAutoparse(value);
+        }
+
+        return super.transformValueFromImport(value);
     }
 
     @Override
