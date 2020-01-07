@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -205,6 +206,15 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public void parseValues(Object e, Values values) {
+        if (values.length() == 1) {
+            setValue(e,
+                     Arrays.stream(values.at(0).asString().split(","))
+                           .map(Strings::trim)
+                           .filter(Objects::nonNull)
+                           .collect(Collectors.toList()));
+            return;
+        }
+
         List<String> stringData = new ArrayList<>();
         for (int i = 0; i < values.length(); i++) {
             values.at(i).ifFilled(value -> stringData.add(value.toString()));
