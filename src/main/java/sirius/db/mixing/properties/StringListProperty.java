@@ -32,6 +32,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.Array;
@@ -64,6 +65,7 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     private Boolean dbHasCapabilityLists;
 
     private final boolean lob;
+    private final boolean autoparse;
 
     /**
      * Factory for generating properties based on their field type
@@ -94,6 +96,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     protected StringListProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.lob = field.isAnnotationPresent(Lob.class);
+        this.autoparse =
+                ((StringList) super.getValueFromField(accessPath.apply(this.descriptor.getReferenceInstance()))).isAutoparse();
     }
 
     @Override
@@ -206,18 +210,24 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     public void parseValues(Object e, Values values) {
-        if (values.length() == 1) {
-            setValue(e,
-                     Arrays.stream(values.at(0).asString().split(","))
-                           .map(Strings::trim)
-                           .filter(Objects::nonNull)
-                           .collect(Collectors.toList()));
-            return;
+        if (autoparse && values.length() == 1) {
+            setValue(e, performAutoparse(values.at(0)));
+        } else {
+            List<String> stringData = new ArrayList<>();
+            for (int i = 0; i < values.length(); i++) {
+                values.at(i).ifFilled(value -> stringData.add(value.getString()));
+            }
+            setValue(e, stringData);
         }
+    }
 
-        List<String> stringData = new ArrayList<>();
-        for (int i = 0; i < values.length(); i++) {
-            values.at(i).ifFilled(value -> stringData.add(value.toString()));
+    @Nonnull
+    private List<String> performAutoparse(Value value) {
+        return Arrays.stream(value.asString().split(","))
+                     .map(Strings::trim)
+                     .filter(Objects::nonNull)
+                     .collect(Collectors.toList());
+    }
         }
         setValue(e, stringData);
     }
