@@ -110,7 +110,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      * Note that this method is intended for large results as not all items in the result need to be
      * kept in memory when iterating through them.
      *
-     * @param handler the handle to be invoked for each item in the result
+     * @param handler the handler to be invoked for each item in the result
      */
     public abstract void iterate(Function<E, Boolean> handler);
 
@@ -120,7 +120,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      * Note that this method is intended for large results as not all items in the result need to be
      * kept in memory when iterating through them.
      *
-     * @param consumer the handle to be invoked for each item in the result
+     * @param consumer the handler to be invoked for each item in the result
      */
     public void iterateAll(Consumer<E> consumer) {
         iterate(r -> {
