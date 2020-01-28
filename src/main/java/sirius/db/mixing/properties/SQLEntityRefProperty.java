@@ -73,7 +73,6 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected SQLEntityRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
