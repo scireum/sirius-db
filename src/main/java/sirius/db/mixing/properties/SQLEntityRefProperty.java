@@ -85,15 +85,29 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
         if (SQLEntity.class.isAssignableFrom(getReferencedType()) && Strings.areEqual(getDescriptor().getRealm(),
                                                                                       getReferencedDescriptor().getRealm())) {
             ForeignKey fk = new ForeignKey();
-            fk.setName(Strings.limit("fk_"
-                                     + descriptor.getRelationName()
-                                     + "_"
-                                     + getPropertyName(), MAX_FOREIGN_KEY_NAME_LENGTH, false));
+            fk.setName(computeForeignKeyName());
             fk.setForeignTable(getReferencedDescriptor().getRelationName());
             fk.addForeignColumn(1, SQLEntity.ID.getName());
             fk.addColumn(1, getPropertyName());
             table.getForeignKeys().add(fk);
         }
+    }
+
+    private String computeForeignKeyName() {
+        String result = "fk_"
+                        + descriptor.getRelationName()
+                        + "_"
+                        + getPropertyName()
+                        + "_"
+                        + referencedDescriptor.getRelationName();
+
+        if (result.length() < MAX_FOREIGN_KEY_NAME_LENGTH) {
+            return result;
+        }
+
+        return Strings.limit("fk_" + descriptor.getRelationName() + "_" + getPropertyName(),
+                             MAX_FOREIGN_KEY_NAME_LENGTH,
+                             false);
     }
 
     @Override
