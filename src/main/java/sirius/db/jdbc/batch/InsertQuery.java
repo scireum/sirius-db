@@ -62,7 +62,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
      * Note that on the occurence of a {@link SQLException}, the underlying statement and connection are closed,
      * as the might have become inconsistent. On the next call a new connection and statement is created transparently.
      * <p>
-     * If exceptions are excepted, e.g. {@link SQLIntegrityConstraintViolationException} for optimistic locking
+     * If exceptions are expected, e.g. {@link SQLIntegrityConstraintViolationException} for optimistic locking
      * patterns, {@link #optimisticInsert(SQLEntity, boolean, boolean)} can be used.
      *
      * @param entity       the entity to insert
@@ -91,8 +91,8 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
      * handling integrity exceptions.
      * <p>
      * If a {@link SQLIntegrityConstraintViolationException} is thrown (i.e. a unique constraint is violated), this
-     * will be handed to the caller without handling the exception an, more essentially, without closing the underlying
-     * statement and exception. All other database and general errors are handled and thrown as
+     * will be handed to the caller without handling the exception and, more essentially, without closing the underlying
+     * statement and connection. All other database and general errors are handled and thrown as
      * {@link HandledException}.
      *
      * @param entity       the entity to insert
