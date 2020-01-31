@@ -19,10 +19,12 @@ import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,15 +58,54 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
 
     /**
      * Inserts an entity into the database.
+     * <p>
+     * Note that on the occurence of a {@link SQLException}, the underlying statement and connection are closed,
+     * as the might have become inconsistent. On the next call a new connection and statement is created transparently.
+     * <p>
+     * If exceptions are expected, e.g. {@link SQLIntegrityConstraintViolationException} for optimistic locking
+     * patterns, {@link #optimisticInsert(SQLEntity, boolean, boolean)} can be used.
      *
      * @param entity       the entity to insert
      * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or
      *                     skipped (<tt>false</tt>)
      * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
      *                     batch update (<tt>true</tt>).
+     * @throws sirius.kernel.health.HandledException in case of a database error or a general exception
+     */
+    public void insert(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
+        try {
+            optimisticInsert(entity, invokeChecks, addBatch);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw Exceptions.handle()
+                            .to(OMA.LOG)
+                            .error(e)
+                            .withSystemErrorMessage(
+                                    "An integrity check failed while executing an InsertQuery for %s: %s (%s)",
+                                    type.getName())
+                            .handle();
+        }
+    }
+
+    /**
+     * Inserts an entity into the database, just like {@link #insert(SQLEntity, boolean, boolean)}, but differs in
+     * handling integrity exceptions.
+     * <p>
+     * If a {@link SQLIntegrityConstraintViolationException} is thrown (i.e. a unique constraint is violated), this
+     * will be handed to the caller without handling the exception and, more essentially, without closing the underlying
+     * statement and connection. All other database and general errors are handled and thrown as
+     * {@link HandledException}.
+     *
+     * @param entity       the entity to insert
+     * @param invokeChecks determines if before- and after save checks should be performed (<tt>true</tt>) or
+     *                     skipped (<tt>false</tt>)
+     * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
+     *                     batch update (<tt>true</tt>).
+     * @throws SQLIntegrityConstraintViolationException when reported by the underlying database
+     * @throws sirius.kernel.health.HandledException    in case of a database error or a general exception
      */
     @SuppressWarnings("unchecked")
-    public void insert(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
+    public void optimisticInsert(@Nonnull E entity, boolean invokeChecks, boolean addBatch)
+            throws SQLIntegrityConstraintViolationException {
         try {
             if (this.type == null) {
                 this.type = (Class<E>) entity.getClass();
