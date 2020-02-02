@@ -41,6 +41,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -231,11 +232,15 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
 
     @Override
     protected Object transformValueFromImport(Value value) {
-        if (value.is(String.class)) {
-            return performAutoparse(value);
+        if (value.isEmptyString()) {
+            return Collections.emptyList();
         }
 
-        return super.transformValueFromImport(value);
+        if (value.is(List.class)) {
+            return super.transformValueFromImport(value);
+        }
+
+        return performAutoparse(value);
     }
 
     @Override
