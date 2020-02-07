@@ -144,6 +144,8 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             if (!addBatch) {
                 avarage.addValue(w.elapsedMillis());
             }
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw e;
         } catch (SQLException e) {
             context.safeClose();
             throw Exceptions.handle()
