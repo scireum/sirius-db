@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Base class for queries within mixing.
@@ -33,7 +33,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     /**
      * Contains the maximal number of elements to be returned in {@link #queryList()}.
      * <p>
-     * For larger results {@link #iterate(Function)} mit be used as it can be more efficient
+     * For larger results {@link #iterate(Predicate)} mit be used as it can be more efficient
      */
     public static final int MAX_LIST_SIZE = 1000;
 
@@ -112,7 +112,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      *
      * @param handler the handler to be invoked for each item in the result
      */
-    public abstract void iterate(Function<E, Boolean> handler);
+    public abstract void iterate(Predicate<E> handler);
 
     /**
      * Calls the given consumer on all items in the result.
@@ -132,7 +132,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     /**
      * Returns a list of all items in the result.
      * <p>
-     * Note that large results should be processed using {@link #iterate(Function)} or
+     * Note that large results should be processed using {@link #iterate(Predicate)} or
      * {@link #iterateAll(Consumer)} as they are more memory efficient.
      *
      * @return a list of items in the query or an empty list if the query did not match any items

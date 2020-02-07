@@ -21,7 +21,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 /**
@@ -241,8 +241,7 @@ public abstract class BaseEntity<I> extends Mixable {
      *                       <tt>true</tt> if they are equal or <tt>false</tt> otherwise
      * @return <tt>true</tt> if the requested property changed, <tt>false</tt> otherwise
      */
-    public boolean isChanged(Mapping mappingToCheck,
-                             BiFunction<? super Object, ? super Object, Boolean> equalsFunction) {
+    public boolean isChanged(Mapping mappingToCheck, BiPredicate<? super Object, ? super Object> equalsFunction) {
         return getDescriptor().isChanged(this, getDescriptor().getProperty(mappingToCheck), equalsFunction);
     }
 

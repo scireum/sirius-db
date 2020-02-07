@@ -12,6 +12,7 @@ import sirius.kernel.commons.Strings;
 
 import javax.annotation.Nonnull;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Determines how to access the field of a property within the entity.
@@ -40,7 +41,7 @@ public class AccessPath {
      * @return a new access path which is extended by the given prefix and accessor
      */
     @Nonnull
-    public AccessPath append(@Nonnull String prefixToAppend, @Nonnull Function<Object, Object> accessor) {
+    public AccessPath append(@Nonnull String prefixToAppend, @Nonnull UnaryOperator<Object> accessor) {
         AccessPath result = new AccessPath();
         if (IDENTITY.equals(this)) {
             result.prefix = prefixToAppend;

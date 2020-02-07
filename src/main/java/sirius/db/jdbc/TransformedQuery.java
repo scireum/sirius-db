@@ -14,7 +14,7 @@ import sirius.db.mixing.query.BaseQuery;
 import sirius.kernel.health.Exceptions;
 
 import java.sql.SQLException;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A transformed query converts a plain {@link SQLQuery} into one that returns entities rather than rows.
@@ -36,7 +36,7 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     }
 
     @Override
-    public void iterate(Function<E, Boolean> handler) {
+    public void iterate(Predicate<E> handler) {
         try {
             qry.iterate(row -> {
                 return invokeHandlerForRow(handler, row);
@@ -53,14 +53,14 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     }
 
     @SuppressWarnings("unchecked")
-    protected Boolean invokeHandlerForRow(Function<E, Boolean> handler, Row row) {
+    protected Boolean invokeHandlerForRow(Predicate<E> handler, Row row) {
         try {
             E entity = (E) descriptor.make(OMA.class, alias, key -> row.hasValue(key) ? row.getValue(key) : null);
             if (descriptor.isVersioned()) {
                 entity.setVersion(row.getValue(BaseMapper.VERSION).asInt(0));
             }
             entity.fetchRow = row;
-            return handler.apply(entity);
+            return handler.test(entity);
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)

@@ -24,7 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Represents a flexible way of executing parameterized SQL queries without
@@ -88,7 +88,7 @@ public class SQLQuery extends BaseSQLQuery {
     }
 
     @Override
-    public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
+    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         Watch w = Watch.start();
         fieldNames = null;
         try (Connection c = ds.getConnection()) {

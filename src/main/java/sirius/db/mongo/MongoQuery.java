@@ -21,7 +21,7 @@ import sirius.kernel.health.Exceptions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Creates a new query against MongoDB.
@@ -128,8 +128,8 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     @Override
-    public void iterate(Function<E, Boolean> resultHandler) {
-        finder.eachIn(descriptor.getRelationName(), doc -> resultHandler.apply(Mango.make(descriptor, doc)));
+    public void iterate(Predicate<E> resultHandler) {
+        finder.eachIn(descriptor.getRelationName(), doc -> resultHandler.test(Mango.make(descriptor, doc)));
     }
 
     @Override
@@ -146,7 +146,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * Returns a list of all items in the result, in a random order.
      * <p>
      * Internally, this uses a <tt>$sample</tt> aggregation with size equal to {@link #limit}.
-     * Note that large results should be processed using {@link #iterate(Function)} or
+     * Note that large results should be processed using {@link #iterate(Predicate)} or
      * {@link #iterateAll(Consumer)} as they are more memory efficient.
      *
      * @return a list of items in the query or an empty list if the query did not match any items
@@ -210,7 +210,6 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     public void executeFacets() {
         finder.executeFacets(descriptor, facets);
     }
-    
 
     @Override
     public String toString() {
