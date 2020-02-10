@@ -431,7 +431,8 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
                            .limit(1)
                            .eq(SQLEntity.ID, id)
                            .asSQLQuery()
-                           .queryFirst()
-                           .getValue(field.toString());
+                           .first()
+                           .map(row -> row.getValue(field.toString()))
+                           .orElse(Value.EMPTY);
     }
 }
