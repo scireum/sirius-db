@@ -13,7 +13,6 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
-import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -153,24 +152,6 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
         }
 
         return Mixing.getUniqueName(type, id);
-    }
-
-    /**
-     * Returns the effective entity object which is referenced.
-     * <p>
-     * Note, this might cause a database lookup if the entity is not prefetched.
-     *
-     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
-     * @deprecated Naming a method which might perform a database lookup "getXXX" is a bad
-     * practice as a developer would assume calling a getter is essentially side-effect free.
-     * Use {@link #fetchValue()} instead or {@link #getValueIfPresent()} if you want to
-     * suppress a DB lookup.
-     */
-    @Nullable
-    @Deprecated
-    public E getValue() {
-        Exceptions.logDeprecatedMethodUse();
-        return fetchValue();
     }
 
     /**
