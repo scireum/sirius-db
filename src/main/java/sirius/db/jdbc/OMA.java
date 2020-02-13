@@ -14,6 +14,7 @@ import sirius.db.jdbc.constraints.SQLFilterFactory;
 import sirius.db.jdbc.schema.Schema;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.IntegrityConstraintFailedException;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
@@ -33,6 +34,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -170,9 +172,13 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
             insertData.set(VERSION, 1);
         }
 
-        Row keys = getDatabase(ed.getRealm()).insertRow(ed.getRelationName(), insertData);
-        loadCreatedId(entity, keys);
-        entity.setVersion(1);
+        try {
+            Row keys = getDatabase(ed.getRealm()).insertRow(ed.getRelationName(), insertData);
+            loadCreatedId(entity, keys);
+            entity.setVersion(1);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new IntegrityConstraintFailedException(e);
+        }
     }
 
     /**
@@ -240,7 +246,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     private void executeUPDATE(SQLEntity entity, EntityDescriptor ed, boolean force, String sql, List<Object> data)
-            throws SQLException, OptimisticLockException {
+            throws SQLException, OptimisticLockException, IntegrityConstraintFailedException {
         try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
             try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 int index = 1;
@@ -261,6 +267,8 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
                     entity.setVersion(entity.getVersion() + 1);
                 }
             }
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new IntegrityConstraintFailedException(e);
         }
     }
 
