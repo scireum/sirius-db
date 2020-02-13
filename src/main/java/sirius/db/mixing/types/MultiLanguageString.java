@@ -161,7 +161,6 @@ public class MultiLanguageString extends SafeMap<String, String> {
         return data().getOrDefault(language, fetchText(fallbackLanguage));
     }
 
-    @SuppressWarnings("unchecked")
     private void assertValidLanguage(String language) {
         if (supportedLanguages == null) {
             supportedLanguages =
