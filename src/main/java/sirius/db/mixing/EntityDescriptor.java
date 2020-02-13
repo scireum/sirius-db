@@ -57,7 +57,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -352,8 +352,8 @@ public class EntityDescriptor {
      */
     public boolean isChanged(BaseEntity<?> entity,
                              Property property,
-                             BiFunction<? super Object, ? super Object, Boolean> equalsFunction) {
-        return !equalsFunction.apply(entity.persistedData.get(property), property.getValue(entity));
+                             BiPredicate<? super Object, ? super Object> equalsFunction) {
+        return !equalsFunction.test(entity.persistedData.get(property), property.getValue(entity));
     }
 
     /**

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -653,7 +654,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @SuppressWarnings("unchecked")
     @Override
-    public void iterate(Function<E, Boolean> handler) {
+    public void iterate(Predicate<E> handler) {
         if (useScrolling()) {
             scroll(handler);
             return;
@@ -663,7 +664,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         this.response = client.search(elastic.determineAlias(descriptor), routing, skip, limit, buildPayload());
         for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
-            if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
+            if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
             }
         }
@@ -833,9 +834,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * For larger queries, we use a scroll query in Elasticsearch, which provides kind of a
      * cursor to fetch the results blockwise.
      *
-     * @param handler the result handler as passed to {@link #iterate(Function)}
+     * @param handler the result handler as passed to {@link #iterate(Predicate)}
      */
-    private void scroll(Function<E, Boolean> handler) {
+    private void scroll(Predicate<E> handler) {
         try {
             if (sorts == null || sorts.isEmpty()) {
                 // If no explicit search order is given, we sort by _doc which improves the performance
@@ -869,7 +870,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                     }
 
                     // Process entity, abort if the handler isn't interested in continuing...
-                    if (!handler.apply(entity)) {
+                    if (!handler.test(entity)) {
                         return false;
                     }
 
@@ -892,7 +893,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the last response we received when iterating over the scroll query
      */
     @SuppressWarnings("unchecked")
-    private JSONObject executeScroll(Function<E, Boolean> handler, JSONObject firstResponse) {
+    private JSONObject executeScroll(Predicate<E> handler, JSONObject firstResponse) {
         long lastScroll = 0;
         JSONObject scrollResponse = firstResponse;
         while (true) {
@@ -903,7 +904,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             }
 
             for (Object obj : hits) {
-                if (!handler.apply((E) Elastic.make(descriptor, (JSONObject) obj))) {
+                if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
                     return scrollResponse;
                 }
             }

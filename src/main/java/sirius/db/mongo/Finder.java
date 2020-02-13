@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Fluent builder to build a find statement.
@@ -238,7 +238,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @param type      the type of entities to search
      * @param processor the processor to handle matches, which also controls if further results should be processed
      */
-    public void eachIn(Class<?> type, Function<Doc, Boolean> processor) {
+    public void eachIn(Class<?> type, Predicate<Doc> processor) {
         eachIn(getRelationName(type), processor);
     }
 
@@ -249,7 +249,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @param collection the collection to search in
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
-    public void eachIn(String collection, Function<Doc, Boolean> processor) {
+    public void eachIn(String collection, Predicate<Doc> processor) {
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
         }
@@ -269,7 +269,7 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
-    private void processCursor(MongoIterable<Document> cursor, Function<Doc, Boolean> processor, String collection) {
+    private void processCursor(MongoIterable<Document> cursor, Predicate<Doc> processor, String collection) {
         Watch watch = Watch.start();
         TaskContext ctx = TaskContext.get();
         Monoflop mf = Monoflop.create();
@@ -278,7 +278,7 @@ public class Finder extends QueryBuilder<Finder> {
                 handleTracingAndReporting(collection, watch);
             }
 
-            boolean keepGoing = processor.apply(new Doc(doc));
+            boolean keepGoing = processor.test(new Doc(doc));
             if (!keepGoing || !ctx.isActive()) {
                 return;
             }
@@ -294,7 +294,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @param collection the collection to search in
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
-    public void sample(String collection, Function<Doc, Boolean> processor) {
+    public void sample(String collection, Predicate<Doc> processor) {
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
         }

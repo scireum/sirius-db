@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Provides a query DSL which is used to query {@link SQLEntity} instances from the database.
@@ -222,7 +222,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @Override
-    public void iterate(Function<E, Boolean> handler) {
+    public void iterate(Predicate<E> handler) {
         Compiler compiler = compileSELECT();
         try {
             Watch w = Watch.start();
@@ -244,18 +244,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @SuppressWarnings("unchecked")
-    protected void execIterate(Function<E, Boolean> handler,
-                               Compiler compiler,
-                               Limit limit,
-                               boolean nativeLimit,
-                               ResultSet rs) throws Exception {
+    protected void execIterate(Predicate<E> handler, Compiler compiler, Limit limit, boolean nativeLimit, ResultSet rs)
+            throws Exception {
         TaskContext tc = TaskContext.get();
         Set<String> columns = dbs.readColumns(rs);
         while (rs.next() && tc.isActive()) {
             if (nativeLimit || limit.nextRow()) {
                 SQLEntity e = makeEntity(descriptor, null, columns, rs);
                 compiler.executeJoinFetches(e, columns, rs);
-                if (!handler.apply((E) e)) {
+                if (!handler.test((E) e)) {
                     return;
                 }
             }
