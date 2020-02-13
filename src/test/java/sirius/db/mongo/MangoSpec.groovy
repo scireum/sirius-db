@@ -9,6 +9,7 @@
 package sirius.db.mongo
 
 
+import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.Scope
@@ -117,6 +118,22 @@ class MangoSpec extends BaseSpecification {
         MongoLockedTestEntity notFound = mango.find(MongoLockedTestEntity.class, entity.getId()).orElse(null)
         then:
         notFound == null
+    }
+
+    def "unique constaint violations are properly thrown"() {
+        setup:
+        mango.select(MongoUniqueTestEntity.class).eq(MongoUniqueTestEntity.VALUE, "Test").delete()
+        when:
+        MongoUniqueTestEntity entity = new MongoUniqueTestEntity()
+        entity.setValue("Test")
+        mango.update(entity)
+        and:
+        MongoUniqueTestEntity conflictingEntity = new MongoUniqueTestEntity()
+        and:
+        conflictingEntity.setValue("Test")
+        mango.tryUpdate(conflictingEntity)
+        then:
+        thrown(IntegrityConstraintFailedException)
     }
 
     @Scope(Scope.SCOPE_NIGHTLY)

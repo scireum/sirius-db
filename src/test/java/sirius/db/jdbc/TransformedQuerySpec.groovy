@@ -17,7 +17,6 @@ import java.time.Duration
 import java.util.function.Function
 import java.util.stream.Collectors
 
-@Stepwise
 class TransformedQuerySpec extends BaseSpecification {
 
     @Part

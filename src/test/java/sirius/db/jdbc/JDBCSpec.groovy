@@ -15,7 +15,6 @@ import spock.lang.Stepwise
 
 import java.util.function.Predicate
 
-@Stepwise
 class JDBCSpec extends BaseSpecification {
 
     @Part

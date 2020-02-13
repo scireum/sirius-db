@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc
 
+import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
@@ -15,7 +16,6 @@ import spock.lang.Stepwise
 
 import java.time.Duration
 
-@Stepwise
 class OMASpec extends BaseSpecification {
 
     @Part
@@ -205,6 +205,22 @@ class OMASpec extends BaseSpecification {
         SQLLockedTestEntity notFound = oma.find(SQLLockedTestEntity.class, entity.getId()).orElse(null)
         then:
         notFound == null
+    }
+
+    def "unique constaint violations are properly thrown"() {
+        setup:
+        oma.select(SQLUniqueTestEntity.class).eq(SQLUniqueTestEntity.VALUE, "Test").delete()
+        when:
+        SQLUniqueTestEntity entity = new SQLUniqueTestEntity()
+        entity.setValue("Test")
+        oma.update(entity)
+        and:
+        SQLUniqueTestEntity conflictingEntity = new SQLUniqueTestEntity()
+        and:
+        conflictingEntity.setValue("Test")
+        oma.tryUpdate(conflictingEntity)
+        then:
+        thrown(IntegrityConstraintFailedException)
     }
 
 }
