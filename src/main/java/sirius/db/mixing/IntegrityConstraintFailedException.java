@@ -29,7 +29,7 @@ public class IntegrityConstraintFailedException extends Exception {
     /**
      * Creates a new instance with a reference to the given cause.
      *
-     * @param cause   the cuase of this error
+     * @param cause   the cause of this error
      */
     public IntegrityConstraintFailedException(Throwable cause) {
         super(cause);
