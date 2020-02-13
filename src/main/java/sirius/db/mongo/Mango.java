@@ -8,11 +8,14 @@
 
 package sirius.db.mongo;
 
+import com.mongodb.ErrorCategory;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.IntegrityConstraintFailedException;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
@@ -76,10 +79,18 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             }
         }
 
-        insert.into(ed.getRelationName());
-        entity.setId(generatedId);
-        if (ed.isVersioned()) {
-            entity.setVersion(1);
+        try {
+            insert.into(ed.getRelationName());
+            entity.setId(generatedId);
+            if (ed.isVersioned()) {
+                entity.setVersion(1);
+            }
+        } catch (MongoWriteException e) {
+            if (e.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
+                throw new IntegrityConstraintFailedException(e);
+            } else {
+                throw e;
+            }
         }
     }
 
@@ -110,11 +121,19 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             }
         }
 
-        long updatedRows = updater.executeFor(ed.getRelationName()).getModifiedCount();
-        enforceUpdate(entity, force, updatedRows);
+        try {
+            long updatedRows = updater.executeFor(ed.getRelationName()).getModifiedCount();
+            enforceUpdate(entity, force, updatedRows);
 
-        if (ed.isVersioned()) {
-            entity.setVersion(entity.getVersion() + 1);
+            if (ed.isVersioned()) {
+                entity.setVersion(entity.getVersion() + 1);
+            }
+        } catch (MongoWriteException e) {
+            if (e.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
+                throw new IntegrityConstraintFailedException(e);
+            } else {
+                throw e;
+            }
         }
     }
 
