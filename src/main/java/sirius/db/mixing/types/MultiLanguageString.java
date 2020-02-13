@@ -10,40 +10,25 @@ package sirius.db.mixing.types;
 
 import sirius.kernel.Sirius;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
-import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Provides a language-text map as property value.
  * <p>
  * These are stored in MongoDB as an array containing sub-documents
- * containing a <tt>lang</tt> and <tt>text</tt> properties
+ * containing a <tt>lang</tt> and a <tt>text</tt> property
  *
  * @see sirius.db.mixing.properties.MultiLanguageStringProperty
  */
 public class MultiLanguageString extends SafeMap<String, String> {
 
-    private static final List<String> supportedLanguages =
-            Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages");
-
-    private String defaultLanguage;
-
-    /**
-     * Creates a new multi-language string property without default language.
-     */
-    public MultiLanguageString() {
-        this(null);
-    }
-
-    /**
-     * Creates a new multi-language string property with default language.
-     *
-     * @param defaultLanguage the default language code
-     */
-    public MultiLanguageString(String defaultLanguage) {
-        this.defaultLanguage = defaultLanguage;
-    }
+    private Set<String> supportedLanguages;
 
     @Override
     protected boolean valueNeedsCopy() {
@@ -56,14 +41,26 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
+     * Adds a new text using the language defined by {@link NLS#getCurrentLang()}.
+     *
+     * @param text the text associated with the language
+     * @return the object itself for fluent method calls
+     * @throws sirius.kernel.health.HandledException if the current language is invalid
+     */
+    public MultiLanguageString addText(String text) {
+        return addText(NLS.getCurrentLang(), text);
+    }
+
+    /**
      * Adds a new text for the given language.
      *
      * @param language the language code
      * @param text     the text associated with the language
      * @return the object itself for fluent method calls
+     * @throws sirius.kernel.health.HandledException if the provided language code is invalid
      */
     public MultiLanguageString addText(String language, String text) {
-        assertLanguage(language);
+        assertValidLanguage(language);
         put(language, text);
         return this;
     }
@@ -79,20 +76,24 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
-     * Returns the text associated with the default language.
+     * Returns the text associated with the current language defined by {@link NLS#getCurrentLang()}.
      *
      * @return the text
+     * @throws sirius.kernel.health.HandledException if no translation is found
      */
+    @Nonnull
     public String getRequiredText() {
-        return getRequiredText(defaultLanguage);
+        return getRequiredText(NLS.getCurrentLang());
     }
 
     /**
      * Returns the text associated with a given language.
      *
      * @param language the language code
-     * @return the text or an {@link sirius.kernel.health.HandledException} if not existent
+     * @return the text
+     * @throws sirius.kernel.health.HandledException if no translation is found
      */
+    @Nonnull
     public String getRequiredText(String language) {
         if (!hasText(language)) {
             throw Exceptions.createHandled()
@@ -104,12 +105,13 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
-     * Returns an optional text associated with the default language.
+     * Returns an optional text associated with the current language defined by {@link NLS#getCurrentLang()}.
      *
      * @return an Optional String containing the text, otherwise an empty Optional
      */
+    @Nonnull
     public Optional<String> getText() {
-        return getText(defaultLanguage);
+        return getText(NLS.getCurrentLang());
     }
 
     /**
@@ -118,6 +120,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @param language the language code
      * @return an Optional String containing the text, otherwise an empty Optional
      */
+    @Nonnull
     public Optional<String> getText(String language) {
         if (!hasText(language)) {
             return Optional.empty();
@@ -126,12 +129,13 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
-     * Returns the text associated with the default language.
+     * Returns the text associated with the current language defined by {@link NLS#getCurrentLang()}.
      *
      * @return the text if it exists, otherwise <tt>null</tt>
      */
+    @Nullable
     public String fetchText() {
-        return data().get(defaultLanguage);
+        return data().get(NLS.getCurrentLang());
     }
 
     /**
@@ -140,6 +144,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @param language the language code
      * @return the text if it exists, otherwise <tt>null</tt>
      */
+    @Nullable
     public String fetchText(String language) {
         return data().get(language);
     }
@@ -149,26 +154,24 @@ public class MultiLanguageString extends SafeMap<String, String> {
      *
      * @param language         the language code
      * @param fallbackLanguage the alternative language code
-     * @return the text found under <tt>language</tt>, if none found under <tt>fallbackLanguage</tt>, <tt>null</tt> otherwise
+     * @return the text found under <tt>language</tt>, if none found under <tt>fallbackLanguage</tt> and lately
+     * under {@link NLS#getCurrentLang()}, <tt>null</tt> otherwise
      */
+    @Nullable
     public String fetchText(String language, String fallbackLanguage) {
-        return data().getOrDefault(language, data().getOrDefault(fallbackLanguage, fetchText(defaultLanguage)));
+        return data().getOrDefault(language, fetchText(fallbackLanguage));
     }
 
-    private void assertLanguage(String language) {
+    @SuppressWarnings("unchecked")
+    private void assertValidLanguage(String language) {
+        if (supportedLanguages == null) {
+            supportedLanguages = new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
+        }
         if (!supportedLanguages.contains(language)) {
             throw Exceptions.createHandled()
                             .withNLSKey("MultiLanguageString.invalidLanguage")
                             .set("language", language)
                             .handle();
         }
-    }
-
-    public String getDefaultLanguage() {
-        return defaultLanguage;
-    }
-
-    public void setDefaultLanguage(String defaultLanguage) {
-        this.defaultLanguage = defaultLanguage;
     }
 }

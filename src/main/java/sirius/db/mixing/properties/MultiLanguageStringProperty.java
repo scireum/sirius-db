@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link MultiLanguageString} field in a {@link sirius.db.mongo.MongoEntity}.
+ * Represents a {@link MultiLanguageString} field in a {@link sirius.db.mongo.MongoEntity}.
  * <p>
- * Multi-Language Strings are stored as a list of nested objects which contain a <tt>lang</tt> and
- * a <tt>text</tt> properties.
+ * Multi-Language Strings are stored as a list of nested objects which contain a
+ * <tt>lang</tt> and a <tt>text</tt> property.
  */
 public class MultiLanguageStringProperty extends BaseMapProperty {
 
@@ -86,10 +86,12 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
 
         List<Document> texts = new ArrayList<>();
         ((Map<String, String>) object).forEach((language, text) -> {
-            Document doc = new Document();
-            doc.put(LANGUAGE_PROPERTY, language);
-            doc.put(TEXT_PROPERTY, text);
-            texts.add(doc);
+            if (text != null) {
+                Document doc = new Document();
+                doc.put(LANGUAGE_PROPERTY, language);
+                doc.put(TEXT_PROPERTY, text);
+                texts.add(doc);
+            }
         });
         return texts;
     }

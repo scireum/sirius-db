@@ -11,6 +11,7 @@ package sirius.db.mongo.properties
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
 import sirius.kernel.BaseSpecification
+import sirius.kernel.async.CallContext
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
@@ -60,13 +61,36 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         thrown(HandledException)
 
         when:
-        output.getMultiLangText().setDefaultLanguage("en")
+        CallContext.getCurrent().setLang("en")
 
         then:
         output.getMultiLangText().getRequiredText() == "Butterfly"
         output.getMultiLangText().fetchText() == "Butterfly"
-        output.getMultiLangText().fetchText("es", "fr") == "Butterfly"
         output.getMultiLangText().getText() == Optional.of("Butterfly")
+
+        when:
+        CallContext.getCurrent().setLang("fr")
+        output.getMultiLangText().getRequiredText()
+
+        then:
+        thrown(HandledException)
+        output.getMultiLangText().fetchText() == null
+        output.getMultiLangText().getText() == Optional.empty()
+    }
+
+    def "store using default language"() {
+        given:
+        CallContext.getCurrent().setLang("en")
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangText().addText("Butterfly")
+        mango.update(entity)
+
+        when:
+        def output = mango.refreshOrFail(entity)
+
+        then:
+        output.getMultiLangText().fetchText() == "Butterfly"
+        output.getMultiLangText().fetchText("de") == null
     }
 
     def "raw data check"() {
@@ -74,10 +98,12 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         def entity = new MongoMultiLanguageStringEntity()
         entity.getMultiLangText().addText("pt", "Borboleta")
         entity.getMultiLangText().addText("es", "Mariposa")
+        entity.getMultiLangText().addText("en", "")
+        entity.getMultiLangText().addText("de", null)
         mango.update(entity)
 
         when:
-        def expectedString = "[Document{{lang=pt, text=Borboleta}}, Document{{lang=es, text=Mariposa}}]"
+        def expectedString = "[Document{{lang=pt, text=Borboleta}}, Document{{lang=es, text=Mariposa}}, Document{{lang=en, text=}}]"
         def storedString = mongo.find()
                                 .where("id", entity.getId())
                                 .singleIn("mongomultilanguagestringentity")
