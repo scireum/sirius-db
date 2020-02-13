@@ -231,7 +231,7 @@ public class Mixing implements Initializable {
      *
      * @return an unmodifyable list of all known descriptors
      */
-    public Collection<EntityDescriptor> getDesciptors() {
+    public Collection<EntityDescriptor> getDescriptors() {
         return descriptorsByType.values();
     }
 
