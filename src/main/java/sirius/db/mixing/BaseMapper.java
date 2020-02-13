@@ -15,6 +15,7 @@ import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -79,6 +80,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @throws OptimisticLockException            in case of a concurrent modification
      * @throws IntegrityConstraintFailedException in case of a failed integrity constraint as signaled by the database
      */
+    @SuppressWarnings("squid:S1160")
+    @Explain("In this case we want to throw two distinct exceptions to differentiate between our optimistic locking "
+             + "and database supported OL")
     public <E extends B> void tryUpdate(E entity) throws OptimisticLockException, IntegrityConstraintFailedException {
         performUpdate(entity, false);
     }
@@ -98,6 +102,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         }
     }
 
+    @SuppressWarnings("squid:RedundantThrowsDeclarationCheck")
+    @Explain("false positive - both exceptions can be thrown")
     protected <E extends B> void performUpdate(E entity, boolean force)
             throws OptimisticLockException, IntegrityConstraintFailedException {
         if (entity == null) {
