@@ -63,7 +63,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     public <E extends B> void update(E entity) {
         try {
             performUpdate(entity, false);
-        } catch (OptimisticLockException e) {
+        } catch (OptimisticLockException | IntegrityConstraintFailedException e) {
             throw Exceptions.handle(e);
         }
     }
@@ -76,9 +76,10 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      *
      * @param entity the entity to update
      * @param <E>    the generic type of the entity
-     * @throws OptimisticLockException in case of a concurrent modification
+     * @throws OptimisticLockException            in case of a concurrent modification
+     * @throws IntegrityConstraintFailedException in case of a failed integrity constraint as signaled by the database
      */
-    public <E extends B> void tryUpdate(E entity) throws OptimisticLockException {
+    public <E extends B> void tryUpdate(E entity) throws OptimisticLockException, IntegrityConstraintFailedException {
         performUpdate(entity, false);
     }
 
@@ -92,13 +93,13 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     public <E extends B> void override(E entity) {
         try {
             performUpdate(entity, true);
-        } catch (OptimisticLockException e) {
-            // Should really not happen....
+        } catch (IntegrityConstraintFailedException | OptimisticLockException e) {
             throw Exceptions.handle(e);
         }
     }
 
-    protected <E extends B> void performUpdate(E entity, boolean force) throws OptimisticLockException {
+    protected <E extends B> void performUpdate(E entity, boolean force)
+            throws OptimisticLockException, IntegrityConstraintFailedException {
         if (entity == null) {
             return;
         }
@@ -114,7 +115,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             }
 
             ed.afterSave(entity);
-        } catch (OptimisticLockException e) {
+        } catch (IntegrityConstraintFailedException | OptimisticLockException e) {
             throw e;
         } catch (Exception e) {
             throw Exceptions.handle()
