@@ -98,7 +98,11 @@ public class IndexMappings implements Startable {
     }
 
     private void computeRoutingTable() {
-        mixing.getDesciptors().forEach(this::determineRouting);
+        mixing.getDesciptors().stream().filter(this::isElasticEntity).forEach(this::determineRouting);
+    }
+
+    private boolean isElasticEntity(EntityDescriptor ed) {
+        return ElasticEntity.class.isAssignableFrom(ed.getType());
     }
 
     protected void checkAndUpdateIndices() {
@@ -112,7 +116,7 @@ public class IndexMappings implements Startable {
         int numSuccess = 0;
         int numFailed = 0;
         for (EntityDescriptor ed : mixing.getDesciptors()) {
-            if (ElasticEntity.class.isAssignableFrom(ed.getType())) {
+            if (isElasticEntity(ed)) {
                 if (setupEntity(ed)) {
                     numSuccess++;
                 } else {
