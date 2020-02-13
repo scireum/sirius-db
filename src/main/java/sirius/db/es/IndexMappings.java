@@ -92,8 +92,13 @@ public class IndexMappings implements Startable {
             return;
         }
 
+        computeRoutingTable();
         checkAndUpdateIndices();
         elastic.readyFuture.success();
+    }
+
+    private void computeRoutingTable() {
+        mixing.getDesciptors().forEach(this::determineRouting);
     }
 
     protected void checkAndUpdateIndices() {
@@ -122,7 +127,6 @@ public class IndexMappings implements Startable {
     protected boolean setupEntity(EntityDescriptor ed) {
         try {
             boolean addedAlias = setupAlias(ed);
-            determineRouting(ed);
 
             Elastic.LOG.FINE("Updating mapping %s for %s...",
                              elastic.determineTypeName(ed),
