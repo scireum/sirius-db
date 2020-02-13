@@ -37,7 +37,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     /**
      * Represents a value parsed for a field.
      */
-    protected static class  FieldValue {
+    protected static class FieldValue {
         Object value;
         boolean exact;
 
