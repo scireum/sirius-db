@@ -92,8 +92,17 @@ public class IndexMappings implements Startable {
             return;
         }
 
+        computeRoutingTable();
         checkAndUpdateIndices();
         elastic.readyFuture.success();
+    }
+
+    private void computeRoutingTable() {
+        mixing.getDescriptors().stream().filter(this::isElasticEntity).forEach(this::determineRouting);
+    }
+
+    private boolean isElasticEntity(EntityDescriptor ed) {
+        return ElasticEntity.class.isAssignableFrom(ed.getType());
     }
 
     protected void checkAndUpdateIndices() {
@@ -106,8 +115,8 @@ public class IndexMappings implements Startable {
 
         int numSuccess = 0;
         int numFailed = 0;
-        for (EntityDescriptor ed : mixing.getDesciptors()) {
-            if (ElasticEntity.class.isAssignableFrom(ed.getType())) {
+        for (EntityDescriptor ed : mixing.getDescriptors()) {
+            if (isElasticEntity(ed)) {
                 if (setupEntity(ed)) {
                     numSuccess++;
                 } else {
@@ -122,7 +131,6 @@ public class IndexMappings implements Startable {
     protected boolean setupEntity(EntityDescriptor ed) {
         try {
             boolean addedAlias = setupAlias(ed);
-            determineRouting(ed);
 
             Elastic.LOG.FINE("Updating mapping %s for %s...",
                              elastic.determineTypeName(ed),

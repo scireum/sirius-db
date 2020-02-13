@@ -242,7 +242,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             return;
         }
 
-        IntSummaryStatistics createdIndices = mixing.getDesciptors()
+        IntSummaryStatistics createdIndices = mixing.getDescriptors()
                                                     .stream()
                                                     .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
                                                     .mapToInt(this::createIndices)

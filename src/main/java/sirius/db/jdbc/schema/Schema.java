@@ -177,7 +177,7 @@ public class Schema implements Startable, Initializable {
      */
     public void computeRequiredSchemaChanges() {
         MultiMap<String, Table> targetByRealm = MultiMap.create();
-        for (EntityDescriptor ed : mixing.getDesciptors()) {
+        for (EntityDescriptor ed : mixing.getDescriptors()) {
             if (SQLEntity.class.isAssignableFrom(ed.getType()) && databases.containsKey(ed.getRealm())) {
                 targetByRealm.put(ed.getRealm(), createTable(ed));
             }
@@ -339,7 +339,7 @@ public class Schema implements Startable, Initializable {
         databases.clear();
         requiredSchemaChanges.clear();
 
-        Set<String> realms = mixing.getDesciptors()
+        Set<String> realms = mixing.getDescriptors()
                                    .stream()
                                    .filter(ed -> SQLEntity.class.isAssignableFrom(ed.getType()))
                                    .map(EntityDescriptor::getRealm)
