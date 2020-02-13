@@ -195,7 +195,7 @@ public class Schema implements Startable, Initializable {
                                                                       new ArrayList<>(target.getValue()),
                                                                       true));
                 }
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 Exceptions.handle(OMA.LOG, e);
             }
         }

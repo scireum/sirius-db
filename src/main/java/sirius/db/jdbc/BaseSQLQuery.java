@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Abstract class to provide common functionality when executing a query and iterating over its result set.
@@ -74,7 +74,7 @@ public abstract class BaseSQLQuery {
      *                that there is no limit.
      * @throws SQLException in case of a database error
      */
-    public abstract void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException;
+    public abstract void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException;
 
     /**
      * Executes the given query by invoking the {@link Consumer} for each
@@ -92,13 +92,13 @@ public abstract class BaseSQLQuery {
         }, limit);
     }
 
-    protected void processResultSet(Function<Row, Boolean> handler,
+    protected void processResultSet(Predicate<Row> handler,
                                     Limit effectiveLimit,
                                     ResultSet resultSet,
                                     TaskContext taskContext) throws SQLException {
         while (resultSet.next() && taskContext.isActive()) {
             Row row = loadIntoRow(resultSet);
-            if (effectiveLimit.nextRow() && !handler.apply(row)) {
+            if (effectiveLimit.nextRow() && !handler.test(row)) {
                 return;
             }
             if (!effectiveLimit.shouldContinue()) {

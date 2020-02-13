@@ -26,7 +26,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link ExternalBatchContext}.
@@ -140,7 +140,7 @@ public class ExternalBatchQuery extends BaseSQLQuery {
     }
 
     @Override
-    public void iterate(Function<Row, Boolean> handler, @Nullable Limit limit) throws SQLException {
+    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         try (ResultSet rs = statement.executeQuery()) {
             TaskContext tc = TaskContext.get();
             processResultSet(handler, limit, rs, tc);

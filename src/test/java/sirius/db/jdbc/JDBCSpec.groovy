@@ -13,7 +13,7 @@ import sirius.kernel.commons.Limit
 import sirius.kernel.di.std.Part
 import spock.lang.Stepwise
 
-import java.util.function.Function
+import java.util.function.Predicate
 
 class JDBCSpec extends BaseSpecification {
 
@@ -137,7 +137,7 @@ class JDBCSpec extends BaseSpecification {
         when:
         def qry = db.createQuery('SELECT a,b FROM test_a')
         then:
-        qry.iterate({ it.getFieldsList().size() == 2 } as Function, Limit.UNLIMITED)
+        qry.iterate({ it.getFieldsList().size() == 2 } as Predicate, Limit.UNLIMITED)
     }
 
 }
