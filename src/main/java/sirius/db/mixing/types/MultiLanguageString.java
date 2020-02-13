@@ -154,8 +154,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
      *
      * @param language         the language code
      * @param fallbackLanguage the alternative language code
-     * @return the text found under <tt>language</tt>, if none found under <tt>fallbackLanguage</tt> and lately
-     * under {@link NLS#getCurrentLang()}, <tt>null</tt> otherwise
+     * @return the text found under <tt>language</tt>, if none found under <tt>fallbackLanguage</tt> or <tt>null</tt> otherwise
      */
     @Nullable
     public String fetchText(String language, String fallbackLanguage) {
@@ -165,7 +164,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
     @SuppressWarnings("unchecked")
     private void assertValidLanguage(String language) {
         if (supportedLanguages == null) {
-            supportedLanguages = new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
+            supportedLanguages =
+                    new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
         }
         if (!supportedLanguages.contains(language)) {
             throw Exceptions.createHandled()
