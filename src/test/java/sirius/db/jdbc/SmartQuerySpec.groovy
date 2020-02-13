@@ -20,7 +20,6 @@ import spock.lang.Stepwise
 import java.util.function.Function
 import java.util.stream.Collectors
 
-@Stepwise
 class SmartQuerySpec extends BaseSpecification {
 
     @Part

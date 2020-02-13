@@ -16,7 +16,6 @@ import spock.lang.Stepwise
 
 import java.time.Duration
 
-@Stepwise
 class OMASpec extends BaseSpecification {
 
     @Part
