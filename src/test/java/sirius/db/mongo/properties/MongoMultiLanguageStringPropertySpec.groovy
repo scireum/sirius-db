@@ -53,27 +53,18 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         output.getMultiLangText().fetchText("fr", "es") == null
         output.getMultiLangText().getText("de") == Optional.of("Schmetterling")
         output.getMultiLangText().getText("fr") == Optional.empty()
-        output.getMultiLangText().getRequiredText("de") == "Schmetterling"
-
-        when:
-        output.getMultiLangText().getRequiredText("fr")
-        then:
-        thrown(HandledException)
 
         when:
         CallContext.getCurrent().setLang("en")
 
         then:
-        output.getMultiLangText().getRequiredText() == "Butterfly"
         output.getMultiLangText().fetchText() == "Butterfly"
         output.getMultiLangText().getText() == Optional.of("Butterfly")
 
         when:
         CallContext.getCurrent().setLang("fr")
-        output.getMultiLangText().getRequiredText()
 
         then:
-        thrown(HandledException)
         output.getMultiLangText().fetchText() == null
         output.getMultiLangText().getText() == Optional.empty()
     }

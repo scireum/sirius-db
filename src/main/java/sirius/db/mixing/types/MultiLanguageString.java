@@ -76,35 +76,6 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
-     * Returns the text associated with the current language defined by {@link NLS#getCurrentLang()}.
-     *
-     * @return the text
-     * @throws sirius.kernel.health.HandledException if no translation is found
-     */
-    @Nonnull
-    public String getRequiredText() {
-        return getRequiredText(NLS.getCurrentLang());
-    }
-
-    /**
-     * Returns the text associated with a given language.
-     *
-     * @param language the language code
-     * @return the text
-     * @throws sirius.kernel.health.HandledException if no translation is found
-     */
-    @Nonnull
-    public String getRequiredText(String language) {
-        if (!hasText(language)) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("MultiLanguageString.textDoesNotExist")
-                            .set("language", language)
-                            .handle();
-        }
-        return fetchText(language);
-    }
-
-    /**
      * Returns an optional text associated with the current language defined by {@link NLS#getCurrentLang()}.
      *
      * @return an Optional String containing the text, otherwise an empty Optional
