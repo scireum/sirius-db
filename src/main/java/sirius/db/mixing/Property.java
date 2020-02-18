@@ -449,6 +449,19 @@ public abstract class Property extends Composable {
     }
 
     /**
+     * Obtains the field value from the given entity for indexing purposes.
+     * <p>
+     * Defaults to {@link #getValue(Object)}, but can be overriden in order to deliver different
+     * contents to index (e.g. only the values of a {@link java.util.Map} without its keys.
+     *
+     * @param entity the entity to fetch the value from
+     * @return the value which is currently stored in the field
+     */
+    public Object getValueToIndex(Object entity) {
+        return getValue(entity);
+    }
+
+    /**
      * For modifyable datatypes like collections, this returns the value as copy so that further modifications
      * will not change the returned value.
      *
