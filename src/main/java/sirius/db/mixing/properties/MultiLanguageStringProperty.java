@@ -95,4 +95,12 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
         });
         return texts;
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object getValueFromField(Object target) {
+        MultiLanguageString value = new MultiLanguageString();
+        value.setData((Map<String, String>) super.getValueFromField(target));
+        return value;
+    }
 }
