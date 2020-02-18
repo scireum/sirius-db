@@ -115,4 +115,12 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
                        new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
         description.put("properties", properties);
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object getValueFromField(Object target) {
+        StringMap value = new StringMap();
+        value.setData((Map<String, String>) super.getValueFromField(target));
+        return value;
+    }
 }
