@@ -26,8 +26,11 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
     def "invalid language"() {
         given:
         def entity = new MongoMultiLanguageStringEntity()
-        when:
         entity.getMultiLangText().addText("00", "")
+
+        when:
+        mango.update(entity)
+
         then:
         thrown(HandledException)
     }

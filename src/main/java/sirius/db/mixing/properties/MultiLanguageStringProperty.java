@@ -15,15 +15,19 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
+import sirius.kernel.Sirius;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -36,6 +40,8 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
 
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
+
+    private Set<String> supportedLanguages;
 
     /**
      * Factory for generating properties based on their field type
@@ -65,6 +71,28 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
 
     MultiLanguageStringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void onBeforeSaveChecks(Object entity) {
+        if (supportedLanguages == null) {
+            supportedLanguages =
+                    new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
+        }
+
+        ((Map<String, String>) getValue(entity)).forEach((language, text) -> {
+            if (!supportedLanguages.contains(language)) {
+                throw Exceptions.createHandled()
+                                .withNLSKey("MultiLanguageString.invalidLanguage")
+                                .set("language", language)
+                                .set("text", text)
+                                .set("field", getField().getName())
+                                .handle();
+            }
+        });
+
+        super.onBeforeSaveChecks(entity);
     }
 
     @Override
