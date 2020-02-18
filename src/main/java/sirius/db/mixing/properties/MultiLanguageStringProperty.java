@@ -15,6 +15,7 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
+import sirius.db.mixing.types.StringList;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -94,5 +95,13 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
             }
         });
         return texts;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Object getValueToIndex(Object entity) {
+        StringList textsToIndex = new StringList();
+        ((Map<String, String>) getValue(entity)).forEach((language, text) -> textsToIndex.add(text));
+        return textsToIndex;
     }
 }
