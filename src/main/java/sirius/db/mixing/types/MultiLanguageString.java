@@ -28,8 +28,6 @@ import java.util.Set;
  */
 public class MultiLanguageString extends SafeMap<String, String> {
 
-    private Set<String> supportedLanguages;
-
     @Override
     protected boolean valueNeedsCopy() {
         return false;
@@ -60,7 +58,6 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @throws sirius.kernel.health.HandledException if the provided language code is invalid
      */
     public MultiLanguageString addText(String language, String text) {
-        assertValidLanguage(language);
         put(language, text);
         return this;
     }
@@ -73,35 +70,6 @@ public class MultiLanguageString extends SafeMap<String, String> {
      */
     public boolean hasText(String language) {
         return data().containsKey(language);
-    }
-
-    /**
-     * Returns the text associated with the current language defined by {@link NLS#getCurrentLang()}.
-     *
-     * @return the text
-     * @throws sirius.kernel.health.HandledException if no translation is found
-     */
-    @Nonnull
-    public String getRequiredText() {
-        return getRequiredText(NLS.getCurrentLang());
-    }
-
-    /**
-     * Returns the text associated with a given language.
-     *
-     * @param language the language code
-     * @return the text
-     * @throws sirius.kernel.health.HandledException if no translation is found
-     */
-    @Nonnull
-    public String getRequiredText(String language) {
-        if (!hasText(language)) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("MultiLanguageString.textDoesNotExist")
-                            .set("language", language)
-                            .handle();
-        }
-        return fetchText(language);
     }
 
     /**
@@ -159,18 +127,5 @@ public class MultiLanguageString extends SafeMap<String, String> {
     @Nullable
     public String fetchText(String language, String fallbackLanguage) {
         return data().getOrDefault(language, fetchText(fallbackLanguage));
-    }
-
-    private void assertValidLanguage(String language) {
-        if (supportedLanguages == null) {
-            supportedLanguages =
-                    new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
-        }
-        if (!supportedLanguages.contains(language)) {
-            throw Exceptions.createHandled()
-                            .withNLSKey("MultiLanguageString.invalidLanguage")
-                            .set("language", language)
-                            .handle();
-        }
     }
 }

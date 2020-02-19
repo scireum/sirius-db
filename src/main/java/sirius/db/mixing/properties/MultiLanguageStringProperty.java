@@ -16,7 +16,9 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
+import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -36,6 +39,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
 
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
+
+    @ConfigValue("mongo.supportedLanguages")
+    private static Set<String> supportedLanguages;
 
     /**
      * Factory for generating properties based on their field type
@@ -65,6 +71,29 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
 
     MultiLanguageStringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+    }
+
+    @Override
+    protected void onBeforeSaveChecks(Object entity) {
+        getMultiLanguageString(entity).data().forEach((language, text) -> {
+            if (supportedLanguages != null && !supportedLanguages.contains(language)) {
+                throw Exceptions.createHandled()
+                                .withNLSKey("MultiLanguageString.invalidLanguage")
+                                .set("language", language)
+                                .set("text", text)
+                                .set("field", getField().getName())
+                                .handle();
+            }
+        });
+
+        super.onBeforeSaveChecks(entity);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected MultiLanguageString getMultiLanguageString(Object entity) {
+        MultiLanguageString multiLanguageString = new MultiLanguageString();
+        multiLanguageString.setData((Map<String, String>) super.getValueFromField(entity));
+        return multiLanguageString;
     }
 
     @Override
