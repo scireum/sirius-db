@@ -118,6 +118,11 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
     protected Object transformToElastic(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
     }
+    
+    @Override
+    protected Object transformToMongo(Object object) {
+        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
+    }
 
     @Override
     protected Object transformFromJDBC(Value data) {
@@ -138,6 +143,11 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
             return Amount.NOTHING;
         }
         return Amount.of(new BigDecimal(valueAsString));
+    }
+
+    @Override
+    protected Object transformFromMongo(Value object) {
+        return object.getAmount();
     }
 
     @Override
