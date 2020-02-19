@@ -41,7 +41,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
 
-    private Set<String> supportedLanguages;
+    private static Set<String> supportedLanguages;
 
     /**
      * Factory for generating properties based on their field type
@@ -76,11 +76,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
     @Override
     @SuppressWarnings("unchecked")
     protected void onBeforeSaveChecks(Object entity) {
-        if (supportedLanguages == null) {
-            supportedLanguages =
-                    new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
-        }
-
+        getSupportedLanguages();
         ((Map<String, String>) getValue(entity)).forEach((language, text) -> {
             if (!supportedLanguages.contains(language)) {
                 throw Exceptions.createHandled()
@@ -93,6 +89,13 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
         });
 
         super.onBeforeSaveChecks(entity);
+    }
+
+    private static void getSupportedLanguages() {
+        if (supportedLanguages == null) {
+            supportedLanguages =
+                    new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
+        }
     }
 
     @Override
