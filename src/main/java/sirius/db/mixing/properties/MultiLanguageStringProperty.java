@@ -15,15 +15,14 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
-import sirius.kernel.Sirius;
 import sirius.kernel.commons.Value;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +40,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
 
+    @ConfigValue("mongo.supportedLanguages")
     private static Set<String> supportedLanguages;
 
     /**
@@ -75,9 +75,8 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
 
     @Override
     protected void onBeforeSaveChecks(Object entity) {
-        getSupportedLanguages();
         getMultiLanguageString(entity).data().forEach((language, text) -> {
-            if (!supportedLanguages.contains(language)) {
+            if (supportedLanguages != null && !supportedLanguages.contains(language)) {
                 throw Exceptions.createHandled()
                                 .withNLSKey("MultiLanguageString.invalidLanguage")
                                 .set("language", language)
@@ -88,13 +87,6 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
         });
 
         super.onBeforeSaveChecks(entity);
-    }
-
-    private static void getSupportedLanguages() {
-        if (supportedLanguages == null) {
-            supportedLanguages =
-                    new HashSet<>(Sirius.getSettings().getConfig("mongo").getStringList("supportedLanguages"));
-        }
     }
 
     @SuppressWarnings("unchecked")
