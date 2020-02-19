@@ -60,7 +60,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
             AmountProperty amountProperty = new AmountProperty(descriptor, accessPath, field);
 
             try {
-                if (field.get(descriptor.getType().getDeclaredConstructor().newInstance()) == null) {
+                if (field.get(accessPath.apply(descriptor.getType().getDeclaredConstructor().newInstance())) == null) {
                     Mixing.LOG.WARN("Field %s in %s is an Amount. Such fields should be initialized with Amount.NOTHING"
                                     + " as an amount should never be null!",
                                     field.getName(),
