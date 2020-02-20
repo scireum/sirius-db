@@ -28,13 +28,9 @@ class MongoAmountPropertySpec extends BaseSpecification {
 
     def "read/write of amount fields works"() {
         expect:
-        saveAndRead(Amount.of(input)) == Amount.of(output)
+        saveAndRead(Amount.of(value)) == Amount.of(value)
 
         where:
-        input            | output
-        -3.77d           | -3.77d
-        Double.MAX_VALUE | Double.MAX_VALUE
-        0.00001d         | 0.00001d
-        -0.00001d        | -0.00001d
+        value << [-3.77d, Double.MAX_VALUE, 0.00001d, -0.00001d]
     }
 }
