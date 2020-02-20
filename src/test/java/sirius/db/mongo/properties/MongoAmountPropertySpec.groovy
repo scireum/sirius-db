@@ -22,10 +22,12 @@ class MongoAmountPropertySpec extends BaseSpecification {
         setup:
         MongoAmountEntity obj = new MongoAmountEntity()
         obj.setTestAmount(Amount.of(-3.77d))
+        obj.setMaxAmount(Amount.of(Double.MAX_VALUE))
         mango.update(obj)
         when:
         obj = mango.refreshOrFail(obj)
         then:
         obj.getTestAmount() == Amount.of(-3.77d)
+        obj.getMaxAmount() == Amount.of(Double.MAX_VALUE)
     }
 }
