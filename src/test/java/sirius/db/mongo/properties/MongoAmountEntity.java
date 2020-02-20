@@ -16,7 +16,6 @@ public class MongoAmountEntity extends MongoEntity {
 
     public static final Mapping TEST_AMOUNT = Mapping.named("testAmount");
     private Amount testAmount = Amount.NOTHING;
-    private Amount maxAmount = Amount.NOTHING;
 
     public Amount getTestAmount() {
         return testAmount;
@@ -24,13 +23,5 @@ public class MongoAmountEntity extends MongoEntity {
 
     public void setTestAmount(Amount testAmount) {
         this.testAmount = testAmount;
-    }
-
-    public Amount getMaxAmount() {
-        return maxAmount;
-    }
-
-    public void setMaxAmount(Amount maxAmount) {
-        this.maxAmount = maxAmount;
     }
 }

@@ -18,16 +18,23 @@ class MongoAmountPropertySpec extends BaseSpecification {
     @Part
     private static Mango mango
 
-    def "read/write of amount fields works"() {
-        setup:
+    private Amount saveAndRead(Amount value) {
         MongoAmountEntity obj = new MongoAmountEntity()
-        obj.setTestAmount(Amount.of(-3.77d))
-        obj.setMaxAmount(Amount.of(Double.MAX_VALUE))
+        obj.setTestAmount(value)
         mango.update(obj)
-        when:
         obj = mango.refreshOrFail(obj)
-        then:
-        obj.getTestAmount() == Amount.of(-3.77d)
-        obj.getMaxAmount() == Amount.of(Double.MAX_VALUE)
+        return obj.getTestAmount()
+    }
+
+    def "read/write of amount fields works"() {
+        expect:
+        saveAndRead(Amount.of(input)) == Amount.of(output)
+
+        where:
+        input            | output
+        -3.77d           | -3.77d
+        Double.MAX_VALUE | Double.MAX_VALUE
+        0.00001d         | 0.00001d
+        -0.00001d        | -0.00001d
     }
 }
