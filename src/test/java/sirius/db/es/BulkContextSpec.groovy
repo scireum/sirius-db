@@ -36,6 +36,19 @@ class BulkContextSpec extends BaseSpecification {
         elastic.select(BatchTestEntity.class).count() == 3
     }
 
+    def "batch insert with routing works"() {
+        setup:
+        BulkContext btx = elastic.batch()
+        when:
+        btx.tryUpdate(new RoutedBatchTestEntity().withValue(1).withValue1(5))
+        btx.tryUpdate(new RoutedBatchTestEntity().withValue(2).withValue1(5))
+        btx.tryUpdate(new RoutedBatchTestEntity().withValue(3).withValue1(5))
+        btx.commit()
+        elastic.refresh(RoutedBatchTestEntity.class)
+        then:
+        elastic.select(RoutedBatchTestEntity.class).routing("5").eq(RoutedBatchTestEntity.VALUE1, 5).count() == 3
+    }
+
     def "optimistic locking with batchcontext works"() {
         setup:
         BulkContext btx = elastic.batch()
