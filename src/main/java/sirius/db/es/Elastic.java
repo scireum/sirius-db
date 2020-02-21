@@ -244,7 +244,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return null;
         }
 
-        return (String) property.getValueForDatasource(Elastic.class, entity);
+        return String.valueOf(property.getValueForDatasource(Elastic.class, entity));
     }
 
     @Override
