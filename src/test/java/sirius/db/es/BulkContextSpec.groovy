@@ -26,6 +26,7 @@ class BulkContextSpec extends BaseSpecification {
     def "batch insert works"() {
         setup:
         BulkContext btx = elastic.batch()
+        elastic.select(BatchTestEntity.class).delete()
         when:
         btx.tryUpdate(new BatchTestEntity().withValue(1))
         btx.tryUpdate(new BatchTestEntity().withValue(2))
@@ -36,9 +37,24 @@ class BulkContextSpec extends BaseSpecification {
         elastic.select(BatchTestEntity.class).count() == 3
     }
 
+    def "batch insert with routing works"() {
+        setup:
+        BulkContext btx = elastic.batch()
+        elastic.select(RoutedBatchTestEntity.class).delete()
+        when:
+        btx.tryUpdate(new RoutedBatchTestEntity().withValue(1).withValue1(5))
+        btx.tryUpdate(new RoutedBatchTestEntity().withValue(2).withValue1(5))
+        btx.tryUpdate(new RoutedBatchTestEntity().withValue(3).withValue1(5))
+        btx.commit()
+        elastic.refresh(RoutedBatchTestEntity.class)
+        then:
+        elastic.select(RoutedBatchTestEntity.class).routing("5").eq(RoutedBatchTestEntity.VALUE1, 5).count() == 3
+    }
+
     def "optimistic locking with batchcontext works"() {
         setup:
         BulkContext btx = elastic.batch()
+        elastic.select(BatchTestEntity.class).delete()
         when:
         BatchTestEntity modified = new BatchTestEntity().withValue(100)
         elastic.update(modified)
@@ -56,6 +72,7 @@ class BulkContextSpec extends BaseSpecification {
     def "overwriting with batchcontext works"() {
         setup:
         BulkContext btx = elastic.batch()
+        elastic.select(BatchTestEntity.class).delete()
         when:
         BatchTestEntity modified = new BatchTestEntity().withValue(100)
         elastic.update(modified)
@@ -73,6 +90,7 @@ class BulkContextSpec extends BaseSpecification {
     def "delete with batchcontext works"() {
         setup:
         BulkContext btx = elastic.batch()
+        elastic.select(BatchTestEntity.class).delete()
         when:
         BatchTestEntity test = new BatchTestEntity().withValue(100)
         elastic.update(test)
@@ -98,6 +116,7 @@ class BulkContextSpec extends BaseSpecification {
     def "getFailedIds() works"() {
         setup:
         BulkContext btx = elastic.batch()
+        elastic.select(BatchTestEntity.class).delete()
         BatchTestEntity test = new BatchTestEntity().withValue(1)
         BatchTestEntity test2 = new BatchTestEntity().withValue(10)
         when:
