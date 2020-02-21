@@ -45,7 +45,7 @@ public class BulkContext implements Closeable {
     protected static final String KEY_ID = "_id";
     private static final String KEY_PRIMARY_TERM = "if_primary_term";
     private static final String KEY_SEQ_NO = "if_seq_no";
-    private static final String KEY_ROUTING = "_routing";
+    private static final String KEY_ROUTING = "routing";
 
     protected static final String COMMAND_INDEX = "index";
     protected static final String COMMAND_DELETE = "delete";
