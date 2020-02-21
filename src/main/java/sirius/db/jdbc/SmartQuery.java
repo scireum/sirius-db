@@ -177,7 +177,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     @Override
     public boolean exists() {
-        return count() > 0;
+        return fields(SQLEntity.ID).first().isPresent();
     }
 
     @Override
