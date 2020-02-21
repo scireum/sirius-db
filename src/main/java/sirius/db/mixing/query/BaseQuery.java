@@ -144,7 +144,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
         if (limit > MAX_LIST_SIZE) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage("When using 'queryList' as most %s items can be selected. "
+                            .withSystemErrorMessage("When using 'queryList' at most %s items can be selected. "
                                                     + "Use 'iterate' for larger results. Query: %s",
                                                     MAX_LIST_SIZE,
                                                     this)
