@@ -250,37 +250,72 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         Mongo.LOG.INFO("Initialized %s indices for %s collections", createdIndices.getSum(), createdIndices.getCount());
     }
 
-    private int createIndices(EntityDescriptor ed) {
-        String database = ed.getRealm();
+    private int createIndices(EntityDescriptor entityDescriptor) {
+        String database = entityDescriptor.getRealm();
         if (!mongo.isConfigured(database)) {
             Mongo.LOG.WARN("Skipping MongoDB indices for: %s as no configuration for database %s is present...",
-                           ed.getRelationName(),
+                           entityDescriptor.getRelationName(),
                            database);
             return 0;
         }
 
         Set<String> seenIndices = new HashSet<>();
-        ed.getAnnotations(Index.class).forEach(index -> {
-            if (index.columnSettings() == null || index.columns().length != index.columnSettings().length) {
-                Exceptions.handle()
-                          .to(Mongo.LOG)
-                          .withSystemErrorMessage(
-                                  "Invalid index specification for index %s of %s (%s). We need a columnSetting for each column",
-                                  index.name(),
-                                  ed.getType().getName(),
-                                  ed.getRelationName())
-                          .handle();
-            } else {
-                // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
-                // Using this approach, indices can be "overwritten" by subclasses.
-                if (!seenIndices.contains(index.name())) {
-                    createIndex(ed, mongo.db(database), index);
-                    seenIndices.add(index.name());
-                }
-            }
-        });
+        entityDescriptor.getAnnotations(Index.class)
+                        .filter(index -> deduplicateByName(index, seenIndices))
+                        .filter(this::skipParentIndexSuppressions)
+                        .filter(index -> checkColumnSettings(index, entityDescriptor))
+                        .forEach(index -> createIndex(entityDescriptor, mongo.db(database), index));
 
         return seenIndices.size();
+    }
+
+    /**
+     * Skips indices which have already been defined by a more concrete class.
+     * <p>
+     * THis permits entites to overwrite indices defined by their parent entities.
+     *
+     * @param index       the index to check
+     * @param seenIndices the set of seen index names
+     * @return <tt>true</tt> if the name has to been seen yet, <tt>false</tt> otherwise
+     */
+    private boolean deduplicateByName(Index index, Set<String> seenIndices) {
+        return seenIndices.add(index.name());
+    }
+
+    /**
+     * Filters indices without any columns.
+     * <p>
+     * Such indices are used to suppress an index defined by a parent entity.
+     *
+     * @param index the index to check
+     * @return <tt>true</tt> if this is a valid index, <tt>false</tt> if this is a suppression index without columns
+     */
+    private boolean skipParentIndexSuppressions(Index index) {
+        return index.columns().length > 0;
+    }
+
+    /**
+     * Ensures that there is a {@link Index#columnSettings() column setting} for each {@link Index#columns() column}
+     * defined by the index.
+     *
+     * @param index            the index to check
+     * @param entityDescriptor the entitiy descriptor used to generate proper error messages
+     * @return <tt>true</tt> if the index is properly populated, <tt>false</tt> otherwise
+     */
+    private boolean checkColumnSettings(Index index, EntityDescriptor entityDescriptor) {
+        if (index.columnSettings() != null && index.columns().length == index.columnSettings().length) {
+            return true;
+        }
+
+        Exceptions.handle()
+                  .to(Mongo.LOG)
+                  .withSystemErrorMessage(
+                          "Invalid index specification for index %s of %s (%s). We need a columnSetting for each column",
+                          index.name(),
+                          entityDescriptor.getType().getName(),
+                          entityDescriptor.getRelationName())
+                  .handle();
+        return false;
     }
 
     private void createIndex(EntityDescriptor ed, MongoDatabase client, Index index) {
@@ -293,7 +328,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                 textColumnSeen |= Mango.INDEX_AS_FULLTEXT.equals(setting.getString());
             }
 
-            IndexOptions indexOptions = new IndexOptions().unique(index.unique());
+            IndexOptions indexOptions = new IndexOptions().name(index.name()).unique(index.unique());
             if (!textColumnSeen) {
                 indexOptions.collation(mongo.determineCollation());
             }
