@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -177,9 +178,9 @@ public class Schema implements Startable, Initializable {
      */
     public void computeRequiredSchemaChanges() {
         MultiMap<String, Table> targetByRealm = MultiMap.create();
-        for (EntityDescriptor ed : mixing.getDescriptors()) {
-            if (SQLEntity.class.isAssignableFrom(ed.getType()) && databases.containsKey(ed.getRealm())) {
-                targetByRealm.put(ed.getRealm(), createTable(ed));
+        for (EntityDescriptor entityDescriptor : mixing.getDescriptors()) {
+            if (SQLEntity.class.isAssignableFrom(entityDescriptor.getType()) && databases.containsKey(entityDescriptor.getRealm())) {
+                targetByRealm.put(entityDescriptor.getRealm(), createTable(entityDescriptor));
             }
         }
 
@@ -201,20 +202,20 @@ public class Schema implements Startable, Initializable {
         }
     }
 
-    private Table createTable(EntityDescriptor ed) {
-        Table table = new Table(ed);
-        table.setName(ed.getRelationName());
+    private Table createTable(EntityDescriptor entityDescriptor) {
+        Table table = new Table(entityDescriptor);
+        table.setName(entityDescriptor.getRelationName());
 
-        if (getDatabase(ed.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)
-            && !Strings.areEqual(ed.getRelationName(), ed.getRelationName().toLowerCase())) {
+        if (getDatabase(entityDescriptor.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)
+            && !Strings.areEqual(entityDescriptor.getRelationName(), entityDescriptor.getRelationName().toLowerCase())) {
             OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
                          + " This might lead to trouble with the type of DBMS you are using!",
-                         ed.getType().getName(),
-                         ed.getRelationName());
+                         entityDescriptor.getType().getName(),
+                         entityDescriptor.getRelationName());
         }
 
-        collectColumns(table, ed);
-        collectKeys(table, ed);
+        collectColumns(table, entityDescriptor);
+        collectKeys(table, entityDescriptor);
         applyColumnRenamings(table);
 
         return table;
@@ -229,9 +230,9 @@ public class Schema implements Startable, Initializable {
         }
     }
 
-    private void applyRenaming(Config renamedColumns, TableColumn col) {
-        if (renamedColumns != null && renamedColumns.hasPath(col.getName())) {
-            col.setOldName(renamedColumns.getString(col.getName()));
+    private void applyRenaming(Config renamedColumns, TableColumn tableColumn) {
+        if (renamedColumns != null && renamedColumns.hasPath(tableColumn.getName())) {
+            tableColumn.setOldName(renamedColumns.getString(tableColumn.getName()));
         }
     }
 
