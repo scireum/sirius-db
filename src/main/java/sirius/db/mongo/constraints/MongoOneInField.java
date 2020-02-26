@@ -29,10 +29,8 @@ class MongoOneInField extends OneInField<MongoConstraint> {
     public MongoConstraint build() {
         if (values.isEmpty()) {
             if (forceEmpty) {
-
                 return factory.or(factory.notFilled(field), factory.isEmptyArray(field));
             }
-            
             return null;
         }
 
