@@ -247,7 +247,7 @@ public class Schema implements Startable, Initializable {
     /**
      * Skips indices which have already been defined by a more concrete class.
      * <p>
-     * THis permits entites to overwrite indices defined by their parent entities.
+     * This permits entities to overwrite indices defined by their parent entities.
      *
      * @param index       the index to check
      * @param seenIndices the set of seen index names
