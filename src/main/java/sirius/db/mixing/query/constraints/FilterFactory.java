@@ -378,6 +378,9 @@ public abstract class FilterFactory<C extends Constraint> {
         if (effectiveConstraints.isEmpty()) {
             return null;
         }
+        if (effectiveConstraints.size() == 1) {
+            return effectiveConstraints.get(0);
+        }
 
         return effectiveAnd(effectiveConstraints);
     }
@@ -414,6 +417,9 @@ public abstract class FilterFactory<C extends Constraint> {
         List<C> effectiveConstraints = constraints.stream().filter(Objects::nonNull).collect(Collectors.toList());
         if (effectiveConstraints.isEmpty()) {
             return null;
+        }
+        if (effectiveConstraints.size() == 1) {
+            return effectiveConstraints.get(0);
         }
 
         return effectiveOr(effectiveConstraints);

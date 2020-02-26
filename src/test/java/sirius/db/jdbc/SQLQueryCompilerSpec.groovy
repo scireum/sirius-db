@@ -63,7 +63,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "firstname:",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((firstname IS NULL))"
+        queryCompiler.compile().toString() == "firstname IS NULL"
     }
 
     def "compiling '!firstname:' yields a constraint"() {
@@ -74,7 +74,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "!firstname:",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(firstname IS NULL)))"
+        queryCompiler.compile().toString() == "NOT(firstname IS NULL)"
     }
 
     def "compiling '-firstname:' yields a constraint"() {
@@ -85,7 +85,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "-firstname:",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(firstname IS NULL)))"
+        queryCompiler.compile().toString() == "NOT(firstname IS NULL)"
     }
 
     def "compiling '!firstname:X OR lastname:Y' works as expected"() {
@@ -96,7 +96,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "!firstname:X OR lastname:Y",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(firstname = X)) OR (lastname = Y))"
+        queryCompiler.compile().toString() == "(NOT(firstname = X) OR lastname = Y)"
     }
 
     def "compiling '-firstname:X OR lastname:Y' works as expected"() {
@@ -107,7 +107,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "-firstname:X OR lastname:Y",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(firstname = X)) OR (lastname = Y))"
+        queryCompiler.compile().toString() == "(NOT(firstname = X) OR lastname = Y)"
     }
 
     def "compiling '!(firstname:X OR lastname:Y)' works as expected"() {
@@ -118,7 +118,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "!(firstname:X OR lastname:Y)",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(((firstname = X) OR (lastname = Y)))))"
+        queryCompiler.compile().toString() == "NOT((firstname = X OR lastname = Y))"
     }
 
     def "compiling '-(firstname:X OR lastname:Y)' works as expected"() {
@@ -129,7 +129,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "-(firstname:X OR lastname:Y)",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(((firstname = X) OR (lastname = Y)))))"
+        queryCompiler.compile().toString() == "NOT((firstname = X OR lastname = Y))"
     }
 
     def "compiling '-X' works as expected"() {
@@ -140,7 +140,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "-X",
                 Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((NOT(((firstname = X)))))"
+        queryCompiler.compile().toString() == "NOT(firstname = X)"
     }
 
     def "compiling '\"-X\"' works as expected"() {
@@ -151,7 +151,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "\"-X\"",
                 Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((((firstname = -X))))"
+        queryCompiler.compile().toString() == "firstname = -X"
     }
 
     def "compiling 'Y-X' works as expected"() {
@@ -162,7 +162,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "Y-X",
                 Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((((firstname = Y-X))))"
+        queryCompiler.compile().toString() == "firstname = Y-X"
     }
 
     def "compiling 'firstname:test' works as expected"() {
@@ -173,7 +173,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "firstname:test",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((firstname = test))"
+        queryCompiler.compile().toString() == "firstname = test"
     }
 
     def "compiling 'firstname:type:value-123' works"(){
@@ -184,7 +184,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "firstname:type:value-123",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((firstname = type:value-123))"
+        queryCompiler.compile().toString() == "firstname = type:value-123"
 
     }
 
@@ -196,7 +196,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "hello:world",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((((LOWER(firstname) LIKE '%hello:world%'))))"
+        queryCompiler.compile().toString() == "LOWER(firstname) LIKE '%hello:world%'"
 
     }
 
@@ -208,7 +208,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "hello::world",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((((LOWER(firstname) LIKE '%hello::world%'))))"
+        queryCompiler.compile().toString() == "LOWER(firstname) LIKE '%hello::world%'"
 
     }
 
@@ -220,7 +220,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "hello > world",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
         then:
-        queryCompiler.compile().toString() == "((((LOWER(firstname) LIKE '%hello%')) AND ((LOWER(firstname) LIKE '%world%'))))"
+        queryCompiler.compile().toString() == "(LOWER(firstname) LIKE '%hello%' AND LOWER(firstname) LIKE '%world%')"
     }
 
     def "customizing constraint compilation works"(){
@@ -241,6 +241,6 @@ class SQLQueryCompilerSpec extends BaseSpecification {
 
         }
         then:
-        queryCompiler.compile().toString() == "((is = chat))"
+        queryCompiler.compile().toString() == "is = chat"
     }
 }
