@@ -23,7 +23,12 @@ import java.lang.annotation.Target;
 /**
  * Defines an additional index on an {@link SQLEntity} or {@link MongoEntity}.
  * <p>
- * The index will be picked up and created by {@link Schema#computeRequiredSchemaChanges()} or {@link Mango#createIndices(EntityDescriptor)}.
+ * Note that indices of parent entities will also be picked up and applied, unless an index for the same name
+ * has already been defined. If you want to suppress an index from a parent entity, simply define an index with
+ * the same name and supply an empty columns list.
+ * <p>
+ * The index will be picked up and created by {@link Schema#computeRequiredSchemaChanges()} or
+ * {@link Mango#createIndices(EntityDescriptor)}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

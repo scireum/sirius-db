@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -177,9 +178,9 @@ public class Schema implements Startable, Initializable {
      */
     public void computeRequiredSchemaChanges() {
         MultiMap<String, Table> targetByRealm = MultiMap.create();
-        for (EntityDescriptor ed : mixing.getDescriptors()) {
-            if (SQLEntity.class.isAssignableFrom(ed.getType()) && databases.containsKey(ed.getRealm())) {
-                targetByRealm.put(ed.getRealm(), createTable(ed));
+        for (EntityDescriptor entityDescriptor : mixing.getDescriptors()) {
+            if (SQLEntity.class.isAssignableFrom(entityDescriptor.getType()) && databases.containsKey(entityDescriptor.getRealm())) {
+                targetByRealm.put(entityDescriptor.getRealm(), createTable(entityDescriptor));
             }
         }
 
@@ -201,20 +202,20 @@ public class Schema implements Startable, Initializable {
         }
     }
 
-    private Table createTable(EntityDescriptor ed) {
-        Table table = new Table(ed);
-        table.setName(ed.getRelationName());
+    private Table createTable(EntityDescriptor entityDescriptor) {
+        Table table = new Table(entityDescriptor);
+        table.setName(entityDescriptor.getRelationName());
 
-        if (getDatabase(ed.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)
-            && !Strings.areEqual(ed.getRelationName(), ed.getRelationName().toLowerCase())) {
+        if (getDatabase(entityDescriptor.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)
+            && !Strings.areEqual(entityDescriptor.getRelationName(), entityDescriptor.getRelationName().toLowerCase())) {
             OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
                          + " This might lead to trouble with the type of DBMS you are using!",
-                         ed.getType().getName(),
-                         ed.getRelationName());
+                         entityDescriptor.getType().getName(),
+                         entityDescriptor.getRelationName());
         }
 
-        collectColumns(table, ed);
-        collectKeys(table, ed);
+        collectColumns(table, entityDescriptor);
+        collectKeys(table, entityDescriptor);
         applyColumnRenamings(table);
 
         return table;
@@ -229,42 +230,66 @@ public class Schema implements Startable, Initializable {
         }
     }
 
-    private void applyRenaming(Config renamedColumns, TableColumn col) {
-        if (renamedColumns != null && renamedColumns.hasPath(col.getName())) {
-            col.setOldName(renamedColumns.getString(col.getName()));
+    private void applyRenaming(Config renamedColumns, TableColumn tableColumn) {
+        if (renamedColumns != null && renamedColumns.hasPath(tableColumn.getName())) {
+            tableColumn.setOldName(renamedColumns.getString(tableColumn.getName()));
         }
     }
 
-    private void collectKeys(Table table, EntityDescriptor ed) {
-        ed.getAnnotations(Index.class).forEach(index -> parseIndexAnnotation(table, ed, index));
+    private void collectKeys(Table table, EntityDescriptor entityDescriptor) {
+        Set<String> seenIndices = new HashSet<>();
+        entityDescriptor.getAnnotations(Index.class)
+          .filter(index -> deduplicateByName(index, seenIndices))
+          .filter(this::skipParentIndexSuppressions)
+          .forEach(index -> parseIndexAnnotation(table, entityDescriptor, index));
     }
 
-    private void parseIndexAnnotation(Table table, EntityDescriptor ed, Index index) {
+    /**
+     * Skips indices which have already been defined by a more concrete class.
+     * <p>
+     * This permits entities to overwrite indices defined by their parent entities.
+     *
+     * @param index       the index to check
+     * @param seenIndices the set of seen index names
+     * @return <tt>true</tt> if the name has to been seen yet, <tt>false</tt> otherwise
+     */
+    private boolean deduplicateByName(Index index, Set<String> seenIndices) {
+        return seenIndices.add(index.name());
+    }
+
+    /**
+     * Filters indices without any columns.
+     * <p>
+     * Such indices are used to suppress an index defined by a parent entity.
+     *
+     * @param index the index to check
+     * @return <tt>true</tt> if this is a valid index, <tt>false</tt> if this is a suppression index without columns
+     */
+    private boolean skipParentIndexSuppressions(Index index) {
+        return index.columns().length > 0;
+    }
+
+    private void parseIndexAnnotation(Table table, EntityDescriptor entityDescriptor, Index index) {
         Key key = new Key();
         key.setName(index.name());
 
         for (int i = 0; i < index.columns().length; i++) {
             String name = index.columns()[i];
-            Property property = ed.findProperty(name);
+            Property property = entityDescriptor.findProperty(name);
             if (property != null) {
                 name = property.getPropertyName();
             } else {
                 OMA.LOG.WARN("The index %s for type %s (%s) references an unknown column: %s",
                              index.name(),
-                             ed.getType().getName(),
-                             ed.getRelationName(),
+                             entityDescriptor.getType().getName(),
+                             entityDescriptor.getRelationName(),
                              name);
             }
             key.addColumn(i, name);
         }
 
         key.setUnique(index.unique());
-
-        // Only add the key if the name isn't occupied already (indices are inherited from parent classes).
-        // Using this approach, indices can be "overwritten" by subclasses.
-        if (table.getKeys().stream().map(Key::getName).noneMatch(name -> Strings.areEqual(name, key.getName()))) {
-            table.getKeys().add(key);
-        }
+        table.getKeys().add(key);
     }
 
     private void collectColumns(Table table, EntityDescriptor ed) {

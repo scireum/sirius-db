@@ -5,7 +5,7 @@ To learn more about what SIRIUS is please refer to documentation of the [kernel 
 
 # SIRIUS Database Module
 
-Provides access to popular databases like **JDBC/SQL, MonoDB, Redis or Elasticsearch**.
+Provides access to popular databases like **JDBC/SQL, MongoDB, Redis or Elasticsearch**.
 
 For each database a *low level interface* is provided which combines configuration, monitoring,
 metrics and debugging with best performance possible.
@@ -21,9 +21,9 @@ at [sirius-biz](https://github.com/scireum/sirius-biz) which provides a lot of h
 * Database independent mapping framework which can be extended by user code
 * [Mixins](src/main/java/sirius/db/mixing) which can extend existing model classes and be enabled within customizations
 * Wrappers for efficient calls into JDBC databases, Redis and MongoDB with automatic connection management
-* Automatic schema and index generation for all managed databases - note that **sirius-biz** provides an
+* Automatic schema and index generation for all managed databases - note that **sirius-biz** provides a
   [UI](https://github.com/scireum/sirius-biz/tree/master/src/main/java/sirius/biz/jdbc) for this
-* Metrics and Monitoring of all database operations - note that **sirius-web** provides an 
+* Metrics and Monitoring of all database operations - note that **sirius-web** provides a 
   [UI](https://github.com/scireum/sirius-web/tree/master/src/main/java/sirius/web/health) to display these stats 
   and timings
 * Automatic reporting for slow or inefficient database opertions 
