@@ -14,7 +14,6 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.constraints.OneInField;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -30,9 +29,8 @@ class MongoOneInField extends OneInField<MongoConstraint> {
     public MongoConstraint build() {
         if (values.isEmpty()) {
             if (forceEmpty) {
-                return factory.notFilled(field);
+                return factory.or(factory.notFilled(field), factory.isEmptyArray(field));
             }
-
             return null;
         }
 
@@ -50,7 +48,7 @@ class MongoOneInField extends OneInField<MongoConstraint> {
         }
 
         clauses.add(factory.notFilled(field));
-        clauses.add(factory.eq(field, Collections.emptyList()));
+        clauses.add(factory.isEmptyArray(field));
 
         return factory.or(clauses);
     }

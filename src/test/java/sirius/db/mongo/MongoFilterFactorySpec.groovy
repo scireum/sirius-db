@@ -186,6 +186,8 @@ class MongoFilterFactorySpec extends BaseSpecification {
     }
 
     def "automatic 'and' works for fields"() {
+        setup:
+        mango.select(MangoTestEntity.class).delete()
         when:
         MangoTestEntity e1 = new MangoTestEntity()
         e1.setFirstname("AND")
@@ -242,5 +244,41 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
                                              QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")))
              .countIn(MangoTestEntity.class) == 1
+    }
+
+    def "isEmptyArray works on List fields"() {
+        setup:
+        mango.select(MangoTestEntity.class).delete()
+        when:
+        MangoTestEntity e1 = new MangoTestEntity()
+        e1.setFirstname("Peter")
+        e1.setLastname("Parker")
+        mango.update(e1)
+        MangoTestEntity e2 = new MangoTestEntity()
+        e2.setFirstname("Spider")
+        e2.setLastname("Man")
+        e2.getSuperPowers().add("Wallcrawling")
+        mango.update(e2)
+        then:
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.isEmptyArray(MangoTestEntity.SUPER_POWERS)).count() == 1
+    }
+
+    def "forceEmpty works on List fields"() {
+        setup:
+        mango.select(MangoTestEntity.class).delete()
+        when:
+        MangoTestEntity e1 = new MangoTestEntity()
+        e1.setFirstname("Peter")
+        e1.setLastname("Parker")
+        mango.update(e1)
+        MangoTestEntity e2 = new MangoTestEntity()
+        e2.setFirstname("Spider")
+        e2.setLastname("Man")
+        e2.getSuperPowers().add("Wallcrawling")
+        mango.update(e2)
+        then:
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.oneInField(MangoTestEntity.SUPER_POWERS, Collections.emptyList()).forceEmpty().build()).count() == 1
     }
 }
