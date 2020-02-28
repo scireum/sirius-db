@@ -50,6 +50,13 @@ public abstract class BaseEntity<I> extends Mixable {
     protected Map<Property, Object> persistedData = Maps.newHashMap();
 
     /**
+     * Contains the unique id of the entity.
+     * <p>
+     * Subclasses need to create a field with the name {@code id} and the type {@code <I>}.
+     */
+    public static final Mapping ID = Mapping.named("id");
+
+    /**
      * Contains the constant used to mark a new (unsaved) entity.
      */
     public static final String NEW = "new";

@@ -33,11 +33,10 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     protected static Elastic elastic;
 
     /**
-     * Contains the ID which is auto-generated when inserting a new entity into Elasticsearch.
+     * Contains the {@link #ID} which is auto-generated when inserting a new entity into Elasticsearch.
      * <p>
      * It is {@link NullAllowed} as it is filled during the update but after the save checkes have completed.
      */
-    public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     private String id;
 

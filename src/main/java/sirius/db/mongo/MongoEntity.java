@@ -26,11 +26,10 @@ import sirius.kernel.di.std.Part;
 public abstract class MongoEntity extends BaseEntity<String> {
 
     /**
-     * Contains the id of the entity.
+     * Contains the {@link #ID} of the entity.
      * <p>
      * This is declared as null allowed, as the id is generated after the before save checks have been executed.
      */
-    public static final Mapping ID = Mapping.named("id");
     @NullAllowed
     protected String id;
 
