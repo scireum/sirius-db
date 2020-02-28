@@ -52,7 +52,7 @@ public abstract class BaseEntity<I> extends Mixable {
     /**
      * Contains the unique id of the entity.
      * <p>
-     * Subclasses need to create a field with the name {@code id} and the type {@code <I>}.
+     * The actual {@code id} field with corresponding {@code <I>} type is defined by the underlying implementations.
      */
     public static final Mapping ID = Mapping.named("id");
 
