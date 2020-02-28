@@ -12,7 +12,6 @@ import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import spock.lang.Stepwise
 
 import java.time.Duration
 
@@ -221,6 +220,20 @@ class OMASpec extends BaseSpecification {
         oma.tryUpdate(conflictingEntity)
         then:
         thrown(IntegrityConstraintFailedException)
+    }
+
+    def "wasCreated() works in OMA"() {
+        given:
+        SQLWasCreatedTestEntity e = new SQLWasCreatedTestEntity()
+        e.setValue("test123")
+        when:
+        oma.update(e)
+        then:
+        e.hasJustBeenCreated()
+        and:
+        oma.update(e)
+        then:
+        !e.hasJustBeenCreated()
     }
 
 }

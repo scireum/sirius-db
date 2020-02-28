@@ -269,6 +269,18 @@ public abstract class BaseEntity<I> extends Mixable {
     }
 
     /**
+     * Determines if the entity has just been created.
+     * <p>
+     * This only works if called from a {@link sirius.db.mixing.annotations.AfterSave} handler, as moments later the persisted
+     * data gets updated.
+     *
+     * @return <tt>true</tt> if the entity has just been written to the database, <tt>false</tt> otherwise
+     */
+    public boolean wasCreated() {
+        return isChanged(ID);
+    }
+
+    /**
      * Provides a boilerplate way of only executing a lambda if the referenced mapping has changed.
      * <p>
      * This is most probably useful for deciding if a check in a {@link sirius.db.mixing.annotations.BeforeSave}

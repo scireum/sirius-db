@@ -152,4 +152,17 @@ class MangoSpec extends BaseSpecification {
         thrown(HandledException)
     }
 
+    def "wasCreated() works in mango"() {
+        given:
+        MangoWasCreatedTestEntity e = new MangoWasCreatedTestEntity()
+        e.setValue("test123")
+        when:
+        mango.update(e)
+        then:
+        e.hasJustBeenCreated()
+        and:
+        mango.update(e)
+        then:
+        !e.hasJustBeenCreated()
+    }
 }
