@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixable;
 import sirius.kernel.di.std.Priorized;
 
@@ -18,6 +19,8 @@ import java.lang.annotation.Target;
 
 /**
  * Used to mark methods in {@link Mixable}s which will be called before an entity is saved.
+ * <p>
+ * If you need different logic for updated and newly created entities, use {@link BaseEntity#isNew()} in your method.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
