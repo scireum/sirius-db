@@ -162,7 +162,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
             failOnOverflow(result);
         });
 
-        // Restore limit in case the code abovechanged it.
+        // Restore limit in case the code above changed it.
         limit = originalLimit;
 
         return result;
