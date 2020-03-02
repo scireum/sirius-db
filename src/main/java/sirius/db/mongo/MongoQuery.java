@@ -139,7 +139,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     @Override
     public boolean exists() {
-        return finder.selectFields(MongoEntity.ID).singleIn(descriptor.getRelationName()).isPresent();
+       return finder.copyFilters().selectFields(MongoEntity.ID).singleIn(descriptor.getRelationName()).isPresent();
     }
 
     /**
