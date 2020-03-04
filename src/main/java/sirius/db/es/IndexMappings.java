@@ -105,6 +105,14 @@ public class IndexMappings implements Startable {
         return ElasticEntity.class.isAssignableFrom(ed.getType());
     }
 
+    private void determineRouting(EntityDescriptor ed) {
+        ed.getProperties()
+          .stream()
+          .filter(p -> p.getAnnotation(RoutedBy.class).isPresent())
+          .findFirst()
+          .ifPresent(p -> elastic.updateRouteTable(ed, p));
+    }
+
     protected void checkAndUpdateIndices() {
         if (!mixing.shouldExecuteSafeSchemaChanges()) {
             Elastic.LOG.INFO("Elastic is started without checking the database schema...");
@@ -174,14 +182,6 @@ public class IndexMappings implements Startable {
     private void createAliasForIndex(EntityDescriptor ed) {
         Elastic.LOG.FINE("Creating alias for index %s. ", elastic.determineIndex(ed));
         elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineAlias(ed));
-    }
-
-    private void determineRouting(EntityDescriptor ed) {
-        ed.getProperties()
-          .stream()
-          .filter(p -> p.getAnnotation(RoutedBy.class).isPresent())
-          .findFirst()
-          .ifPresent(p -> elastic.updateRouteTable(ed, p));
     }
 
     /**
