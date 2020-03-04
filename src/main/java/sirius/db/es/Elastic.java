@@ -43,9 +43,11 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -103,16 +105,28 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static Duration logQueryThreshold;
     private static long logQueryThresholdMillis = -1;
 
+    @ConfigValue("elasticsearch.suppressedRoutings")
+    private List<String> suppressedRoutings;
+    private Set<EntityDescriptor> suppressedRoutingsSet = new HashSet<>();
+
     private LowLevelClient client;
 
     protected Future readyFuture = new Future();
     protected Average callDuration = new Average();
     protected Counter numSlowQueries = new Counter();
-    protected Map<EntityDescriptor, Property> routeTable = new HashMap<>();
-    protected boolean dockerDetected = false;
+
+    private Map<EntityDescriptor, Property> routeTable = new HashMap<>();
+    private boolean dockerDetected = false;
 
     protected void updateRouteTable(EntityDescriptor ed, Property p) {
-        routeTable.put(ed, p);
+        if (suppressedRoutings != null && suppressedRoutings.contains(ed.getRelationName())) {
+            Elastic.LOG.INFO("Routing for %s (%s) is suppressed via 'elasticsearch.suppressedRoutings'...",
+                             ed.getRelationName(),
+                             ed.getType().getSimpleName());
+            suppressedRoutingsSet.add(ed);
+        } else {
+            routeTable.put(ed, p);
+        }
     }
 
     /**
@@ -434,24 +448,38 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected <E extends ElasticEntity> Optional<E> findEntity(Object id,
                                                                EntityDescriptor ed,
                                                                Function<String, Value> context) throws Exception {
-        String routing = context.apply(CONTEXT_ROUTING).getString();
-
-        if (routing == null && isRouted(ed)) {
-            LOG.WARN("Trying to FIND an entity of type '%s' with id '%s' without providing a routing! "
-                     + "This will most probably return an invalid result!\n%s",
-                     ed.getType().getName(),
-                     id,
-                     ExecutionPoint.snapshot());
-        }
-
-        JSONObject obj = getLowLevelClient().get(determineAlias(ed), id.toString(), routing, true);
-
+        JSONObject obj = getLowLevelClient().get(determineAlias(ed), id.toString(), determineRoutingForFind(id, ed, context), true);
         if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
             return Optional.empty();
         }
 
         E result = (E) make(ed, obj);
         return Optional.of(result);
+    }
+
+    private String determineRoutingForFind(Object id,
+                                           EntityDescriptor entityDescriptor,
+                                           Function<String, Value> context) {
+        if (isRoutingSuppressed(entityDescriptor)) {
+            return null;
+        }
+
+        String routing = context.apply(CONTEXT_ROUTING).getString();
+        if (routing == null && isRouted(entityDescriptor)) {
+            LOG.WARN("Trying to FIND an entity of type '%s' with id '%s' without providing a routing! "
+                     + "This will most probably return an invalid result!\n%s",
+                     entityDescriptor.getType().getName(),
+                     id,
+                     ExecutionPoint.snapshot());
+        } else if (routing != null && !isRouted(entityDescriptor)) {
+            LOG.WARN("Trying to FIND an unrouted entity of type '%s' with id '%s' while a routing! "
+                     + "This will most probably return an invalid result!\n%s",
+                     entityDescriptor.getType().getName(),
+                     id,
+                     ExecutionPoint.snapshot());
+        }
+
+        return routing;
     }
 
     /**
@@ -462,6 +490,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     public boolean isRouted(EntityDescriptor ed) {
         return routeTable.containsKey(ed);
+    /**
+     * Determines if the usage of the routing for the given descriptor has been suppressed.
+     * <p>
+     * Via the config list {@link #suppressedRoutings} (<tt>elasticsearch.suppressedRoutings</tt>) the usage of
+     * a routing field can entirely be disabled for all listed entities. This might be useful when migrating
+     * form an unrouted to a routed index or even if the routing is only feasible in some scenarios.
+     *
+     * @param entityDescriptor the descriptor of the entity to check
+     * @return <tt>true</tt> if routing for this descriptor has been explicitely suppressed, <tt>false</tt> otherwise
+     */
+    public boolean isRoutingSuppressed(EntityDescriptor entityDescriptor) {
+        return suppressedRoutingsSet.contains(entityDescriptor);
     }
 
     @SuppressWarnings("unchecked")
