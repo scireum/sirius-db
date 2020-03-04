@@ -777,7 +777,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a map of the hits as JSON with the document ID as the key
      */
     public Map<String, JSONObject> getRawHits() {
-        if (useScrolling()) {
+        if (response == null && useScrolling()) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
                             .withSystemErrorMessage("'getRawHits' not possible when scrolling")

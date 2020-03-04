@@ -51,6 +51,20 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     /**
+     * Creates a copy of this finder which contains the same filters as this one.
+     * <p>
+     * Note that neither any limit for the selected fields are copied.
+     *
+     * @return a copy of this filter object which contains the same filters. Note that the filters are still a copy,
+     * therefore modifying the filters of one object will not modify those of the other.
+     */
+    public Finder copyFilters() {
+        Finder newFinder = new Finder(mongo, database);
+        transferFilters(newFinder);
+        return newFinder;
+    }
+
+    /**
      * Limits the fields being returned to the given list.
      *
      * @param fieldsToReturn specified the list of fields to return

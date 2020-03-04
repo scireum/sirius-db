@@ -152,6 +152,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
         }
 
         // Install circuit breaker...
+        int originalLimit = limit;
         if (limit == 0) {
             limit = MAX_LIST_SIZE + 1;
         }
@@ -160,6 +161,9 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
             result.add(entity);
             failOnOverflow(result);
         });
+
+        // Restore limit in case the code above changed it.
+        limit = originalLimit;
 
         return result;
     }
