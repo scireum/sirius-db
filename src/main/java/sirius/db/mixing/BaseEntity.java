@@ -50,6 +50,13 @@ public abstract class BaseEntity<I> extends Mixable {
     protected Map<Property, Object> persistedData = Maps.newHashMap();
 
     /**
+     * Contains the unique id of the entity.
+     * <p>
+     * The actual {@code id} field with corresponding {@code <I>} type is defined by the underlying implementations.
+     */
+    public static final Mapping ID = Mapping.named("id");
+
+    /**
      * Contains the constant used to mark a new (unsaved) entity.
      */
     public static final String NEW = "new";
@@ -75,6 +82,8 @@ public abstract class BaseEntity<I> extends Mixable {
 
     /**
      * Determines if the entity is new (not yet written to the database).
+     * <p>
+     * This wont work in {@link sirius.db.mixing.annotations.AfterSave} handlers - use {@link #wasCreated()} instead.
      *
      * @return <tt>true</tt> if the entity has not been written to the database yes, <tt>false</tt> otherwise
      */
@@ -259,6 +268,18 @@ public abstract class BaseEntity<I> extends Mixable {
             }
         }
         return false;
+    }
+
+    /**
+     * Determines if the entity has just been created.
+     * <p>
+     * This only works if called from a {@link sirius.db.mixing.annotations.AfterSave} handler, as moments later the persisted
+     * data gets updated.
+     *
+     * @return <tt>true</tt> if the entity has just been written to the database, <tt>false</tt> otherwise
+     */
+    public boolean wasCreated() {
+        return isChanged(ID);
     }
 
     /**

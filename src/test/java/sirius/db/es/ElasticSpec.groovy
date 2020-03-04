@@ -9,6 +9,7 @@
 package sirius.db.es
 
 import sirius.db.mixing.OptimisticLockException
+import sirius.db.mongo.MangoWasCreatedTestEntity
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
@@ -116,4 +117,17 @@ class ElasticSpec extends BaseSpecification {
         notFound == null
     }
 
+    def "wasCreated() works in elastic"() {
+        given:
+        ElasticWasCreatedTestEntity e = new ElasticWasCreatedTestEntity()
+        e.setValue("test123")
+        when:
+        elastic.update(e)
+        then:
+        e.hasJustBeenCreated()
+        and:
+        elastic.update(e)
+        then:
+        !e.hasJustBeenCreated()
+    }
 }

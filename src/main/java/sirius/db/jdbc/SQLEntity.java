@@ -33,15 +33,12 @@ public abstract class SQLEntity extends BaseEntity<Long> {
     protected static OMA oma;
 
     /**
-     * Contains the unique ID of the entity.
+     * Contains the unique {@link #ID} of the entity.
      * <p>
      * This is automatically assigned by the database. Never assign manually a value unless you are totally aware
      * of what you're doing. Also you should not use this ID for external purposes (e.g. as customer number or
      * invoice number) as it cannot be changed.
-     * <p>
-     * This field is marked as transient as this column is automatically managed by the framework.
      */
-    public static final Mapping ID = Mapping.named("id");
     protected long id = NON_PERSISTENT_ENTITY_ID;
 
     @Transient
