@@ -110,6 +110,22 @@ class SmartQuerySpec extends BaseSpecification {
         result == true
     }
 
+    def "exists doesn't screw up the internals of the query"() {
+        given:
+        SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                                                  .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+        when:
+        def result = qry.exists()
+        then:
+        result == true
+        and:
+        qry.count() == 3
+        and:
+        qry.queryList().size() == 3
+        and:
+        qry.queryList().get(0).getTestNumber() == 1
+    }
+
     def "queryFirst returns the first entity"() {
         given:
         SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)

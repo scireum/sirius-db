@@ -152,6 +152,33 @@ class MangoSpec extends BaseSpecification {
         thrown(HandledException)
     }
 
+    def "MongoQuery.exists works as expected and leaves the query intact"() {
+        when:
+        mango.select(MangoListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 10; i++) {
+            def entityToCreate = new MangoListTestEntity()
+            entityToCreate.setCounter(i)
+            mango.update(entityToCreate)
+        }
+        and:
+        MongoQuery<MangoListTestEntity> query = mango.
+                select(MangoListTestEntity.class).
+                orderDesc(MangoListTestEntity.COUNTER)
+        then: "simple exists works"
+        query.exists() == true
+        and: "a count after an exists still yields all entities"
+        query.count() == 10
+        and: "a list after an exists still yields all entitiies"
+        query.queryList().size() == 10
+        and: "a list after an exists still yields all fields"
+        query.queryList().get(0).getCounter() == 9
+        and: "an exists with a filter also works"
+        mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 5).exists() == true
+        and: "an exists with a filter that yields an empty result works"
+        mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 50).exists() == false
+    }
+
     def "wasCreated() works in mango"() {
         given:
         MangoWasCreatedTestEntity e = new MangoWasCreatedTestEntity()
