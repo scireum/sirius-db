@@ -497,7 +497,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * <p>
      * Via the config list {@link #suppressedRoutings} (<tt>elasticsearch.suppressedRoutings</tt>) the usage of
      * a routing field can entirely be disabled for all listed entities. This might be useful when migrating
-     * form an unrouted to a routed index or even if the routing is only feasible in some scenarios.
+     * from an unrouted to a routed index or even if the routing is only feasible in some scenarios.
      *
      * @param entityDescriptor the descriptor of the entity to check
      * @return <tt>true</tt> if routing for this descriptor has been explicitely suppressed, <tt>false</tt> otherwise
