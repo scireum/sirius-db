@@ -485,11 +485,13 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines if the entity of the given descriptor requires a routing value.
      *
-     * @param ed the descriptor of the entity to check
+     * @param entityDescriptor the descriptor of the entity to check
      * @return <tt>true</tt> if a routing is required, <tt>false</tt> otherwise
      */
-    public boolean isRouted(EntityDescriptor ed) {
-        return routeTable.containsKey(ed);
+    public boolean isRouted(EntityDescriptor entityDescriptor) {
+        return routeTable.containsKey(entityDescriptor);
+    }
+
     /**
      * Determines if the usage of the routing for the given descriptor has been suppressed.
      * <p>
