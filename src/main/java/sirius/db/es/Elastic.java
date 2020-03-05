@@ -472,7 +472,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                      id,
                      ExecutionPoint.snapshot());
         } else if (routing != null && !isRouted(entityDescriptor)) {
-            LOG.WARN("Trying to FIND an unrouted entity of type '%s' with id '%s' while a routing! "
+            LOG.WARN("Trying to FIND an unrouted entity of type '%s' with id '%s' with a routing! "
                      + "This will most probably return an invalid result!\n%s",
                      entityDescriptor.getType().getName(),
                      id,
