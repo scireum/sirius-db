@@ -9,9 +9,7 @@
 package sirius.db.es
 
 import sirius.db.mixing.OptimisticLockException
-import sirius.db.mongo.MangoWasCreatedTestEntity
 import sirius.kernel.BaseSpecification
-import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
@@ -79,6 +77,72 @@ class ElasticSpec extends BaseSpecification {
         and:
         elastic.refresh(RoutedTestEntity.class)
         RoutedTestEntity notFound = elastic.find(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World")).
+                orElse(null)
+        then:
+        notFound == null
+    }
+
+    /**
+     * Note that this test only ensures that suppressing the routing works properly.
+     * <p>
+     * Production code should never mix routed and unrouted access on an entity and expect this to work
+     * (Normally this is also rejected and reported by the framework, unless the <tt>elasticsearch.suppressedRoutings</tt>
+     * is used).
+     */
+    def "update / find / delete works with suppressed routing"() {
+        when:
+        SuppressedRoutedTestEntity entity = new SuppressedRoutedTestEntity()
+        entity.setFirstname("Hello")
+        entity.setLastname("World")
+        entity.setAge(12)
+        elastic.update(entity)
+        and: "Performing a lookup with routing works"
+        elastic.refresh(SuppressedRoutedTestEntity.class)
+        SuppressedRoutedTestEntity loaded = elastic.
+                findOrFail(SuppressedRoutedTestEntity.class, entity.getId(), Elastic.routedBy("World"))
+        and: "Performing a lookup with an invalid routing works"
+        SuppressedRoutedTestEntity alsoLoaded = elastic.find(
+                SuppressedRoutedTestEntity.class,
+                entity.getId(),
+                Elastic.routedBy("XX_badRouting")).orElse(null)
+        then:
+        loaded.getFirstname() == "Hello"
+        loaded.getLastname() == "World"
+        loaded.getAge() == 12
+        and:
+        alsoLoaded.getFirstname() == "Hello"
+        alsoLoaded.getLastname() == "World"
+        alsoLoaded.getAge() == 12
+
+        and: "A query with a routing works"
+        elastic.
+                select(SuppressedRoutedTestEntity.class).
+                routing("World").
+                eq(SuppressedRoutedTestEntity.LASTNAME, "World").
+                exists()
+        and: "A query without a routing works"
+        elastic.
+                select(SuppressedRoutedTestEntity.class).
+                eq(SuppressedRoutedTestEntity.LASTNAME, "World").
+                exists()
+        and: "A query with an invalid routing works"
+        elastic.
+                select(SuppressedRoutedTestEntity.class).
+                routing("XXX").
+                eq(SuppressedRoutedTestEntity.LASTNAME, "World").
+                exists()
+
+        when: "Refresh still works"
+        SuppressedRoutedTestEntity refreshed = elastic.refreshOrFail(entity)
+        then:
+        refreshed.getFirstname() == "Hello"
+
+        when: "Delete works as expected"
+        elastic.delete(entity)
+        and:
+        elastic.refresh(RoutedTestEntity.class)
+        SuppressedRoutedTestEntity notFound = elastic.
+                find(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World")).
                 orElse(null)
         then:
         notFound == null

@@ -515,7 +515,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      */
     public ElasticQuery<E> routing(String value) {
-        this.routing = value;
+        if (!elastic.isRoutingSuppressed(descriptor)) {
+            this.routing = value;
+        }
         return this;
     }
 
@@ -621,7 +623,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject countResponse = client.count(elastic.determineAlias(descriptor), routing, buildSimplePayload());
         return countResponse.getLong(KEY_COUNT);
     }
-
+    
     private void checkRouting() {
         if (elastic.isRouted(descriptor)) {
             if (Strings.isEmpty(routing) && !unrouted) {
