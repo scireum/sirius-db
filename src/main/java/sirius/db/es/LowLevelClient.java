@@ -159,7 +159,8 @@ public class LowLevelClient {
      */
     public JSONObject delete(String index, String id, String routing, Long primaryTerm, Long seqNo)
             throws OptimisticLockException {
-        return performDelete().routing(routing)
+        return performDelete().withCustomErrorHandler(this::handleNotFoundAsResponse)
+                              .routing(routing)
                               .primaryTerm(primaryTerm)
                               .seqNo(seqNo)
                               .tryExecute(index + API_PREFIX_DOC + id)
