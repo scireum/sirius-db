@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -116,6 +117,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected Counter numSlowQueries = new Counter();
 
     private Map<EntityDescriptor, Property> routeTable = new HashMap<>();
+    private Map<EntityDescriptor, String> writeIndexTable = new ConcurrentHashMap<>();
     private boolean dockerDetected = false;
 
     protected void updateRouteTable(EntityDescriptor ed, Property p) {
@@ -235,7 +237,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
         String id = determineId(entity);
         JSONObject response =
-                getLowLevelClient().index(determineAlias(ed), id, determineRouting(ed, entity), null, null, data);
+                getLowLevelClient().index(determineWriteAlias(ed), id, determineRouting(ed, entity), null, null, data);
         entity.setId(id);
         if (ed.isVersioned()) {
             entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
@@ -270,7 +272,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return;
         }
 
-        JSONObject response = getLowLevelClient().index(determineAlias(ed),
+        JSONObject response = getLowLevelClient().index(determineWriteAlias(ed),
                                                         determineId(entity),
                                                         determineRouting(ed, entity),
                                                         determinePrimaryTerm(force, ed, entity),
@@ -336,13 +338,86 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Determines the alias for the currently active index for the given {@link EntityDescriptor}.
+     * Determines the alias for the currently active read index for the given {@link EntityDescriptor}.
      *
-     * @param ed the descriptor
+     * @param ed the descriptor of the entity to determine the read alias for
      * @return the alias of the currently active index
      */
-    protected String determineAlias(EntityDescriptor ed) {
+    public String determineReadAlias(EntityDescriptor ed) {
         return ed.getRelationName() + ACTIVE_ALIAS;
+    }
+
+    /**
+     * Determines the alias for the currently active write index for the given {@link EntityDescriptor}.
+     *
+     * @param ed the descriptor of the entity to determine the write alias for
+     * @return the alias of the currently active index
+     */
+    protected String determineWriteAlias(EntityDescriptor ed) {
+        return writeIndexTable.getOrDefault(ed, ed.getRelationName() + ACTIVE_ALIAS);
+    }
+
+    /**
+     * Resolves the effective index name being used for the given entity.
+     *
+     * @param ed the descriptor of the entity to determine the effective index for
+     * @return the effective index to which {@link #determineReadAlias(EntityDescriptor) the read alias} points
+     * @throws sirius.kernel.health.HandledException in case the alias setup failed andthe expected alias does
+     *                                               not exist
+     */
+    public String determineEffectiveIndex(EntityDescriptor ed) {
+        return getLowLevelClient().resolveIndexForAlias(determineReadAlias(ed))
+                                  .orElseThrow(() -> Exceptions.handle()
+                                                               .to(Elastic.LOG)
+                                                               .withSystemErrorMessage(
+                                                                       "There is no index present for the alias (%s) of entity '%s'",
+                                                                       determineReadAlias(ed),
+                                                                       ed.getType().getName())
+                                                               .handle());
+    }
+
+    /**
+     * Creates a new write index for the given entity and installs it into the {@link #writeIndexTable}.
+     * <p>
+     * This will also install the most current mappings into the newly created index.
+     *
+     * @param ed the entity descriptor of the entity to install a new write index for
+     */
+    public void createAndInstallWriteIndex(EntityDescriptor ed) {
+        String nextIndexName = indexMappings.determineNextIndexName(ed);
+        indexMappings.createMapping(ed, nextIndexName, IndexMappings.DynamicMapping.STRICT);
+        writeIndexTable.put(ed, nextIndexName);
+    }
+
+    /**
+     * Makes the current write index of the given entity also the read index by moving the {@link #ACTIVE_ALIAS}.
+     * <p>
+     * This will also remove the write-redirection by clearing the entry in the {@link #writeIndexTable} as
+     * the indices / aliases are now the same.
+     *
+     * @param ed the entity descriptor for which the write index should also become the new read index / alias
+     */
+    public void commitWriteIndex(EntityDescriptor ed) {
+        String writeIndexName = writeIndexTable.get(ed);
+        if (writeIndexName == null) {
+            throw Exceptions.createHandled()
+                            .withSystemErrorMessage("These is no write index available for %s", ed.getType().getName())
+                            .handle();
+        }
+
+        getLowLevelClient().createOrMoveAlias(determineReadAlias(ed), writeIndexName).toJSONString();
+        writeIndexTable.remove(ed);
+    }
+
+    /**
+     * Clears the current write index of the given entity.
+     * <p>
+     * Note that the underlying index will <b>NOT</b> be deleted. The {@link ESIndexCommand} can be used to achieve this.
+     *
+     * @param ed the entity descriptor for which the write index should be cleared
+     */
+    public void rollbackWriteIndex(EntityDescriptor ed) {
+        writeIndexTable.remove(ed);
     }
 
     /**
@@ -396,7 +471,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     @Override
     protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        getLowLevelClient().delete(determineAlias(ed),
+        getLowLevelClient().delete(determineWriteAlias(ed),
                                    entity.getId(),
                                    determineRouting(ed, entity),
                                    determinePrimaryTerm(force, ed, entity),
@@ -448,7 +523,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected <E extends ElasticEntity> Optional<E> findEntity(Object id,
                                                                EntityDescriptor ed,
                                                                Function<String, Value> context) throws Exception {
-        JSONObject obj = getLowLevelClient().get(determineAlias(ed), id.toString(), determineRoutingForFind(id, ed, context), true);
+        JSONObject obj = getLowLevelClient().get(determineReadAlias(ed),
+                                                 id.toString(),
+                                                 determineRoutingForFind(id, ed, context),
+                                                 true);
         if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
             return Optional.empty();
         }
@@ -561,7 +639,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @param <E>  the concrete type which should be refreshed
      */
     public <E extends ElasticEntity> void refresh(Class<E> type) {
-        getLowLevelClient().refresh(determineIndex(mixing.getDescriptor(type)));
+        getLowLevelClient().refresh(determineWriteAlias(mixing.getDescriptor(type)));
     }
 
     @Override

@@ -145,7 +145,7 @@ public class IndexMappings implements Startable {
                              ed.getType().getSimpleName());
 
             createMapping(ed,
-                          addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed),
+                          addedAlias ? elastic.determineReadAlias(ed) : elastic.determineIndex(ed),
                           DynamicMapping.STRICT);
             if (!addedAlias) {
                 // we couldn't setup the alias in the first place as the index didn't exist
@@ -164,7 +164,7 @@ public class IndexMappings implements Startable {
     }
 
     private boolean setupAlias(EntityDescriptor ed) {
-        if (elastic.getLowLevelClient().aliasExists(elastic.determineAlias(ed))) {
+        if (elastic.getLowLevelClient().aliasExists(elastic.determineReadAlias(ed))) {
             Elastic.LOG.FINE("Alias for mapping '%s' already present.", elastic.determineTypeName(ed));
         } else {
             if (elastic.getLowLevelClient().indexExists(elastic.determineIndex(ed))) {
@@ -181,7 +181,8 @@ public class IndexMappings implements Startable {
 
     private void createAliasForIndex(EntityDescriptor ed) {
         Elastic.LOG.FINE("Creating alias for index %s. ", elastic.determineIndex(ed));
-        elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineAlias(ed));
+        elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineReadAlias(ed));
+    }
     }
 
     /**
