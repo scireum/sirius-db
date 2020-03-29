@@ -111,18 +111,7 @@ class RequestBuilder {
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
         Watch w = Watch.start();
         try (Operation op = new Operation(() -> "Elastic: " + method + " " + uri, Duration.ofSeconds(30))) {
-            if (Elastic.LOG.isFINE()) {
-                Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
-                                                                           MAX_CONTENT_LONG_LENGTH));
-            }
-
-            Request request = new Request(method, uri);
-            request.addParameters(determineParams());
-            NStringEntity requestContent =
-                    buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON))
-                                  .orElse(null);
-            request.setEntity(requestContent);
-
+            Request request = setupRequest(uri);
             responseEntity = restClient.performRequest(request).getEntity();
             return this;
         } catch (ResponseException e) {
@@ -148,6 +137,20 @@ class RequestBuilder {
                                     ExecutionPoint.snapshot().toString());
             }
         }
+    }
+
+    private Request setupRequest(String uri) {
+        if (Elastic.LOG.isFINE()) {
+            Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
+                                                                       MAX_CONTENT_LONG_LENGTH));
+        }
+
+        Request request = new Request(method, uri);
+        request.addParameters(determineParams());
+        NStringEntity requestContent =
+                buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON)).orElse(null);
+        request.setEntity(requestContent);
+        return request;
     }
 
     private RequestBuilder handleResponseException(ResponseException e) throws OptimisticLockException {
@@ -202,16 +205,7 @@ class RequestBuilder {
     }
 
     protected void executeAsync(String uri, Consumer<Response> onSuccess, Consumer<Exception> onFailure) {
-        if (Elastic.LOG.isFINE()) {
-            Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
-                                                                       MAX_CONTENT_LONG_LENGTH));
-        }
-
-        Request request = new Request(method, uri);
-        request.addParameters(determineParams());
-        NStringEntity requestContent =
-                buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON)).orElse(null);
-        request.setEntity(requestContent);
+        Request request = setupRequest(uri);
 
         restClient.performRequestAsync(request, new ResponseListener() {
             @Override
