@@ -11,20 +11,23 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
+import org.apache.http.entity.StringEntity;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
-import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.commons.Explain;
-import sirius.kernel.di.std.Part;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -41,13 +44,15 @@ public class LowLevelClient {
     private static final String API_SEARCH = "/_search";
     private static final String API_DELETE_BY_QUERY = "/_delete_by_query";
     private static final String API_PREFIX_DOC = "/_doc/";
+    private static final String API_REFRESH = "/_refresh";
 
     private static final String PARAM_INDEX = "index";
+    private static final String PARAM_ALIAS = "alias";
+    private static final String PARAM_ACTIONS = "actions";
+    private static final String ACTON_ADD = "add";
+    private static final String ACTION_REMOVE = "remove";
 
     private RestClient restClient;
-
-    @Part
-    private static Elastic elastic;
 
     /**
      * Creates a new client based on the given REST client which handle load balancing and connection management.
@@ -209,19 +214,19 @@ public class LowLevelClient {
     /**
      * Executes a async reindex request.
      *
-     * @param ed           the current entitydescriptor that should be reindexd
-     * @param newIndexName the name of the index in which the documents shoulds be reindex
-     * @param onSuccess    is called if the request is successfully finished
-     * @param onFailure    is called if a exception occurs while performing the request
+     * @param sourceIndexName      the source index to read from
+     * @param destinationIndexName the name of the index in which the documents shoulds be reindexed
+     * @param onSuccess            is called if the request is successfully finished
+     * @param onFailure            is called if a exception occurs while performing the request
      */
-    public void reindex(EntityDescriptor ed,
-                        String newIndexName,
-                        Consumer<Response> onSuccess,
-                        Consumer<Exception> onFailure) {
+    public void reindex(String sourceIndexName,
+                        String destinationIndexName,
+                        @Nullable Consumer<Response> onSuccess,
+                        @Nullable Consumer<HandledException> onFailure) {
         performPost().data(new JSONObject().fluentPut("source",
-                                                      new JSONObject().fluentPut(PARAM_INDEX,
-                                                                                 elastic.determineAlias(ed)))
-                                           .fluentPut("dest", new JSONObject().fluentPut(PARAM_INDEX, newIndexName)))
+                                                      new JSONObject().fluentPut(PARAM_INDEX, sourceIndexName))
+                                           .fluentPut("dest",
+                                                      new JSONObject().fluentPut(PARAM_INDEX, destinationIndexName)))
                      .executeAsync(API_REINDEX, onSuccess, onFailure);
     }
 
@@ -263,58 +268,69 @@ public class LowLevelClient {
     }
 
     /**
-     * Returns all indices which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}.
+     * Returns the actual index for the given alias
      *
-     * @param ed the entity descriptor to check
-     * @return a list of all indices which hold the {@link Elastic#ACTIVE_ALIAS} for the given {@link EntityDescriptor}
+     * @param aliasName the alias the resolve
+     * @return the index name to which this alias points or an empty optional if the alias is unknown
+     * @throws HandledException if the alias points to more than one index as this pattern is unused by
+     *                          out schema evolution tools (which always redirects an index access via an alias).
      */
-    public List<String> getIndicesForAlias(EntityDescriptor ed) {
+    public Optional<String> resolveIndexForAlias(String aliasName) {
         List<String> indexNames = new ArrayList<>();
-        performGet().execute(API_ALIAS + "/" + elastic.determineAlias(ed))
-                    .response()
-                    .forEach((indexName, info) -> indexNames.add(indexName));
-        return indexNames;
-    }
+        performGet().withCustomErrorHandler(error -> {
+            // We cannot use handleNotFoundAsResponse here, as we have to return a truly empty
+            // JSON object, otherwise the error and its status code will be reported as indices...
+            if (error.getResponse().getStatusLine().getStatusCode() == 404) {
+                return new StringEntity("{}", StandardCharsets.UTF_8);
+            } else {
+                return null;
+            }
+        }).execute(API_ALIAS + "/" + aliasName).response().forEach((indexName, info) -> indexNames.add(indexName));
 
-    /**
-     * Performs an atomic move operation where the alias, which marks the currently active index (see {@link Elastic#ACTIVE_ALIAS}),
-     * for the given descriptor is transferred to the given destination.
-     *
-     * @param ed          the entity descriptor
-     * @param destination the index that should be marked with the given alias
-     * @return the reponse of the call
-     */
-    public JSONObject moveActiveAlias(EntityDescriptor ed, String destination) {
-        String alias = elastic.determineAlias(ed);
+        if (indexNames.isEmpty()) {
+            return Optional.empty();
+        }
 
-        if (!indexExists(alias)) {
+        if (indexNames.size() > 1) {
             throw Exceptions.handle()
-                            .withSystemErrorMessage("There exists no index which holds the alias '%s'", alias)
+                            .to(Elastic.LOG)
+                            .withSystemErrorMessage("The alias %s points to more than one index: %s",
+                                                    aliasName,
+                                                    Strings.join(indexNames, ", "))
                             .handle();
         }
 
+        return Optional.of(indexNames.get(0));
+    }
+
+    /**
+     * Performs a move operation of the given alias to point to the given destination.
+     * <p>
+     * This will also atomically remove the previous destination if the alias did already exist.
+     * </p>
+     *
+     * @param alias       the alias to create or update
+     * @param destination the index to which the alias should point
+     * @return the reponse of the call
+     */
+    public JSONObject createOrMoveAlias(String alias, String destination) {
         if (!indexExists(destination)) {
             throw Exceptions.handle()
                             .withSystemErrorMessage("There exists no index with name '%s'", destination)
                             .handle();
         }
 
-        List<String> indices = elastic.getLowLevelClient().getIndicesForAlias(ed);
-        if (indices.size() > 1) {
-            throw Exceptions.handle()
-                            .withSystemErrorMessage(
-                                    "More than one index is referenced by alias '%s'. Cannot move alias to '%'",
-                                    alias,
-                                    destination)
-                            .handle();
-        }
+        JSONArray actions = new JSONArray();
 
-        JSONObject remove = new JSONObject().fluentPut(PARAM_INDEX, indices.get(0)).fluentPut("alias", alias);
-        JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut("alias", alias);
-        JSONArray actions = new JSONArray().fluentAdd(new JSONObject().fluentPut("remove", remove))
-                                           .fluentAdd(new JSONObject().fluentPut("add", add));
+        JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut(PARAM_ALIAS, alias);
+        actions.add(new JSONObject().fluentPut(ACTON_ADD, add));
 
-        return performPost().data(new JSONObject().fluentPut("actions", actions)).execute(API_ALIASES).response();
+        resolveIndexForAlias(alias).ifPresent(oldIndex -> {
+            JSONObject remove = new JSONObject().fluentPut(PARAM_INDEX, oldIndex).fluentPut(PARAM_ALIAS, alias);
+            actions.add(new JSONObject().fluentPut(ACTION_REMOVE, remove));
+        });
+
+        return performPost().data(new JSONObject().fluentPut(PARAM_ACTIONS, actions)).execute(API_ALIASES).response();
     }
 
     /**
@@ -469,6 +485,7 @@ public class LowLevelClient {
      * @param index the index which should be refreshed
      */
     public void refresh(String index) {
-        performPost().execute(index + "/_refresh").response();
+        performPost().execute(index + API_REFRESH).response();
+    }
     }
 }
