@@ -487,5 +487,13 @@ public class LowLevelClient {
     public void refresh(String index) {
         performPost().execute(index + API_REFRESH).response();
     }
+
+    /**
+     * Entirely wipes the given index and all its data.
+     *
+     * @param index the index to delete
+     */
+    public void deleteIndex(String index) {
+        performDelete().execute(index).response();
     }
 }
