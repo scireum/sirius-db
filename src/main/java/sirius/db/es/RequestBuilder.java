@@ -28,8 +28,10 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 import sirius.kernel.health.Microtiming;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
@@ -204,20 +206,35 @@ class RequestBuilder {
         }
     }
 
-    protected void executeAsync(String uri, Consumer<Response> onSuccess, Consumer<Exception> onFailure) {
+    protected void executeAsync(String uri,
+                                @Nullable Consumer<Response> onSuccess,
+                                @Nullable Consumer<HandledException> onFailure) {
         Request request = setupRequest(uri);
 
         restClient.performRequestAsync(request, new ResponseListener() {
             @Override
             public void onSuccess(Response response) {
-                onSuccess.accept(response);
+                if (onSuccess != null) {
+                    onSuccess.accept(response);
+                }
             }
 
             @Override
             public void onFailure(Exception exception) {
-                onFailure.accept(exception);
+                HandledException handledException = handleAsyncFailure(exception, uri);
+                if (onFailure != null) {
+                    onFailure.accept(handledException);
+                }
             }
         });
+    }
+
+    private HandledException handleAsyncFailure(Exception exception, String uri) {
+        return Exceptions.handle()
+                         .to(Elastic.LOG)
+                         .error(exception)
+                         .withSystemErrorMessage("Am unexpected error occured when invoking '%s': %s (%s)", uri)
+                         .handle();
     }
 
     protected JSONObject extractErrorJSON(ResponseException e) {
