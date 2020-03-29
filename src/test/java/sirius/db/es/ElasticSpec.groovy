@@ -8,7 +8,7 @@
 
 package sirius.db.es
 
-import jdk.internal.org.objectweb.asm.Handle
+
 import sirius.db.mixing.Mixing
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
@@ -225,36 +225,28 @@ class ElasticSpec extends BaseSpecification {
         and: "Deleting the original entity doesn't change the read index"
         elastic.delete(testEntity)
         elastic.refresh(ElasticTestEntity.class)
-        boolean originalTestEntityStillExists = elastic.
-                find(ElasticTestEntity.class, testEntity.getId()).
-                isPresent()
-        and: "Creating another entity is not visible in the read index"
+        then:
+        elastic.find(ElasticTestEntity.class, testEntity.getId()).isPresent()
+
+        when: "Creating another entity is not visible in the read index"
         ElasticTestEntity secondTestEntity = new ElasticTestEntity()
         secondTestEntity.setFirstname("Second")
         secondTestEntity.setLastname("Entity")
         secondTestEntity.setAge(13)
         elastic.update(secondTestEntity)
         elastic.refresh(ElasticTestEntity.class)
-        boolean secondEntityNotVisbleYet = !elastic.
-                find(ElasticTestEntity.class, secondTestEntity.getId()).
-                isPresent()
-        and: "Moving the read aliasto the write index..."
+        then:
+        !elastic.find(ElasticTestEntity.class, secondTestEntity.getId()).isPresent()
+
+        when: "Moving the read alias to the write index..."
         elastic.commitWriteIndex(mixing.getDescriptor(ElasticTestEntity.class))
-        and: "...we then see the second entity"
-        boolean secondEntityBecameVisible = elastic.
-                find(ElasticTestEntity.class, secondTestEntity.getId()).
-                isPresent()
-        and: "...and deleting it is also directly visible"
+        then: "...we then see the second entity"
+        elastic.find(ElasticTestEntity.class, secondTestEntity.getId()).isPresent()
+
+        when: "...and deleting it is also directly visible"
         elastic.delete(secondTestEntity)
         elastic.refresh(ElasticTestEntity.class)
-        then:
-        originalTestEntityStillExists == true
-        and:
-        secondEntityNotVisbleYet == true
-        and:
-        secondEntityBecameVisible == true
-        and: "The first entity is no longer visible as it has never been written into the write index"
-        !elastic.find(ElasticTestEntity.class, testEntity.getId()).
-                isPresent()
+        then: "The first entity is no longer visible as it has never been written into the write index"
+        !elastic.find(ElasticTestEntity.class, testEntity.getId()).isPresent()
     }
 }
