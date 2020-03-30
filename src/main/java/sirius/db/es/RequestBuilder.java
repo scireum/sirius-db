@@ -235,7 +235,7 @@ class RequestBuilder {
         return Exceptions.handle()
                          .to(Elastic.LOG)
                          .error(exception)
-                         .withSystemErrorMessage("Am unexpected error occured when invoking '%s': %s (%s)", uri)
+                         .withSystemErrorMessage("An unexpected error occurred when invoking '%s': %s (%s)", uri)
                          .handle();
     }
 
