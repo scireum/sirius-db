@@ -87,6 +87,7 @@ public class ESIndexCommand implements Command {
             String indexName = args.at(1).asString();
             if (!"YES".equals(args.at(2).asString())) {
                 output.apply("Not going to delete %s - append YES as 3rd parameter!", indexName);
+                return false;
             }
             elastic.getLowLevelClient().deleteIndex(indexName);
             output.line("The index has been deleted...");
