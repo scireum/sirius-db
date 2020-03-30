@@ -362,7 +362,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      *
      * @param ed the descriptor of the entity to determine the effective index for
      * @return the effective index to which {@link #determineReadAlias(EntityDescriptor) the read alias} points
-     * @throws sirius.kernel.health.HandledException in case the alias setup failed andthe expected alias does
+     * @throws sirius.kernel.health.HandledException in case the alias setup failed and the expected alias does
      *                                               not exist
      */
     public String determineEffectiveIndex(EntityDescriptor ed) {

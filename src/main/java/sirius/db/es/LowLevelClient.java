@@ -55,7 +55,7 @@ public class LowLevelClient {
     private RestClient restClient;
 
     /**
-     * Creates a new client based on the given REST client which handle load balancing and connection management.
+     * Creates a new client based on the given REST client which handles load balancing and connection management.
      *
      * @param restClient the underlying REST client to use
      */
