@@ -41,13 +41,13 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -106,9 +106,21 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static Duration logQueryThreshold;
     private static long logQueryThresholdMillis = -1;
 
+    /**
+     * Determines if the effective routing should be computed for a read or an write access.
+     * <p>
+     * This needs to be specified as we support that the routing suppression of the read index is
+     * different from the routing suppression of the write index. Thus one can migrate from an
+     * unrouted index to a routed one and vice versa.
+     */
+    enum RoutingAccessMode {
+        READ, WRITE
+    }
+
     @ConfigValue("elasticsearch.suppressedRoutings")
     private List<String> suppressedRoutings;
-    private Set<EntityDescriptor> suppressedRoutingsSet = new HashSet<>();
+    private Map<EntityDescriptor, EnumSet<RoutingAccessMode>> suppressedRoutingsMap = new HashMap<>();
+    private static final EnumSet<RoutingAccessMode> NO_SUPPRESSION = EnumSet.noneOf(RoutingAccessMode.class);
 
     private LowLevelClient client;
 
@@ -125,10 +137,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             Elastic.LOG.INFO("Routing for %s (%s) is suppressed via 'elasticsearch.suppressedRoutings'...",
                              ed.getRelationName(),
                              ed.getType().getSimpleName());
-            suppressedRoutingsSet.add(ed);
-        } else {
-            routeTable.put(ed, p);
+            suppressedRoutingsMap.put(ed, EnumSet.of(RoutingAccessMode.READ, RoutingAccessMode.WRITE));
         }
+
+        routeTable.put(ed, p);
     }
 
     /**
@@ -236,8 +248,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         toJSON(ed, entity, data);
 
         String id = determineId(entity);
-        JSONObject response =
-                getLowLevelClient().index(determineWriteAlias(ed), id, determineRouting(ed, entity), null, null, data);
+        JSONObject response = getLowLevelClient().index(determineWriteAlias(ed),
+                                                        id,
+                                                        determineRouting(ed, entity, RoutingAccessMode.WRITE),
+                                                        null,
+                                                        null,
+                                                        data);
         entity.setId(id);
         if (ed.isVersioned()) {
             entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
@@ -253,7 +269,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return the routing value to use
      */
     @Nullable
-    protected String determineRouting(EntityDescriptor ed, ElasticEntity entity) {
+    protected String determineRouting(EntityDescriptor ed, ElasticEntity entity, RoutingAccessMode accessMode) {
+        if (isRoutingSuppressed(ed, accessMode)) {
+            return null;
+        }
+
         Property property = routeTable.get(ed);
 
         if (property == null) {
@@ -274,7 +294,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
         JSONObject response = getLowLevelClient().index(determineWriteAlias(ed),
                                                         determineId(entity),
-                                                        determineRouting(ed, entity),
+                                                        determineRouting(ed, entity, RoutingAccessMode.WRITE),
                                                         determinePrimaryTerm(force, ed, entity),
                                                         determineSeqNo(force, ed, entity),
                                                         data);
@@ -473,7 +493,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
         getLowLevelClient().delete(determineWriteAlias(ed),
                                    entity.getId(),
-                                   determineRouting(ed, entity),
+                                   determineRouting(ed, entity, RoutingAccessMode.WRITE),
                                    determinePrimaryTerm(force, ed, entity),
                                    determineSeqNo(force, ed, entity));
     }
@@ -538,18 +558,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private String determineRoutingForFind(Object id,
                                            EntityDescriptor entityDescriptor,
                                            Function<String, Value> context) {
-        if (isRoutingSuppressed(entityDescriptor)) {
+        if (isRoutingSuppressed(entityDescriptor, RoutingAccessMode.READ)) {
             return null;
         }
 
         String routing = context.apply(CONTEXT_ROUTING).getString();
-        if (routing == null && isRouted(entityDescriptor)) {
+        if (routing == null && isRouted(entityDescriptor, RoutingAccessMode.READ)) {
             LOG.WARN("Trying to FIND an entity of type '%s' with id '%s' without providing a routing! "
                      + "This will most probably return an invalid result!\n%s",
                      entityDescriptor.getType().getName(),
                      id,
                      ExecutionPoint.snapshot());
-        } else if (routing != null && !isRouted(entityDescriptor)) {
+        } else if (routing != null && !isRouted(entityDescriptor, RoutingAccessMode.READ)) {
             LOG.WARN("Trying to FIND an unrouted entity of type '%s' with id '%s' with a routing! "
                      + "This will most probably return an invalid result!\n%s",
                      entityDescriptor.getType().getName(),
@@ -564,10 +584,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * Determines if the entity of the given descriptor requires a routing value.
      *
      * @param entityDescriptor the descriptor of the entity to check
+     * @param accessMode       the access mode for which the routing should be checked
      * @return <tt>true</tt> if a routing is required, <tt>false</tt> otherwise
      */
-    public boolean isRouted(EntityDescriptor entityDescriptor) {
-        return routeTable.containsKey(entityDescriptor);
+    protected boolean isRouted(EntityDescriptor entityDescriptor, RoutingAccessMode accessMode) {
+        return !isRoutingSuppressed(entityDescriptor, accessMode) && routeTable.containsKey(entityDescriptor);
     }
 
     /**
@@ -578,10 +599,28 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * from an unrouted to a routed index or even if the routing is only feasible in some scenarios.
      *
      * @param entityDescriptor the descriptor of the entity to check
+     * @param accessMode       the access mode for which the suppression should be checked
      * @return <tt>true</tt> if routing for this descriptor has been explicitely suppressed, <tt>false</tt> otherwise
      */
-    public boolean isRoutingSuppressed(EntityDescriptor entityDescriptor) {
-        return suppressedRoutingsSet.contains(entityDescriptor);
+    protected boolean isRoutingSuppressed(EntityDescriptor entityDescriptor, RoutingAccessMode accessMode) {
+        return suppressedRoutingsMap.getOrDefault(entityDescriptor, NO_SUPPRESSION).contains(accessMode);
+    }
+
+    protected void updateRoutingSuppression(EntityDescriptor entityDescriptor,
+                                            @Nullable EnumSet<RoutingAccessMode> modes) {
+        if (modes == null) {
+            if (suppressedRoutings.contains(entityDescriptor.getRelationName())) {
+                modes = EnumSet.of(RoutingAccessMode.READ, RoutingAccessMode.WRITE);
+            } else {
+                modes = NO_SUPPRESSION;
+            }
+        }
+
+        if (modes.isEmpty()) {
+            suppressedRoutingsMap.remove(entityDescriptor);
+        } else {
+            suppressedRoutingsMap.put(entityDescriptor, modes);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -589,7 +628,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected <E extends ElasticEntity> Optional<E> findEntity(E entity) {
         return find((Class<E>) entity.getClass(),
                     entity.getId(),
-                    routedBy(determineRouting(entity.getDescriptor(), entity)));
+                    routedBy(determineRouting(entity.getDescriptor(), entity, RoutingAccessMode.READ)));
     }
 
     /**
