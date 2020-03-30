@@ -112,7 +112,7 @@ class RequestBuilder {
 
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
         Watch w = Watch.start();
-        try (Operation op = new Operation(() -> "Elastic: " + method + " " + uri, Duration.ofSeconds(30))) {
+        try (Operation op = new Operation(() -> Strings.apply("Elastic: %s %s", method, uri), Duration.ofSeconds(30))) {
             Request request = setupRequest(uri);
             responseEntity = restClient.performRequest(request).getEntity();
             return this;
@@ -143,8 +143,10 @@ class RequestBuilder {
 
     private Request setupRequest(String uri) {
         if (Elastic.LOG.isFINE()) {
-            Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
-                                                                       MAX_CONTENT_LONG_LENGTH));
+            Elastic.LOG.FINE("%s %s: %s",
+                             method,
+                             uri,
+                             Strings.limit(buildContent().orElse("-"), MAX_CONTENT_LONG_LENGTH));
         }
 
         Request request = new Request(method, uri);
