@@ -27,25 +27,21 @@ class ReindexSpec extends BaseSpecification {
         elastic.update(e)
         and:
         elastic.refresh(ElasticTestEntity.class)
+
         when:
-        elastic.getLowLevelClient().reindex(e.getDescriptor(), "reindex-test", {}, { ex -> ex.printStackTrace() })
+        elastic.getLowLevelClient().reindex(elastic.determineReadAlias(e.getDescriptor()), "reindex-test", null, null)
         and:
         Wait.seconds(2)
         then:
         elastic.getLowLevelClient().indexExists("reindex-test")
+
         when:
-        List indicesForAlias = elastic.getLowLevelClient().getIndicesForAlias(e.getDescriptor())
+        elastic.getLowLevelClient().createOrMoveAlias(elastic.determineReadAlias(e.getDescriptor()), "reindex-test")
+        and:
+        def indicesForAlias = elastic.determineEffectiveIndex(e.getDescriptor())
         then:
-        indicesForAlias.size() == 1 && indicesForAlias.contains("elastictestentity")
-        when:
-        elastic.getLowLevelClient().moveActiveAlias(e.getDescriptor(), "reindex-test")
+        indicesForAlias == "reindex-test"
         and:
-        indicesForAlias = elastic.getLowLevelClient().getIndicesForAlias(e.getDescriptor())
-        then:
-        indicesForAlias.size() == 1 && indicesForAlias.contains("reindex-test")
-        and:
-        elastic.refresh(BatchTestEntity.class)
-        and:
-        elastic.select(ElasticTestEntity.class).eq(ElasticTestEntity.AGE, 10).queryOne().getFirstname() == "test"
+        elastic.find(ElasticTestEntity.class, e.getId()).isPresent()
     }
 }

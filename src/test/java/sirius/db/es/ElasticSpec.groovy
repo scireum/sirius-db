@@ -8,9 +8,12 @@
 
 package sirius.db.es
 
+
+import sirius.db.mixing.Mixing
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 import java.time.Duration
 
@@ -18,6 +21,9 @@ class ElasticSpec extends BaseSpecification {
 
     @Part
     private static Elastic elastic
+
+    @Part
+    private static Mixing mixing
 
     def setupSpec() {
         elastic.getReadyFuture().await(Duration.ofSeconds(60))
@@ -193,5 +199,54 @@ class ElasticSpec extends BaseSpecification {
         elastic.update(e)
         then:
         !e.hasJustBeenCreated()
+    }
+
+    def "Deleting a non-existing entity simply does nothing"() {
+        given: "An entity when seems to be persisted, but doesn not exist in the database"
+        ElasticTestEntity fakeEntity = new ElasticTestEntity()
+        fakeEntity.setId("DOES_NOT_EXIST")
+        when: "we try to delete it"
+        elastic.delete(fakeEntity)
+        then: "no exception is thrown as the 404 response by ES is converted into an empty OK response"
+        notThrown(HandledException)
+    }
+
+    def "Custom write index works"() {
+        when: "A new entity is created in the current index"
+        ElasticTestEntity testEntity = new ElasticTestEntity()
+        testEntity.setFirstname("Test")
+        testEntity.setLastname("Entity")
+        testEntity.setAge(12)
+        elastic.update(testEntity)
+        elastic.refresh(ElasticTestEntity.class)
+        and: "We switch to a new write index for the entity"
+        elastic.createAndInstallWriteIndex(mixing.getDescriptor(ElasticTestEntity.class))
+        elastic.refresh(ElasticTestEntity.class)
+        and: "Deleting the original entity doesn't change the read index"
+        elastic.delete(testEntity)
+        elastic.refresh(ElasticTestEntity.class)
+        then:
+        elastic.find(ElasticTestEntity.class, testEntity.getId()).isPresent()
+
+        when: "Creating another entity is not visible in the read index"
+        ElasticTestEntity secondTestEntity = new ElasticTestEntity()
+        secondTestEntity.setFirstname("Second")
+        secondTestEntity.setLastname("Entity")
+        secondTestEntity.setAge(13)
+        elastic.update(secondTestEntity)
+        elastic.refresh(ElasticTestEntity.class)
+        then:
+        !elastic.find(ElasticTestEntity.class, secondTestEntity.getId()).isPresent()
+
+        when: "Moving the read alias to the write index..."
+        elastic.commitWriteIndex(mixing.getDescriptor(ElasticTestEntity.class))
+        then: "...we then see the second entity"
+        elastic.find(ElasticTestEntity.class, secondTestEntity.getId()).isPresent()
+
+        when: "...and deleting it is also directly visible"
+        elastic.delete(secondTestEntity)
+        elastic.refresh(ElasticTestEntity.class)
+        then: "The first entity is no longer visible as it has never been written into the write index"
+        !elastic.find(ElasticTestEntity.class, testEntity.getId()).isPresent()
     }
 }

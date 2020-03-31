@@ -28,8 +28,10 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 import sirius.kernel.health.Microtiming;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
@@ -110,19 +112,8 @@ class RequestBuilder {
 
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
         Watch w = Watch.start();
-        try (Operation op = new Operation(() -> "Elastic: " + method + " " + uri, Duration.ofSeconds(30))) {
-            if (Elastic.LOG.isFINE()) {
-                Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
-                                                                           MAX_CONTENT_LONG_LENGTH));
-            }
-
-            Request request = new Request(method, uri);
-            request.addParameters(determineParams());
-            NStringEntity requestContent =
-                    buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON))
-                                  .orElse(null);
-            request.setEntity(requestContent);
-
+        try (Operation op = new Operation(() -> Strings.apply("Elastic: %s %s", method, uri), Duration.ofSeconds(30))) {
+            Request request = setupRequest(uri);
             responseEntity = restClient.performRequest(request).getEntity();
             return this;
         } catch (ResponseException e) {
@@ -148,6 +139,22 @@ class RequestBuilder {
                                     ExecutionPoint.snapshot().toString());
             }
         }
+    }
+
+    private Request setupRequest(String uri) {
+        if (Elastic.LOG.isFINE()) {
+            Elastic.LOG.FINE("%s %s: %s",
+                             method,
+                             uri,
+                             Strings.limit(buildContent().orElse("-"), MAX_CONTENT_LONG_LENGTH));
+        }
+
+        Request request = new Request(method, uri);
+        request.addParameters(determineParams());
+        NStringEntity requestContent =
+                buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON)).orElse(null);
+        request.setEntity(requestContent);
+        return request;
     }
 
     private RequestBuilder handleResponseException(ResponseException e) throws OptimisticLockException {
@@ -201,29 +208,35 @@ class RequestBuilder {
         }
     }
 
-    protected void executeAsync(String uri, Consumer<Response> onSuccess, Consumer<Exception> onFailure) {
-        if (Elastic.LOG.isFINE()) {
-            Elastic.LOG.FINE(method + " " + uri + ": " + Strings.limit(buildContent().orElse("-"),
-                                                                       MAX_CONTENT_LONG_LENGTH));
-        }
-
-        Request request = new Request(method, uri);
-        request.addParameters(determineParams());
-        NStringEntity requestContent =
-                buildContent().map(content -> new NStringEntity(content, ContentType.APPLICATION_JSON)).orElse(null);
-        request.setEntity(requestContent);
+    protected void executeAsync(String uri,
+                                @Nullable Consumer<Response> onSuccess,
+                                @Nullable Consumer<HandledException> onFailure) {
+        Request request = setupRequest(uri);
 
         restClient.performRequestAsync(request, new ResponseListener() {
             @Override
             public void onSuccess(Response response) {
-                onSuccess.accept(response);
+                if (onSuccess != null) {
+                    onSuccess.accept(response);
+                }
             }
 
             @Override
             public void onFailure(Exception exception) {
-                onFailure.accept(exception);
+                HandledException handledException = handleAsyncFailure(exception, uri);
+                if (onFailure != null) {
+                    onFailure.accept(handledException);
+                }
             }
         });
+    }
+
+    private HandledException handleAsyncFailure(Exception exception, String uri) {
+        return Exceptions.handle()
+                         .to(Elastic.LOG)
+                         .error(exception)
+                         .withSystemErrorMessage("An unexpected error occurred when invoking '%s': %s (%s)", uri)
+                         .handle();
     }
 
     protected JSONObject extractErrorJSON(ResponseException e) {

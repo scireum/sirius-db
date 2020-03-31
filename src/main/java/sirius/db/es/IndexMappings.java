@@ -21,8 +21,10 @@ import sirius.kernel.Startable;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 import sirius.kernel.settings.Extension;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -145,7 +147,7 @@ public class IndexMappings implements Startable {
                              ed.getType().getSimpleName());
 
             createMapping(ed,
-                          addedAlias ? elastic.determineAlias(ed) : elastic.determineIndex(ed),
+                          addedAlias ? elastic.determineReadAlias(ed) : elastic.determineIndex(ed),
                           DynamicMapping.STRICT);
             if (!addedAlias) {
                 // we couldn't setup the alias in the first place as the index didn't exist
@@ -164,7 +166,7 @@ public class IndexMappings implements Startable {
     }
 
     private boolean setupAlias(EntityDescriptor ed) {
-        if (elastic.getLowLevelClient().aliasExists(elastic.determineAlias(ed))) {
+        if (elastic.getLowLevelClient().aliasExists(elastic.determineReadAlias(ed))) {
             Elastic.LOG.FINE("Alias for mapping '%s' already present.", elastic.determineTypeName(ed));
         } else {
             if (elastic.getLowLevelClient().indexExists(elastic.determineIndex(ed))) {
@@ -181,7 +183,34 @@ public class IndexMappings implements Startable {
 
     private void createAliasForIndex(EntityDescriptor ed) {
         Elastic.LOG.FINE("Creating alias for index %s. ", elastic.determineIndex(ed));
-        elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineAlias(ed));
+        elastic.getLowLevelClient().addAlias(elastic.determineIndex(ed), elastic.determineReadAlias(ed));
+    }
+
+    /**
+     * Generates a new index name for the given entity.
+     * <p>
+     * This can be used for schema evolution (e.g. as {@link Elastic#createAndInstallWriteIndex(EntityDescriptor)} does).
+     *
+     * @param ed the  descriptor of the entity for which a new (unique) index name should be created
+     * @throws sirius.kernel.health.HandledException if the system is unable to generate a unique index name
+     *                                               after 10 tries
+     */
+
+    public String determineNextIndexName(EntityDescriptor ed) {
+        String nextIndexName = ed.getRelationName() + "-" + NLS.toMachineString(LocalDate.now());
+        int run = 0;
+
+        while (run++ < 10) {
+            if (!elastic.getLowLevelClient().indexExists(nextIndexName)) {
+                return nextIndexName;
+            }
+            nextIndexName = ed.getRelationName() + "-" + NLS.toMachineString(LocalDate.now()) + "-" + run;
+        }
+
+        throw Exceptions.handle()
+                        .to(Elastic.LOG)
+                        .withSystemErrorMessage("Couldn't find a unique index name after 10 runs!")
+                        .handle();
     }
 
     /**
