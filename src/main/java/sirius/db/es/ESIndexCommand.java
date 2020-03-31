@@ -124,7 +124,7 @@ public class ESIndexCommand implements Command {
             output.blankLine();
         } else if (args.length() == 4) {
             EnumSet<Elastic.RoutingAccessMode> modes = EnumSet.noneOf(Elastic.RoutingAccessMode.class);
-            if ("Y".equals(args.at(3).asString())) {
+            if ("Y".equals(args.at(2).asString())) {
                 modes.add(Elastic.RoutingAccessMode.READ);
             }
             if ("Y".equals(args.at(4).asString())) {
