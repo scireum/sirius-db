@@ -127,7 +127,7 @@ public class ESIndexCommand implements Command {
             if ("Y".equals(args.at(2).asString())) {
                 modes.add(Elastic.RoutingAccessMode.READ);
             }
-            if ("Y".equals(args.at(4).asString())) {
+            if ("Y".equals(args.at(3).asString())) {
                 modes.add(Elastic.RoutingAccessMode.WRITE);
             }
             elastic.updateRoutingSuppression(descriptor, modes);
