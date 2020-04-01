@@ -8,11 +8,11 @@
 
 package sirius.db;
 
-import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
 import sirius.kernel.di.std.Register;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -46,7 +46,7 @@ public class KeyGenerator {
         ThreadLocalRandom.current().nextBytes(input);
         return Hashing.sha256()
                       .newHasher()
-                      .putString(seed, Charsets.UTF_8)
+                      .putString(seed, StandardCharsets.UTF_8)
                       .putBytes(input)
                       .putLong(System.nanoTime())
                       .hash()

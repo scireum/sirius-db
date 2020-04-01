@@ -61,7 +61,7 @@ public class Redis implements Startable, Stoppable {
     private PartCollection<Subscriber> subscribers;
 
     private List<JedisPubSub> subscriptions = Lists.newCopyOnWriteArrayList();
-    private volatile AtomicBoolean subscriptionsActive = new AtomicBoolean(true);
+    private AtomicBoolean subscriptionsActive = new AtomicBoolean(true);
 
     @Part
     private Tasks tasks;

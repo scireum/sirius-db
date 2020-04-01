@@ -8,15 +8,11 @@
 
 package sirius.db.mixing.types;
 
-import sirius.kernel.Sirius;
-import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Provides a language-text map as property value.

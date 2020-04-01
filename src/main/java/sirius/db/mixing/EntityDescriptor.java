@@ -438,7 +438,7 @@ public class EntityDescriptor {
         for (BiConsumer<Object, Consumer<String>> validator : validateHandlers) {
             ValueHolder<Boolean> hasWarnings = ValueHolder.of(false);
             validator.accept(entity, warning -> hasWarnings.accept(true));
-            if (hasWarnings.get()) {
+            if (Boolean.TRUE.equals(hasWarnings.get())) {
                 return true;
             }
         }

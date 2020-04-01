@@ -192,6 +192,8 @@ public class IndexMappings implements Startable {
      * This can be used for schema evolution (e.g. as {@link Elastic#createAndInstallWriteIndex(EntityDescriptor)} does).
      *
      * @param ed the  descriptor of the entity for which a new (unique) index name should be created
+     * @return a suggestion for the next index name to use (in terms of schema evolution). Most probably this is the
+     * entity name + the current date. If this indx already exists, a suffix is added.
      * @throws sirius.kernel.health.HandledException if the system is unable to generate a unique index name
      *                                               after 10 tries
      */

@@ -646,7 +646,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                     compiler.getWHEREBuilder().append(", ");
                 }
                 compiler.getWHEREBuilder().append(compiler.translateColumnName(e.getFirst()));
-                compiler.getWHEREBuilder().append(e.getSecond() ? " ASC" : " DESC");
+                compiler.getWHEREBuilder().append(Boolean.TRUE.equals(e.getSecond()) ? " ASC" : " DESC");
             }
         }
     }
