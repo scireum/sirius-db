@@ -328,6 +328,9 @@ public abstract class FilterFactory<C extends Constraint> {
 
     /**
      * Generates a constraint which ensures that the given field is not filled (null)
+     * <p>
+     * Note that in some cases (e.g. MongoDB) an empty list will not b matched by this
+     * constraint but by {@link #isEmptyList(Mapping)}.
      *
      * @param field the field to check
      * @return the generated constraint
