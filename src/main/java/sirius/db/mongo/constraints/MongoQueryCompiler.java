@@ -64,12 +64,12 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
     }
 
     @Override
-    protected MongoConstraint compileNotEquals(Mapping field, Property property, FieldValue value) {
-        if (property instanceof StringListProperty || property instanceof BaseEntityRefListProperty) {
+    protected MongoConstraint compileFieldEquals(Mapping field, Property property, FieldValue value) {
+        if (value.getValue() == null && (property instanceof StringListProperty
+                                         || property instanceof BaseEntityRefListProperty)) {
             return QueryBuilder.FILTERS.isEmptyList(field);
         }
 
-        return super.compileNotEquals(field, property, value);
+        return super.compileFieldEquals(field, property, value);
     }
-
 }
