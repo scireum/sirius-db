@@ -339,8 +339,25 @@ public abstract class FilterFactory<C extends Constraint> {
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #isEmptyList(Mapping)} - in MongoDB and Elastisearch we commonly
+     * refer to lists as "list" rather than array.
      */
-    public abstract C isEmptyArray(Mapping field);
+    @Deprecated
+    public C isEmptyArray(Mapping field) {
+        return isEmptyList(field);
+    }
+
+    /**
+     * Generates a constraint which ensures that the given list field is not filled (empty).
+     * <p>
+     * This can be overwritten if a database specific handling is required.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     */
+    public C isEmptyList(Mapping field) {
+        return notFilled(field);
+    }
 
     /**
      * Inverts the given constraint.

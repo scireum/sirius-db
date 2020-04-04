@@ -29,7 +29,7 @@ class MongoOneInField extends OneInField<MongoConstraint> {
     public MongoConstraint build() {
         if (values.isEmpty()) {
             if (forceEmpty) {
-                return factory.or(factory.notFilled(field), factory.isEmptyArray(field));
+                return factory.or(factory.notFilled(field), factory.isEmptyList(field));
             }
             return null;
         }
@@ -48,7 +48,7 @@ class MongoOneInField extends OneInField<MongoConstraint> {
         }
 
         clauses.add(factory.notFilled(field));
-        clauses.add(factory.isEmptyArray(field));
+        clauses.add(factory.isEmptyList(field));
 
         return factory.or(clauses);
     }
