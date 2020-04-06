@@ -27,7 +27,7 @@ class MongoQueryCompilerSpec extends BaseSpecification {
         testEntity.lastname = "Test"
         and:
         mango.update(testEntity)
-        and: "And we search for exact that entity while enforcing an empty list."
+        and: "And we search for exactly that entity while enforcing an empty list."
         MangoTestEntity queryResult = mango.
                 select(MangoTestEntity.class).
                 where(QueryBuilder.FILTERS.queryString(mixing.getDescriptor(MangoTestEntity.class),
