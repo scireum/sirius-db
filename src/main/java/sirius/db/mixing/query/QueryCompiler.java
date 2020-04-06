@@ -271,10 +271,10 @@ public abstract class QueryCompiler<C extends Constraint> {
 
         FieldValue value = compileValue(property, parseValue());
 
-        return compileOperation(Mapping.named(field), operation, value);
+        return compileOperation(Mapping.named(field), property, operation, value);
     }
 
-    private C compileOperation(Mapping field, String operation, FieldValue value) {
+    private C compileOperation(Mapping field, Property property, String operation, FieldValue value) {
         switch (operation) {
             case ">":
                 return factory.gt(field, value.getValue());
@@ -285,13 +285,17 @@ public abstract class QueryCompiler<C extends Constraint> {
             case "<":
                 return factory.lt(field, value.getValue());
             case "<>":
-                return factory.ne(field, value);
+                return compileNotEquals(field, property, value);
             default:
-                return compileFieldEquals(field, value);
+                return compileFieldEquals(field, property, value);
         }
     }
 
-    protected C compileFieldEquals(Mapping field, FieldValue value) {
+    protected C compileNotEquals(Mapping field, Property property, FieldValue value) {
+        return factory.ne(field, value.getValue());
+    }
+
+    protected C compileFieldEquals(Mapping field, Property property, FieldValue value) {
         return factory.eq(field, value.getValue());
     }
 
