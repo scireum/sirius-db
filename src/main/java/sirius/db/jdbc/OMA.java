@@ -82,6 +82,20 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     /**
+     * Provides the underlying database instance used to perform the actual statements.
+     * <p>
+     * Note that there is a helper available which can generate efficient UPDATE statements which are bound
+     * to various conditions. See {@link #updateStatement(Class)} for further information.
+     *
+     * @param entityType the entityto determine the database for
+     * @return the database used by the framework
+     */
+    @Nullable
+    public Database getDatabase(Class<? extends SQLEntity> entityType) {
+        return getDatabase(mixing.getDescriptor(entityType).getRealm());
+    }
+
+    /**
      * Provides the underlying database instance which represents the local secondary copy of the main database.
      * <p>
      * In large environments the underlying JDBC database might be setup as a master-slave replication. Such a slave
@@ -103,6 +117,22 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         }
 
         return primaryAndSecondary.getFirst();
+    }
+
+    /**
+     * Provides the underlying database instance which represents the local secondary copy of the main database.
+     * <p>
+     * In large environments the underlying JDBC database might be setup as a master-slave replication. Such a slave
+     * is called a secondary copy of the database (as it might not always be fully up to date). However, for some
+     * queries this is sufficient. Also, querying a local copy is faster and takes load from the main database.
+     *
+     * @param entityType the entity to determine the database for
+     * @return the secondary database used by the framework. If no secondary database is present or its usage is
+     * disabled, the primary database is returned.
+     */
+    @Nullable
+    public Database getSecondaryDatabase(Class<? extends SQLEntity> entityType) {
+        return getSecondaryDatabase(mixing.getDescriptor(entityType).getRealm());
     }
 
     /**
