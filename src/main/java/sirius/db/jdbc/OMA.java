@@ -87,7 +87,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * Note that there is a helper available which can generate efficient UPDATE statements which are bound
      * to various conditions. See {@link #updateStatement(Class)} for further information.
      *
-     * @param entityType the entityto determine the database for
+     * @param entityType the entity to determine the database for
      * @return the database used by the framework
      */
     @Nullable
