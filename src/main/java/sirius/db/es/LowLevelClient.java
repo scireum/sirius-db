@@ -45,6 +45,9 @@ public class LowLevelClient {
     private static final String API_DELETE_BY_QUERY = "/_delete_by_query";
     private static final String API_PREFIX_DOC = "/_doc/";
     private static final String API_REFRESH = "/_refresh";
+    private static final String API_SETTINGS = "/_settings";
+    private static final String API_CLUSTER_HEALTH = "/_cluster/health";
+    private static final String API_STATS = "/_stats";
 
     private static final String PARAM_INDEX = "index";
     private static final String PARAM_ALIAS = "alias";
@@ -77,7 +80,7 @@ public class LowLevelClient {
      *
      * @return a request builder used to execute the request
      */
-    public RequestBuilder performGet() {
+    protected RequestBuilder performGet() {
         return new RequestBuilder("GET", getRestClient());
     }
 
@@ -86,7 +89,7 @@ public class LowLevelClient {
      *
      * @return a request builder used to execute the request
      */
-    public RequestBuilder performPost() {
+    protected RequestBuilder performPost() {
         return new RequestBuilder("POST", getRestClient());
     }
 
@@ -95,7 +98,7 @@ public class LowLevelClient {
      *
      * @return a request builder used to execute the request
      */
-    public RequestBuilder performPut() {
+    protected RequestBuilder performPut() {
         return new RequestBuilder("PUT", getRestClient());
     }
 
@@ -104,7 +107,7 @@ public class LowLevelClient {
      *
      * @return a request builder used to execute the request
      */
-    public RequestBuilder performDelete() {
+    protected RequestBuilder performDelete() {
         return new RequestBuilder("DELETE", getRestClient());
     }
 
@@ -495,5 +498,34 @@ public class LowLevelClient {
      */
     public void deleteIndex(String index) {
         performDelete().execute(index).response();
+    }
+
+    /**
+     * Fetches the settings for the given index.
+     *
+     * @param index the index to fetch the settings for
+     * @return a JSON object as returned by <tt>/index/_settings</tt>
+     */
+    public JSONObject indexSettings(String index) {
+        return performGet().execute(index + API_SETTINGS).response();
+    }
+
+
+    /**
+     * Fetches the cluster health.
+     *
+     * @return a JSON object as returned by <tt>/_cluster/health</tt>
+     */
+    public JSONObject clusterHealth() {
+        return performGet().execute(API_CLUSTER_HEALTH).response();
+    }
+
+    /**
+     * Fetches statistics for all indices.
+     *
+     * @return a JSON object as returned by <tt>/_stats</tt>
+     */
+    public JSONObject indexStats() {
+        return performGet().execute(API_STATS).response();
     }
 }
