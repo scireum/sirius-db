@@ -10,6 +10,7 @@ package sirius.db.mixing.annotations;
 
 import sirius.db.mixing.Mixable;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -21,6 +22,7 @@ import java.lang.annotation.Target;
  * Note that such a method must accept a <tt>Consumer&lt;String&gt;</tt> as first parameter or the entity
  * itself and the consumer as second parameter, when called within a mixin.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface OnValidate {

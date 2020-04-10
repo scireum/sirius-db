@@ -14,6 +14,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mongo.Mango;
 import sirius.db.mongo.MongoEntity;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -30,6 +31,7 @@ import java.lang.annotation.Target;
  * The index will be picked up and created by {@link Schema#computeRequiredSchemaChanges()} or
  * {@link Mango#createIndices(EntityDescriptor)}.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Repeatable(Indices.class)

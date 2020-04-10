@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,6 +20,7 @@ import java.lang.annotation.Target;
  * A value in this column must only occur once. If <tt>within</tt> is filled, the value must only occur once while
  * having the same values for the properties enumerated in <tt>within</tt>.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Unique {

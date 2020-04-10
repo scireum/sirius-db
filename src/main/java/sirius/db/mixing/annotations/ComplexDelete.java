@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -23,6 +24,7 @@ import java.lang.annotation.Target;
  * is specified, it isn't considered complex to delete, even if there are cascadeing actions (setting fields in other
  * entities to null or deleting other entities).
  */
+@Documented
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ComplexDelete {

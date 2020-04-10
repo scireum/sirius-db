@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,6 +20,7 @@ import java.lang.annotation.Target;
  * As of Java 8 several <tt>Index</tt> annotation can be placed on an entity class, therefore this wrapper is only used
  * by the compiler and runtime to carry those annotations.
  */
+@Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Indices {
