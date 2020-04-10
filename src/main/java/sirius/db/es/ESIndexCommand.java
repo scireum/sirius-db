@@ -149,7 +149,7 @@ public class ESIndexCommand implements Command {
                 String readAlias = elastic.determineReadAlias(descriptor);
                 String readIndex = elastic.getLowLevelClient().resolveIndexForAlias(readAlias).orElse("-");
                 String writeIndex = Value.of(elastic.determineWriteAlias(descriptor)).ignore(readAlias).asString("-");
-                output.apply("%-20s %-40s %-40s", Mixing.getNameForType(descriptor.getType()), readIndex, writeIndex);
+                output.apply("%-20s %-40s %-40s", descriptor.getName(), readIndex, writeIndex);
             }
         }
         output.separator();
