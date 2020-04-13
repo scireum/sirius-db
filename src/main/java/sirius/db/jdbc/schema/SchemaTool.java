@@ -9,7 +9,6 @@
 package sirius.db.jdbc.schema;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import sirius.db.jdbc.Database;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Explain;
@@ -18,13 +17,15 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,7 +45,7 @@ public class SchemaTool {
     private String realm;
     private final DatabaseDialect dialect;
 
-    private static Map<Integer, String> map;
+    private static Map<Integer, String> sqlTypeToName;
 
     /**
      * Creates a new instance for the given dialect.
@@ -543,25 +544,18 @@ public class SchemaTool {
      * @return the string representation of the given type
      */
     public static String getJdbcTypeName(int jdbcType) {
-        // Use reflection to populate a map of int values to names
-        if (map == null) {
-            map = Maps.newHashMap();
-            // Get all field in java.sql.Types
-            Field[] fields = java.sql.Types.class.getFields();
-            for (int i = 0; i < fields.length; i++) {
+        if (sqlTypeToName == null) {
+            Map<Integer, String> result = new HashMap<>();
+            Arrays.stream(Types.class.getFields()).forEach(field -> {
                 try {
-                    // Get field name
-                    String name = fields[i].getName();
-                    // Get field value
-                    Integer value = (Integer) fields[i].get(null);
-                    // Add to map
-                    map.put(value, name);
+                    result.put((Integer) field.get(null), field.getName());
                 } catch (IllegalAccessException e) {
                     Exceptions.ignore(e);
                 }
-            }
+            });
+            sqlTypeToName = result;
         }
-        // Return the JDBC type name
-        return map.get(jdbcType);
+
+        return sqlTypeToName.get(jdbcType);
     }
 }
