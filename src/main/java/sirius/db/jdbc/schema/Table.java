@@ -12,6 +12,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -52,7 +53,7 @@ public class Table {
      * @return the columns of the primary key
      */
     public List<String> getPrimaryKey() {
-        return primaryKey;
+        return Collections.unmodifiableList(primaryKey);
     }
 
     /**
@@ -99,7 +100,7 @@ public class Table {
      * @return the list of columns of this table
      */
     public List<TableColumn> getColumns() {
-        return columns;
+        return Collections.unmodifiableList(columns);
     }
 
     /**
@@ -108,7 +109,7 @@ public class Table {
      * @return the list of key of this table
      */
     public List<Key> getKeys() {
-        return keys;
+        return Collections.unmodifiableList(keys);
     }
 
     /**
@@ -117,7 +118,7 @@ public class Table {
      * @return the list of foreign keys of this table
      */
     public List<ForeignKey> getForeignKeys() {
-        return foreignKeys;
+        return Collections.unmodifiableList(foreignKeys);
     }
 
     /**
