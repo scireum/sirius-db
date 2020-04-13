@@ -41,8 +41,9 @@ import sirius.kernel.nls.NLS;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -164,6 +165,8 @@ public class EntityDescriptor {
      * Contains all mixins known to the system
      */
     private static MultiMap<Class<? extends Mixable>, Class<?>> allMixins;
+
+    private static final MethodHandles.Lookup METHOD_LOOKUP = MethodHandles.lookup();
 
     protected Config legacyInfo;
     protected Map<String, String> columnAliases;
@@ -602,21 +605,58 @@ public class EntityDescriptor {
             handleBeforeSaveMethod(descriptor, accessPath, method);
         }
         if (method.isAnnotationPresent(AfterSave.class)) {
-            warnOnWrongVisibility(method);
-            descriptor.afterSaveHandlers.add(e -> invokeHandler(accessPath, method, e));
+            descriptor.afterSaveHandlers.add(createInvokeHandler(accessPath, method));
         }
         if (method.isAnnotationPresent(BeforeDelete.class)) {
-            warnOnWrongVisibility(method);
-            descriptor.beforeDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
+            descriptor.beforeDeleteHandlers.add(createInvokeHandler(accessPath, method));
             handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(AfterDelete.class)) {
-            warnOnWrongVisibility(method);
-            descriptor.afterDeleteHandlers.add(e -> invokeHandler(accessPath, method, e));
+            descriptor.afterDeleteHandlers.add(createInvokeHandler(accessPath, method));
             handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(OnValidate.class)) {
-            handleOnValidateMethod(descriptor, accessPath, method);
+            descriptor.validateHandlers.add(createValidator(accessPath, method));
+        }
+    }
+
+    private static Consumer<Object> createInvokeHandler(AccessPath accessPath, Method method) {
+        try {
+            warnOnWrongVisibility(method);
+            method.setAccessible(true);
+            MethodHandle handle = METHOD_LOOKUP.unreflect(method);
+
+            if (method.getParameterCount() == 0) {
+                return entity -> {
+                    try {
+                        handle.invoke(accessPath.apply(entity));
+                    } catch (Throwable e) {
+                        throw Exceptions.handle(Mixing.LOG, e);
+                    }
+                };
+            } else if (method.getParameterCount() == 1) {
+                return entity -> {
+                    try {
+                        handle.invoke(accessPath.apply(entity), entity);
+                    } catch (Throwable e) {
+                        throw Exceptions.handle(Mixing.LOG, e);
+                    }
+                };
+            } else {
+                Mixing.LOG.WARN("Handler %s.%s must have either 0 or 1 Parrameters (the entity itself)!",
+                                method.getDeclaringClass().getName(),
+                                method.getName());
+                return null;
+            }
+        } catch (IllegalAccessException e) {
+            Exceptions.handle()
+                      .to(Mixing.LOG)
+                      .error(e)
+                      .withSystemErrorMessage("Handler %s.%s is not properly accessible: %s (%s)",
+                                              method.getDeclaringClass().getName(),
+                                              method.getName())
+                      .handle();
+            return null;
         }
     }
 
@@ -632,24 +672,50 @@ public class EntityDescriptor {
         }
     }
 
-    private static void handleOnValidateMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
-        warnOnWrongVisibility(method);
-        if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
-            // When declared within an entity, we only have Consumer<String> as parameter
-            descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, c));
-        } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
-            // When declared within a mixin, we have the entity itself as first parameter
-            // and the consumer as second...
-            descriptor.validateHandlers.add((e, c) -> invokeHandler(accessPath, method, e, e, c));
-        } else {
-            Mixing.LOG.WARN("OnValidate handler %s.%s doesn't have Consumer<String> as parameter!",
-                            method.getDeclaringClass().getName(),
-                            method.getName());
+    private static BiConsumer<Object, Consumer<String>> createValidator(AccessPath accessPath, Method method) {
+        try {
+            warnOnWrongVisibility(method);
+            method.setAccessible(true);
+            MethodHandle handle = METHOD_LOOKUP.unreflect(method);
+
+            if (method.getParameterCount() == 1 && method.getParameterTypes()[0] == Consumer.class) {
+                // When declared within an entity, we only have Consumer<String> as parameter
+                return (entity, warningsConsumer) -> {
+                    try {
+                        handle.invoke(accessPath.apply(entity), warningsConsumer);
+                    } catch (Throwable e) {
+                        throw Exceptions.handle(Mixing.LOG, e);
+                    }
+                };
+            } else if (method.getParameterCount() == 2 && method.getParameterTypes()[1] == Consumer.class) {
+                // When declared within a mixin, we have the entity itself as first parameter
+                // and the consumer as second...
+                return (entity, warningsConsumer) -> {
+                    try {
+                        handle.invoke(accessPath.apply(entity), entity, warningsConsumer);
+                    } catch (Throwable e) {
+                        throw Exceptions.handle(Mixing.LOG, e);
+                    }
+                };
+            } else {
+                Mixing.LOG.WARN("OnValidate handler %s.%s doesn't have Consumer<String> as parameter!",
+                                method.getDeclaringClass().getName(),
+                                method.getName());
+                return null;
+            }
+        } catch (IllegalAccessException e) {
+            Exceptions.handle()
+                      .to(Mixing.LOG)
+                      .error(e)
+                      .withSystemErrorMessage("Handler %s.%s is not properly accessible: %s (%s)",
+                                              method.getDeclaringClass().getName(),
+                                              method.getName())
+                      .handle();
+            return null;
         }
     }
 
     private static void handleBeforeSaveMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
-        warnOnWrongVisibility(method);
         if (descriptor.beforeSaveHandlerCollector == null) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
@@ -661,7 +727,7 @@ public class EntityDescriptor {
                             .handle();
         }
         descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),
-                                                  e -> invokeHandler(accessPath, method, e));
+                                                  createInvokeHandler(accessPath, method));
     }
 
     private static void warnOnWrongVisibility(Method method) {
@@ -669,22 +735,6 @@ public class EntityDescriptor {
             Mixing.LOG.WARN("Handler %s.%s is not declared protected!",
                             method.getDeclaringClass().getName(),
                             method.getName());
-        }
-    }
-
-    private static void invokeHandler(AccessPath accessPath, Method m, Object entity, Object... params) {
-        try {
-            m.setAccessible(true);
-            if (m.getParameterCount() == 0) {
-                m.invoke(accessPath.apply(entity));
-            } else {
-                m.invoke(accessPath.apply(entity), params.length == 0 ? new Object[]{entity} : params);
-            }
-        } catch (IllegalAccessException ex) {
-            throw Exceptions.handle(Mixing.LOG, ex);
-        } catch (InvocationTargetException ex) {
-            Exceptions.ignore(ex);
-            throw Exceptions.handle(Mixing.LOG, ex.getTargetException());
         }
     }
 
