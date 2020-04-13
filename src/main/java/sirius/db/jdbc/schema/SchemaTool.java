@@ -529,12 +529,8 @@ public class SchemaTool {
         return null;
     }
 
-    private <X> X findInList(List<X> list, X obj) {
-        int index = list.indexOf(obj);
-        if (index == -1) {
-            return null;
-        }
-        return list.get(index);
+    private <X> X findInList(List<X> haystack, X needle) {
+        return haystack.stream().filter(item -> Objects.equals(item, needle)).findAny().orElse(null);
     }
 
     /**
