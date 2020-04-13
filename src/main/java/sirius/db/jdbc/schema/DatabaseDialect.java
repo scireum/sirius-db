@@ -59,6 +59,15 @@ public interface DatabaseDialect {
     String generateCreateTable(Table table);
 
     /**
+     * Builds a ALTER TABLE RENAME statement.
+     *
+     * @param table the table to create
+     * @return the generated SQL statement or null if nothing should be done
+     */
+    @Nullable
+    String generateRenameTable(Table table);
+
+    /**
      * Builds a DROP TABLE statement.
      *
      * @param table the table to drop

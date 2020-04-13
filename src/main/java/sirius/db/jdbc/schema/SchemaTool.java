@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -38,6 +39,7 @@ public class SchemaTool {
     private static final String COLUMN_KEY_SEQ = "KEY_SEQ";
     private static final String COLUMN_COLUMN_NAME = "COLUMN_NAME";
     private static final String KEY_TABLE = "table";
+    private static final String KEY_OLD_NAME = "oldName";
     private static final String KEY_COLUMN = "column";
     private String realm;
     private final DatabaseDialect dialect;
@@ -186,7 +188,7 @@ public class SchemaTool {
                                   List<Table> currentSchema,
                                   List<Table> targetSchema) {
         for (Table table : currentSchema) {
-            if (findInList(targetSchema, table) == null) {
+            if (findTable(targetSchema, table) == null) {
                 String sql = dialect.generateDropTable(table);
                 if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
@@ -204,10 +206,11 @@ public class SchemaTool {
     private void syncRequiredTables(List<SchemaUpdateAction> result,
                                     List<Table> currentSchema,
                                     List<Table> targetSchema) {
+        List<Table> tablesToRename = new ArrayList<>();
         for (Table targetTable : targetSchema) {
             generateEffectiveKeyNames(targetTable);
 
-            Table other = findInList(currentSchema, targetTable);
+            Table other = findTable(currentSchema, targetTable);
             if (other == null) {
                 String sql = dialect.generateCreateTable(targetTable);
                 if (Strings.isFilled(sql)) {
@@ -221,13 +224,44 @@ public class SchemaTool {
                 }
             } else {
                 syncTables(targetTable, other, result);
+                if (!Strings.areEqual(targetTable.getName(), other.getName())) {
+                    tablesToRename.add(targetTable);
+                }
             }
         }
 
         for (Table targetTable : targetSchema) {
-            Table other = findInList(currentSchema, targetTable);
+            Table other = findTable(currentSchema, targetTable);
             syncForeignKeys(targetTable, other, result);
         }
+
+        for (Table table : tablesToRename) {
+            String sql = dialect.generateRenameTable(table);
+            if (Strings.isFilled(sql)) {
+                SchemaUpdateAction action = new SchemaUpdateAction(realm);
+                action.setReason(NLS.fmtr("SchemaTool.tableNeedsRename")
+                                    .set(KEY_TABLE, table.getName())
+                                    .set(KEY_OLD_NAME, table.getName())
+                                    .format());
+                action.setDataLossPossible(false);
+                action.setSql(sql);
+                result.add(action);
+            }
+        }
+    }
+
+    private Table findTable(List<Table> currentSchema, Table targetTable) {
+        Table result = findInList(currentSchema, targetTable);
+        if (result != null) {
+            return result;
+        }
+        if (Strings.isEmpty(targetTable.getOldName())) {
+            return null;
+        }
+        return currentSchema.stream()
+                            .filter(table -> Strings.areEqual(table.getName(), targetTable.getOldName()))
+                            .findAny()
+                            .orElse(null);
     }
 
     private boolean keyListEqual(List<String> left, List<String> right) {
