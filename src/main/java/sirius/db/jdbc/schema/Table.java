@@ -21,6 +21,7 @@ public class Table {
 
     private EntityDescriptor source;
     private String name;
+    private String oldName;
     private List<String> primaryKey = new ArrayList<>();
     private List<TableColumn> columns = new ArrayList<>();
     private List<Key> keys = new ArrayList<>();
@@ -70,6 +71,26 @@ public class Table {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * Retursn the legacy name of the table.
+     * <p>
+     * This is filled from the system config and might contain an old/legacy name.
+     *
+     * @return the old name of the table or <tt>null</tt> if no renaming is or was planned
+     */
+    public String getOldName() {
+        return oldName;
+    }
+
+    /**
+     * Specifies a previous (old/legacy) table name.
+     *
+     * @param oldName the previous table name to generate a RENAME statement if the table is still around
+     */
+    public void setOldName(String oldName) {
+        this.oldName = oldName;
     }
 
     /**
