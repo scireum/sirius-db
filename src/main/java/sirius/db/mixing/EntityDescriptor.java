@@ -362,8 +362,10 @@ public class EntityDescriptor {
      * @param entity the entity to perform the handlers on
      */
     public final void beforeSave(Object entity) {
-        for (Consumer<Object> c : getSortedBeforeSaveHandlers()) {
-            c.accept(entity);
+        for (Consumer<Object> handler : getSortedBeforeSaveHandlers()) {
+            if (handler != null) {
+                handler.accept(entity);
+            }
         }
         for (Property property : properties.values()) {
             property.onBeforeSave(entity);
@@ -389,8 +391,10 @@ public class EntityDescriptor {
      * @param entity the entity which was saved
      */
     public void afterSave(Object entity) {
-        for (Consumer<Object> c : afterSaveHandlers) {
-            c.accept(entity);
+        for (Consumer<Object> handler : afterSaveHandlers) {
+            if (handler != null) {
+                handler.accept(entity);
+            }
         }
         for (Property property : properties.values()) {
             property.onAfterSave(entity);
@@ -422,7 +426,9 @@ public class EntityDescriptor {
     public List<String> validate(Object entity) {
         List<String> warnings = new ArrayList<>();
         for (BiConsumer<Object, Consumer<String>> validator : validateHandlers) {
-            validator.accept(entity, warnings::add);
+            if (validator != null) {
+                validator.accept(entity, warnings::add);
+            }
         }
 
         return warnings;
@@ -456,7 +462,9 @@ public class EntityDescriptor {
             property.onBeforeDelete(entity);
         }
         for (Consumer<Object> handler : beforeDeleteHandlers) {
-            handler.accept(entity);
+            if (handler != null) {
+                handler.accept(entity);
+            }
         }
         for (Consumer<Object> handler : cascadeDeleteHandlers) {
             handler.accept(entity);
@@ -501,7 +509,9 @@ public class EntityDescriptor {
             property.onAfterDelete(entity);
         }
         for (Consumer<Object> handler : afterDeleteHandlers) {
-            handler.accept(entity);
+            if (handler != null) {
+                handler.accept(entity);
+            }
         }
     }
 
