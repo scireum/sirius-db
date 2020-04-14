@@ -643,7 +643,7 @@ public class EntityDescriptor {
                     }
                 };
             } else {
-                Mixing.LOG.WARN("Handler %s.%s must have either 0 or 1 Parrameters (the entity itself)!",
+                Mixing.LOG.WARN("Handler %s.%s must have either 0 or 1 Parameters (the entity itself)!",
                                 method.getDeclaringClass().getName(),
                                 method.getName());
                 return null;
