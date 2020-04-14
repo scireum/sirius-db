@@ -216,16 +216,21 @@ public class Schema implements Startable, Initializable {
 
         collectColumns(table, entityDescriptor);
         collectKeys(table, entityDescriptor);
-        applyColumnRenamings(table);
+        applyRenamings(table);
 
         return table;
     }
 
-    private void applyColumnRenamings(Table table) {
-        if (table.getSource().getLegacyInfo() != null && table.getSource().getLegacyInfo().hasPath("rename")) {
-            Config renamedColumns = table.getSource().getLegacyInfo().getConfig("rename");
-            for (TableColumn col : table.getColumns()) {
-                applyRenaming(renamedColumns, col);
+    private void applyRenamings(Table table) {
+        if (table.getSource().getLegacyInfo() != null) {
+            if (table.getSource().getLegacyInfo().hasPath("oldTableName")) {
+                table.setOldName(table.getSource().getLegacyInfo().getString("oldTableName"));
+            }
+            if (table.getSource().getLegacyInfo().hasPath("rename")) {
+                Config renamedColumns = table.getSource().getLegacyInfo().getConfig("rename");
+                for (TableColumn col : table.getColumns()) {
+                    applyRenaming(renamedColumns, col);
+                }
             }
         }
     }
