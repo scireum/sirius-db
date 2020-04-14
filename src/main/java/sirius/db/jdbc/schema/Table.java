@@ -77,7 +77,7 @@ public class Table {
     }
 
     /**
-     * Retursn the legacy name of the table.
+     * Returns the legacy name of the table.
      * <p>
      * This is filled from the system config and might contain an old/legacy name.
      *
