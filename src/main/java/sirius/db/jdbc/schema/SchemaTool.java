@@ -342,20 +342,20 @@ public class SchemaTool {
         for (Key targetKey : targetTable.getKeys()) {
             Key otherKey = findInList(other.getKeys(), targetKey);
             if (otherKey == null) {
-                createKey(targetTable, result, targetKey);
+                createKey(other, result, targetKey);
             } else {
-                adjustKey(targetTable, result, targetKey, otherKey);
+                adjustKey(other, result, targetKey, otherKey);
             }
         }
     }
 
-    private void createKey(Table targetTable, List<SchemaUpdateAction> result, Key targetKey) {
-        String sql = dialect.generateAddKey(targetTable, targetKey);
+    private void createKey(Table table, List<SchemaUpdateAction> result, Key targetKey) {
+        String sql = dialect.generateAddKey(table, targetKey);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
             action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
                                 .set("key", targetKey.getName())
-                                .set(KEY_TABLE, targetTable.getName())
+                                .set(KEY_TABLE, table.getName())
                                 .format());
             action.setDataLossPossible(false);
             action.setSql(sql);
@@ -363,15 +363,15 @@ public class SchemaTool {
         }
     }
 
-    private void adjustKey(Table targetTable, List<SchemaUpdateAction> result, Key targetKey, Key otherKey) {
+    private void adjustKey(Table table, List<SchemaUpdateAction> result, Key targetKey, Key otherKey) {
         if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
             || targetKey.isUnique() != otherKey.isUnique()) {
-            List<String> sql = dialect.generateAlterKey(targetTable, otherKey, targetKey);
+            List<String> sql = dialect.generateAlterKey(table, otherKey, targetKey);
             if (!sql.isEmpty()) {
                 SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
                                     .set("key", targetKey.getName())
-                                    .set(KEY_TABLE, targetTable.getName())
+                                    .set(KEY_TABLE, table.getName())
                                     .format());
                 action.setDataLossPossible(true);
                 action.setSql(sql);
@@ -384,9 +384,9 @@ public class SchemaTool {
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
             ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
-                createForeignKey(targetTable, result, targetKey);
+                createForeignKey(other != null ? other : targetTable, result, targetKey);
             } else {
-                adjustForeignKey(targetTable, result, targetKey, otherKey);
+                adjustForeignKey(other != null ? other : targetTable, result, targetKey, otherKey);
             }
         }
     }
@@ -438,9 +438,9 @@ public class SchemaTool {
                 otherCol = findColumn(other, targetCol.getOldName());
             }
             if (otherCol == null) {
-                handleNewColumn(targetTable, result, targetCol);
+                handleNewColumn(other, result, targetCol);
             } else {
-                handleUpdateColumn(targetTable, result, usedColumns, targetCol, otherCol);
+                handleUpdateColumn(other, result, usedColumns, targetCol, otherCol);
             }
         }
 
@@ -468,7 +468,7 @@ public class SchemaTool {
         }
     }
 
-    private void handleUpdateColumn(Table targetTable,
+    private void handleUpdateColumn(Table table,
                                     List<SchemaUpdateAction> result,
                                     Set<String> usedColumns,
                                     TableColumn targetCol,
@@ -483,18 +483,18 @@ public class SchemaTool {
             reason = NLS.fmtr("SchemaTool.columnNeedsRename")
                         .set(KEY_COLUMN, otherCol.getName())
                         .set("newName", targetCol.getName())
-                        .set(KEY_TABLE, targetTable.getName())
+                        .set(KEY_TABLE, table.getName())
                         .format();
             dataLossPossible = false;
         } else if (reason != null) {
             reason = NLS.fmtr("SchemaTool.columnNeedsChange")
                         .set(KEY_COLUMN, otherCol.getName())
-                        .set(KEY_TABLE, targetTable.getName())
+                        .set(KEY_TABLE, table.getName())
                         .set("reason", reason)
                         .format();
         }
         if (reason != null) {
-            List<String> sql = dialect.generateAlterColumnTo(targetTable, otherCol.getName(), targetCol);
+            List<String> sql = dialect.generateAlterColumnTo(table, otherCol.getName(), targetCol);
             if (!sql.isEmpty()) {
                 SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(reason);
@@ -505,13 +505,13 @@ public class SchemaTool {
         }
     }
 
-    private void handleNewColumn(Table targetTable, List<SchemaUpdateAction> result, TableColumn targetCol) {
-        String sql = dialect.generateAddColumn(targetTable, targetCol);
+    private void handleNewColumn(Table table, List<SchemaUpdateAction> result, TableColumn targetCol) {
+        String sql = dialect.generateAddColumn(table, targetCol);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
             action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
                                 .set(KEY_COLUMN, targetCol.getName())
-                                .set(KEY_TABLE, targetTable.getName())
+                                .set(KEY_TABLE, table.getName())
                                 .format());
             action.setDataLossPossible(false);
             action.setSql(sql);
