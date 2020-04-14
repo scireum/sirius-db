@@ -9,10 +9,10 @@
 package sirius.db.jdbc.schema;
 
 import sirius.db.mixing.EntityDescriptor;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -52,8 +52,10 @@ public class Table {
      *
      * @return the columns of the primary key
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<String> getPrimaryKey() {
-        return Collections.unmodifiableList(primaryKey);
+        return primaryKey;
     }
 
     /**
@@ -99,8 +101,10 @@ public class Table {
      *
      * @return the list of columns of this table
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<TableColumn> getColumns() {
-        return Collections.unmodifiableList(columns);
+        return columns;
     }
 
     /**
@@ -108,8 +112,10 @@ public class Table {
      *
      * @return the list of key of this table
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<Key> getKeys() {
-        return Collections.unmodifiableList(keys);
+        return keys;
     }
 
     /**
@@ -117,8 +123,10 @@ public class Table {
      *
      * @return the list of foreign keys of this table
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<ForeignKey> getForeignKeys() {
-        return Collections.unmodifiableList(foreignKeys);
+        return foreignKeys;
     }
 
     /**
