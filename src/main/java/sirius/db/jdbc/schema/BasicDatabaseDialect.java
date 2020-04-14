@@ -16,6 +16,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -144,6 +145,12 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     @Override
     public String generateDropTable(Table table) {
         return MessageFormat.format("DROP TABLE `{0}` ", table.getName());
+    }
+
+    @Nullable
+    @Override
+    public String generateRenameTable(Table table) {
+        return MessageFormat.format("ALTER TABLE `{0}` RENAME `{1}`", table.getOldName(), table.getName());
     }
 
     @Override

@@ -9,6 +9,7 @@
 package sirius.db.jdbc.schema;
 
 import sirius.db.mixing.EntityDescriptor;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ public class Table {
 
     private EntityDescriptor source;
     private String name;
+    private String oldName;
     private List<String> primaryKey = new ArrayList<>();
     private List<TableColumn> columns = new ArrayList<>();
     private List<Key> keys = new ArrayList<>();
@@ -50,6 +52,8 @@ public class Table {
      *
      * @return the columns of the primary key
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<String> getPrimaryKey() {
         return primaryKey;
     }
@@ -73,10 +77,32 @@ public class Table {
     }
 
     /**
+     * Returns the legacy name of the table.
+     * <p>
+     * This is filled from the system config and might contain an old/legacy name.
+     *
+     * @return the old name of the table or <tt>null</tt> if no renaming is or was planned
+     */
+    public String getOldName() {
+        return oldName;
+    }
+
+    /**
+     * Specifies a previous (old/legacy) table name.
+     *
+     * @param oldName the previous table name to generate a RENAME statement if the table is still around
+     */
+    public void setOldName(String oldName) {
+        this.oldName = oldName;
+    }
+
+    /**
      * Returns a mutable list of columns of this table.
      *
      * @return the list of columns of this table
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<TableColumn> getColumns() {
         return columns;
     }
@@ -86,6 +112,8 @@ public class Table {
      *
      * @return the list of key of this table
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<Key> getKeys() {
         return keys;
     }
@@ -95,6 +123,8 @@ public class Table {
      *
      * @return the list of foreign keys of this table
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Intentionally returns a mutable list to collect items")
     public List<ForeignKey> getForeignKeys() {
         return foreignKeys;
     }
