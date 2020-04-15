@@ -322,7 +322,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     /**
      * Resolves the given path into a property.
      * <p>
-     * If the path contains ".", it will also yield an appropriate mapping which represents the necessarrry joins.
+     * If the path contains ".", it will also yield an appropriate mapping which represents the necessary joins.
      *
      * @param propertyPath the path to parse
      * @return a tuple consisting of the mapping to use and the target property. Returns <tt>null</tt> if the property
