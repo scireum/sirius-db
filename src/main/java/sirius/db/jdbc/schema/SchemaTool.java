@@ -42,7 +42,7 @@ public class SchemaTool {
     private static final String KEY_TABLE = "table";
     private static final String KEY_OLD_NAME = "oldName";
     private static final String KEY_COLUMN = "column";
-    private String realm;
+    private final String realm;
     private final DatabaseDialect dialect;
 
     private static Map<Integer, String> sqlTypeToName;
@@ -207,27 +207,17 @@ public class SchemaTool {
     private void syncRequiredTables(List<SchemaUpdateAction> result,
                                     List<Table> currentSchema,
                                     List<Table> targetSchema) {
-        List<Table> tablesToRename = new ArrayList<>();
         for (Table targetTable : targetSchema) {
             generateEffectiveKeyNames(targetTable);
 
             Table other = findTable(currentSchema, targetTable);
             if (other == null) {
-                String sql = dialect.generateCreateTable(targetTable);
-                if (Strings.isFilled(sql)) {
-                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                    action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
-                                        .set(KEY_TABLE, targetTable.getName())
-                                        .format());
-                    action.setDataLossPossible(false);
-                    action.setSql(sql);
-                    result.add(action);
-                }
+                createTable(targetTable,result);
             } else {
-                syncTables(targetTable, other, result);
                 if (!Strings.areEqual(targetTable.getName(), other.getName())) {
-                    tablesToRename.add(targetTable);
+                    renameTable(targetTable, result);
                 }
+                syncTables(targetTable, other, result);
             }
         }
 
@@ -235,21 +225,35 @@ public class SchemaTool {
             Table other = findTable(currentSchema, targetTable);
             syncForeignKeys(targetTable, other, result);
         }
+    }
 
-        for (Table table : tablesToRename) {
-            String sql = dialect.generateRenameTable(table);
-            if (Strings.isFilled(sql)) {
-                SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                action.setReason(NLS.fmtr("SchemaTool.tableNeedsRename")
-                                    .set(KEY_TABLE, table.getName())
-                                    .set(KEY_OLD_NAME, table.getName())
-                                    .format());
-                action.setDataLossPossible(false);
-                action.setSql(sql);
-                result.add(action);
-            }
+    private void createTable(Table targetTable, List<SchemaUpdateAction> result) {
+        String sql = dialect.generateCreateTable(targetTable);
+        if (Strings.isFilled(sql)) {
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
+            action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
+                                .set(KEY_TABLE, targetTable.getName())
+                                .format());
+            action.setDataLossPossible(false);
+            action.setSql(sql);
+            result.add(action);
         }
     }
+
+    private void renameTable(Table table,List<SchemaUpdateAction> result) {
+        String sql = dialect.generateRenameTable(table);
+        if (Strings.isFilled(sql)) {
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
+            action.setReason(NLS.fmtr("SchemaTool.tableNeedsRename")
+                                .set(KEY_TABLE, table.getName())
+                                .set(KEY_OLD_NAME, table.getOldName())
+                                .format());
+            action.setDataLossPossible(false);
+            action.setSql(sql);
+            result.add(action);
+        }
+    }
+
 
     private Table findTable(List<Table> currentSchema, Table targetTable) {
         Table result = findInList(currentSchema, targetTable);
@@ -323,7 +327,7 @@ public class SchemaTool {
     private void dropForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         for (ForeignKey key : other.getForeignKeys()) {
             if (findInList(targetTable.getForeignKeys(), key) == null) {
-                String sql = dialect.generateDropForeignKey(other, key);
+                String sql = dialect.generateDropForeignKey(targetTable, key);
                 if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
                     action.setReason(NLS.fmtr("SchemaTool.fkUnused")
@@ -342,9 +346,9 @@ public class SchemaTool {
         for (Key targetKey : targetTable.getKeys()) {
             Key otherKey = findInList(other.getKeys(), targetKey);
             if (otherKey == null) {
-                createKey(other, result, targetKey);
+                createKey(targetTable, result, targetKey);
             } else {
-                adjustKey(other, result, targetKey, otherKey);
+                adjustKey(targetTable, result, targetKey, otherKey);
             }
         }
     }
@@ -384,9 +388,9 @@ public class SchemaTool {
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
             ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
-                createForeignKey(other != null ? other : targetTable, result, targetKey);
+                createForeignKey(targetTable, result, targetKey);
             } else {
-                adjustForeignKey(other != null ? other : targetTable, result, targetKey, otherKey);
+                adjustForeignKey(targetTable, result, targetKey, otherKey);
             }
         }
     }
@@ -438,9 +442,9 @@ public class SchemaTool {
                 otherCol = findColumn(other, targetCol.getOldName());
             }
             if (otherCol == null) {
-                handleNewColumn(other, result, targetCol);
+                handleNewColumn(targetTable, result, targetCol);
             } else {
-                handleUpdateColumn(other, result, usedColumns, targetCol, otherCol);
+                handleUpdateColumn(targetTable, result, usedColumns, targetCol, otherCol);
             }
         }
 
