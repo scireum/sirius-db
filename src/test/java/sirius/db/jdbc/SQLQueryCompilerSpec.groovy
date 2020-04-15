@@ -10,6 +10,7 @@ package sirius.db.jdbc
 
 import sirius.db.jdbc.constraints.SQLConstraint
 import sirius.db.jdbc.constraints.SQLQueryCompiler
+import sirius.db.mixing.Mapping
 import sirius.db.mixing.Mixing
 import sirius.db.mixing.Property
 import sirius.db.mixing.query.QueryCompiler
@@ -176,7 +177,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         queryCompiler.compile().toString() == "firstname = test"
     }
 
-    def "compiling 'firstname:type:value-123' works"(){
+    def "compiling 'firstname:type:value-123' works"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
                 OMA.FILTERS,
@@ -188,7 +189,19 @@ class SQLQueryCompilerSpec extends BaseSpecification {
 
     }
 
-    def "compiling 'hello:world' does not treat hello as a field"(){
+    def "compiling 'firstname:type(value-123)' works"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname:type(value-123)",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "firstname = type(value-123)"
+
+    }
+
+    def "compiling 'hello:world' does not treat hello as a field"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
                 OMA.FILTERS,
@@ -200,7 +213,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
 
     }
 
-    def "compiling 'hello::world' does not treat hello as a field"(){
+    def "compiling 'hello::world' does not treat hello as a field"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
                 OMA.FILTERS,
@@ -212,7 +225,7 @@ class SQLQueryCompilerSpec extends BaseSpecification {
 
     }
 
-    def "compiling 'hello > world' silently drops the operator as hello isn't a field"(){
+    def "compiling 'hello > world' silently drops the operator as hello isn't a field"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
                 OMA.FILTERS,
@@ -223,7 +236,31 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         queryCompiler.compile().toString() == "(LOWER(firstname) LIKE '%hello%' AND LOWER(firstname) LIKE '%world%')"
     }
 
-    def "customizing constraint compilation works"(){
+    def "compiling 'parent.name:Test' compiles into a JOIN FETCH"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(SmartQueryTestChildEntity.class),
+                "parent.name:Test",
+                Collections.emptyList())
+        then:
+        queryCompiler.compile().toString() == "parent.name = Test"
+    }
+
+    def "compiling 'parent.unknownProperty:Test' reports an appropriate error"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(SmartQueryTestChildEntity.class),
+                "parent.unknownProperty:Test",
+                Collections.emptyList())
+        and:
+        queryCompiler.compile()
+        then: "If an unknown property is accessed and no search fields exist, an error is reported"
+        thrown(IllegalArgumentException)
+    }
+
+    def "customizing constraint compilation works"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
                 OMA.FILTERS,
@@ -231,9 +268,10 @@ class SQLQueryCompilerSpec extends BaseSpecification {
                 "is:chat",
                 Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME))) {
             @Override
-            protected SQLConstraint compileConstraint(Property property, QueryCompiler.FieldValue token, boolean skipped) {
-                return parseOperation(property, token.getValue().toString())
+            protected SQLConstraint compileCustomField(String field) {
+                return parseOperation(Mapping.named(field), null)
             }
+
             @Override
             protected QueryCompiler.FieldValue compileValue(Property property, QueryCompiler.FieldValue value) {
                 return value

@@ -235,6 +235,17 @@ public class EntityDescriptor {
     }
 
     /**
+     * Returns the {@link Mixing#getNameForType(Class) type name} for this descriptor.
+     * <p>
+     * This can be used via {@link Mixing#getDescriptor(String)} to resolve this  descriptor again.
+     *
+     * @return the type name of this descriptor
+     */
+    public String getName() {
+        return Mixing.getNameForType(getType());
+    }
+
+    /**
      * Returns the technical simple name to use.
      * <p>
      * This is e.g. used to determine table names or collection names in the datasource.
