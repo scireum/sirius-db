@@ -23,6 +23,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -400,6 +401,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @return a new instance of the given entity with the most current data from the database or the original entity,
      * if the entity does no longer exist in the database.
      */
+    @CheckReturnValue
     public <E extends B> E tryRefresh(E entity) {
         if (entity != null) {
             Optional<E> result = findEntity(entity);
@@ -422,6 +424,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @return a new instance of the given entity with the most current data from the database.
      * @throws HandledException if the entity no longer exists in the database.
      */
+    @CheckReturnValue
     public <E extends B> E refreshOrFail(E entity) {
         if (entity == null) {
             return null;
