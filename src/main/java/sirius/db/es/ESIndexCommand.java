@@ -18,6 +18,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.console.Command;
 
 import javax.annotation.Nonnull;
+import java.util.EnumSet;
 
 /**
  * Provides a tool which helps with managing Elasticsearch indices and our mapping of {@link ElasticEntity entities}.
@@ -94,8 +95,50 @@ public class ESIndexCommand implements Command {
             return true;
         }
 
+        if ("suppress-routing".equals(subCommand)) {
+            handleRoutingSuppression(output, args);
+            return true;
+        }
+
         output.apply("Unknown sub-command: %s", subCommand);
         return false;
+    }
+
+    private void handleRoutingSuppression(Output output, Values args) {
+        EntityDescriptor descriptor = mixing.getDescriptor(args.at(1).asString());
+
+        if (args.length() == 2) {
+            output.line("Usage:");
+            output.line("Output suppressions:");
+            output.line("es-index suppress-routing <Entity>");
+            output.blankLine();
+            output.line("Update suppressions (read and write):");
+            output.line("es-index suppress-routing <Entity> <Y/N> <Y/N>");
+            output.blankLine();
+            output.line("Reset suppressions to default:");
+            output.line("es-index suppress-routing <Entity> \"-\"");
+            output.blankLine();
+        } else if ("-".equals(args.at(2).asString())) {
+            elastic.updateRoutingSuppression(descriptor, null);
+            output.apply("Default suppression of %s has been restored...", descriptor.getType());
+            output.blankLine();
+        } else if (args.length() == 4) {
+            EnumSet<Elastic.RoutingAccessMode> modes = EnumSet.noneOf(Elastic.RoutingAccessMode.class);
+            if ("Y".equals(args.at(2).asString())) {
+                modes.add(Elastic.RoutingAccessMode.READ);
+            }
+            if ("Y".equals(args.at(3).asString())) {
+                modes.add(Elastic.RoutingAccessMode.WRITE);
+            }
+            elastic.updateRoutingSuppression(descriptor, modes);
+            output.apply("Suppression of %s has been updated...", descriptor.getType());
+            output.blankLine();
+        }
+
+        output.apply("Suppression of %s: READ: %s WRITE: %s",
+                     descriptor.getType(),
+                     elastic.isRoutingSuppressed(descriptor, Elastic.RoutingAccessMode.READ),
+                     elastic.isRoutingSuppressed(descriptor, Elastic.RoutingAccessMode.WRITE));
     }
 
     private void outputIndexInfos(Output output) {
@@ -106,7 +149,7 @@ public class ESIndexCommand implements Command {
                 String readAlias = elastic.determineReadAlias(descriptor);
                 String readIndex = elastic.getLowLevelClient().resolveIndexForAlias(readAlias).orElse("-");
                 String writeIndex = Value.of(elastic.determineWriteAlias(descriptor)).ignore(readAlias).asString("-");
-                output.apply("%-20s %-40s %-40s", Mixing.getNameForType(descriptor.getType()), readIndex, writeIndex);
+                output.apply("%-20s %-40s %-40s", descriptor.getName(), readIndex, writeIndex);
             }
         }
         output.separator();

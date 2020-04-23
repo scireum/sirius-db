@@ -89,23 +89,23 @@ public class Database {
         ctx.putAll(ext.getContext());
         this.name = name;
         this.driver = ext.get(KEY_DRIVER).isEmptyString() ?
-                      Formatter.create(profile.get(KEY_DRIVER).asString()).set(ctx).format() :
+                      Formatter.create(profile.get(KEY_DRIVER).asString()).setDirect(ctx).format() :
                       ext.get(KEY_DRIVER).asString();
         this.service = ext.get(KEY_SERVICE).isEmptyString() ?
-                       Formatter.create(profile.get(KEY_SERVICE).asString()).set(ctx).format() :
+                       Formatter.create(profile.get(KEY_SERVICE).asString()).setDirect(ctx).format() :
                        ext.get(KEY_SERVICE).asString();
         this.url = ext.get(KEY_URL).isEmptyString() ?
-                   Formatter.create(profile.get(KEY_URL).asString()).set(ctx).format() :
+                   Formatter.create(profile.get(KEY_URL).asString()).setDirect(ctx).format() :
                    ext.get(KEY_URL).asString();
         this.hostUrl = ext.get(KEY_HOST_URL).isEmptyString() ?
-                       Formatter.create(profile.get(KEY_HOST_URL).asString()).set(ctx).format() :
+                       Formatter.create(profile.get(KEY_HOST_URL).asString()).setDirect(ctx).format() :
                        ext.get(KEY_HOST_URL).asString();
         applyPortMapping();
         this.username = ext.get(KEY_USER).isEmptyString() ?
-                        Formatter.create(profile.get(KEY_USER).asString()).set(ctx).format() :
+                        Formatter.create(profile.get(KEY_USER).asString()).setDirect(ctx).format() :
                         ext.get(KEY_USER).asString();
         this.password = ext.get(KEY_PASSWORD).isEmptyString() ?
-                        Formatter.create(profile.get(KEY_PASSWORD).asString()).set(ctx).format() :
+                        Formatter.create(profile.get(KEY_PASSWORD).asString()).setDirect(ctx).format() :
                         ext.get(KEY_PASSWORD).asString();
         this.initialSize = ext.get(KEY_INITIAL_SIZE).isFilled() ?
                            ext.get(KEY_INITIAL_SIZE).asInt(0) :
@@ -116,7 +116,7 @@ public class Database {
         this.maxIdle =
                 ext.get(KEY_MAX_IDLE).isFilled() ? ext.get(KEY_MAX_IDLE).asInt(1) : profile.get(KEY_MAX_IDLE).asInt(1);
         this.validationQuery = ext.get(KEY_VALIDATION_QUERY).isEmptyString() ?
-                               Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).set(ctx).format() :
+                               Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).setDirect(ctx).format() :
                                ext.get(KEY_VALIDATION_QUERY).asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
     }

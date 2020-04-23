@@ -8,6 +8,7 @@
 
 package sirius.db.es.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -18,6 +19,7 @@ import java.lang.annotation.Target;
  * <p>
  * Note that this shouldn't be <tt>null</tt> and also be an non analyzed field.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface RoutedBy {

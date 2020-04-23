@@ -11,6 +11,7 @@ package sirius.db.mixing.annotations;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.Mixable;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -21,6 +22,7 @@ import java.lang.annotation.Target;
  * <p>
  * If you need different logic for updated and newly created entities, use {@link BaseEntity#wasCreated()} in your method.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface AfterSave {

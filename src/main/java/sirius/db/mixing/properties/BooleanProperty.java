@@ -108,7 +108,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
             return null;
         }
 
-        return ((Boolean) object) ? 1 : 0;
+        return Boolean.TRUE.equals(object) ? 1 : 0;
     }
 
     @Override

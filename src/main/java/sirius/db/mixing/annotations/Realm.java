@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -18,6 +19,7 @@ import java.lang.annotation.Target;
  * <p>
  * This can be used to determine which datasource is used to reprenset an entity class.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Realm {

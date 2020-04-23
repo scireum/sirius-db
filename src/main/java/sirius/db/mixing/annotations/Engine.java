@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,6 +20,7 @@ import java.lang.annotation.Target;
  * Use e.g. <tt>InnoDB</tt> for MySQL or <tt>MergeTree(EventDate, (CounterID, EventDate), 8192)</tt>
  * for Clickhouse.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Engine {

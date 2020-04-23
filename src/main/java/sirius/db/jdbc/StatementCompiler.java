@@ -123,7 +123,6 @@ class StatementCompiler {
      * Replaces all occurrences of parameters ${..} or #{..} by parameters given
      * in context.
      */
-    @SuppressWarnings("unchecked")
     private void compileSection(boolean ignoreIfParametersNull, String sql) throws SQLException {
         List<Object> tempParams = Lists.newArrayList();
         StringBuilder sqlBuilder = new StringBuilder();
@@ -152,7 +151,7 @@ class StatementCompiler {
         String parameterName = sql.substring(nextSubstitution.getFirst() + 2, endIndex);
         Object paramValue = computeEffectiveParameterValue(parameterName);
 
-        if (nextSubstitution.getSecond() || paramValue == null) {
+        if (Boolean.TRUE.equals(nextSubstitution.getSecond()) || paramValue == null) {
             tempParams.add(paramValue);
         } else {
             tempParams.add(addSQLWildcard(paramValue.toString().toLowerCase(), true));

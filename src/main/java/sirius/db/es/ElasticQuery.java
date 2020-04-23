@@ -515,9 +515,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      */
     public ElasticQuery<E> routing(String value) {
-        if (!elastic.isRoutingSuppressed(descriptor)) {
-            this.routing = value;
-        }
+        this.routing = value;
         return this;
     }
 
@@ -618,28 +616,41 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("COUNT queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
-        checkRouting();
+        String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        JSONObject countResponse = client.count(elastic.determineReadAlias(descriptor), routing, buildSimplePayload());
+        JSONObject countResponse =
+                client.count(elastic.determineReadAlias(descriptor), filteredRouting, buildSimplePayload());
         return countResponse.getLong(KEY_COUNT);
     }
-    
-    private void checkRouting() {
-        if (elastic.isRouted(descriptor)) {
-            if (Strings.isEmpty(routing) && !unrouted) {
+
+    private String filterRouting(Elastic.RoutingAccessMode accessMode) {
+        if (Strings.isFilled(routing) && !elastic.isRoutingSuppressed(descriptor, accessMode)) {
+            return routing;
+        }
+
+        return null;
+    }
+
+    private String checkRouting(Elastic.RoutingAccessMode accessMode) {
+        String filteredRouting = filterRouting(accessMode);
+
+        if (elastic.isRouted(descriptor, accessMode)) {
+            if (Strings.isEmpty(filteredRouting) && !unrouted) {
                 Elastic.LOG.WARN("Trying query an entity of type '%s' without providing a routing!"
                                  + " This will most probably return an invalid result!\n%s\n",
                                  descriptor.getType().getName(),
                                  this,
                                  ExecutionPoint.snapshot());
             }
-        } else if (Strings.isFilled(routing)) {
+        } else if (Strings.isFilled(filteredRouting)) {
             Elastic.LOG.WARN("Trying query an entity of type '%s' while providing a routing! This entity is unrouted!"
                              + " This will most probably return an invalid result!\n%s\n",
                              descriptor.getType().getName(),
                              this,
                              ExecutionPoint.snapshot());
         }
+
+        return filteredRouting;
     }
 
     @Override
@@ -648,9 +659,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("EXISTS queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
-        checkRouting();
+        String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        JSONObject existsResponse = client.exists(elastic.determineReadAlias(descriptor), routing, buildSimplePayload());
+        JSONObject existsResponse =
+                client.exists(elastic.determineReadAlias(descriptor), filteredRouting, buildSimplePayload());
         return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue("value") >= 1;
     }
 
@@ -662,9 +674,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return;
         }
 
-        checkRouting();
+        String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        this.response = client.search(elastic.determineReadAlias(descriptor), routing, skip, limit, buildPayload());
+        this.response =
+                client.search(elastic.determineReadAlias(descriptor), filteredRouting, skip, limit, buildPayload());
         for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
             if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
@@ -698,7 +711,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                             .handle();
         }
 
-        this.response = client.search(elastic.determineReadAlias(descriptor), routing, skip, limit, buildPayload());
+        String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
+
+        this.response =
+                client.search(elastic.determineReadAlias(descriptor), filteredRouting, skip, limit, buildPayload());
     }
 
     /**
@@ -814,9 +830,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public List<SuggestPart> getSuggestParts(String name) {
         if (response == null) {
-            checkRouting();
+            String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-            this.response = client.search(elastic.determineReadAlias(descriptor), routing, skip, limit, buildPayload());
+            this.response =
+                    client.search(elastic.determineReadAlias(descriptor), filteredRouting, skip, limit, buildPayload());
         }
 
         JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
@@ -846,12 +863,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 orderAsc(Mapping.named(KEY_DOC_ID));
             }
 
-            checkRouting();
+            String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
             JSONObject scrollResponse = client.createScroll(elastic.determineReadAlias(descriptor),
-                                                            routing,
+                                                            filteredRouting,
                                                             0,
-                                                            routing == null ?
+                                                            filteredRouting == null ?
                                                             MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
                                                             MAX_SCROLL_RESULTS_PER_SHARD,
                                                             SCROLL_TTL_SECONDS,
@@ -948,7 +965,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void truncate() {
-        elastic.getLowLevelClient().deleteByQuery(elastic.determineWriteAlias(descriptor), routing, buildSimplePayload());
+        String filteredRouting = checkRouting(Elastic.RoutingAccessMode.WRITE);
+        elastic.getLowLevelClient()
+               .deleteByQuery(elastic.determineWriteAlias(descriptor), filteredRouting, buildSimplePayload());
     }
 
     @Override

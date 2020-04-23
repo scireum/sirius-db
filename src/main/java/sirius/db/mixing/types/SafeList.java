@@ -120,6 +120,30 @@ public abstract class SafeList<T> implements Iterable<T> {
     }
 
     /**
+     * Adds a new item to the list if not already contained.
+     *
+     * @param item the item to add
+     * @return the list itself for fluent method calls
+     */
+    public SafeList<T> addDistinct(T item) {
+        if (!contains(item)) {
+            modify().add(item);
+        }
+        return this;
+    }
+
+    /**
+     * Removes an item from the list.
+     *
+     * @param item the item to remove
+     * @return the list itself for fluent method calls
+     */
+    public SafeList<T> remove(T item) {
+        modify().remove(item);
+        return this;
+    }
+
+    /**
      * Clears the list.
      *
      * @return the list itself for fluent method calls

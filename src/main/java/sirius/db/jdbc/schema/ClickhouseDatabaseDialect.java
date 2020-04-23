@@ -198,11 +198,6 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     }
 
     @Override
-    public String generateDropColumn(Table table, TableColumn col) {
-        return null;
-    }
-
-    @Override
     public String generateDropForeignKey(Table table, ForeignKey key) {
         return null;
     }

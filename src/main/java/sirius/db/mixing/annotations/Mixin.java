@@ -11,6 +11,7 @@ package sirius.db.mixing.annotations;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.Composite;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -22,6 +23,7 @@ import java.lang.annotation.Target;
  * A mixin can add properties to an entity or composite, which are not defined in the original class. This can be used
  * to defined customer extensions without modifying the standard classes.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Mixin {

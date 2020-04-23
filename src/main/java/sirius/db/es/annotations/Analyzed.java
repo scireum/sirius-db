@@ -8,6 +8,7 @@
 
 package sirius.db.es.annotations;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,6 +20,7 @@ import java.lang.annotation.Target;
  * This will make elasticsearch use an analyzer to split the contents of the field into separate tokens which are then
  * searchable.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Analyzed {

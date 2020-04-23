@@ -93,7 +93,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
-    public MongoConstraint isEmptyArray(Mapping field) {
+    public MongoConstraint isEmptyList(Mapping field) {
         return new MongoOneInField(this, field, Arrays.asList(null, new BasicDBList())).build();
     }
 

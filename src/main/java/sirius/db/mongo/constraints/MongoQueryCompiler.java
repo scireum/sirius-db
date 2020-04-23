@@ -10,6 +10,9 @@ package sirius.db.mongo.constraints;
 
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Property;
+import sirius.db.mixing.properties.BaseEntityRefListProperty;
+import sirius.db.mixing.properties.StringListProperty;
 import sirius.db.mixing.query.QueryCompiler;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mongo.QueryBuilder;
@@ -58,5 +61,15 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
             throw new IllegalArgumentException("MongoQueryCompiler only supports either a search in the FULLTEXT_FIELD "
                                                + "or an equals or prefix search in a string field");
         }
+    }
+
+    @Override
+    protected MongoConstraint compileFieldEquals(Mapping field, Property property, FieldValue value) {
+        if (value.getValue() == null && (property instanceof StringListProperty
+                                         || property instanceof BaseEntityRefListProperty)) {
+            return QueryBuilder.FILTERS.isEmptyList(field);
+        }
+
+        return super.compileFieldEquals(field, property, value);
     }
 }

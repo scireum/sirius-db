@@ -115,11 +115,6 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         return not(filled(field));
     }
 
-    @Override
-    public ElasticConstraint isEmptyArray(Mapping field) {
-        return notFilled(field);
-    }
-
     /**
      * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
      *

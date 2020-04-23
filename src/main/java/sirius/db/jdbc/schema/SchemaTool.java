@@ -9,7 +9,6 @@
 package sirius.db.jdbc.schema;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import sirius.db.jdbc.Database;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Explain;
@@ -18,15 +17,18 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -38,11 +40,12 @@ public class SchemaTool {
     private static final String COLUMN_KEY_SEQ = "KEY_SEQ";
     private static final String COLUMN_COLUMN_NAME = "COLUMN_NAME";
     private static final String KEY_TABLE = "table";
+    private static final String KEY_OLD_NAME = "oldName";
     private static final String KEY_COLUMN = "column";
-    private String realm;
+    private final String realm;
     private final DatabaseDialect dialect;
 
-    private static Map<Integer, String> map;
+    private static Map<Integer, String> sqlTypeToName;
 
     /**
      * Creates a new instance for the given dialect.
@@ -186,7 +189,7 @@ public class SchemaTool {
                                   List<Table> currentSchema,
                                   List<Table> targetSchema) {
         for (Table table : currentSchema) {
-            if (findInList(targetSchema, table) == null) {
+            if (findTable(targetSchema, table) == null) {
                 String sql = dialect.generateDropTable(table);
                 if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
@@ -207,27 +210,63 @@ public class SchemaTool {
         for (Table targetTable : targetSchema) {
             generateEffectiveKeyNames(targetTable);
 
-            Table other = findInList(currentSchema, targetTable);
+            Table other = findTable(currentSchema, targetTable);
             if (other == null) {
-                String sql = dialect.generateCreateTable(targetTable);
-                if (Strings.isFilled(sql)) {
-                    SchemaUpdateAction action = new SchemaUpdateAction(realm);
-                    action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
-                                        .set(KEY_TABLE, targetTable.getName())
-                                        .format());
-                    action.setDataLossPossible(false);
-                    action.setSql(sql);
-                    result.add(action);
-                }
+                createTable(targetTable,result);
             } else {
+                if (!Strings.areEqual(targetTable.getName(), other.getName())) {
+                    renameTable(targetTable, result);
+                }
                 syncTables(targetTable, other, result);
             }
         }
 
         for (Table targetTable : targetSchema) {
-            Table other = findInList(currentSchema, targetTable);
+            Table other = findTable(currentSchema, targetTable);
             syncForeignKeys(targetTable, other, result);
         }
+    }
+
+    private void createTable(Table targetTable, List<SchemaUpdateAction> result) {
+        String sql = dialect.generateCreateTable(targetTable);
+        if (Strings.isFilled(sql)) {
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
+            action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
+                                .set(KEY_TABLE, targetTable.getName())
+                                .format());
+            action.setDataLossPossible(false);
+            action.setSql(sql);
+            result.add(action);
+        }
+    }
+
+    private void renameTable(Table table,List<SchemaUpdateAction> result) {
+        String sql = dialect.generateRenameTable(table);
+        if (Strings.isFilled(sql)) {
+            SchemaUpdateAction action = new SchemaUpdateAction(realm);
+            action.setReason(NLS.fmtr("SchemaTool.tableNeedsRename")
+                                .set(KEY_TABLE, table.getName())
+                                .set(KEY_OLD_NAME, table.getOldName())
+                                .format());
+            action.setDataLossPossible(false);
+            action.setSql(sql);
+            result.add(action);
+        }
+    }
+
+
+    private Table findTable(List<Table> currentSchema, Table targetTable) {
+        Table result = findInList(currentSchema, targetTable);
+        if (result != null) {
+            return result;
+        }
+        if (Strings.isEmpty(targetTable.getOldName())) {
+            return null;
+        }
+        return currentSchema.stream()
+                            .filter(table -> Strings.areEqual(table.getName(), targetTable.getOldName()))
+                            .findAny()
+                            .orElse(null);
     }
 
     private boolean keyListEqual(List<String> left, List<String> right) {
@@ -288,7 +327,7 @@ public class SchemaTool {
     private void dropForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
         for (ForeignKey key : other.getForeignKeys()) {
             if (findInList(targetTable.getForeignKeys(), key) == null) {
-                String sql = dialect.generateDropForeignKey(other, key);
+                String sql = dialect.generateDropForeignKey(targetTable, key);
                 if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
                     action.setReason(NLS.fmtr("SchemaTool.fkUnused")
@@ -314,13 +353,13 @@ public class SchemaTool {
         }
     }
 
-    private void createKey(Table targetTable, List<SchemaUpdateAction> result, Key targetKey) {
-        String sql = dialect.generateAddKey(targetTable, targetKey);
+    private void createKey(Table table, List<SchemaUpdateAction> result, Key targetKey) {
+        String sql = dialect.generateAddKey(table, targetKey);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
             action.setReason(NLS.fmtr("SchemaTool.indexDoesNotExist")
                                 .set("key", targetKey.getName())
-                                .set(KEY_TABLE, targetTable.getName())
+                                .set(KEY_TABLE, table.getName())
                                 .format());
             action.setDataLossPossible(false);
             action.setSql(sql);
@@ -328,15 +367,15 @@ public class SchemaTool {
         }
     }
 
-    private void adjustKey(Table targetTable, List<SchemaUpdateAction> result, Key targetKey, Key otherKey) {
+    private void adjustKey(Table table, List<SchemaUpdateAction> result, Key targetKey, Key otherKey) {
         if (!keyListEqual(targetKey.getColumns(), otherKey.getColumns())
             || targetKey.isUnique() != otherKey.isUnique()) {
-            List<String> sql = dialect.generateAlterKey(targetTable, otherKey, targetKey);
+            List<String> sql = dialect.generateAlterKey(table, otherKey, targetKey);
             if (!sql.isEmpty()) {
                 SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(NLS.fmtr("SchemaTool.indexNeedsChange")
                                     .set("key", targetKey.getName())
-                                    .set(KEY_TABLE, targetTable.getName())
+                                    .set(KEY_TABLE, table.getName())
                                     .format());
                 action.setDataLossPossible(true);
                 action.setSql(sql);
@@ -433,7 +472,7 @@ public class SchemaTool {
         }
     }
 
-    private void handleUpdateColumn(Table targetTable,
+    private void handleUpdateColumn(Table table,
                                     List<SchemaUpdateAction> result,
                                     Set<String> usedColumns,
                                     TableColumn targetCol,
@@ -448,18 +487,18 @@ public class SchemaTool {
             reason = NLS.fmtr("SchemaTool.columnNeedsRename")
                         .set(KEY_COLUMN, otherCol.getName())
                         .set("newName", targetCol.getName())
-                        .set(KEY_TABLE, targetTable.getName())
+                        .set(KEY_TABLE, table.getName())
                         .format();
             dataLossPossible = false;
         } else if (reason != null) {
             reason = NLS.fmtr("SchemaTool.columnNeedsChange")
                         .set(KEY_COLUMN, otherCol.getName())
-                        .set(KEY_TABLE, targetTable.getName())
+                        .set(KEY_TABLE, table.getName())
                         .set("reason", reason)
                         .format();
         }
         if (reason != null) {
-            List<String> sql = dialect.generateAlterColumnTo(targetTable, otherCol.getName(), targetCol);
+            List<String> sql = dialect.generateAlterColumnTo(table, otherCol.getName(), targetCol);
             if (!sql.isEmpty()) {
                 SchemaUpdateAction action = new SchemaUpdateAction(realm);
                 action.setReason(reason);
@@ -470,13 +509,13 @@ public class SchemaTool {
         }
     }
 
-    private void handleNewColumn(Table targetTable, List<SchemaUpdateAction> result, TableColumn targetCol) {
-        String sql = dialect.generateAddColumn(targetTable, targetCol);
+    private void handleNewColumn(Table table, List<SchemaUpdateAction> result, TableColumn targetCol) {
+        String sql = dialect.generateAddColumn(table, targetCol);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
             action.setReason(NLS.fmtr("SchemaTool.columnDoesNotExist")
                                 .set(KEY_COLUMN, targetCol.getName())
-                                .set(KEY_TABLE, targetTable.getName())
+                                .set(KEY_TABLE, table.getName())
                                 .format());
             action.setDataLossPossible(false);
             action.setSql(sql);
@@ -494,12 +533,8 @@ public class SchemaTool {
         return null;
     }
 
-    private <X> X findInList(List<X> list, X obj) {
-        int index = list.indexOf(obj);
-        if (index == -1) {
-            return null;
-        }
-        return list.get(index);
+    private <X> X findInList(List<X> haystack, X needle) {
+        return haystack.stream().filter(item -> Objects.equals(item, needle)).findAny().orElse(null);
     }
 
     /**
@@ -509,25 +544,18 @@ public class SchemaTool {
      * @return the string representation of the given type
      */
     public static String getJdbcTypeName(int jdbcType) {
-        // Use reflection to populate a map of int values to names
-        if (map == null) {
-            map = Maps.newHashMap();
-            // Get all field in java.sql.Types
-            Field[] fields = java.sql.Types.class.getFields();
-            for (int i = 0; i < fields.length; i++) {
+        if (sqlTypeToName == null) {
+            Map<Integer, String> result = new HashMap<>();
+            Arrays.stream(Types.class.getFields()).forEach(field -> {
                 try {
-                    // Get field name
-                    String name = fields[i].getName();
-                    // Get field value
-                    Integer value = (Integer) fields[i].get(null);
-                    // Add to map
-                    map.put(value, name);
+                    result.put((Integer) field.get(null), field.getName());
                 } catch (IllegalAccessException e) {
                     Exceptions.ignore(e);
                 }
-            }
+            });
+            sqlTypeToName = result;
         }
-        // Return the JDBC type name
-        return map.get(jdbcType);
+
+        return sqlTypeToName.get(jdbcType);
     }
 }
