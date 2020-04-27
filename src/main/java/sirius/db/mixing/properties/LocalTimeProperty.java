@@ -23,6 +23,7 @@ import sirius.kernel.nls.NLS;
 import java.lang.reflect.Field;
 import java.sql.Time;
 import java.sql.Types;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.function.Consumer;
 
@@ -57,16 +58,13 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
 
     @Override
     public Object transformValue(Value value) {
-        return NLS.parseUserString(LocalTime.class, value.asString());
-    }
-
-    @Override
-    protected Object transformValueFromImport(Value value) {
         if (value.is(LocalTime.class)) {
             return value.get();
         }
-
-        return transformValue(value);
+        if (value.is(LocalDateTime.class)) {
+            return value.get(LocalDateTime.class, LocalDateTime.now()).toLocalTime();
+        }
+        return NLS.parseUserString(LocalTime.class, value.asString());
     }
 
     @Override

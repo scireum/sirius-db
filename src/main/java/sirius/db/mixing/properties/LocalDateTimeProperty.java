@@ -28,7 +28,9 @@ import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
@@ -65,16 +67,13 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
 
     @Override
     public Object transformValue(Value value) {
-        return NLS.parseUserString(LocalDateTime.class, value.asString());
-    }
-
-    @Override
-    protected Object transformValueFromImport(Value value) {
         if (value.is(LocalDateTime.class)) {
             return value.get();
         }
-
-        return transformValue(value);
+        if (value.is(LocalDate.class)) {
+            return LocalDateTime.of(value.get(LocalDate.class, LocalDate.now()), LocalTime.MIDNIGHT);
+        }
+        return NLS.parseUserString(LocalDateTime.class, value.asString());
     }
 
     @Override

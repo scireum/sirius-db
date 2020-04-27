@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.sql.Date;
 import java.sql.Types;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
@@ -64,16 +65,13 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
 
     @Override
     public Object transformValue(Value value) {
-        return NLS.parseUserString(LocalDate.class, value.asString());
-    }
-
-    @Override
-    protected Object transformValueFromImport(Value value) {
         if (value.is(LocalDate.class)) {
             return value.get();
         }
-
-        return transformValue(value);
+        if (value.is(LocalDateTime.class)) {
+            return value.get(LocalDateTime.class, LocalDateTime.now()).toLocalDate();
+        }
+        return NLS.parseUserString(LocalDate.class, value.asString());
     }
 
     @Override
