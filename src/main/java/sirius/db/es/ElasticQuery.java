@@ -160,6 +160,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             this.sorts.add(new JSONObject().fluentPut(field, KEY_DESC));
             return this;
         }
+
+        /**
+         * Adds a parameter to the inner hit.
+         *
+         * @param name  the name of the parameter
+         * @param value the value of the parameter
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder addParameter(String name, Object value) {
+            this.json.put(name, value);
+            return this;
+        }
     }
 
     /**
