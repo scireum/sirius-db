@@ -62,7 +62,7 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
             return value.get();
         }
         if (value.is(LocalDateTime.class)) {
-            return value.get(LocalDateTime.class, LocalDateTime.now()).toLocalTime();
+            return value.get(LocalDateTime.class, null).toLocalTime();
         }
         return NLS.parseUserString(LocalTime.class, value.asString());
     }

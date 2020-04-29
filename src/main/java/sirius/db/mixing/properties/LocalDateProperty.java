@@ -69,7 +69,7 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
             return value.get();
         }
         if (value.is(LocalDateTime.class)) {
-            return value.get(LocalDateTime.class, LocalDateTime.now()).toLocalDate();
+            return value.get(LocalDateTime.class, null).toLocalDate();
         }
         return NLS.parseUserString(LocalDate.class, value.asString());
     }

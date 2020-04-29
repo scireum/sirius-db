@@ -71,7 +71,7 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
             return value.get();
         }
         if (value.is(LocalDate.class)) {
-            return LocalDateTime.of(value.get(LocalDate.class, LocalDate.now()), LocalTime.MIDNIGHT);
+            return value.get(LocalDate.class, null).atStartOfDay();
         }
         return NLS.parseUserString(LocalDateTime.class, value.asString());
     }
