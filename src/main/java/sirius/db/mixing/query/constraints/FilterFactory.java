@@ -15,6 +15,7 @@ import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
@@ -567,5 +568,18 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param fields     the default fields to search in
      * @return a constraint representing the compiled query
      */
-    public abstract C queryString(EntityDescriptor descriptor, String query, List<QueryField> fields);
+    public C queryString(EntityDescriptor descriptor, String query, List<QueryField> fields) {
+        return compileString(descriptor, query, fields).getFirst();
+    }
+
+    /**
+     * Compiles the given query for the given entity while searching in the given fields.
+     *
+     * @param descriptor the descriptor of the entity being searched
+     * @param query      the query to compile
+     * @param fields     the default fields to search in
+     * @return a constraint representing the compiled query
+     */
+    public abstract Tuple<C, Boolean> compileString(EntityDescriptor descriptor, String query, List<QueryField> fields);
+
 }

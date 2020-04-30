@@ -14,6 +14,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Tuple;
 
 import java.util.List;
 
@@ -85,8 +86,11 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
     }
 
     @Override
-    public SQLConstraint queryString(EntityDescriptor descriptor, String query, List<QueryField> fields) {
-        return new SQLQueryCompiler(this, descriptor, query, fields).compile();
+    public Tuple<SQLConstraint, Boolean> compileString(EntityDescriptor descriptor,
+                                                       String query,
+                                                       List<QueryField> fields) {
+        SQLQueryCompiler compiler = new SQLQueryCompiler(this, descriptor, query, fields);
+        return Tuple.create(compiler.compile(), compiler.isDebugging());
     }
 
     /**
