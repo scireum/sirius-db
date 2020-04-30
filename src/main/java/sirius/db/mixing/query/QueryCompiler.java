@@ -124,6 +124,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     protected EntityDescriptor descriptor;
     protected final List<QueryField> searchFields;
     protected final LookaheadReader reader;
+    protected boolean debugging;
 
     @Part
     protected static GlobalContext ctx;
@@ -163,7 +164,25 @@ public abstract class QueryCompiler<C extends Constraint> {
      */
     @Nullable
     public C compile() {
+        skipWhitespace();
+        if (reader.current().is('?') && reader.next().is('?')) {
+            this.debugging = true;
+            reader.consume(2);
+        }
+
         return parseOR();
+    }
+
+    /**
+     * Determines if the compiler was put into "debug mode".
+     * <p>
+     * This can switched on by putting "??" in front of a query. Subsequent callers of the compiler can then
+     * log the parsed query to help when tracing down problems.
+     *
+     * @return <tt>true</tt> if the compiler was put into debug mode, <tt>false</tt> otherwise
+     */
+    public boolean isDebugging() {
+        return debugging;
     }
 
     private C parseOR() {
