@@ -124,6 +124,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     protected EntityDescriptor descriptor;
     protected final List<QueryField> searchFields;
     protected final LookaheadReader reader;
+    protected boolean debugging;
 
     @Part
     protected static GlobalContext ctx;
@@ -146,7 +147,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         this.reader = new LookaheadReader(new StringReader(query));
     }
 
-    private boolean skipWhitespace(LookaheadReader reader) {
+    private boolean skipWhitespace() {
         boolean skipped = false;
         while (reader.current().isWhitepace()) {
             reader.consume();
@@ -163,7 +164,25 @@ public abstract class QueryCompiler<C extends Constraint> {
      */
     @Nullable
     public C compile() {
+        skipWhitespace();
+        if (reader.current().is('?') && reader.next().is('?')) {
+            this.debugging = true;
+            reader.consume(2);
+        }
+
         return parseOR();
+    }
+
+    /**
+     * Determines if the compiler was put into "debug mode".
+     * <p>
+     * This can switched on by putting "??" in front of a query. Subsequent callers of the compiler can then
+     * log the parsed query to help when tracing down problems.
+     *
+     * @return <tt>true</tt> if the compiler was put into debug mode, <tt>false</tt> otherwise
+     */
+    public boolean isDebugging() {
+        return debugging;
     }
 
     private C parseOR() {
@@ -173,7 +192,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             if (inner != null) {
                 constraints.add(inner);
             }
-            if (!isAtOR(reader)) {
+            if (!isAtOR()) {
                 break;
             } else {
                 reader.consume(2);
@@ -187,7 +206,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         }
     }
 
-    private boolean isAtOR(LookaheadReader reader) {
+    private boolean isAtOR() {
         return reader.current().is('o', 'O') && reader.next().is('r', 'R');
     }
 
@@ -198,14 +217,14 @@ public abstract class QueryCompiler<C extends Constraint> {
             if (inner != null) {
                 constraints.add(inner);
             }
-            skipWhitespace(reader);
-            if (isAtOR(reader)) {
+            skipWhitespace();
+            if (isAtOR()) {
                 break;
             }
-            if (isAtAND(reader)) {
+            if (isAtAND()) {
                 reader.consume(3);
             }
-            if (isAtBinaryAND(reader)) {
+            if (isAtBinaryAND()) {
                 reader.consume(2);
             }
         }
@@ -217,16 +236,16 @@ public abstract class QueryCompiler<C extends Constraint> {
         }
     }
 
-    private boolean isAtBinaryAND(LookaheadReader reader) {
+    private boolean isAtBinaryAND() {
         return reader.current().is('&') && reader.next().is('&');
     }
 
-    private boolean isAtAND(LookaheadReader reader) {
+    private boolean isAtAND() {
         return reader.current().is('a', 'A') && reader.next().is('n', 'N') && reader.next(2).is('d', 'D');
     }
 
     private C parseExpression() {
-        skipWhitespace(reader);
+        skipWhitespace();
 
         if (reader.current().is('!') || reader.current().is('-')) {
             reader.consume();
@@ -250,7 +269,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         }
 
         FieldValue token = readToken();
-        boolean skipped = skipWhitespace(reader);
+        boolean skipped = skipWhitespace();
         if (isAtOperator()) {
             String field = token.getValue().toString();
             Tuple<Mapping, Property> mappingAndProperty = resolveProperty(field);
@@ -549,7 +568,7 @@ public abstract class QueryCompiler<C extends Constraint> {
      * @return the parsed value to use
      */
     protected FieldValue parseValue() {
-        skipWhitespace(reader);
+        skipWhitespace();
         if (reader.current().is('"')) {
             reader.consume();
             StringBuilder result = new StringBuilder();

@@ -16,6 +16,7 @@ import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mixing.query.constraints.OneInField;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
@@ -172,8 +173,11 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
-    public MongoConstraint queryString(EntityDescriptor descriptor, String query, List<QueryField> fields) {
-        return new MongoQueryCompiler(this, descriptor, query, fields).compile();
+    public Tuple<MongoConstraint, Boolean> compileString(EntityDescriptor descriptor,
+                                                         String query,
+                                                         List<QueryField> fields) {
+        MongoQueryCompiler compiler = new MongoQueryCompiler(this, descriptor, query, fields);
+        return Tuple.create(compiler.compile(), compiler.isDebugging());
     }
 
     /**

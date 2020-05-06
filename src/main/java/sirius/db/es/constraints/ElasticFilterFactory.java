@@ -18,6 +18,7 @@ import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.CSVFilter;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 
 import java.time.Instant;
@@ -165,8 +166,11 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     @Override
-    public ElasticConstraint queryString(EntityDescriptor descriptor, String query, List<QueryField> fields) {
-        return new ElasticQueryCompiler(this, descriptor, query, fields).compile();
+    public Tuple<ElasticConstraint, Boolean> compileString(EntityDescriptor descriptor,
+                                                           String query,
+                                                           List<QueryField> fields) {
+        ElasticQueryCompiler compiler = new ElasticQueryCompiler(this, descriptor, query, fields);
+        return Tuple.create(compiler.compile(), compiler.isDebugging());
     }
 
     /**
