@@ -13,6 +13,7 @@ import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.Immutable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
@@ -24,13 +25,13 @@ import java.util.Locale;
  * Represents a date range which will collect and count all matching entities in a query to provide
  * an appropriate facet filter.
  */
+@Immutable
 public class DateRange {
 
     private final String key;
     private final String name;
     private final LocalDateTime from;
     private final LocalDateTime until;
-    private boolean useLocalDate;
 
     /**
      * Creates a new DateRange with the given unique key, translated (shown) name and two dates specifying the
@@ -163,6 +164,22 @@ public class DateRange {
     }
 
     /**
+     * Creates a date range filtering on the last N months.
+     * <p>
+     * This will start at the first day of the selected month (current month - N) and
+     * end at the day before the first of this month.
+     *
+     * @param months the number of months to filter.
+     * @return a date range for the given interval
+     */
+    public static DateRange lastMonths(int months) {
+        return new DateRange("lastMonths" + months,
+                             NLS.fmtr("DateRange.lastMonths").set("months", months).format(),
+                             LocalDate.now().minusMonths(months).withDayOfMonth(1).atStartOfDay(),
+                             LocalDate.now().withDayOfMonth(1).minusDays(1).atTime(23, 59));
+    }
+
+    /**
      * Creates a date range filtering on the current year.
      *
      * @return a date range for the given interval
@@ -211,24 +228,38 @@ public class DateRange {
     }
 
     /**
-     * Can be used if the {@link DateRange} should be used on a database field of type {@link LocalDate} and not {@link
-     * LocalDateTime}.
+     * Returns the key to identify this date range.
+     * <p>
+     * This is e.g. used to populate facet filters based on results.
      *
-     * @return the DateRange object itself for fluent method calls
+     * @return the key to identify this range
      */
-    public DateRange useLocalDate() {
-        useLocalDate = true;
-        return this;
-    }
-
     public String getKey() {
         return key;
     }
 
+    /**
+     * Returns the start of the date range as {@link LocalDateTime}.
+     * <p>
+     * Note that when filtering on {@link sirius.db.mixing.properties.LocalDateProperty date fields}
+     * this must be converted using {@link LocalDateTime#toLocalDate()} as the encoding of those two
+     * is entirely different (see {@link sirius.db.jdbc.Databases#convertValue(Object))}.
+     *
+     * @return the start of the date range
+     */
     public LocalDateTime getFrom() {
         return from;
     }
 
+    /**
+     * Returns the end of the date range as {@link LocalDateTime}.
+     * <p>
+     * Note that when filtering on {@link sirius.db.mixing.properties.LocalDateProperty date fields}
+     * this must be converted using {@link LocalDateTime#toLocalDate()} as the encoding of those two
+     * is entirely different (see {@link sirius.db.jdbc.Databases#convertValue(Object))}.
+     *
+     * @return the end of the date range
+     */
     public LocalDateTime getUntil() {
         return until;
     }
@@ -236,19 +267,22 @@ public class DateRange {
     /**
      * Applies this date range to the given query in the given field.
      *
-     * @param <C>   the constraint type to generate
-     * @param field the field to filter on
-     * @param qry   the query to expand
+     * @param <C>          the constraint type to generate
+     * @param field        the field to filter on
+     * @param useLocalDate determines if a {@link LocalDate} instead of a {@link LocalDateTime} should be applied.
+     *                     This might be crucial as a <tt>LocalDateTime</tt> is encoded entirely differently
+     *                     (see {@link sirius.db.jdbc.Databases#convertValue(Object))}.
+     * @param query        the query to expand
      */
-    public <C extends Constraint> void applyTo(String field, Query<?, ?, C> qry) {
+    public <C extends Constraint> void applyTo(String field, boolean useLocalDate, Query<?, ?, C> query) {
         List<C> constraints = new ArrayList<>(2);
         if (from != null) {
-            constraints.add(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
+            constraints.add(query.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
         if (until != null) {
-            constraints.add(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
+            constraints.add(query.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
-        qry.where(qry.filters().and(constraints));
+        query.where(query.filters().and(constraints));
     }
 
     @Override
