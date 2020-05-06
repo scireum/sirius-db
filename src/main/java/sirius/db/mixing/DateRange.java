@@ -272,17 +272,17 @@ public class DateRange {
      * @param useLocalDate determines if a {@link LocalDate} instead of a {@link LocalDateTime} should be applied.
      *                     This might be crucial as a <tt>LocalDateTime</tt> is encoded entirely differently
      *                     (see {@link sirius.db.jdbc.Databases#convertValue(Object))}.
-     * @param qry          the query to expand
+     * @param query        the query to expand
      */
-    public <C extends Constraint> void applyTo(String field, boolean useLocalDate, Query<?, ?, C> qry) {
+    public <C extends Constraint> void applyTo(String field, boolean useLocalDate, Query<?, ?, C> query) {
         List<C> constraints = new ArrayList<>(2);
         if (from != null) {
-            constraints.add(qry.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
+            constraints.add(query.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
         if (until != null) {
-            constraints.add(qry.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
+            constraints.add(query.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
-        qry.where(qry.filters().and(constraints));
+        query.where(query.filters().and(constraints));
     }
 
     @Override
