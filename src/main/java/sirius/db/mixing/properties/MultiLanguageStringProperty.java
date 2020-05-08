@@ -8,7 +8,11 @@
 
 package sirius.db.mixing.properties;
 
+import com.alibaba.fastjson.JSONObject;
 import org.bson.Document;
+import sirius.db.es.ESPropertyInfo;
+import sirius.db.es.IndexMappings;
+import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
@@ -23,6 +27,7 @@ import sirius.kernel.health.Exceptions;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +40,7 @@ import java.util.function.Consumer;
  * Multi-Language Strings are stored as a list of nested objects which contain a
  * <tt>lang</tt> and a <tt>text</tt> property.
  */
-public class MultiLanguageStringProperty extends BaseMapProperty {
+public class MultiLanguageStringProperty extends BaseMapProperty implements ESPropertyInfo {
 
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
@@ -123,5 +128,42 @@ public class MultiLanguageStringProperty extends BaseMapProperty {
             }
         });
         return texts;
+    }
+
+    @Override
+    protected Object transformFromElastic(Value object) {
+        Map<String, String> result = new HashMap<>();
+        Object value = object.get();
+        if (value instanceof JSONObject) {
+            ((JSONObject) value).forEach((language, text) -> {
+                if (text instanceof String) {
+                    result.put(language, (String) text);
+                }
+            });
+        }
+        return result;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected Object transformToElastic(Object object) {
+        if (object instanceof List) {
+            return object;
+        }
+
+        JSONObject texts = new JSONObject();
+        ((Map<String, String>) object).forEach((language, text) -> {
+            if (text != null) {
+                texts.fluentPut(language, text);
+            }
+        });
+        return texts;
+    }
+
+    @Override
+    public void describeProperty(JSONObject description) {
+        description.put(IndexMappings.MAPPING_TYPE, "object");
+        description.put(IndexMappings.MAPPING_DYNAMIC, true);
+        transferOption(IndexMappings.MAPPING_ENABLED, getAnnotation(IndexMode.class), IndexMode::indexed, description);
     }
 }

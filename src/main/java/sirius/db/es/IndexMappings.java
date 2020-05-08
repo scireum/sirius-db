@@ -15,6 +15,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.properties.BaseMapProperty;
+import sirius.db.mixing.properties.MultiLanguageStringProperty;
 import sirius.db.mixing.properties.NestedListProperty;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
@@ -76,6 +77,16 @@ public class IndexMappings implements Startable {
      * Mapping key used to tell ES the mapping type of a field.
      */
     public static final String MAPPING_TYPE = "type";
+
+    /**
+     * Mapping key used to tell ES if the JSON value of the object property should be parsed and indexed or ignored.
+     */
+    public static final String MAPPING_ENABLED = "enabled";
+
+    /**
+     * Mapping key used to tell ES if the property should be dynamic (for object properties).
+     */
+    public static final String MAPPING_DYNAMIC = "dynamic";
 
     /**
      * Mapping value used to mark a field as "keywors" meaning that it is indexed but not analyzed.
@@ -252,7 +263,8 @@ public class IndexMappings implements Startable {
             } else {
                 JSONObject propertyInfo = new JSONObject();
                 ((ESPropertyInfo) property).describeProperty(propertyInfo);
-                if (property instanceof BaseMapProperty || property instanceof NestedListProperty) {
+                if ((property instanceof BaseMapProperty || property instanceof NestedListProperty)
+                    && !(property instanceof MultiLanguageStringProperty)) {
                     propertyInfo.put("dynamic", mode.toString());
                 }
                 properties.put(property.getPropertyName(), propertyInfo);
