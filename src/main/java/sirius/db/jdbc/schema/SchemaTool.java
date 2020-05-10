@@ -279,8 +279,8 @@ public class SchemaTool {
     }
 
     private void syncTables(Table targetTable, Table other, List<SchemaUpdateAction> result) {
-        dropKeys(targetTable, other, result);
         dropForeignKeys(targetTable, other, result);
+        dropKeys(targetTable, other, result);
         syncColumns(targetTable, other, result);
         syncKeys(targetTable, other, result);
         if (!keyListEqual(targetTable.getPrimaryKey(), other.getPrimaryKey())) {
