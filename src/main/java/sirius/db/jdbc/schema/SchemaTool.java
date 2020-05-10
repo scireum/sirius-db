@@ -382,17 +382,21 @@ public class SchemaTool {
     }
 
     private void syncForeignKeys(Table targetTable, Table other, List<SchemaUpdateAction> result) {
+        boolean isNewTable = (other == null);
         for (ForeignKey targetKey : targetTable.getForeignKeys()) {
-            ForeignKey otherKey = other == null ? null : findInList(other.getForeignKeys(), targetKey);
+            ForeignKey otherKey = isNewTable ? null : findInList(other.getForeignKeys(), targetKey);
             if (otherKey == null) {
-                createForeignKey(targetTable, result, targetKey);
+                createForeignKey(targetTable, result, targetKey, isNewTable);
             } else {
                 adjustForeignKey(targetTable, result, targetKey, otherKey);
             }
         }
     }
 
-    private void createForeignKey(Table targetTable, List<SchemaUpdateAction> result, ForeignKey targetKey) {
+    private void createForeignKey(Table targetTable,
+                                  List<SchemaUpdateAction> result,
+                                  ForeignKey targetKey,
+                                  boolean isNewTable) {
         String sql = dialect.generateAddForeignKey(targetTable, targetKey);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
@@ -400,7 +404,7 @@ public class SchemaTool {
                                 .set("key", targetKey.getName())
                                 .set(KEY_TABLE, targetTable.getName())
                                 .format());
-            action.setDataLossPossible(false);
+            action.setDataLossPossible(!isNewTable);
             action.setSql(sql);
             result.add(action);
         }
