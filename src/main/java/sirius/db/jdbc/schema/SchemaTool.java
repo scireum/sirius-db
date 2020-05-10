@@ -212,7 +212,7 @@ public class SchemaTool {
 
             Table other = findTable(currentSchema, targetTable);
             if (other == null) {
-                createTable(targetTable,result);
+                createTable(targetTable, result);
             } else {
                 if (!Strings.areEqual(targetTable.getName(), other.getName())) {
                     renameTable(targetTable, result);
@@ -231,16 +231,14 @@ public class SchemaTool {
         String sql = dialect.generateCreateTable(targetTable);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
-            action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist")
-                                .set(KEY_TABLE, targetTable.getName())
-                                .format());
+            action.setReason(NLS.fmtr("SchemaTool.tableDoesNotExist").set(KEY_TABLE, targetTable.getName()).format());
             action.setDataLossPossible(false);
             action.setSql(sql);
             result.add(action);
         }
     }
 
-    private void renameTable(Table table,List<SchemaUpdateAction> result) {
+    private void renameTable(Table table, List<SchemaUpdateAction> result) {
         String sql = dialect.generateRenameTable(table);
         if (Strings.isFilled(sql)) {
             SchemaUpdateAction action = new SchemaUpdateAction(realm);
@@ -253,7 +251,6 @@ public class SchemaTool {
             result.add(action);
         }
     }
-
 
     private Table findTable(List<Table> currentSchema, Table targetTable) {
         Table result = findInList(currentSchema, targetTable);
