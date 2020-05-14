@@ -190,6 +190,8 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         return false;
     }
 
+
+
     @Override
     public List<String> generateAlterColumnTo(Table table, @Nullable String oldName, TableColumn toColumn) {
         if (Strings.isFilled(oldName) && !Strings.areEqual(oldName, toColumn.getName())) {
@@ -198,13 +200,11 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
                                                                   oldName,
                                                                   toColumn.getName()));
         } else {
-            return Collections.singletonList(MessageFormat.format(
-                    "ALTER TABLE `{0}` MODIFY COLUMN `{1}` {2} {3} {4}",
-                    table.getName(),
-                    toColumn.getName(),
-                    getTypeName(toColumn),
-                    toColumn.isNullable() ? "" : NOT_NULL,
-                    getDefaultValueAsString(toColumn)));
+            return Collections.singletonList(MessageFormat.format("ALTER TABLE `{0}` MODIFY COLUMN `{1}` {2} {3}",
+                                                                  table.getName(),
+                                                                  toColumn.getName(),
+                                                                  getTypeName(toColumn),
+                                                                  getDefaultValueAsString(toColumn)));
         }
     }
 
