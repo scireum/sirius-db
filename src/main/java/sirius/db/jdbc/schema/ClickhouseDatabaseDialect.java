@@ -192,7 +192,7 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
     @Override
     public List<String> generateAlterColumnTo(Table table, @Nullable String oldName, TableColumn toColumn) {
-        if (Strings.isFilled(oldName)) {
+        if (Strings.isFilled(oldName) && !Strings.areEqual(oldName, toColumn.getName())) {
             return Collections.singletonList(MessageFormat.format("ALTER TABLE `{0}` RENAME COLUMN `{1}` TO `{2}`",
                                                                   table.getName(),
                                                                   oldName,
