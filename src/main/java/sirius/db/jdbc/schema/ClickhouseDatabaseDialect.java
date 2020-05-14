@@ -164,6 +164,13 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     }
 
     @Override
+    protected boolean areColumnLengthsEqual(TableColumn target, TableColumn current) {
+        // Enum columns have a length specified, but we create  them as unbounded string by default
+        // tehrefore we should skip the change here.
+        return target.getLength() == 0 || current.getLength() == 0 || super.areColumnLengthsEqual(target, current);
+    }
+
+    @Override
     protected boolean areTypesEqual(int type, int other) {
         if (type == other) {
             return true;
