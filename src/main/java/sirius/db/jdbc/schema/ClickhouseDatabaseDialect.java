@@ -29,6 +29,8 @@ import java.util.List;
 @Register(name = "clickhouse", classes = DatabaseDialect.class)
 public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
+    private static final String NOT_NULL = "NOT NULL";
+
     @Override
     public String generateCreateTable(Table table) {
         StringBuilder sb = new StringBuilder();
@@ -118,6 +120,12 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
                                                          column.getSource()));
     }
 
+    @Nullable
+    @Override
+    public String generateRenameTable(Table table) {
+        return MessageFormat.format("RENAME TABLE `{0}` TO `{1}`", table.getOldName(), table.getName());
+    }
+
     /**
      * Determines the type for string columns.
      * <p>
@@ -156,8 +164,41 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     }
 
     @Override
+    protected boolean areTypesEqual(int type, int other) {
+        if (type == other) {
+            return true;
+        }
+        if (in(type, other, Types.BOOLEAN, Types.INTEGER)) {
+            return true;
+        }
+        if (in(type, other, Types.VARCHAR, Types.CHAR)) {
+            return true;
+        }
+
+        return in(type, other, Types.NUMERIC, Types.DECIMAL);
+    }
+
+    @Override
+    protected boolean areDefaultsDifferent(TableColumn target, TableColumn current) {
+        return false;
+    }
+
+    @Override
     public List<String> generateAlterColumnTo(Table table, @Nullable String oldName, TableColumn toColumn) {
-        return Collections.emptyList();
+        if (Strings.isFilled(oldName)) {
+            return Collections.singletonList(MessageFormat.format("ALTER TABLE `{0}` RENAME COLUMN `{1}` TO `{2}`",
+                                                                  table.getName(),
+                                                                  oldName,
+                                                                  toColumn.getName()));
+        } else {
+            return Collections.singletonList(MessageFormat.format(
+                    "ALTER TABLE `{0}` MODIFY COLUMN `{1}` {2} {3} {4}",
+                    table.getName(),
+                    toColumn.getName(),
+                    getTypeName(toColumn),
+                    toColumn.isNullable() ? "" : NOT_NULL,
+                    getDefaultValueAsString(toColumn)));
+        }
     }
 
     @Override

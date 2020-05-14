@@ -189,7 +189,7 @@ public class SchemaTool {
                                   List<Table> currentSchema,
                                   List<Table> targetSchema) {
         for (Table table : currentSchema) {
-            if (findTable(targetSchema, table) == null) {
+            if (!isTableInUse(targetSchema, table)) {
                 String sql = dialect.generateDropTable(table);
                 if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
@@ -200,6 +200,15 @@ public class SchemaTool {
                 }
             }
         }
+    }
+
+    private boolean isTableInUse(List<Table> targetSchema, Table currentTable) {
+        Table result = findInList(targetSchema, currentTable);
+        if (result != null) {
+            return true;
+        }
+        return targetSchema.stream()
+                           .anyMatch(targetTable -> Strings.areEqual(currentTable.getName(), targetTable.getOldName()));
     }
 
     @SuppressWarnings("squid:S3047")
@@ -227,6 +236,20 @@ public class SchemaTool {
         }
     }
 
+    private Table findTable(List<Table> currentSchema, Table targetTable) {
+        Table result = findInList(currentSchema, targetTable);
+        if (result != null) {
+            return result;
+        }
+        if (Strings.isEmpty(targetTable.getOldName())) {
+            return null;
+        }
+        return currentSchema.stream()
+                            .filter(table -> Strings.areEqual(table.getName(), targetTable.getOldName()))
+                            .findAny()
+                            .orElse(null);
+    }
+
     private void createTable(Table targetTable, List<SchemaUpdateAction> result) {
         String sql = dialect.generateCreateTable(targetTable);
         if (Strings.isFilled(sql)) {
@@ -250,20 +273,6 @@ public class SchemaTool {
             action.setSql(sql);
             result.add(action);
         }
-    }
-
-    private Table findTable(List<Table> currentSchema, Table targetTable) {
-        Table result = findInList(currentSchema, targetTable);
-        if (result != null) {
-            return result;
-        }
-        if (Strings.isEmpty(targetTable.getOldName())) {
-            return null;
-        }
-        return currentSchema.stream()
-                            .filter(table -> Strings.areEqual(table.getName(), targetTable.getOldName()))
-                            .findAny()
-                            .orElse(null);
     }
 
     private boolean keyListEqual(List<String> left, List<String> right) {
