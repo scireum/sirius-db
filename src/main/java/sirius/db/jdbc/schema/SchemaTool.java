@@ -189,7 +189,7 @@ public class SchemaTool {
                                   List<Table> currentSchema,
                                   List<Table> targetSchema) {
         for (Table table : currentSchema) {
-            if (findTable(targetSchema, table) == null) {
+            if (!isTableInUse(targetSchema, table)) {
                 String sql = dialect.generateDropTable(table);
                 if (Strings.isFilled(sql)) {
                     SchemaUpdateAction action = new SchemaUpdateAction(realm);
@@ -200,6 +200,15 @@ public class SchemaTool {
                 }
             }
         }
+    }
+
+    private boolean isTableInUse(List<Table> targetSchema, Table currentTable) {
+        Table result = findInList(targetSchema, currentTable);
+        if (result != null) {
+            return true;
+        }
+        return targetSchema.stream()
+                           .anyMatch(targetTable -> Strings.areEqual(currentTable.getName(), targetTable.getOldName()));
     }
 
     @SuppressWarnings("squid:S3047")
