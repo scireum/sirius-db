@@ -257,7 +257,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
                       .format();
         }
 
-        if (areTypesEqual(Types.CHAR, target.getType()) && !Strings.areEqual(target.getLength(), current.getLength())) {
+        if (!areColumnLengthsEqual(target, current)) {
             return NLS.fmtr("BasicDatabaseDialect.differentLength")
                       .set(KEY_TARGET, target.getLength())
                       .set(KEY_CURRENT, current.getLength())
@@ -280,6 +280,15 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         }
 
         return null;
+    }
+
+    protected boolean areColumnLengthsEqual(TableColumn target, TableColumn current) {
+        // The length is only enforced for CHAR fields by default...
+        if (!areTypesEqual(Types.CHAR, target.getType())) {
+            return true;
+        }
+
+        return Strings.areEqual(target.getLength(), current.getLength());
     }
 
     protected boolean equalValue(String a, String b) {
