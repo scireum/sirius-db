@@ -227,6 +227,20 @@ public class SchemaTool {
         }
     }
 
+    private Table findTable(List<Table> currentSchema, Table targetTable) {
+        Table result = findInList(currentSchema, targetTable);
+        if (result != null) {
+            return result;
+        }
+        if (Strings.isEmpty(targetTable.getOldName())) {
+            return null;
+        }
+        return currentSchema.stream()
+                            .filter(table -> Strings.areEqual(table.getName(), targetTable.getOldName()))
+                            .findAny()
+                            .orElse(null);
+    }
+
     private void createTable(Table targetTable, List<SchemaUpdateAction> result) {
         String sql = dialect.generateCreateTable(targetTable);
         if (Strings.isFilled(sql)) {
@@ -250,20 +264,6 @@ public class SchemaTool {
             action.setSql(sql);
             result.add(action);
         }
-    }
-
-    private Table findTable(List<Table> currentSchema, Table targetTable) {
-        Table result = findInList(currentSchema, targetTable);
-        if (result != null) {
-            return result;
-        }
-        if (Strings.isEmpty(targetTable.getOldName())) {
-            return null;
-        }
-        return currentSchema.stream()
-                            .filter(table -> Strings.areEqual(table.getName(), targetTable.getOldName()))
-                            .findAny()
-                            .orElse(null);
     }
 
     private boolean keyListEqual(List<String> left, List<String> right) {
