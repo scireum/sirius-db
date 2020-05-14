@@ -118,6 +118,12 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
                                                          column.getSource()));
     }
 
+    @Nullable
+    @Override
+    public String generateRenameTable(Table table) {
+        return MessageFormat.format("RENAME TABLE `{0}` TO `{1}`", table.getOldName(), table.getName());
+    }
+
     /**
      * Determines the type for string columns.
      * <p>
