@@ -164,6 +164,13 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     }
 
     @Override
+    protected boolean areColumnLengthsEqual(TableColumn target, TableColumn current) {
+        // Enum columns have a length specified, but we create them as unbounded strings by default
+        // therefore we should skip the change here.
+        return target.getLength() == 0 || current.getLength() == 0 || super.areColumnLengthsEqual(target, current);
+    }
+
+    @Override
     protected boolean areTypesEqual(int type, int other) {
         if (type == other) {
             return true;
@@ -185,19 +192,17 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
     @Override
     public List<String> generateAlterColumnTo(Table table, @Nullable String oldName, TableColumn toColumn) {
-        if (Strings.isFilled(oldName)) {
+        if (Strings.isFilled(oldName) && !Strings.areEqual(oldName, toColumn.getName())) {
             return Collections.singletonList(MessageFormat.format("ALTER TABLE `{0}` RENAME COLUMN `{1}` TO `{2}`",
                                                                   table.getName(),
                                                                   oldName,
                                                                   toColumn.getName()));
         } else {
-            return Collections.singletonList(MessageFormat.format(
-                    "ALTER TABLE `{0}` MODIFY COLUMN `{1}` {2} {3} {4}",
-                    table.getName(),
-                    toColumn.getName(),
-                    getTypeName(toColumn),
-                    toColumn.isNullable() ? "" : NOT_NULL,
-                    getDefaultValueAsString(toColumn)));
+            return Collections.singletonList(MessageFormat.format("ALTER TABLE `{0}` MODIFY COLUMN `{1}` {2} {3}",
+                                                                  table.getName(),
+                                                                  toColumn.getName(),
+                                                                  getTypeName(toColumn),
+                                                                  getDefaultValueAsString(toColumn)));
         }
     }
 
