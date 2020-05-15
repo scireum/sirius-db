@@ -10,6 +10,7 @@ package sirius.db.jdbc.schema;
 
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.OMA;
+import sirius.kernel.Sirius;
 
 import java.util.Collections;
 import java.util.List;
@@ -115,12 +116,13 @@ public class SchemaUpdateAction {
     public void execute(Database db) {
         error = null;
         for (String statement : getSql()) {
-                try {
-                    OMA.LOG.FINE("Executing Schema Update: %s", statement);
-                    db.createQuery(statement).executeUpdate();
-                } catch (Exception e) {
-                    error = e.getMessage();
+            try {
+                if (!Sirius.isDev()) {
+                    OMA.LOG.INFO("Executing Schema Update: %s", statement);
                 }
+                db.createQuery(statement).executeUpdate();
+            } catch (Exception e) {
+                error = e.getMessage();
             }
         }
         executed = !isFailed();
