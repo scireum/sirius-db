@@ -10,7 +10,6 @@ package sirius.db.jdbc.schema;
 
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.OMA;
-import sirius.kernel.async.TaskContext;
 
 import java.util.Collections;
 import java.util.List;
@@ -116,7 +115,6 @@ public class SchemaUpdateAction {
     public void execute(Database db) {
         error = null;
         for (String statement : getSql()) {
-            if (TaskContext.get().isActive()) {
                 try {
                     OMA.LOG.FINE("Executing Schema Update: %s", statement);
                     db.createQuery(statement).executeUpdate();
