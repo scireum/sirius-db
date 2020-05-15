@@ -165,8 +165,8 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
     @Override
     protected boolean areColumnLengthsEqual(TableColumn target, TableColumn current) {
-        // Enum columns have a length specified, but we create  them as unbounded string by default
-        // tehrefore we should skip the change here.
+        // Enum columns have a length specified, but we create them as unbounded strings by default
+        // therefore we should skip the change here.
         return target.getLength() == 0 || current.getLength() == 0 || super.areColumnLengthsEqual(target, current);
     }
 
@@ -189,8 +189,6 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
     protected boolean areDefaultsDifferent(TableColumn target, TableColumn current) {
         return false;
     }
-
-
 
     @Override
     public List<String> generateAlterColumnTo(Table table, @Nullable String oldName, TableColumn toColumn) {
