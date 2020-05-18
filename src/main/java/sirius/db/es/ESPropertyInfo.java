@@ -42,10 +42,10 @@ public interface ESPropertyInfo {
     }
 
     /**
-     * Determines whether the property can define the dynamic setting of its mapping or the predefinied dynamic mode
+     * Determines whether the property can define the dynamic setting of its mapping or the predefined dynamic mode
      * should be inherited.
      *
-     * @return <tt>true</tt> when the property is setting its own dynamic mode
+     * @return <tt>true</tt> when the property is setting its own dynamic mode, <tt>false</tt> otherwise
      */
     default boolean doesEnableDynamicMappings() {
         return false;
