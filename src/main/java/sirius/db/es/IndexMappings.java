@@ -15,7 +15,6 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.properties.BaseMapProperty;
-import sirius.db.mixing.properties.MultiLanguageStringProperty;
 import sirius.db.mixing.properties.NestedListProperty;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
@@ -237,7 +236,7 @@ public class IndexMappings implements Startable {
     public void createMapping(EntityDescriptor ed, String indexName, DynamicMapping mode) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
-        mapping.put("dynamic", mode.toString());
+        mapping.put(MAPPING_DYNAMIC, mode.toString());
         mapping.put("properties", properties);
 
         List<String> excludes = ed.getProperties()
@@ -264,8 +263,8 @@ public class IndexMappings implements Startable {
                 JSONObject propertyInfo = new JSONObject();
                 ((ESPropertyInfo) property).describeProperty(propertyInfo);
                 if ((property instanceof BaseMapProperty || property instanceof NestedListProperty)
-                    && !(property instanceof MultiLanguageStringProperty)) {
-                    propertyInfo.put("dynamic", mode.toString());
+                    && !((ESPropertyInfo) property).doesEnableDynamicMappings()) {
+                    propertyInfo.put(MAPPING_DYNAMIC, mode.toString());
                 }
                 properties.put(property.getPropertyName(), propertyInfo);
             }

@@ -42,6 +42,16 @@ public interface ESPropertyInfo {
     }
 
     /**
+     * Determines whether the property can define the dynamic setting of its mapping or the predefinied dynamic mode
+     * should be inherited.
+     *
+     * @return <tt>true</tt> when the property is setting its own dynamic mode
+     */
+    default boolean doesEnableDynamicMappings() {
+        return false;
+    }
+
+    /**
      * Creates the mapping description for this property into the given JSON.
      *
      * @param description the target JSON to fill

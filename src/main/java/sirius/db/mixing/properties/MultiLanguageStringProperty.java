@@ -166,4 +166,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         description.put(IndexMappings.MAPPING_DYNAMIC, true);
         transferOption(IndexMappings.MAPPING_ENABLED, getAnnotation(IndexMode.class), IndexMode::indexed, description);
     }
+
+    @Override
+    public boolean doesEnableDynamicMappings() {
+        return true;
+    }
 }
