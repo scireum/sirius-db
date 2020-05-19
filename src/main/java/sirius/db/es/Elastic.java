@@ -91,6 +91,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static final String SCHEME_HTTP = "http";
 
     @Part
+    @Nullable
     private IndexNaming indexNaming;
 
     @Part
