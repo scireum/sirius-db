@@ -78,6 +78,16 @@ public class IndexMappings implements Startable {
     public static final String MAPPING_TYPE = "type";
 
     /**
+     * Mapping key used to tell ES if the JSON value of the object property should be parsed and indexed or ignored.
+     */
+    public static final String MAPPING_ENABLED = "enabled";
+
+    /**
+     * Mapping key used to tell ES if the property should be dynamic (for object properties).
+     */
+    public static final String MAPPING_DYNAMIC = "dynamic";
+
+    /**
      * Mapping value used to mark a field as "keywors" meaning that it is indexed but not analyzed.
      */
     public static final String MAPPING_TYPE_KEWORD = "keyword";
@@ -226,7 +236,7 @@ public class IndexMappings implements Startable {
     public void createMapping(EntityDescriptor ed, String indexName, DynamicMapping mode) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
-        mapping.put("dynamic", mode.toString());
+        mapping.put(MAPPING_DYNAMIC, mode.toString());
         mapping.put("properties", properties);
 
         List<String> excludes = ed.getProperties()
@@ -252,8 +262,9 @@ public class IndexMappings implements Startable {
             } else {
                 JSONObject propertyInfo = new JSONObject();
                 ((ESPropertyInfo) property).describeProperty(propertyInfo);
-                if (property instanceof BaseMapProperty || property instanceof NestedListProperty) {
-                    propertyInfo.put("dynamic", mode.toString());
+                if ((property instanceof BaseMapProperty || property instanceof NestedListProperty)
+                    && !((ESPropertyInfo) property).doesEnableDynamicMappings()) {
+                    propertyInfo.put(MAPPING_DYNAMIC, mode.toString());
                 }
                 properties.put(property.getPropertyName(), propertyInfo);
             }
