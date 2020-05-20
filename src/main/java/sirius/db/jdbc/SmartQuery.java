@@ -225,7 +225,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * processing. If a timeout ({@link #QUERY_ITERATE_TIMEOUT} is reached, we stop iterating, discard the result set
      * and emit another query which starts just where the previous query stopped.
      * <p>
-     * Note however, as we either do this by ID or by setting an appropriate LIMIT window, there is a possibility,
+     * Note however, as we either do this by ID or by setting an appropriate LIMIT range, there is a possibility,
      * that we either miss an entity or even process an entity twice if a concurrent modification happens, which
      * then changes the result set of this query.
      *
@@ -295,7 +295,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Provides a blockwise strategy based on the LIMIT window.
+     * Provides a blockwise strategy based on the LIMIT range.
      * <p>
      * If ORDER BY clauses are present, we have to employ a sliding window technique.
      *
