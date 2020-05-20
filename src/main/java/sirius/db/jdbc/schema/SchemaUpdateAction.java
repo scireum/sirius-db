@@ -119,7 +119,7 @@ public class SchemaUpdateAction {
         error = null;
         try {
             for (String statement : getSql()) {
-                if (!Sirius.isDev()) {
+                if (!Sirius.isStartedAsTest()) {
                     OMA.LOG.INFO("Executing Schema Update: %s", statement);
                 }
                 db.createQuery(statement).executeUpdate();
