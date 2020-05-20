@@ -188,9 +188,34 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         return copy().fields(SQLEntity.ID).first().isPresent();
     }
 
+    /**
+     * Deletes all matches using the {@link OMA#delete(SQLEntity)}.
+     * <p>
+     * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
+     * the results until the timeout ({@link #QUERY_ITERATE_TIMEOUT} is reached). In this case, we abort the
+     * iteration, execute the query again and continue deleting until all entities are gone.
+     */
     @Override
     public void delete() {
-        iterateAll(oma::delete);
+        AtomicBoolean continueDeleting = new AtomicBoolean(true);
+        TaskContext context = TaskContext.get();
+        while (continueDeleting.get() && context.isActive()) {
+            continueDeleting.set(false);
+            Timeout timeout = new Timeout(QUERY_ITERATE_TIMEOUT);
+            iterate(entity -> {
+                oma.delete(entity);
+                if (timeout.isReached()) {
+                    // Timeout has been reached, set the flag so that another delete query is attempted....
+                    continueDeleting.set(true);
+                    // and abort processing the results of this query...
+                    return false;
+                } else {
+                    // Timeout not yet reached, continue deleting...
+                    return true;
+                }
+            });
+        }
+    }
 
     /**
      * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
