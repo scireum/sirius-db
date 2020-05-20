@@ -58,7 +58,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private static final Duration QUERY_ITERATE_TIMEOUT = Duration.ofMinutes(15);
 
-    
     @Part
     private static OMA oma;
 
@@ -230,7 +229,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * that we either miss an entity or even process an entity twice if a concurrent modification happens, which
      * then changes the result set of this query.
      *
-     * @param handler the handler to be invoked for each item in the result
+     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
+     *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     public void iterateBlockwise(Predicate<E> handler) {
         if (orderBys.isEmpty()) {
@@ -259,7 +259,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * If there are no ORDER BY clauses present, we can sort by ID and remember the last processed ID before
      * attempting another query.
      *
-     * @param handler the handler to be invoked for each item in the result
+     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
+     *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     private void iterateBlockwiseById(Predicate<E> handler) {
         AtomicLong lastId = new AtomicLong(-1);
@@ -298,7 +299,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * <p>
      * If ORDER BY clauses are present, we have to employ a sliding window technique.
      *
-     * @param handler the handler to be invoked for each item in the result
+     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
+     *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     private void iterateBlockwiseByPaging(Predicate<E> handler) {
         // Contains the counter of already processed entities. These have to be skippend when emitting the
