@@ -11,6 +11,8 @@ package sirius.db.jdbc.schema;
 import sirius.db.jdbc.Database;
 import sirius.db.jdbc.OMA;
 import sirius.kernel.Sirius;
+import sirius.kernel.commons.Strings;
+import sirius.kernel.health.Exceptions;
 
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +76,7 @@ public class SchemaUpdateAction {
     }
 
     protected void setSql(List<String> sql) {
-        this.sql = sql;
+        this.sql = Collections.unmodifiableList(sql);
     }
 
     /**
@@ -115,15 +117,21 @@ public class SchemaUpdateAction {
      */
     public void execute(Database db) {
         error = null;
-        for (String statement : getSql()) {
-            try {
+        try {
+            for (String statement : getSql()) {
                 if (!Sirius.isDev()) {
                     OMA.LOG.INFO("Executing Schema Update: %s", statement);
                 }
                 db.createQuery(statement).executeUpdate();
-            } catch (Exception e) {
-                error = e.getMessage();
             }
+        } catch (Exception e) {
+            Exceptions.handle()
+                      .to(OMA.LOG)
+                      .error(e)
+                      .withSystemErrorMessage("An error occured while executing the schema change '%s': %s (%s)",
+                                              Strings.join(sql, ";") + ";")
+                      .handle();
+            error = e.getMessage();
         }
         executed = !isFailed();
     }
