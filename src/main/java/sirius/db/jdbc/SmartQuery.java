@@ -259,9 +259,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * If there are no ORDER BY clauses present, we can sort by ID and remember the last processed ID before
      * attempting another query.
      *
-     * @param predicate the handler to be invoked for each item in the result
+     * @param handler the handler to be invoked for each item in the result
      */
-    private void iterateBlockwiseById(Predicate<E> predicate) {
+    private void iterateBlockwiseById(Predicate<E> handler) {
         AtomicLong lastId = new AtomicLong(-1);
         AtomicBoolean keepGoing = new AtomicBoolean(true);
         TaskContext context = TaskContext.get();
@@ -272,7 +272,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             // Creates a copy and start processing results just after the results we have processed with the
             // previous query...
             copy().orderAsc(SQLEntity.ID).where(OMA.FILTERS.gt(SQLEntity.ID, lastId.get())).iterate(entity -> {
-                if (!predicate.test(entity)) {
+                if (!handler.test(entity)) {
                     // As soon as the handler returns false, we're done and can abort entirely...
                     return false;
                 }
@@ -298,9 +298,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * <p>
      * If ORDER BY clauses are present, we have to employ a sliding window technique.
      *
-     * @param predicate the handler to be invoked for each item in the result
+     * @param handler the handler to be invoked for each item in the result
      */
-    private void iterateBlockwiseByPaging(Predicate<E> predicate) {
+    private void iterateBlockwiseByPaging(Predicate<E> handler) {
         // Contains the counter of already processed entities. These have to be skippend when emitting the
         // next query...
         AtomicInteger skipCounter = new AtomicInteger(0);
@@ -311,7 +311,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             Timeout timeout = new Timeout(QUERY_ITERATE_TIMEOUT);
             // Create a copy of the query an install an appropriate skip value...
             copy().skip(skipCounter.get()).iterate(entity -> {
-                if (!predicate.test(entity)) {
+                if (!handler.test(entity)) {
                     // As soon as the handler returns false, we're done and can abort entirely...
                     return false;
                 }
