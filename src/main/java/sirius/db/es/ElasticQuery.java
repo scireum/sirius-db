@@ -124,7 +124,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Note that there is no <tt>build()</tt> method, as the constructor already applies the object to the query.
      */
     public class InnerHitsBuilder {
-        private JSONObject json;
+        private final JSONObject json;
         private List<JSONObject> sorts;
 
         protected InnerHitsBuilder(String name, int size) {
@@ -977,8 +977,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         iterateAll(entity -> {
             if (entityCallback != null) {
                 entityCallback.accept(entity);
-                elastic.delete(entity);
             }
+
+            elastic.delete(entity);
         });
     }
 
