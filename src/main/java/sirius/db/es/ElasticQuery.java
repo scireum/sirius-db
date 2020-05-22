@@ -30,6 +30,7 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -971,8 +973,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     @Override
-    public void delete() {
-        iterateAll(elastic::delete);
+    public void delete(@Nullable Consumer<E> entityCallback) {
+        iterateAll(entity -> {
+            if (entityCallback != null) {
+                entityCallback.accept(entity);
+                elastic.delete(entity);
+            }
+        });
     }
 
     @Override

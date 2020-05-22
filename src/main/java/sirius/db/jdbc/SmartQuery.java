@@ -193,15 +193,20 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
      * the results until the timeout ({@link #QUERY_ITERATE_TIMEOUT} is reached). In this case, we abort the
      * iteration, execute the query again and continue deleting until all entities are gone.
+     *
+     * @param entityCallback a callback to be invoked for each entity to be deleted
      */
     @Override
-    public void delete() {
+    public void delete(@Nullable Consumer<E> entityCallback) {
         AtomicBoolean continueDeleting = new AtomicBoolean(true);
         TaskContext context = TaskContext.get();
         while (continueDeleting.get() && context.isActive()) {
             continueDeleting.set(false);
             Timeout timeout = new Timeout(QUERY_ITERATE_TIMEOUT);
             iterate(entity -> {
+                if (entityCallback != null) {
+                    entityCallback.accept(entity);
+                }
                 oma.delete(entity);
                 if (timeout.isReached()) {
                     // Timeout has been reached, set the flag so that another delete query is attempted....
@@ -215,6 +220,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             });
         }
     }
+
 
     /**
      * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.

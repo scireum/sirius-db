@@ -18,6 +18,7 @@ import sirius.db.mongo.facets.MongoFacet;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -173,8 +174,13 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     @Override
-    public void delete() {
-        iterateAll(mango::delete);
+    public void delete(@Nullable Consumer<E> entityCallback) {
+        iterateAll(entity -> {
+            if (entityCallback != null) {
+                entityCallback.accept(entity);
+                mango.delete(entity);
+            }
+        });
     }
 
     @Override
