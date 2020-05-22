@@ -22,6 +22,7 @@ import sirius.db.mixing.annotations.Index;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.async.Future;
+import sirius.kernel.async.TaskContext;
 import sirius.kernel.async.Tasks;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.Strings;
@@ -142,8 +143,10 @@ public class Schema implements Startable, Initializable {
         int skipped = 0;
         int executed = 0;
         int failed = 0;
+
         for (SchemaUpdateAction action : getSchemaUpdateActions()) {
-            if (!action.isDataLossPossible() || mixing.shouldExecuteUnsafeSchemaChanges()) {
+            if (TaskContext.get().isActive() && (!action.isDataLossPossible()
+                                                 || mixing.shouldExecuteUnsafeSchemaChanges())) {
                 executed++;
                 action.execute(getDatabase(action.getRealm()));
                 if (action.isFailed()) {
@@ -179,7 +182,8 @@ public class Schema implements Startable, Initializable {
     public void computeRequiredSchemaChanges() {
         MultiMap<String, Table> targetByRealm = MultiMap.create();
         for (EntityDescriptor entityDescriptor : mixing.getDescriptors()) {
-            if (SQLEntity.class.isAssignableFrom(entityDescriptor.getType()) && databases.containsKey(entityDescriptor.getRealm())) {
+            if (SQLEntity.class.isAssignableFrom(entityDescriptor.getType())
+                && databases.containsKey(entityDescriptor.getRealm())) {
                 targetByRealm.put(entityDescriptor.getRealm(), createTable(entityDescriptor));
             }
         }
@@ -207,7 +211,8 @@ public class Schema implements Startable, Initializable {
         table.setName(entityDescriptor.getRelationName());
 
         if (getDatabase(entityDescriptor.getRealm()).hasCapability(Capability.LOWER_CASE_TABLE_NAMES)
-            && !Strings.areEqual(entityDescriptor.getRelationName(), entityDescriptor.getRelationName().toLowerCase())) {
+            && !Strings.areEqual(entityDescriptor.getRelationName(),
+                                 entityDescriptor.getRelationName().toLowerCase())) {
             OMA.LOG.WARN("Warning %s uses %s as table name which is not all lowercase."
                          + " This might lead to trouble with the type of DBMS you are using!",
                          entityDescriptor.getType().getName(),
@@ -244,9 +249,9 @@ public class Schema implements Startable, Initializable {
     private void collectKeys(Table table, EntityDescriptor entityDescriptor) {
         Set<String> seenIndices = new HashSet<>();
         entityDescriptor.getAnnotations(Index.class)
-          .filter(index -> deduplicateByName(index, seenIndices))
-          .filter(this::skipParentIndexSuppressions)
-          .forEach(index -> parseIndexAnnotation(table, entityDescriptor, index));
+                        .filter(index -> deduplicateByName(index, seenIndices))
+                        .filter(this::skipParentIndexSuppressions)
+                        .forEach(index -> parseIndexAnnotation(table, entityDescriptor, index));
     }
 
     /**
