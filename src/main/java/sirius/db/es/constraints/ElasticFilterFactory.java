@@ -251,7 +251,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @param boost      the boost value to attach to an entity matching the given constraint
      * @return a new constraint which represents the given one along with the boost to apply
      */
-    public ElasticConstraint constantCore(ElasticConstraint constraint, float boost) {
+    public ElasticConstraint constantScore(ElasticConstraint constraint, float boost) {
         JSONObject jsonObject = new JSONObject();
 
         jsonObject.put("constant_score",
