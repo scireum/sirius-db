@@ -240,4 +240,23 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     public ElasticConstraint matchNone() {
         return wrap(new JSONObject().fluentPut("match_none", new JSONObject()));
     }
+
+    /**
+     * Creates a new constraint with a constant score.
+     * <p>
+     * Note that this must be applied using {@link sirius.db.es.ElasticQuery#must(ElasticConstraint)}, as otherwise,
+     * all scroring is suppressed via a <tt>BooleanTermQuery.filter</tt> (when using <tt>ElasticQuery.where</tt>).
+     *
+     * @param constraint the constraint to be fullfilled
+     * @param boost      the boost value to attach to an entity matching the given constraint
+     * @return a new constraint which represents the given one along with the boost to apply
+     */
+    public ElasticConstraint constantCore(ElasticConstraint constraint, float boost) {
+        JSONObject jsonObject = new JSONObject();
+
+        jsonObject.put("constant_score",
+                       new JSONObject().fluentPut("filter", constraint.toJSON()).fluentPut("boost", boost));
+
+        return new ElasticConstraint(jsonObject);
+    }
 }
