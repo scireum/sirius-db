@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.batch;
 
-import com.google.common.collect.ImmutableList;
 import sirius.db.jdbc.Capability;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
@@ -32,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link BatchContext}.
@@ -51,7 +51,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
     protected int batchBacklogLimit = MAX_BATCH_BACKLOG;
     protected Class<E> type;
     protected final List<Tuple<Operator, String>> filters;
-    protected ImmutableList<Tuple<Operator, Property>> properties;
+    protected List<Tuple<Operator, Property>> properties;
     protected EntityDescriptor descriptor;
     protected String query;
     protected Average avarage = new Average();
@@ -193,10 +193,10 @@ public abstract class BatchQuery<E extends SQLEntity> {
             EntityDescriptor ed = getDescriptor();
             properties = filters.stream()
                                 .map(filter -> Tuple.create(filter.getFirst(), ed.getProperty(filter.getSecond())))
-                                .collect(ImmutableList.toImmutableList());
+                                .collect(Collectors.toList());
         }
 
-        return properties;
+        return Collections.unmodifiableList(properties);
     }
 
     /**

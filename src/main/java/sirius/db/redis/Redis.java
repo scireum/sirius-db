@@ -8,7 +8,6 @@
 
 package sirius.db.redis;
 
-import com.google.common.collect.Lists;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.params.SetParams;
@@ -34,10 +33,12 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -60,7 +61,7 @@ public class Redis implements Startable, Stoppable {
     @Parts(Subscriber.class)
     private PartCollection<Subscriber> subscribers;
 
-    private List<JedisPubSub> subscriptions = Lists.newCopyOnWriteArrayList();
+    private List<JedisPubSub> subscriptions = new CopyOnWriteArrayList<>();
     private AtomicBoolean subscriptionsActive = new AtomicBoolean(true);
 
     @Part
@@ -314,7 +315,7 @@ public class Redis implements Startable, Stoppable {
      * @return a list of all currently known locks
      */
     public List<LockInfo> getLockList() {
-        List<LockInfo> result = Lists.newArrayList();
+        List<LockInfo> result = new ArrayList<>();
         exec(() -> "Get List of Locks", redis -> {
             for (String key : redis.keys(PREFIX_LOCK + "*")) {
                 if (!key.endsWith(SUFFIX_DATE)) {

@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.schema;
 
-import com.google.common.collect.Lists;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
 
@@ -23,7 +22,7 @@ public class Key {
 
     private boolean unique;
     private String name;
-    private List<ComparableTuple<Integer, String>> keyFields = Lists.newArrayList();
+    private List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
 
     /**
      * Returns the name of the key.

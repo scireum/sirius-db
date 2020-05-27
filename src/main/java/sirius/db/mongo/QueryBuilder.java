@@ -8,7 +8,6 @@
 
 package sirius.db.mongo;
 
-import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import sirius.db.DB;
 import sirius.db.mixing.Mapping;
@@ -19,6 +18,8 @@ import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -117,9 +118,9 @@ public abstract class QueryBuilder<S> {
 
             filterObject.remove(filter.getKey());
             return where(new MongoConstraint("$and",
-                                             Lists.newArrayList(new BasicDBObject(filter.getKey(), other),
-                                                                new BasicDBObject(filter.getKey(),
-                                                                                  filter.getObject()))));
+                                             new ArrayList<>(Arrays.asList(new BasicDBObject(filter.getKey(), other),
+                                                                           new BasicDBObject(filter.getKey(),
+                                                                                             filter.getObject())))));
         }
 
         filterObject.put(filter.getKey(), filter.getObject());

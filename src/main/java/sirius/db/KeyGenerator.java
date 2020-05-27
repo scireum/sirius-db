@@ -8,11 +8,10 @@
 
 package sirius.db;
 
-import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
+import sirius.kernel.commons.Hasher;
 import sirius.kernel.di.std.Register;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -21,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Register(classes = KeyGenerator.class)
 public class KeyGenerator {
 
-    private String seed = Hashing.sha512().hashLong(System.nanoTime()).toString();
+    private final String seed = Hasher.sha512().hashLong(System.nanoTime()).toString();
 
     /**
      * Generates an unique random io.
@@ -44,12 +43,6 @@ public class KeyGenerator {
     public String generateSecureId() {
         byte[] input = new byte[256];
         ThreadLocalRandom.current().nextBytes(input);
-        return Hashing.sha256()
-                      .newHasher()
-                      .putString(seed, StandardCharsets.UTF_8)
-                      .putBytes(input)
-                      .putLong(System.nanoTime())
-                      .hash()
-                      .toString();
+        return Hasher.sha256().hash(seed).hashBytes(input).hashLong(System.nanoTime()).toHexString();
     }
 }

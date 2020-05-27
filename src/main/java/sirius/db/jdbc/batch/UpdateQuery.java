@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.batch;
 
-import com.google.common.collect.ImmutableList;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
@@ -25,7 +24,9 @@ import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Represents a batch query which updates an entity in the database.
@@ -34,7 +35,7 @@ import java.util.List;
  */
 public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
 
-    private ImmutableList<Property> propertiesToUpdate;
+    private List<Property> propertiesToUpdate;
 
     protected UpdateQuery(BatchContext context, Class<E> type, List<Tuple<Operator, String>> filters) {
         super(context, type, filters);
@@ -50,10 +51,8 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      */
     public UpdateQuery<E> withUpdatedMappings(Mapping... mappingsToUpdate) {
         EntityDescriptor ed = getDescriptor();
-        this.propertiesToUpdate = Arrays.stream(mappingsToUpdate)
-                                        .map(Mapping::getName)
-                                        .map(ed::getProperty)
-                                        .collect(ImmutableList.toImmutableList());
+        this.propertiesToUpdate =
+                Arrays.stream(mappingsToUpdate).map(Mapping::getName).map(ed::getProperty).collect(Collectors.toList());
         return this;
     }
 
@@ -62,7 +61,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             throw new IllegalStateException("No mappings to update were specified. Use '.withUpdatedMappings'!");
         }
 
-        return propertiesToUpdate;
+        return Collections.unmodifiableList(propertiesToUpdate);
     }
 
     /**

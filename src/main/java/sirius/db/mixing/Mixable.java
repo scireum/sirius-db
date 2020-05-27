@@ -8,7 +8,6 @@
 
 package sirius.db.mixing;
 
-import com.google.common.collect.Maps;
 import sirius.db.es.Elastic;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.SQLEntity;
@@ -20,6 +19,7 @@ import sirius.kernel.di.transformers.Composable;
 import sirius.kernel.health.Exceptions;
 
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -66,7 +66,7 @@ public class Mixable extends Composable {
         if (adapterType.isAnnotationPresent(Mixin.class)) {
             if (adapterType.getAnnotation(Mixin.class).value().isAssignableFrom(this.getClass())) {
                 if (mixins == null) {
-                    mixins = Maps.newHashMap();
+                    mixins = new HashMap<>();
                 }
                 try {
                     A result = makeNewInstance(adapterType);

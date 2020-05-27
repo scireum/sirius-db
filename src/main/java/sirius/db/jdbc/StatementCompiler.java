@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Lists;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Reflection;
 import sirius.kernel.commons.Strings;
@@ -31,7 +30,7 @@ import java.util.List;
 class StatementCompiler {
 
     private PreparedStatement stmt;
-    private List<Tuple<Integer, Object>> parameters = Lists.newArrayList();
+    private List<Tuple<Integer, Object>> parameters = new ArrayList<>();
     private Connection c;
     private StringBuilder sb;
     private boolean retrieveGeneratedKeys;
@@ -124,7 +123,7 @@ class StatementCompiler {
      * in context.
      */
     private void compileSection(boolean ignoreIfParametersNull, String sql) throws SQLException {
-        List<Object> tempParams = Lists.newArrayList();
+        List<Object> tempParams = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder();
 
         boolean appendToStatement = compileSectionPart(sql, tempParams, sqlBuilder, !ignoreIfParametersNull);

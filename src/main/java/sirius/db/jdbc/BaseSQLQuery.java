@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Lists;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Tuple;
@@ -21,6 +20,7 @@ import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +57,7 @@ public abstract class BaseSQLQuery {
      */
     @Nonnull
     public List<Row> queryList(Limit limit) throws SQLException {
-        List<Row> result = Lists.newArrayList();
+        List<Row> result = new ArrayList<>();
         iterate(result::add, limit);
 
         return result;
@@ -145,7 +145,7 @@ public abstract class BaseSQLQuery {
         Row row = new Row();
         List<String> fetchedFieldNames = null;
         if (fieldNames == null) {
-            fetchedFieldNames = Lists.newArrayListWithCapacity(rs.getMetaData().getColumnCount());
+            fetchedFieldNames = new ArrayList<>(rs.getMetaData().getColumnCount());
         }
         for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
             String fieldName;

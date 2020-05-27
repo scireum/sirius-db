@@ -8,10 +8,10 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.io.ByteStreams;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Limit;
+import sirius.kernel.commons.Streams;
 import sirius.kernel.commons.Watch;
 
 import javax.annotation.Nullable;
@@ -139,7 +139,7 @@ public class SQLQuery extends BaseSQLQuery {
         }
 
         try (InputStream in = blob.getBinaryStream()) {
-            ByteStreams.copy(in, out);
+            Streams.transfer(in, out);
         } catch (IOException e) {
             throw new SQLException(e);
         }

@@ -8,7 +8,6 @@
 
 package sirius.db.mixing;
 
-import com.google.common.collect.Maps;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 import sirius.db.mixing.annotations.AfterDelete;
@@ -50,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -226,7 +226,7 @@ public class EntityDescriptor {
             }
             if (legacyInfo.hasPath("alias")) {
                 Config aliases = legacyInfo.getConfig("alias");
-                columnAliases = Maps.newHashMap();
+                columnAliases = new HashMap<>();
                 for (Map.Entry<String, ConfigValue> entry : aliases.entrySet()) {
                     columnAliases.put(entry.getKey(), Value.of(entry.getValue().unwrapped()).asString());
                 }

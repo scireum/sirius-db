@@ -8,10 +8,10 @@
 
 package sirius.db.jdbc.schema;
 
-import com.google.common.collect.Lists;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Strings;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -20,8 +20,8 @@ import java.util.List;
  */
 public class ForeignKey {
     private String name;
-    private List<ComparableTuple<Integer, String>> keyFields = Lists.newArrayList();
-    private List<ComparableTuple<Integer, String>> foreignKeyFields = Lists.newArrayList();
+    private List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
+    private List<ComparableTuple<Integer, String>> foreignKeyFields = new ArrayList<>();
     private String foreignTable;
 
     /**
@@ -66,7 +66,7 @@ public class ForeignKey {
      * @return the columns of the key
      */
     public List<String> getColumns() {
-        List<String> columns = Lists.newArrayList();
+        List<String> columns = new ArrayList<>();
         for (ComparableTuple<Integer, String> field : keyFields) {
             columns.add(field.getSecond());
         }
@@ -79,7 +79,7 @@ public class ForeignKey {
      * @return the columns matched in the referenced table
      */
     public List<String> getForeignColumns() {
-        List<String> columns = Lists.newArrayList();
+        List<String> columns = new ArrayList<>();
         for (ComparableTuple<Integer, String> field : foreignKeyFields) {
             columns.add(field.getSecond());
         }

@@ -8,8 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
@@ -40,9 +38,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 public class Databases implements Initializable {
 
     protected static final Log LOG = Log.get("jdbc");
-    private static final Map<String, Database> datasources = Maps.newConcurrentMap();
+    private static final Map<String, Database> datasources = new ConcurrentHashMap<>();
 
     @ConfigValue("jdbc.logQueryThreshold")
     private static Duration logQueryThreshold;
@@ -313,7 +313,7 @@ public class Databases implements Initializable {
      * @throws SQLException in case of a database error
      */
     public Set<String> readColumns(ResultSet rs) throws SQLException {
-        Set<String> result = Sets.newHashSet();
+        Set<String> result = new HashSet<>();
         for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
             result.add(rs.getMetaData().getColumnLabel(col).toUpperCase());
         }

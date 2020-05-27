@@ -8,7 +8,6 @@
 
 package sirius.db.mongo;
 
-import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
@@ -26,6 +25,7 @@ import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -315,11 +315,10 @@ public class Finder extends QueryBuilder<Finder> {
 
         MongoIterable<Document> cursor = mongo.db(database)
                                               .getCollection(collection)
-                                              .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH,
-                                                                                            filterObject),
-                                                                          new BasicDBObject(OPERATOR_SAMPLE,
-                                                                                            new BasicDBObject("size",
-                                                                                                              limit))));
+                                              .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
+                                                                       new BasicDBObject(OPERATOR_SAMPLE,
+                                                                                         new BasicDBObject("size",
+                                                                                                           limit))));
 
         applyBatchSize(cursor);
         processCursor(cursor, processor, collection);
@@ -424,10 +423,9 @@ public class Finder extends QueryBuilder<Finder> {
                                                           .append("result", new BasicDBObject(operator, "$" + field));
             MongoCursor<Document> queryResult = mongo.db()
                                                      .getCollection(collection)
-                                                     .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH,
-                                                                                                   filterObject),
-                                                                                 new BasicDBObject("$group",
-                                                                                                   groupStage)))
+                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                                                                                filterObject),
+                                                                              new BasicDBObject("$group", groupStage)))
                                                      .collation(mongo.determineCollation())
                                                      .iterator();
             if (queryResult.hasNext()) {
@@ -466,10 +464,9 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             MongoCursor<Document> queryResult = mongo.db()
                                                      .getCollection(collection)
-                                                     .aggregate(ImmutableList.of(new BasicDBObject(OPERATOR_MATCH,
-                                                                                                   filterObject),
-                                                                                 new BasicDBObject("$facet",
-                                                                                                   facetStage)))
+                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                                                                                filterObject),
+                                                                              new BasicDBObject("$facet", facetStage)))
                                                      .collation(mongo.determineCollation())
                                                      .iterator();
 
