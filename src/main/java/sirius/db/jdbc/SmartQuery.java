@@ -8,8 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
@@ -66,8 +64,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     protected List<Mapping> fields = Collections.emptyList();
     protected boolean distinct;
-    protected List<Tuple<Mapping, Boolean>> orderBys = Lists.newArrayList();
-    protected List<SQLConstraint> constaints = Lists.newArrayList();
+    protected List<Tuple<Mapping, Boolean>> orderBys = new ArrayList<>();
+    protected List<SQLConstraint> constaints = new ArrayList<>();
     protected Database db;
 
     /**
@@ -139,7 +137,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * @return the query itself for fluent method calls
      */
     public SmartQuery<E> fields(Mapping... fields) {
-        this.fields = Lists.newArrayList(fields);
+        this.fields = Arrays.asList(fields);
         return this;
     }
 
@@ -220,7 +218,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             });
         }
     }
-
 
     /**
      * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
@@ -452,15 +449,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         private static class JoinFetch {
             String tableAlias;
             SQLEntityRefProperty property;
-            Map<String, JoinFetch> subFetches = Maps.newTreeMap();
+            Map<String, JoinFetch> subFetches = new TreeMap<>();
         }
 
         protected EntityDescriptor ed;
         protected StringBuilder preJoinQuery = new StringBuilder();
         protected StringBuilder joins = new StringBuilder();
         protected StringBuilder postJoinQuery = new StringBuilder();
-        protected List<Object> parameters = Lists.newArrayList();
-        protected Map<String, Tuple<String, EntityDescriptor>> joinTable = Maps.newTreeMap();
+        protected List<Object> parameters = new ArrayList<>();
+        protected Map<String, Tuple<String, EntityDescriptor>> joinTable = new TreeMap<>();
         protected AtomicInteger aliasCounter = new AtomicInteger(1);
         protected String defaultAlias = "e";
         protected JoinFetch rootFetch = new JoinFetch();
@@ -595,7 +592,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
 
         private void createJoinFetch(Mapping field, List<Mapping> fields, List<Mapping> requiredColumns) {
-            List<Mapping> fetchPath = Lists.newArrayList();
+            List<Mapping> fetchPath = new ArrayList<>();
             Mapping parent = field.getParent();
             while (parent != null) {
                 fetchPath.add(0, parent);

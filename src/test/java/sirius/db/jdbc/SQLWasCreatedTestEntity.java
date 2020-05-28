@@ -10,10 +10,12 @@ package sirius.db.jdbc;
 
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.AfterSave;
+import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.Transient;
 
 public class SQLWasCreatedTestEntity extends SQLEntity {
     public static final Mapping VALUE = Mapping.named("value");
+    @Length(255)
     private String value;
 
     @Transient

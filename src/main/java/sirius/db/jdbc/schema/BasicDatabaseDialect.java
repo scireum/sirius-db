@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.schema;
 
-import com.google.common.primitives.Ints;
 import sirius.db.jdbc.OMA;
 import sirius.db.mixing.annotations.Engine;
 import sirius.kernel.commons.Explain;
@@ -28,6 +27,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -346,7 +346,8 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     }
 
     protected boolean in(int type, int other, int... types) {
-        return Ints.contains(types, type) && Ints.contains(types, other);
+        return Arrays.stream(types).anyMatch(aType -> aType == type) && Arrays.stream(types)
+                                                                              .anyMatch(aType -> aType == other);
     }
 
     @SuppressWarnings({"squid:S3776", "squid:MethodCyclomaticComplexity"})

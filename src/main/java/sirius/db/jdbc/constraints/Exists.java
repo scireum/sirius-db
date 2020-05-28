@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.constraints;
 
-import com.google.common.collect.Lists;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.SmartQuery;
 import sirius.db.jdbc.TranslationState;
@@ -17,6 +16,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.di.std.Part;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,7 +26,7 @@ public class Exists extends SQLConstraint {
 
     private Mapping outerColumn;
     private Mapping innerColumn;
-    private List<SQLConstraint> constraints = Lists.newArrayList();
+    private List<SQLConstraint> constraints = new ArrayList<>();
     private Class<? extends SQLEntity> other;
 
     @Part

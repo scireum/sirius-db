@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.schema;
 
-import com.google.common.collect.Lists;
 import sirius.db.jdbc.Database;
 import sirius.kernel.commons.ComparableTuple;
 import sirius.kernel.commons.Explain;
@@ -66,7 +65,7 @@ public class SchemaTool {
      * @throws SQLException in case of a database error
      */
     public List<Table> getSchema(Database db) throws SQLException {
-        List<Table> tables = Lists.newArrayList();
+        List<Table> tables = new ArrayList<>();
         try (Connection c = db.getConnection()) {
             try (ResultSet rs = c.getMetaData().getTables(c.getSchema(), c.getSchema(), null, null)) {
                 while (rs.next()) {
@@ -174,7 +173,7 @@ public class SchemaTool {
      */
     public List<SchemaUpdateAction> migrateSchemaTo(Database db, List<Table> targetSchema, boolean dropTables)
             throws SQLException {
-        List<SchemaUpdateAction> result = Lists.newArrayList();
+        List<SchemaUpdateAction> result = new ArrayList<>();
         List<Table> currentSchema = getSchema(db);
 
         syncRequiredTables(result, currentSchema, targetSchema);

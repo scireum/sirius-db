@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Lists;
 import sirius.kernel.Sirius;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Context;
@@ -29,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -276,7 +276,7 @@ public class Database {
         try (Connection c = getConnection()) {
             StringBuilder fields = new StringBuilder();
             StringBuilder values = new StringBuilder();
-            List<Object> valueList = Lists.newArrayList();
+            List<Object> valueList = new ArrayList<>();
             prepareValues(ctx, fields, values, valueList);
             String sql = "INSERT INTO " + table + " (" + fields + ") VALUES(" + values + ")";
             try (PreparedStatement stmt = hasCapability(Capability.GENERATED_KEYS) ?

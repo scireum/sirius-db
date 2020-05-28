@@ -8,16 +8,16 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Represents a flexible way of executing parameterized SQL calls without
@@ -27,11 +27,11 @@ public class SQLCall {
 
     private static final String RETURN_VALUE = "_RETVAL";
     private final Database ds;
-    private final List<String> names = Lists.newArrayList();
-    private final List<Object> data = Lists.newArrayList();
-    private final List<Integer> types = Lists.newArrayList();
+    private final List<String> names = new ArrayList<>();
+    private final List<Object> data = new ArrayList<>();
+    private final List<Integer> types = new ArrayList<>();
     private final String fun;
-    private final Map<String, Object> output = Maps.newTreeMap();
+    private final Map<String, Object> output = new TreeMap<>();
     private Integer returnType;
 
     /*

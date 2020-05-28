@@ -8,7 +8,6 @@
 
 package sirius.db.mixing;
 
-import com.google.common.collect.Maps;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
@@ -19,6 +18,7 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
@@ -47,7 +47,7 @@ public abstract class BaseEntity<I> extends Mixable {
     protected static Mixing mixing;
 
     @Transient
-    protected Map<Property, Object> persistedData = Maps.newHashMap();
+    protected Map<Property, Object> persistedData = new HashMap<>();
 
     /**
      * Contains the unique id of the entity.

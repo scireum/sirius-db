@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import com.google.common.collect.Lists;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.jdbc.constraints.SQLFilterFactory;
 import sirius.db.jdbc.schema.Schema;
@@ -35,6 +34,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -256,7 +256,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     private List<Object> buildUpdateStatement(SQLEntity entity, EntityDescriptor ed, StringBuilder sql) {
-        List<Object> data = Lists.newArrayList();
+        List<Object> data = new ArrayList<>();
         for (Property p : ed.getProperties()) {
             if (ed.isChanged(entity, p)) {
                 if (SQLEntity.ID.getName().equals(p.getName())) {
