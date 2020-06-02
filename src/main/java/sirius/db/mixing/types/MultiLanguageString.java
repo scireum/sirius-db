@@ -16,13 +16,30 @@ import java.util.Optional;
 
 /**
  * Provides a language-text map as property value.
- * <p>
- * These are stored in MongoDB as an array containing sub-documents
- * containing a <tt>lang</tt> and a <tt>text</tt> property
  *
  * @see sirius.db.mixing.properties.MultiLanguageStringProperty
  */
 public class MultiLanguageString extends SafeMap<String, String> {
+
+    public static final String FALLBACK_KEY = "fallback";
+
+    private boolean withFallback;
+
+    /**
+     * Creates a new object to hold a language-text map with no place for a fallback string.
+     */
+    public MultiLanguageString() {
+        this.withFallback = false;
+    }
+
+    /**
+     * Creates a new object to hold a language-text map.
+     *
+     * @param withFallback if a fallback should also be stored in the map
+     */
+    public MultiLanguageString(boolean withFallback) {
+        this.withFallback = withFallback;
+    }
 
     @Override
     protected boolean valueNeedsCopy() {
@@ -59,6 +76,21 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
+     * Adds the given text as a fallback to the map.
+     *
+     * @param text the text to be used as fallback
+     * @return the object itself for fluent method calls
+     * @throws IllegalStateException if this field does not support fallbacks
+     */
+    public MultiLanguageString addFallback(String text) {
+        if (!withFallback) {
+            throw new IllegalStateException(
+                    "Can not call addFallback on a MultiLanguageString without fallback enabled.");
+        }
+        return addText(FALLBACK_KEY, text);
+    }
+
+    /**
      * Checks if a text exists for a given language.
      *
      * @param language the language code
@@ -70,6 +102,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     /**
      * Returns an optional text associated with the current language defined by {@link NLS#getCurrentLang()}.
+     * <p>
+     * If no text for the language exists and a fallback is defined, the fallback is returned.
      *
      * @return an Optional String containing the text, otherwise an empty Optional
      */
@@ -80,6 +114,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     /**
      * Returns an optional text associated with a given language.
+     * <p>
+     * If no text for the language exists and a fallback is defined, the fallback is returned.
      *
      * @param language the language code
      * @return an Optional String containing the text, otherwise an empty Optional
@@ -87,6 +123,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
     @Nonnull
     public Optional<String> getText(String language) {
         if (!hasText(language)) {
+            if (hasFallback()) {
+                return Optional.of(data.get(FALLBACK_KEY));
+            }
             return Optional.empty();
         }
         return Optional.of(fetchText(language));
@@ -94,6 +133,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     /**
      * Returns the text associated with the current language defined by {@link NLS#getCurrentLang()}.
+     * <p>
+     * Please note that the defined fallback is never used, use {@link #fetchTextOrFallback()} instead.
      *
      * @return the text if it exists, otherwise <tt>null</tt>
      */
@@ -104,6 +145,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     /**
      * Returns the text associated with a given language.
+     * <p>
+     * Please note that the defined fallback is never used, use {@link #fetchTextOrFallback(String)} instead.
      *
      * @param language the language code
      * @return the text if it exists, otherwise <tt>null</tt>
@@ -123,5 +166,34 @@ public class MultiLanguageString extends SafeMap<String, String> {
     @Nullable
     public String fetchText(String language, String fallbackLanguage) {
         return data().getOrDefault(language, fetchText(fallbackLanguage));
+    }
+
+    /**
+     * Returns the text associated with with the current language defined by {@link NLS#getCurrentLang()}, falling back to the saved fallback.
+     *
+     * @return the text found under <tt>language</tt>, if none found the one from {@link #FALLBACK_KEY} is returned
+     */
+    @Nullable
+    public String fetchTextOrFallback() {
+        return fetchTextOrFallback(NLS.getCurrentLang());
+    }
+
+    /**
+     * Returns the text associated with a given language, falling back to the saved fallback.
+     *
+     * @param language the language code
+     * @return the text found under <tt>language</tt>, if none found the one from {@link #FALLBACK_KEY} is returned
+     */
+    @Nullable
+    public String fetchTextOrFallback(String language) {
+        if (!withFallback) {
+            throw new IllegalStateException(
+                    "Can not call fetchTextOrFallback on a MultiLanguageString without fallback enabled.");
+        }
+        return data().getOrDefault(language, data.get(FALLBACK_KEY));
+    }
+
+    private boolean hasFallback() {
+        return withFallback && containsKey(FALLBACK_KEY);
     }
 }

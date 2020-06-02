@@ -82,6 +82,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     protected void onBeforeSaveChecks(Object entity) {
         getMultiLanguageString(entity).data().forEach((language, text) -> {
+            if (Strings.areEqual(language, MultiLanguageString.FALLBACK_KEY)) {
+                return;
+            }
             if (supportedLanguages != null && !supportedLanguages.contains(language)) {
                 throw Exceptions.createHandled()
                                 .withNLSKey("MultiLanguageString.invalidLanguage")
