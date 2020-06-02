@@ -19,6 +19,7 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
@@ -45,7 +46,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
 
-    @ConfigValue("mongo.supportedLanguages")
+    @ConfigValue("mixing.multiLanguageStrings.supportedLanguages")
     private static Set<String> supportedLanguages;
 
     /**
