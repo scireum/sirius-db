@@ -11,7 +11,7 @@ package sirius.db.text;
 /**
  * Converts all tokens to lowercase.
  */
-public class LowerCaseProcessor extends ChainableTokenProcessor {
+public class ToLowerCaseProcessor extends ChainableTokenProcessor {
 
     @Override
     public void accept(String token) {

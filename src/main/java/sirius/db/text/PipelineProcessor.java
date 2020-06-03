@@ -21,9 +21,9 @@ public class PipelineProcessor extends ChainableTokenProcessor {
     private List<ChainableTokenProcessor> processors;
 
     /**
-     * Creates a new procssor.
+     * Creates a new processor.
      *
-     * @param processors the internal processors the chain together to form the desired pipeline
+     * @param processors the internal processors that chain together to form the desired pipeline
      */
     public PipelineProcessor(List<ChainableTokenProcessor> processors) {
         this.processors = Collections.synchronizedList(processors);
@@ -33,7 +33,7 @@ public class PipelineProcessor extends ChainableTokenProcessor {
     }
 
     /**
-     * Creates a new procssor.
+     * Creates a new processor.
      *
      * @param processors the internal processors the chain together to form the desired pipeline
      */
