@@ -9,7 +9,7 @@
 package sirius.db.text;
 
 /**
- * Rejects tokens which are either too long to too short to be processed.
+ * Rejects tokens which are either too long or to too short to be processed.
  */
 public class TokenLimitProcessor extends ChainableTokenProcessor {
 
