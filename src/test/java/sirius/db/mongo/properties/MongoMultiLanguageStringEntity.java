@@ -19,7 +19,14 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
     public static final Mapping MULTILANGTEXT = Mapping.named("multiLangText");
     private final MultiLanguageString multiLangText = new MultiLanguageString();
 
+    public static final Mapping MULTILANGTEXT_WITH_FALLBACK = Mapping.named("multiLangTextWithFallback");
+    private final MultiLanguageString multiLangTextWithFallback = new MultiLanguageString(true);
+
     public MultiLanguageString getMultiLangText() {
         return multiLangText;
+    }
+
+    public MultiLanguageString getMultiLangTextWithFallback() {
+        return multiLangTextWithFallback;
     }
 }

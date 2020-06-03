@@ -108,4 +108,57 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         then:
         expectedString == storedString
     }
+
+    def "fallback can not be added to field without fallback enabled"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+        when:
+        entity.getMultiLangText().addFallback("test")
+
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def "fallback can be added and retrieved"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangTextWithFallback().addText("de", "In Ordnung")
+        entity.getMultiLangTextWithFallback().addText("en", "Fine")
+        entity.getMultiLangTextWithFallback().addFallback("OK")
+        mango.update(entity)
+
+        when:
+        def output = mango.refreshOrFail(entity)
+
+        then:
+        output.getMultiLangTextWithFallback().size() == 3
+        output.getMultiLangTextWithFallback().hasText("de")
+        output.getMultiLangTextWithFallback().hasText("en")
+        output.getMultiLangTextWithFallback().hasFallback()
+        !output.getMultiLangTextWithFallback().hasText("fr")
+
+        output.getMultiLangTextWithFallback().fetchTextOrFallback("de") == "In Ordnung"
+        output.getMultiLangTextWithFallback().fetchTextOrFallback("en") == "Fine"
+        output.getMultiLangTextWithFallback().fetchTextOrFallback("fr") == "OK"
+
+        output.getMultiLangTextWithFallback().fetchText("de") == "In Ordnung"
+        output.getMultiLangTextWithFallback().fetchText("fr") == null
+
+        output.getMultiLangTextWithFallback().getText("de") == Optional.of("In Ordnung")
+        output.getMultiLangTextWithFallback().getText("fr") == Optional.of("OK")
+
+        when:
+        CallContext.getCurrent().setLang("en")
+
+        then:
+        output.getMultiLangTextWithFallback().fetchText() == "Fine"
+        output.getMultiLangTextWithFallback().getText() == Optional.of("Fine")
+
+        when:
+        CallContext.getCurrent().setLang("fr")
+
+        then:
+        output.getMultiLangTextWithFallback().fetchTextOrFallback() == "OK"
+        output.getMultiLangTextWithFallback().getText() == Optional.of("OK")
+    }
 }
