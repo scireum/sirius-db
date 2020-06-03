@@ -47,6 +47,13 @@ public abstract class Tokenizer {
         });
     }
 
+    /**
+     * Creates the internal token processor.
+     * <p>
+     * Most probably this will be a {@link PipelineProcessor} which wraps a sequence of other processors.
+     *
+     * @return the token processor which make up this tokenizer
+     */
     protected abstract ChainableTokenProcessor createProcessor();
 
     /**
