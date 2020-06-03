@@ -51,9 +51,9 @@ public class BypassProcessor extends ChainableTokenProcessor {
 
     @Override
     public void accept(String token) {
-            innerPurge.set(false);
-            tokenProcessor.accept(token);
-            emit(token);
+        innerPurge.set(false);
+        tokenProcessor.accept(token);
+        emit(token);
         if (innerPurge.get()) {
             downstream.purge();
             permitPurge.set(false);
