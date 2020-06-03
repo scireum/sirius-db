@@ -58,7 +58,7 @@ public class PatternSplitProcessor extends ChainableTokenProcessor {
      * @return a new processor which splits a whitespaces.
      */
     public static PatternSplitProcessor createWhitespaceSplitter() {
-        return new PatternSplitProcessor(WHITESPACE, false, true);
+        return new PatternSplitProcessor(WHITESPACE, false, false);
     }
 
     /**
