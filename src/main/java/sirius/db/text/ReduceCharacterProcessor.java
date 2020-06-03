@@ -32,7 +32,7 @@ public class ReduceCharacterProcessor extends ChainableTokenProcessor {
         // Latin Extended-A 0100-0170
         translateRange(0x0130, null, null, "Ij", "ij", "J", "j", "K", "k", "k", "L", "l", "L", "l", "L", "l", "L");
 
-        // Aplphabetic Presentation Forms FB00-0FB4
+        // Alphabetic Presentation Forms FB00-0FB4
         translateRange(0xFB00,
                        "ff",
                        "fi",
