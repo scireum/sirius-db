@@ -20,7 +20,7 @@ public class BasicSearchTokenizer extends Tokenizer {
                                      PatternSplitProcessor.createHardBoundarySplitter(),
                                      PatternSplitProcessor.createWhitespaceSplitter(),
                                      new TokenLimitProcessor(2, 80),
-                                     new LowerCaseProcessor(),
+                                     new ToLowercaseProcessor(),
                                      new DeduplicateProcessor(true));
     }
 }

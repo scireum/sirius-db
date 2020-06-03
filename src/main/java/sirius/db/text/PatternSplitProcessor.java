@@ -41,7 +41,7 @@ public class PatternSplitProcessor extends ChainableTokenProcessor {
     /**
      * Creates a processor which splits a hard "word" boundaries.
      * <p>
-     * This are all punctation symbols other than <tt>/ , . : \ _ -</tt>
+     * This are all punctuation symbols other than <tt>/ , . : \ _ -</tt>
      *
      * @return a new processor which splits at hard token boundaries. This will {@link #purge()} after each sub token
      * being emitted

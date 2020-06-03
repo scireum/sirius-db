@@ -24,7 +24,7 @@ public class BasicIndexTokenizer extends Tokenizer {
                                      PatternExtractProcessor.createEmailExtractor(),
                                      PatternSplitProcessor.createSoftBoundarySplitter(),
                                      new TokenLimitProcessor(2, 80),
-                                     new LowerCaseProcessor(),
+                                     new ToLowercaseProcessor(),
                                      new DeduplicateProcessor(true));
     }
 }
