@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 public abstract class ElasticEntity extends BaseEntity<String> {
 
     private static final String MATCHED_QUERIES = "matched_queries";
+    private static final String FIELD_SCORE = "_score";
 
     @Part
     protected static Elastic elastic;
@@ -126,6 +127,19 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         }
 
         return matchedQueriesArray.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toSet());
+    }
+
+    /**
+     * Returns the score (match quality) as computed by Elasticsearch.
+     *
+     * @return the score assigned to the underlying hit of this entity
+     */
+    public float getScore() {
+        if (searchHit == null) {
+            return 0f;
+        }
+
+        return searchHit.getFloatValue(FIELD_SCORE);
     }
 
     /**
