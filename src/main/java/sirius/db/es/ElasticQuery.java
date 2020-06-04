@@ -932,7 +932,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         long lastScroll = 0;
         JSONObject scrollResponse = firstResponse;
         while (true) {
-            // we keep ob executing queries until es returns an empty list of results...
+            // we keep on executing queries until es returns an empty list of results...
             JSONArray hits = scrollResponse.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
             if (hits.isEmpty()) {
                 return scrollResponse;
