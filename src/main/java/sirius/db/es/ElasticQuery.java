@@ -87,6 +87,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_EXPLAIN = "explain";
     private static final String KEY_SUGGEST = "suggest";
     private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
+    private static final Mapping SCORE = Mapping.named("_score");
 
     @Part
     private static Elastic elastic;
@@ -389,6 +390,24 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public ElasticQuery<E> functionScore(FunctionScoreBuilder functionScore) {
         this.functionScore = functionScore;
         return this;
+    }
+
+    /**
+     * Adds an order by clause which sorts by <tt>_score</tt> ascending.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderByScoreAsc() {
+        return orderAsc(SCORE);
+    }
+
+    /**
+     * Adds an order by clause which sorts by <tt>_score</tt> descending.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderByScoreDesc() {
+        return orderDesc(SCORE);
     }
 
     /**
