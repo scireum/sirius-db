@@ -807,7 +807,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Note that the query has to be executed before calling this method.
      *
      * @return a map of the hits as JSON with the document ID as the key
+     * @deprecated use {@link ElasticEntity#getSearchHit()}
      */
+    @Deprecated
     public Map<String, JSONObject> getRawHits() {
         if (response == null && useScrolling()) {
             throw Exceptions.handle()
