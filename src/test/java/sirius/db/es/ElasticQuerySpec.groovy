@@ -8,20 +8,21 @@
 
 package sirius.db.es
 
-import com.alibaba.fastjson.JSONObject
+
 import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
 import sirius.kernel.BaseSpecification
 import sirius.kernel.Scope
+import sirius.kernel.commons.Doubles
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Value
-import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
 import java.time.Duration
+import java.time.LocalDateTime
 
 class ElasticQuerySpec extends BaseSpecification {
 
@@ -115,11 +116,14 @@ class ElasticQuerySpec extends BaseSpecification {
         entity.getMap().put("1", "1").put("2", "2").put("test", "test")
         elastic.update(entity)
         elastic.refresh(ESStringMapEntity.class)
+        def subAggregation = AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
+                                               .field(ESStringMapEntity.MAP.nested(Mapping.
+                                                       named(StringMapProperty.KEY)))
+        def aggregation = AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
+                                            .addSubAggregation(subAggregation)
         def query = elastic.select(ESStringMapEntity.class)
                            .eq(ESStringMapEntity.ID, entity.getId())
-                           .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
-                           .addSubAggregation(AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
-                           .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)))))
+                           .addAggregation(aggregation)
         query.computeAggregations()
         then:
         query.getRawAggregations().getJSONObject("test")
@@ -135,12 +139,13 @@ class ElasticQuerySpec extends BaseSpecification {
              .getString("key") == "test"
     }
 
-    def "muli-level nested aggregations work"(){
+    def "muli-level nested aggregations work"() {
         given:
         def keysAggregation = AggregationBuilder.create(AggregationBuilder.TERMS, "keys")
-                                                .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.VALUE)))
-        def filterAggregation = AggregationBuilder.createFiltered("filter", Elastic.FILTERS.eq(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.KEY)), "3"))
-                                                  .addSubAggregation(keysAggregation)
+                                                .field(ESStringMapEntity.MAP.nested(Mapping.named(StringMapProperty.
+                                                        VALUE)))
+        def filterAggregation = AggregationBuilder.createFiltered("filter", Elastic.FILTERS.eq(ESStringMapEntity.
+                MAP.nested(Mapping.named(StringMapProperty.KEY)), "3")).addSubAggregation(keysAggregation)
         when:
         ESStringMapEntity entity = new ESStringMapEntity()
         entity.getMap().put("3", "3").put("4", "4").put("test2", "test2")
@@ -149,7 +154,7 @@ class ElasticQuerySpec extends BaseSpecification {
         def query = elastic.select(ESStringMapEntity.class)
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
-                                                         .addSubAggregation(filterAggregation))
+                                                             .addSubAggregation(filterAggregation))
         query.computeAggregations()
         then:
         query.getRawAggregations().getJSONObject("test")
@@ -251,7 +256,10 @@ class ElasticQuerySpec extends BaseSpecification {
         and:
         def constraint = Elastic.FILTERS.eq(QueryTestEntity.VALUE, "NOREF")
         and:
-        def entities = elastic.select(QueryTestEntity.class).where(Elastic.FILTERS.or(constraint, constraint)).queryList()
+        def entities = elastic.
+                select(QueryTestEntity.class).
+                where(Elastic.FILTERS.or(constraint, constraint)).
+                queryList()
         then:
         entities.size() == 1
     }
@@ -267,22 +275,22 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.refresh(ESStringListEntity.class)
         then:
         elastic.select(ESStringListEntity.class)
-             .eq(ESStringListEntity.ID, entity.getId())
-             .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("2,4,5")).build())
-             .queryOne().getId() == entity.getId()
+               .eq(ESStringListEntity.ID, entity.getId())
+               .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("2,4,5")).build())
+               .queryOne().getId() == entity.getId()
         then:
         elastic.select(ESStringListEntity.class)
-             .eq(ESStringListEntity.ID, entity.getId())
-             .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("4,5,6")).build())
-             .count() == 0
+               .eq(ESStringListEntity.ID, entity.getId())
+               .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("4,5,6")).build())
+               .count() == 0
         then:
         elastic.select(ESStringListEntity.class)
-             .eq(ESStringListEntity.ID, entityEmpty.getId())
-             .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("4,5,6")).orEmpty().build())
-             .queryOne().getId() == entityEmpty.getId()
+               .eq(ESStringListEntity.ID, entityEmpty.getId())
+               .where(Elastic.FILTERS.containsAny(ESStringListEntity.LIST, Value.of("4,5,6")).orEmpty().build())
+               .queryOne().getId() == entityEmpty.getId()
     }
 
-    def "function score queries work"() {
+    def "field value score queries work"() {
         when:
         for (int i = 0; i < 100; i++) {
             QueryTestEntity entity = new QueryTestEntity()
