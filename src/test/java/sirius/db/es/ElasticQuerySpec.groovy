@@ -292,28 +292,56 @@ class ElasticQuerySpec extends BaseSpecification {
         }
         elastic.refresh(QueryTestEntity.class)
         and:
-        def scoreFunction = new JSONObject().fluentPut("field_value_factor",
-                                                       new JSONObject().fluentPut("field",
-                                                                                  QueryTestEntity.COUNTER.toString())
-                                                                       .fluentPut("factor", 2))
-        and:
         def query = elastic.select(QueryTestEntity.class)
                            .must(Elastic.FILTERS.eq(QueryTestEntity.VALUE, "FUNCTIONSCORE"))
-                           .functionScore(new FunctionScoreBuilder().function(scoreFunction)
+                           .functionScore(new FunctionScoreBuilder().fieldValueFuncion(QueryTestEntity.COUNTER, 2, 1)
                                                                     .parameter("boost_mode", "replace"))
-                           .orderAsc(Mapping.named("_score"))
+                           .orderByScoreAsc()
         and:
         def entities = query.queryList()
-        and:
-        def hits = query.getRawHits()
         then:
         entities.size() == 100
         and:
-        hits.get(entities.get(0).getId()).getDoubleValue("_score") == 0
+        entities.get(0).getScore() == 0
         and:
-        hits.get(entities.get(50).getId()).getDoubleValue("_score") == 100
+        entities.get(50).getScore() == 100
         and:
-        hits.get(entities.get(99).getId()).getDoubleValue("_score") == 198
+        entities.get(99).getScore() == 198
+    }
+
+    def "decay score works"() {
+        when:
+        for (int i = 1; i <= 30; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("DECAYSCORE")
+            entity.setDateTime(LocalDateTime.of(2020, 06, i, 12, 0, 0))
+            elastic.update(entity)
+        }
+        elastic.refresh(QueryTestEntity.class)
+        def origin = LocalDateTime.of(2020, 06, 30, 12, 0, 0)
+        def functionScore = new FunctionScoreBuilder().linearDateTimeDecayFunction(QueryTestEntity.DATE_TIME,
+                                                                                   origin,
+                                                                                   Duration.ofDays(9),
+                                                                                   Duration.ofDays(10),
+                                                                                   0.5f)
+        functionScore.parameter("boost_mode", "replace")
+        and:
+        def query = elastic.select(QueryTestEntity.class)
+                           .must(Elastic.FILTERS.eq(QueryTestEntity.VALUE, "DECAYSCORE"))
+                           .functionScore(functionScore)
+                           .orderByScoreDesc()
+        and:
+        def entities = query.queryList()
+        then:
+        entities.size() == 30
+        and:
+        Doubles.areEqual(entities.get(0).getScore(), 1d)
+        and:
+        Doubles.areEqual(entities.get(9).getScore(), 1d)
+        and:
+        Doubles.areEqual(entities.get(19).getScore(), 0.5d)
+        and:
+        Doubles.areEqual(entities.get(29).getScore(), 0d)
     }
 
     @Scope(Scope.SCOPE_NIGHTLY)

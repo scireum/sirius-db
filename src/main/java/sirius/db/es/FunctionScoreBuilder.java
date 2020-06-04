@@ -10,7 +10,12 @@ package sirius.db.es;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.mixing.Mapping;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,8 +28,20 @@ import java.util.Map;
 public class FunctionScoreBuilder {
 
     private static final String FUNCTION_SCORE = "function_score";
-    private static final String QUERY = "query";
-    private static final String FUNCTIONS = "functions";
+    private static final String FIELD_QUERY = "query";
+    private static final String FIELD_FUNCTIONS = "functions";
+    private static final String FUNCTION_FIELD_VALUE_FACTOR = "field_value_factor";
+    private static final String FIELD_FIELD = "field";
+    private static final String FIELD_FACTOR = "factor";
+    private static final String FIELD_MISSING = "missing";
+    private static final String FIELD_ORIGIN = "origin";
+    private static final String FIELD_SCALE = "scale";
+    private static final String FIELD_OFFSET = "offset";
+    private static final String FIELD_DECAY = "decay";
+    private static final String DECAY_TYPE_LINEAR = "linear";
+    private static final String DECAY_TYPE_GAUSS = "gauss";
+    private static final String DECAY_TYPE_EXP = "exp";
+    private static final String SUFFIX_SECONDS = "s";
 
     private Map<String, Object> parameters = new HashMap<>();
     private List<JSONObject> functions = new ArrayList<>();
@@ -53,6 +70,102 @@ public class FunctionScoreBuilder {
     }
 
     /**
+     * Adds a score function which simply reads the given field.
+     *
+     * @param field   the field to read
+     * @param factor  the factor to apply (multiply with)
+     * @param missing the value to use in case the given field is empty
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder fieldValueFuncion(Mapping field, float factor, float missing) {
+        return function(new JSONObject().fluentPut(FUNCTION_FIELD_VALUE_FACTOR,
+                                                   new JSONObject().fluentPut(FIELD_FIELD, field.toString())
+                                                                   .fluentPut(FIELD_FACTOR, factor)
+                                                                   .fluentPut(FIELD_MISSING, missing)));
+    }
+
+    private FunctionScoreBuilder dateTimeDecayFunction(String function,
+                                                       Mapping field,
+                                                       LocalDateTime origin,
+                                                       Duration scale,
+                                                       Duration offset,
+                                                       float decay) {
+        JSONObject settings = new JSONObject().fluentPut(FIELD_ORIGIN,
+                                                         DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(origin.atZone(
+                                                                 ZoneId.systemDefault())))
+                                              .fluentPut(FIELD_SCALE, scale.getSeconds() + SUFFIX_SECONDS)
+                                              .fluentPut(FIELD_OFFSET, offset.getSeconds() + SUFFIX_SECONDS)
+                                              .fluentPut(FIELD_DECAY, decay);
+        return function(new JSONObject().fluentPut(function, new JSONObject().fluentPut(field.toString(), settings)));
+    }
+
+    /**
+     * Adds a linear decay for the given date/time field.
+     * <p>
+     * For further information see:
+     * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html
+     *
+     * @param field  the field to read
+     * @param origin the origin to compute the computation from. This should most probably be "now".
+     * @param scale  the distance from origin + offset at which the computed score will equal decay parameter.
+     * @param offset if an offset is defined, the decay function will only compute the decay function for documents
+     *               with a distance greater than the defined offset
+     * @param decay  defines how documents are scored at the distance given at scale
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder linearDateTimeDecayFunction(Mapping field,
+                                                            LocalDateTime origin,
+                                                            Duration scale,
+                                                            Duration offset,
+                                                            float decay) {
+        return dateTimeDecayFunction(DECAY_TYPE_LINEAR, field, origin, scale, offset, decay);
+    }
+
+    /**
+     * Adds a gauss shaped decay for the given date/time field.
+     * <p>
+     * For further information see:
+     * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html
+     *
+     * @param field  the field to read
+     * @param origin the origin to compute the computation from. This should most probably be "now".
+     * @param scale  the distance from origin + offset at which the computed score will equal decay parameter.
+     * @param offset if an offset is defined, the decay function will only compute the decay function for documents
+     *               with a distance greater than the defined offset
+     * @param decay  defines how documents are scored at the distance given at scale
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder gaussDateTimeDecayFunction(Mapping field,
+                                                           LocalDateTime origin,
+                                                           Duration scale,
+                                                           Duration offset,
+                                                           float decay) {
+        return dateTimeDecayFunction(DECAY_TYPE_GAUSS, field, origin, scale, offset, decay);
+    }
+
+    /**
+     * Adds an expotential/hyperbolic decay for the given date/time field.
+     * <p>
+     * For further information see:
+     * https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html
+     *
+     * @param field  the field to read
+     * @param origin the origin to compute the computation from. This should most probably be "now".
+     * @param scale  the distance from origin + offset at which the computed score will equal decay parameter.
+     * @param offset if an offset is defined, the decay function will only compute the decay function for documents
+     *               with a distance greater than the defined offset
+     * @param decay  defines how documents are scored at the distance given at scale
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder expDateTimeDecayFunction(Mapping field,
+                                                         LocalDateTime origin,
+                                                         Duration scale,
+                                                         Duration offset,
+                                                         float decay) {
+        return dateTimeDecayFunction(DECAY_TYPE_EXP, field, origin, scale, offset, decay);
+    }
+
+    /**
      * Applies the given query to the function score query and returns the newly created query.
      *
      * @param query the query to apply
@@ -60,8 +173,8 @@ public class FunctionScoreBuilder {
      */
     public JSONObject apply(JSONObject query) {
         return new JSONObject().fluentPut(FUNCTION_SCORE,
-                                          new JSONObject().fluentPut(QUERY, query)
-                                                          .fluentPut(FUNCTIONS,
+                                          new JSONObject().fluentPut(FIELD_QUERY, query)
+                                                          .fluentPut(FIELD_FUNCTIONS,
                                                                      new JSONArray(new ArrayList<Object>(functions)))
                                                           .fluentPutAll(parameters));
     }
@@ -73,7 +186,7 @@ public class FunctionScoreBuilder {
      */
     public JSONObject build() {
         return new JSONObject().fluentPut(FUNCTION_SCORE,
-                                          new JSONObject().fluentPut(FUNCTIONS,
+                                          new JSONObject().fluentPut(FIELD_FUNCTIONS,
                                                                      new JSONArray(new ArrayList<Object>(functions)))
                                                           .fluentPutAll(parameters));
     }
