@@ -62,9 +62,9 @@ public abstract class Tokenizer {
      * @param input  the tokens to process
      * @param output a consumer which is supplied with lists of tokens. Each list represents one input token.
      */
-    public void accept(Iterable<String> input, Consumer<List<String>> output) {
+    public void accept(String input, Consumer<List<String>> output) {
         this.currentSink = output;
-        input.forEach(processor);
+        processor.accept(input);
         processor.purge();
     }
 }
