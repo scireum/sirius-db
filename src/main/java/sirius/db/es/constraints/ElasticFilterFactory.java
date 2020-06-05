@@ -216,11 +216,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
+        JSONObject settings = new JSONObject().fluentPut("value", value).fluentPut("rewrite", "top_terms_256");
         return wrap(new JSONObject().fluentPut("prefix",
-                                               new JSONObject().fluentPut(determineFilterField(field),
-                                                                          new JSONObject().fluentPut("value", value)
-                                                                                          .fluentPut("rewrite",
-                                                                                                     "top_terms_256"))));
+                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
     }
 
     /**
