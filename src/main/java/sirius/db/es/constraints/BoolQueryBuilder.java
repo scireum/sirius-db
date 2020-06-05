@@ -9,10 +9,13 @@
 package sirius.db.es.constraints;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.Elastic;
+import sirius.db.es.ElasticQuery;
 import sirius.kernel.commons.Explain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Represents a boolean query which is the actual work horse of Elasticsearch queries.
@@ -172,5 +175,28 @@ public class BoolQueryBuilder {
         }
 
         return new JSONObject().fluentPut("bool", query);
+    }
+
+    /**
+     * Generates a copy of this query builder to support {@link ElasticQuery#copy()}.
+     *
+     * @return a copy of this builder
+     */
+    public BoolQueryBuilder copy() {
+        BoolQueryBuilder copy = new BoolQueryBuilder();
+        if (must != null) {
+            copy.must = this.must.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        }
+        if (mustNot != null) {
+            copy.mustNot = this.mustNot.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        }
+        if (should != null) {
+            copy.should = this.should.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        }
+        if (filter != null) {
+            copy.filter = this.filter.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        }
+
+        return copy;
     }
 }

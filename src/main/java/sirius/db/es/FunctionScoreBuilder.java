@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Helper class which generates a function score query for elasticsearch which can be used via
@@ -189,5 +190,17 @@ public class FunctionScoreBuilder {
                                           new JSONObject().fluentPut(FIELD_FUNCTIONS,
                                                                      new JSONArray(new ArrayList<Object>(functions)))
                                                           .fluentPutAll(parameters));
+    }
+
+    /**
+     * Generates a copy of this function score builder to support {@link ElasticQuery#copy()}.
+     *
+     * @return a copy of this builder
+     */
+    public FunctionScoreBuilder copy() {
+        FunctionScoreBuilder copy = new FunctionScoreBuilder();
+        copy.parameters.putAll(this.parameters);
+        copy.functions = this.functions.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        return copy;
     }
 }

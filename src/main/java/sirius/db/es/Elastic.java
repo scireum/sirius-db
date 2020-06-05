@@ -683,4 +683,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     public Value fetchField(Class<? extends ElasticEntity> type, Object id, Mapping field) throws Exception {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Create a shallow copy of the given JSON object.
+     *
+     * @param json the object to copy
+     * @return a shallow copy of the given JSON object
+     */
+    public static JSONObject copyJSON(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+
+        return (JSONObject) json.clone();
+    }
 }

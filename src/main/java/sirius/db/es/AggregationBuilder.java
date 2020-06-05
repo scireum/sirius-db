@@ -11,10 +11,12 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Helper class which generates aggregations for elasticsearch which can be used via {@link ElasticQuery#addAggregation(AggregationBuilder)}.
@@ -137,6 +139,8 @@ public class AggregationBuilder {
      * @param body the body to use
      * @return the builder itself for fluent method calls
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("We do not create an extra copy here for performance reasons, as the scope is quite limited")
     public AggregationBuilder withBody(JSONObject body) {
         this.body = body;
         return this;
@@ -208,5 +212,21 @@ public class AggregationBuilder {
         }
 
         return builder;
+    }
+
+    /**
+     * Generates a copy of this aggregation builder to support {@link ElasticQuery#copy()}.
+     *
+     * @return a copy of this builder
+     */
+    public AggregationBuilder copy() {
+        AggregationBuilder copy = new AggregationBuilder(type, path, name);
+        copy.body = Elastic.copyJSON(this.body);
+        if (subAggregations != null) {
+            copy.subAggregations =
+                    this.subAggregations.stream().map(AggregationBuilder::copy).collect(Collectors.toList());
+        }
+
+        return copy;
     }
 }
