@@ -77,7 +77,7 @@ public class FunctionScoreBuilder {
      * @param missing the value to use in case the given field is empty
      * @return the builder itself for fluent method calls
      */
-    public FunctionScoreBuilder fieldValueFuncion(Mapping field, float factor, float missing) {
+    public FunctionScoreBuilder fieldValueFunction(Mapping field, float factor, float missing) {
         return function(new JSONObject().fluentPut(FUNCTION_FIELD_VALUE_FACTOR,
                                                    new JSONObject().fluentPut(FIELD_FIELD, field.toString())
                                                                    .fluentPut(FIELD_FACTOR, factor)

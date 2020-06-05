@@ -302,7 +302,7 @@ class ElasticQuerySpec extends BaseSpecification {
         and:
         def query = elastic.select(QueryTestEntity.class)
                            .must(Elastic.FILTERS.eq(QueryTestEntity.VALUE, "FUNCTIONSCORE"))
-                           .functionScore(new FunctionScoreBuilder().fieldValueFuncion(QueryTestEntity.COUNTER, 2, 1)
+                           .functionScore(new FunctionScoreBuilder().fieldValueFunction(QueryTestEntity.COUNTER, 2, 1)
                                                                     .parameter("boost_mode", "replace"))
                            .orderByScoreAsc()
         and:
