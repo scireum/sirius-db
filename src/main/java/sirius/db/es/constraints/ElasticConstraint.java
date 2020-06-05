@@ -9,6 +9,7 @@
 package sirius.db.es.constraints;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.Elastic;
 import sirius.db.mixing.query.constraints.Constraint;
 
 /**
@@ -54,5 +55,18 @@ public class ElasticConstraint extends Constraint {
      */
     public JSONObject toJSON() {
         return constraint;
+    }
+
+    /**
+     * Wraps the given constraint using {@link ElasticFilterFactory#constantScore(ElasticConstraint, float)}.
+     * <p>
+     * Note that a constraint which influences the scoring must be added using
+     * {@link sirius.db.es.ElasticQuery#must(ElasticConstraint)}.
+     *
+     * @param boost the boost or constant score to apply to this constraint
+     * @return the newly created constraint
+     */
+    public ElasticConstraint withConstantScore(float boost) {
+        return Elastic.FILTERS.constantScore(this, boost);
     }
 }
