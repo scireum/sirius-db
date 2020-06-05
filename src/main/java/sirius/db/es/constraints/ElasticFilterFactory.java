@@ -21,6 +21,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -219,6 +220,44 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         JSONObject settings = new JSONObject().fluentPut("value", value).fluentPut("rewrite", "top_terms_256");
         return wrap(new JSONObject().fluentPut("prefix",
                                                new JSONObject().fluentPut(determineFilterField(field), settings)));
+    }
+
+    /**
+     * Generates a fuzzy search constraint.
+     *
+     * @param field          the field to search in
+     * @param value          the value to search for
+     * @param fuzziness      defines the levenstein edit distance which is permitted or "AUTO" or <tt>null</tt> to let
+     *                       Elasticsearch determine an appropriate distance based on the given token length
+     * @param maxExpansions  defines the max expansions to use.
+     *                       The default value is 50.
+     * @param prefixLength   defines the prefix length for which no edits are attempted.
+     *                       The default is 0.
+     * @param transpositions determines if transpositions (ab -> ba) are considered a single edit.
+     *                       The default is <tt>true</tt>.
+     * @param rewrite        determines which rewrite is applied. Use "constant_score" or <tt>null</tt> as default
+     * @return the generated constraint
+     */
+    public ElasticConstraint fuzzy(Mapping field,
+                                   String value,
+                                   @Nullable String fuzziness,
+                                   int maxExpansions,
+                                   int prefixLength,
+                                   boolean transpositions,
+                                   @Nullable String rewrite) {
+        if (Strings.isEmpty(value)) {
+            return null;
+        }
+
+        JSONObject settings = new JSONObject().fluentPut("value", value)
+                                              .fluentPut("fuzziness", fuzziness == null ? "auto" : fuzziness)
+                                              .fluentPut("max_expansions", maxExpansions)
+                                              .fluentPut("prefix_length", prefixLength)
+                                              .fluentPut("transpositions", transpositions)
+                                              .fluentPut("rewrite", rewrite == null ? "constant_score" : rewrite);
+        return new ElasticConstraint(new JSONObject().fluentPut("fuzzy",
+                                                                new JSONObject().fluentPut(determineFilterField(field),
+                                                                                           settings)));
     }
 
     /**
