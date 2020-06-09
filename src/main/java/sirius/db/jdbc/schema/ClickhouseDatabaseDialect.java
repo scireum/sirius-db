@@ -29,8 +29,6 @@ import java.util.List;
 @Register(name = "clickhouse", classes = DatabaseDialect.class)
 public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
 
-    private static final String NOT_NULL = "NOT NULL";
-
     @Override
     public String generateCreateTable(Table table) {
         StringBuilder sb = new StringBuilder();
