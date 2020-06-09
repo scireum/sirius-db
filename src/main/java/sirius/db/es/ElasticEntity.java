@@ -8,6 +8,8 @@
 
 package sirius.db.es;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
@@ -15,19 +17,28 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.di.std.Part;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
  * <p>
- * If possible, it is highly recommended to mark a field to use as routing for this entity to increase performance noticeably.
- * This is done by annotating the field with {@link sirius.db.es.annotations.RoutedBy}.
- * For more info on why its a good idea to use custom routing, visit https://www.elastic.co/blog/customizing-your-document-routing.
+ * If possible, it is highly recommended to mark a field to use as routing for this entity to increase performance
+ * noticeably. This is done by annotating the field with {@link sirius.db.es.annotations.RoutedBy}.
+ * <p>
+ * For more info on why its a good idea to use custom routing, visit:
+ * https://www.elastic.co/blog/customizing-your-document-routing.
  */
 public abstract class ElasticEntity extends BaseEntity<String> {
+
+    private static final String MATCHED_QUERIES = "matched_queries";
+    private static final String FIELD_SCORE = "_score";
 
     @Part
     protected static Elastic elastic;
@@ -45,6 +56,9 @@ public abstract class ElasticEntity extends BaseEntity<String> {
 
     @Transient
     protected long seqNo = 0;
+
+    @Transient
+    private JSONObject searchHit;
 
     @Transient
     private Set<String> matchedQueries;
@@ -81,6 +95,12 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         this.id = id;
     }
 
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("We only pass the result JSON along internally and want to avoid an extra copy.")
+    protected void setSearchHit(JSONObject searchHit) {
+        this.searchHit = searchHit;
+    }
+
     /**
      * Gets the list of all named queries which matched this entity.
      * <p>
@@ -89,19 +109,37 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the list of named queries which matched this entity.
      */
     public Set<String> getMatchedQueries() {
+        if (matchedQueries == null) {
+            matchedQueries = parseMatchedQueries();
+        }
+
         return Collections.unmodifiableSet(matchedQueries);
     }
 
+    private Set<String> parseMatchedQueries() {
+        if (searchHit == null) {
+            return Collections.emptySet();
+        }
+
+        JSONArray matchedQueriesArray = searchHit.getJSONArray(MATCHED_QUERIES);
+        if (matchedQueriesArray == null) {
+            return Collections.emptySet();
+        }
+
+        return matchedQueriesArray.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toSet());
+    }
+
     /**
-     * Sets the name of the queries which matched this entity.
-     * <p>
-     * ElasticSearch allows to name/alias a sub-query so that we can signal whether a sub-query matched an entity
-     * or not to prevent additional queries.
+     * Returns the score (match quality) as computed by Elasticsearch.
      *
-     * @param matchedQueries the list of named queries which matched this entity
+     * @return the score assigned to the underlying hit of this entity
      */
-    protected void setMatchedQueries(Set<String> matchedQueries) {
-        this.matchedQueries = Collections.unmodifiableSet(matchedQueries);
+    public float getScore() {
+        if (searchHit == null) {
+            return 0f;
+        }
+
+        return searchHit.getFloatValue(FIELD_SCORE);
     }
 
     /**
@@ -111,18 +149,26 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the list of named queries which matched this entity.
      */
     public boolean isMatchedNamedQuery(String queryName) {
-        if (matchedQueries == null) {
-            return false;
-        }
+        return getMatchedQueries().contains(queryName);
+    }
 
-        return matchedQueries.contains(queryName);
+    /**
+     * Provides access to the original JSON hit which was returned by an Elasticsearch query.
+     *
+     * @return the original underlying hit object of this entity.
+     */
+    @Nullable
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
+    public JSONObject getSearchHit() {
+        return searchHit;
     }
 
     public long getPrimaryTerm() {
         return primaryTerm;
     }
 
-    public void setPrimaryTerm(long primaryTerm) {
+    protected void setPrimaryTerm(long primaryTerm) {
         this.primaryTerm = primaryTerm;
     }
 
@@ -130,7 +176,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         return seqNo;
     }
 
-    public void setSeqNo(long seqNo) {
+    protected void setSeqNo(long seqNo) {
         this.seqNo = seqNo;
     }
 }

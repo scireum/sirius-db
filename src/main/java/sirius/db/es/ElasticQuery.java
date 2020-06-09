@@ -87,6 +87,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_EXPLAIN = "explain";
     private static final String KEY_SUGGEST = "suggest";
     private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
+    private static final Mapping SCORE = Mapping.named("_score");
 
     @Part
     private static Elastic elastic;
@@ -186,6 +187,64 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public ElasticQuery(EntityDescriptor descriptor, LowLevelClient client) {
         super(descriptor);
         this.client = client;
+    }
+
+    /**
+     * Creates a copy of this query.
+     * <p>
+     * Note that this query will inherit all filters, constraints, sorts and aggregations. After
+     * the copy has been performed, both queries can be used and modified independently. However,
+     * note that we perform a shallow copy. Therefore if a query is e.g. supplier with an inner hits
+     * builder (via {@link #addCollapsedInnerHits(String, int)} and then copied, the builder will
+     * be shared internally and modifying it, will affect both queries - therefore modifications like
+     * this have to happen after a copy.
+     * <p>
+     * Also note that neither result hits nor result aggregations will be copied.
+     *
+     * @return a copy of this query.
+     */
+    public ElasticQuery<E> copy() {
+        ElasticQuery<E> copy = new ElasticQuery<>(descriptor, client);
+        copy.limit = this.limit;
+        copy.skip = this.skip;
+        copy.routing = this.routing;
+        copy.unrouted = this.unrouted;
+        copy.explain = this.explain;
+        copy.collapseBy = this.collapseBy;
+
+        if (queryBuilder != null) {
+            copy.queryBuilder = this.queryBuilder.copy();
+        }
+
+        if (aggregations != null) {
+            copy.aggregations = this.aggregations.stream().map(AggregationBuilder::copy).collect(Collectors.toList());
+        }
+
+        if (postFilters != null) {
+            copy.postFilters = this.postFilters.copy();
+        }
+
+        if (collapseByInnerHits != null) {
+            copy.collapseByInnerHits =
+                    this.collapseByInnerHits.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        }
+
+        if (sorts != null) {
+            copy.sorts = this.sorts.stream().map(Elastic::copyJSON).collect(Collectors.toList());
+        }
+
+        if (functionScore != null) {
+            copy.functionScore = this.functionScore.copy();
+        }
+
+        if (suggesters != null) {
+            copy.suggesters = this.suggesters.entrySet()
+                                             .stream()
+                                             .collect(Collectors.toMap(Map.Entry::getKey,
+                                                                       entry -> (JSONObject) entry.getValue().clone()));
+        }
+
+        return copy;
     }
 
     private <X> List<X> autoinit(List<X> list) {
@@ -389,6 +448,24 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public ElasticQuery<E> functionScore(FunctionScoreBuilder functionScore) {
         this.functionScore = functionScore;
         return this;
+    }
+
+    /**
+     * Adds an order by clause which sorts by <tt>_score</tt> ascending.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderByScoreAsc() {
+        return orderAsc(SCORE);
+    }
+
+    /**
+     * Adds an order by clause which sorts by <tt>_score</tt> descending.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderByScoreDesc() {
+        return orderDesc(SCORE);
     }
 
     /**
@@ -807,7 +884,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Note that the query has to be executed before calling this method.
      *
      * @return a map of the hits as JSON with the document ID as the key
+     * @deprecated use {@link ElasticEntity#getSearchHit()}
      */
+    @Deprecated
     public Map<String, JSONObject> getRawHits() {
         if (response == null && useScrolling()) {
             throw Exceptions.handle()
@@ -930,7 +1009,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         long lastScroll = 0;
         JSONObject scrollResponse = firstResponse;
         while (true) {
-            // we keep ob executing queries until es returns an empty list of results...
+            // we keep on executing queries until es returns an empty list of results...
             JSONArray hits = scrollResponse.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
             if (hits.isEmpty()) {
                 return scrollResponse;

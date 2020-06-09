@@ -8,7 +8,6 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Request;
@@ -43,7 +42,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,7 +76,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static final String RESPONSE_SEQ_NO = "_seq_no";
     private static final String RESPONSE_FOUND = "found";
     private static final String RESPONSE_SOURCE = "_source";
-    private static final String MATCHED_QUERIES = "matched_queries";
 
     /**
      * Contains the name of the ID field used by Elasticsearch
@@ -509,14 +506,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
         try {
             JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
-            JSONArray matchedQueries = obj.getJSONArray(MATCHED_QUERIES);
-
             ElasticEntity result = (ElasticEntity) ed.make(Elastic.class, null, key -> Value.of(source.get(key)));
+            result.setSearchHit(obj);
             result.setId(obj.getString(ID_FIELD));
-
-            if (matchedQueries != null) {
-                result.setMatchedQueries(new HashSet<>(matchedQueries.toJavaList(String.class)));
-            }
 
             if (ed.isVersioned()) {
                 result.setPrimaryTerm(obj.getLong(RESPONSE_PRIMARY_TERM));
@@ -690,5 +682,19 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     public Value fetchField(Class<? extends ElasticEntity> type, Object id, Mapping field) throws Exception {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Create a shallow copy of the given JSON object.
+     *
+     * @param json the object to copy
+     * @return a shallow copy of the given JSON object
+     */
+    public static JSONObject copyJSON(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+
+        return (JSONObject) json.clone();
     }
 }

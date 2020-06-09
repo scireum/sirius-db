@@ -59,8 +59,16 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
                 Arrays.stream(replacements).map(this::compileReplacementPattern).collect(Collectors.toList());
     }
 
+    /**
+     * Extracts a valid eMail addresses.
+     * <p>
+     * This will also emit its prefix (everything before the at character) and the host
+     * (everything past the at sing).
+     *
+     * @return a pattern extractor which matches and processes email addresses
+     */
     public static PatternExtractProcessor createEmailExtractor() {
-        return new PatternExtractProcessor(EXTRACT_EMAILS, "{0}","{1}","{2}");
+        return new PatternExtractProcessor(EXTRACT_EMAILS, "{0}", "{1}", "{2}");
     }
 
     private List<ReplacementPattern> compileReplacementPattern(String input) {
