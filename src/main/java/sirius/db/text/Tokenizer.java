@@ -76,9 +76,6 @@ public abstract class Tokenizer {
      * @param output a consumer which is supplied with lists of tokens. Each list represents one input token.
      */
     public void acceptPlain(String input, Consumer<String> output) {
-        this.currentSink = tokens -> tokens.forEach(output);
-        processor.accept(input);
-        processor.purge();
-        this.currentSink = null;
+        accept(input, tokens -> tokens.forEach(output));
     }
 }
