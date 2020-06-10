@@ -473,4 +473,9 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
                            .map(row -> row.getValue(field.toString()))
                            .orElse(Value.EMPTY);
     }
+
+    @Override
+    protected int determineRetryTimeoutFactor() {
+        return 50;
+    }
 }

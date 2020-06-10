@@ -361,4 +361,9 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                     .map(doc -> doc.get(field))
                     .orElse(Value.EMPTY);
     }
+
+    @Override
+    protected int determineRetryTimeoutFactor() {
+        return 50;
+    }
 }

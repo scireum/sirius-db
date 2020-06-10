@@ -145,10 +145,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                     .to(Mixing.LOG)
                                     .handle();
                 }
-                // Wait 0, 500ms, 1000ms
-                Wait.millis((2 - retries) * 500);
-                // Wait 0..500ms in 50% of all calls...
-                Wait.randomMillis(-500, 500);
+                int timeoutFactor = determineRetryTimeoutFactor();
+                // Wait 0, x ms, 2*x ms
+                Wait.millis((2 - retries) * timeoutFactor);
+                // Wait 0..x ms in 50% of all calls...
+                Wait.randomMillis(-timeoutFactor, timeoutFactor);
             } catch (HandledException e) {
                 throw e;
             } catch (Exception e) {
@@ -161,6 +162,13 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             }
         }
     }
+
+    /**
+     * Determines the factor in ms to be used by {@link #retry} for specifying how long should be waited between retries.
+     *
+     * @return an amount of ms which should be used as basis for calculating the retry timeout
+     */
+    protected abstract int determineRetryTimeoutFactor();
 
     /**
      * Performs an {@link #update(BaseEntity)} of the entity, without checking for concurrent modifications.
