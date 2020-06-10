@@ -684,6 +684,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    protected int determineRetryTimeoutFactor() {
+        return 500;
+    }
+
     /**
      * Create a shallow copy of the given JSON object.
      *
