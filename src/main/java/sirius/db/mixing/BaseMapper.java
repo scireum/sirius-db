@@ -14,11 +14,16 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mixing.types.BaseEntityRef;
+import sirius.kernel.Sirius;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Callback;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
+import sirius.kernel.commons.UnitOfWork;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Wait;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -86,6 +91,75 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
              + "and database supported OL")
     public <E extends B> void tryUpdate(E entity) throws OptimisticLockException, IntegrityConstraintFailedException {
         performUpdate(entity, false);
+    }
+
+    /**
+     * Tries to apply the given changes and to save the resulting entity.
+     * <p>
+     * Tries to perform the given modifications and then to update the entity. If an optimistic lock error occurs,
+     * the entity is refreshed and the modifications are re-executed along with another update.
+     *
+     * @param entity          the entity to update
+     * @param preSaveModifier the changes to perform on the entity
+     * @param <E>             the type of the entity to update
+     * @throws HandledException if either any other exception occurs, or if all three attempts fail with an optimistic
+     *                          lock error.
+     */
+    public <E extends B> void retryUpdate(E entity, Callback<E> preSaveModifier) {
+        Monoflop retryOccured = Monoflop.create();
+        retry(() -> {
+            E entityToUpdate = entity;
+            if (retryOccured.successiveCall()) {
+                entityToUpdate = tryRefresh(entity);
+            }
+
+            preSaveModifier.invoke(entityToUpdate);
+            tryUpdate(entityToUpdate);
+        });
+    }
+
+    /**
+     * Handles the given unit of work while restarting it if an optimistic lock error occurs.
+     *
+     * @param unitOfWork the unit of work to handle.
+     * @throws HandledException if either any other exception occurs, or if all three attempts
+     *                          fail with an optimistic lock error.
+     */
+    public void retry(UnitOfWork unitOfWork) {
+        int retries = 3;
+        while (retries > 0) {
+            retries--;
+            try {
+                unitOfWork.execute();
+                return;
+            } catch (OptimisticLockException e) {
+                Mixing.LOG.FINE(e);
+                if (Sirius.isDev()) {
+                    Mixing.LOG.INFO("Retrying due to optimistic lock: %s", e);
+                }
+                if (retries <= 0) {
+                    throw Exceptions.handle()
+                                    .withSystemErrorMessage(
+                                            "Failed to update an entity after re-trying a unit of work several times: %s (%s)")
+                                    .error(e)
+                                    .to(Mixing.LOG)
+                                    .handle();
+                }
+                // Wait 0, 500ms, 1000ms
+                Wait.millis((2 - retries) * 500);
+                // Wait 0..500ms in 50% of all calls...
+                Wait.randomMillis(-500, 500);
+            } catch (HandledException e) {
+                throw e;
+            } catch (Exception e) {
+                throw Exceptions.handle()
+                                .withSystemErrorMessage(
+                                        "An unexpected exception occurred while executing a unit of work: %s (%s)")
+                                .error(e)
+                                .to(Mixing.LOG)
+                                .handle();
+            }
+        }
     }
 
     /**
