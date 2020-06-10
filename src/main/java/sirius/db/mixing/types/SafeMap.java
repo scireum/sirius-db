@@ -60,7 +60,7 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
      * @param value the value to store
      * @return the map itself for fluent method calls
      */
-    public SafeMap<K, V> put(K key, V value) {
+    public SafeMap<K, V> put(@Nonnull K key, V value) {
         modify().put(key, value);
         return this;
     }
