@@ -8,6 +8,9 @@
 
 package sirius.db.text;
 
+import sirius.kernel.commons.Strings;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -62,7 +65,11 @@ public abstract class Tokenizer {
      * @param input  the tokens to process
      * @param output a consumer which is supplied with lists of tokens. Each list represents one input token.
      */
-    public void accept(String input, Consumer<List<String>> output) {
+    public void accept(@Nullable String input, Consumer<List<String>> output) {
+        if (Strings.isEmpty(input)) {
+            return;
+        }
+
         this.currentSink = output;
         processor.accept(input);
         processor.purge();
