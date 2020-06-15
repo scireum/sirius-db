@@ -3,15 +3,9 @@ version: "2"
 services:
   redis:
     image: redis:3.2
-    ports:
-    - "6379"
-    hostname: redis
 
   mongo:
     image: mongo:3.6.4
-    ports:
-    - "27017"
-    hostname: mongo
 
   mysql:
     image: mysql:5.5
