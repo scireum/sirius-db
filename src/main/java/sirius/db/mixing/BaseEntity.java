@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  *
  * @param <I> the type of the ID used by subclasses
  */
-public abstract class BaseEntity<I> extends Mixable {
+public abstract class BaseEntity<I> extends Mixable implements Entity {
 
     @Part
     protected static Mixing mixing;
@@ -87,29 +87,17 @@ public abstract class BaseEntity<I> extends Mixable {
      *
      * @return <tt>true</tt> if the entity has not been written to the database yes, <tt>false</tt> otherwise
      */
+    @Override
     public boolean isNew() {
         return getId() == null;
     }
 
-    /**
-     * Each entity type can be addressed by its class or by a unique name, which is its simple class name in upper
-     * case.
-     *
-     * @return the type name of this entity type
-     * @see #getUniqueName()
-     */
+    @Override
     public String getTypeName() {
         return Mixing.getNameForType(getClass());
     }
 
-    /**
-     * Returns an unique name of this entity.
-     * <p>
-     * This unique string representation of this entity is made up of its type along with its id.
-     *
-     * @return an unique representation of this entity or an empty string if the entity was not written to the
-     * database yet
-     */
+    @Override
     public final String getUniqueName() {
         if (isNew()) {
             return "";
@@ -223,13 +211,7 @@ public abstract class BaseEntity<I> extends Mixable {
                                             .format());
     }
 
-    /**
-     * Returns a string representation of the entity ID.
-     * <p>
-     * If the entity is new, "new" will be returned.
-     *
-     * @return the entity ID as string or "new" if the entity {@link #isNew()}.
-     */
+    @Override
     public final String getIdAsString() {
         if (isNew()) {
             return NEW;
