@@ -223,6 +223,42 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     /**
+     * Creates a <tt>match_phrase</tt> query.
+     * <p>
+     * In contrast to simply filtering on each term, this also ensures the proper order of the terms.
+     *
+     * @param field the field to search in
+     * @param value the phrase (whitespace separated) to filter by
+     * @return a new phrase query as constraint
+     */
+    public ElasticConstraint phrase(Mapping field, String value) {
+        if (Strings.isEmpty(value)) {
+            return null;
+        }
+
+        JSONObject settings = new JSONObject().fluentPut("query", value);
+        return wrap(new JSONObject().fluentPut("match_phrase",
+                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+    }
+
+    /**
+     * Creates a <tt>regular expression</tt> query.
+     *
+     * @param field the field to search in
+     * @param value the regular expression to filter on
+     * @return a new regex query as constraint
+     */
+    public ElasticConstraint regexp(Mapping field, String value) {
+        if (Strings.isEmpty(value)) {
+            return null;
+        }
+
+        JSONObject settings = new JSONObject().fluentPut("value", value);
+        return wrap(new JSONObject().fluentPut("regexp",
+                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+    }
+
+    /**
      * Generates a fuzzy search constraint.
      *
      * @param field          the field to search in
