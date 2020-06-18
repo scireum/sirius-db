@@ -27,6 +27,9 @@ public abstract class Tokenizer {
     private Consumer<List<String>> currentSink;
 
     protected Tokenizer() {
+    }
+
+    private void init() {
         this.processor = createProcessor();
         this.processor.chain(new TokenProcessor() {
 
@@ -68,6 +71,10 @@ public abstract class Tokenizer {
     public void accept(@Nullable String input, Consumer<List<String>> output) {
         if (Strings.isEmpty(input)) {
             return;
+        }
+
+        if (this.processor == null) {
+            init();
         }
 
         this.currentSink = output;
