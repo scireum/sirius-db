@@ -12,17 +12,17 @@ package sirius.db.mixing;
  * Describes methods implemented in {@link BaseEntity} and therefore available for all entities.
  * <p>
  * The reason to define an extra interface is to have a base interface when defining database independent entities.
- * These are commonly defined as interface and then implemented by one or more subclasses of specific entities.
- * However e.g. the templates often refert to the interface itself so there is only on UI to manage all kinds of
- * entities. Therefore we need a super interface so that tagliatelle (which only sees the interface) knows which
- * methods are available.@
+ * They are commonly defined as interfaces and then implemented by one or more subclasses of specific entities.
+ * However e.g. the templates often refer to the interface itself so there is only one UI to manage all kinds of
+ * entities. Therefore we need a super interface so that Tagliatelle (which only sees the interface) knows which
+ * methods are available.
  */
 public interface Entity {
 
     /**
      * Determines if the entity is new (not yet written to the database).
      *
-     * @return <tt>true</tt> if the entity has not been written to the database yes, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the entity has not been written to the database yet, <tt>false</tt> otherwise
      */
     boolean isNew();
 

@@ -85,7 +85,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
      * <p>
      * This wont work in {@link sirius.db.mixing.annotations.AfterSave} handlers - use {@link #wasCreated()} instead.
      *
-     * @return <tt>true</tt> if the entity has not been written to the database yes, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the entity has not been written to the database yet, <tt>false</tt> otherwise
      */
     @Override
     public boolean isNew() {
