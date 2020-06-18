@@ -518,6 +518,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Clears all aggregations which have previously been added.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> clearAggregations() {
+        this.aggregations = null;
+        return this;
+    }
+
+    /**
      * Adds a term (bucket) aggregation for the given field.
      *
      * @param field the field to aggregate
