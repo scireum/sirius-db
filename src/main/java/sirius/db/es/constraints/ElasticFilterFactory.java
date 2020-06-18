@@ -259,6 +259,23 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     /**
+     * Creates a <tt>wildcard</tt> query.
+     *
+     * @param field the field to search in
+     * @param value the regular expression to filter on
+     * @return a new wildcard query as constraint
+     */
+    public ElasticConstraint wildcard(Mapping field, String value) {
+        if (Strings.isEmpty(value)) {
+            return null;
+        }
+
+        JSONObject settings = new JSONObject().fluentPut("value", value);
+        return wrap(new JSONObject().fluentPut("wildcard",
+                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+    }
+
+    /**
      * Generates a fuzzy search constraint.
      *
      * @param field          the field to search in
