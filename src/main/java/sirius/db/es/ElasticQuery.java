@@ -355,7 +355,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Adds a post filterto the query.
+     * Adds a post filter to the query.
      *
      * @param filter the filter to add
      * @return the query itself for fluent method calls
