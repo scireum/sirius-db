@@ -694,6 +694,21 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Creates a copy of the filters of this query.
+     * <p>
+     * This might be used e.g. in {@link sirius.db.es.suggest.SuggesterBuilder#collate(JSONObject, boolean)}.
+     *
+     * @return a copy of the filters of this query
+     */
+    public JSONObject getFilters() {
+        if (queryBuilder == null) {
+            return new JSONObject();
+        }
+
+        return queryBuilder.build();
+    }
+
+    /**
      * Adds the query and the function score query to the payload.
      * <p>
      * If a function score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
