@@ -11,7 +11,7 @@ package sirius.db.es.suggest;
 import com.alibaba.fastjson.JSONObject;
 
 /**
- * Represents a suggestion for a single tem of the given input text.
+ * Represents a suggestion for a single term of the given input text.
  */
 public class TermSuggestion {
 
@@ -65,7 +65,7 @@ public class TermSuggestion {
     }
 
     /**
-     * Returns wether this option is a match to the collate query of a phrase suggester.
+     * Returns whether this option is a match to the collate query of a phrase suggester.
      *
      * @return <tt>true</tt> if this option matched the collate query, <tt>false</tt> otherwise
      */

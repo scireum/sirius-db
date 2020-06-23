@@ -925,7 +925,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 throw Exceptions.handle()
                                 .to(Mixing.LOG)
                                 .withSystemErrorMessage(
-                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when scrolling",
+                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when scrolling!",
                                         descriptor.getType().getSimpleName())
                                 .handle();
             } else {

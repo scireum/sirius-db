@@ -71,7 +71,7 @@ public class SuggesterBuilder {
     }
 
     /**
-     * Sets the query string to generate suggestions for and the field to generate the suggestions from
+     * Sets the query string to generate suggestions for and the field to generate the suggestions from.
      *
      * @param field the field to get the suggestions from
      * @return the builder itself for fluent method calls
@@ -81,7 +81,7 @@ public class SuggesterBuilder {
     }
 
     /**
-     * Sets the query string to generate suggestions for and the field to generate the suggestions from
+     * Sets the query string to generate suggestions for and the field to generate the suggestions from.
      *
      * @param text the query to generate suggestions for
      * @return the builder itself for fluent method calls
@@ -115,7 +115,7 @@ public class SuggesterBuilder {
     }
 
     /**
-     * Specifies mode to use when generating suggestions a {@link #TYPE_TERM} suggester.
+     * Specifies mode to use when generating suggestions for a {@link #TYPE_TERM} suggester.
      *
      * @param suggestMode the suggest mode to use
      * @return the builder itself for fluent method calls
@@ -140,7 +140,7 @@ public class SuggesterBuilder {
     /**
      * Helper method to set the collate query for phrase suggesters.
      * <p>
-     * The query is used to check wether at least one document in the <b>CURRENT SHARD</b> matches the suggestion.
+     * The query is used to check whether at least one document in the <b>CURRENT SHARD</b> matches the suggestion.
      * The template parameter <pre>{{suggestion}}</pre> is replaced with the suggested text when checking.
      * <p>
      * Note that this is rather useful to check if the phrase itself is a match than to check if the suggested

@@ -53,7 +53,7 @@ public class SuggestionResult {
     }
 
     /**
-     * Returns all suggestions for the given suggester.
+     * Returns all suggestions for the given {@link Mapping field}.
      *
      * @param field the field to fetch suggestions for
      * @return a list of all suggestions
@@ -65,7 +65,7 @@ public class SuggestionResult {
     /**
      * Directly returns all term suggestions for a given input term.
      * <p>
-     * If the <tt>text</tt>, which was passed in, was only a single term, this method can be used to directly
+     * If the <tt>text</tt> provided is only a single term, directly
      * fetch the suggestions for this term.
      *
      * @param suggester the name of the suggester to fetch results for
@@ -83,7 +83,7 @@ public class SuggestionResult {
     /**
      * Directly returns all term suggestions for a given input term.
      * <p>
-     * If the <tt>text</tt>, which was passed in, was only a single term, this method can be used to directly
+     * If the <tt>text</tt> provided is only a single term, directly
      * fetch the suggestions for this term.
      *
      * @param field the field to fetch suggestions for

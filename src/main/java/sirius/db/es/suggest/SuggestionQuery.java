@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a query which computes one or more suggestion.
+ * Represents a query which computes one or more suggestions.
  *
  * @param <E> the type of entities being queried
  */
