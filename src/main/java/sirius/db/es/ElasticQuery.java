@@ -12,9 +12,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
-import sirius.db.es.suggest.SuggestBuilder;
-import sirius.db.es.suggest.SuggestOption;
-import sirius.db.es.suggest.SuggestPart;
 import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -586,7 +583,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param name    the name of the suggester
      * @param suggest a JSON object describing a suggest requirement
      * @return the query itself for fluent method calls
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
+    @Deprecated
     public ElasticQuery<E> suggest(String name, JSONObject suggest) {
         if (this.suggesters == null) {
             this.suggesters = new HashMap<>();
@@ -600,8 +599,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param suggestBuilder a suggest builder
      * @return the query itself for fluent method calls
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    public ElasticQuery<E> suggest(SuggestBuilder suggestBuilder) {
+    @Deprecated
+    public ElasticQuery<E> suggest(sirius.db.es.suggest.SuggestBuilder suggestBuilder) {
         return suggest(suggestBuilder.getName(), suggestBuilder.build());
     }
 
@@ -918,8 +919,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param name the name of the suggester
      * @return a list of suggest options
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    public List<SuggestOption> getSuggestOptions(String name) {
+    @Deprecated
+    public List<sirius.db.es.suggest.SuggestOption> getSuggestOptions(String name) {
         return getSuggestParts(name).stream().flatMap(part -> part.getOptions().stream()).collect(Collectors.toList());
     }
 
@@ -930,8 +933,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param name the name of the suggester
      * @return a list of suggest parts
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    public List<SuggestPart> getSuggestParts(String name) {
+    @Deprecated
+    public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
         if (response == null) {
             String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
@@ -948,7 +953,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return responseSuggestions.getJSONArray(name)
                                   .stream()
                                   .map(part -> (JSONObject) part)
-                                  .map(SuggestPart::makeSuggestPart)
+                                  .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
                                   .collect(Collectors.toList());
     }
 

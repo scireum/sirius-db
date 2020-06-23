@@ -16,11 +16,14 @@ import sirius.db.mixing.Mapping;
 /**
  * Helper class which generates term and phrase suggesters for elasticsearch which can be used via
  * {@link ElasticQuery#suggest(SuggestBuilder)}.
+ *
+ * @deprecated use {@link SuggestionQuery}
  */
+@Deprecated
 public class SuggestBuilder {
 
-    public static final String TERM = "term";
-    public static final String PHRASE = "phrase";
+    public static final String TYPE_TERM = "term";
+    public static final String TYPE_PHRASE = "phrase";
 
     private static final String PARAM_TEXT = "text";
     private static final String PARAM_FIELD = "field";

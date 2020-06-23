@@ -16,7 +16,10 @@ import java.util.stream.Collectors;
 
 /**
  * Represents a part in an Elasticsearch suggest response.
+ *
+ * @deprecated use {@link SuggestionQuery}
  */
+@Deprecated
 public class SuggestPart {
 
     private static final String PARAM_TEXT = "text";
