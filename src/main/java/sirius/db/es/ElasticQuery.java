@@ -20,6 +20,7 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
@@ -829,16 +830,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getAggregationBuckets' not possible when scrolling")
-                            .handle();
-        }
-
         List<Tuple<String, Integer>> result = new ArrayList<>();
 
-        JSONObject responseAggregations = response.getJSONObject(KEY_AGGREGATIONS);
+        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
         if (responseAggregations == null) {
             return result;
         }
@@ -862,14 +856,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the response as JSON
      */
     public JSONObject getRawAggregations() {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getRawAggregations' not possible when scrolling")
-                            .handle();
-        }
-
-        return response.getJSONObject(KEY_AGGREGATIONS);
+        return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
     }
 
     /**
@@ -879,15 +866,28 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the response as JSON
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public JSONObject getRawResponse() {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getRawResponse' not possible when scrolling")
-                            .handle();
+        if (response == null) {
+            if (useScrolling()) {
+                throw Exceptions.handle()
+                                .to(Mixing.LOG)
+                                .withSystemErrorMessage(
+                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when scrolling",
+                                        descriptor.getType().getSimpleName())
+                                .handle();
+            } else {
+                throw Exceptions.handle()
+                                .to(Mixing.LOG)
+                                .withSystemErrorMessage(
+                                        "Error while reading entities of type '%s': Cannot access the response using 'getRawResponse' before a query is esecuted!",
+                                        descriptor.getType().getSimpleName())
+                                .handle();
+            }
         }
 
-        return (JSONObject) response.clone();
+        return response;
     }
 
     /**
@@ -900,19 +900,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Deprecated
     public Map<String, JSONObject> getRawHits() {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getRawHits' not possible when scrolling")
-                            .handle();
-        }
-
-        return response.getJSONObject(KEY_HITS)
-                       .getJSONArray(KEY_HITS)
-                       .stream()
-                       .filter(hit -> hit instanceof JSONObject)
-                       .map(hit -> (JSONObject) hit)
-                       .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
+        return getRawResponse().getJSONObject(KEY_HITS)
+                               .getJSONArray(KEY_HITS)
+                               .stream()
+                               .filter(hit -> hit instanceof JSONObject)
+                               .map(hit -> (JSONObject) hit)
+                               .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
     }
 
     /**
