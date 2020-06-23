@@ -61,6 +61,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private static final String KEY_FIELD = "field";
     private static final String KEY_TERMS = "terms";
+    private static final String KEY_CARDINALITY = "cardinality";
     private static final String KEY_SIZE = "size";
     private static final String KEY_DATE_RANGE = "date_range";
     private static final String KEY_KEYED = "keyed";
@@ -553,6 +554,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds a cardinality aggregation for the given field.
+     *
+     * @param name  the name of the aggregation
+     * @param field the field to aggregate
+     * @return the query itself for fluent method calls
+     * @see #getCardinality(String)
+     */
+    public ElasticQuery<E> addCardinalityAggregation(String name, Mapping field) {
+        return addAggregation(AggregationBuilder.create(KEY_CARDINALITY, name)
+                                                .addBodyParameter(KEY_FIELD, field.toString()));
+    }
+
+    /**
      * Adds a date (bucket) aggregation.
      *
      * @param name   the name of the aggregation
@@ -846,6 +860,28 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                      .stream()
                      .map(bucket -> Tuple.create(bucket.getKey(), bucket.getDocCount()))
                      .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the cardinality computed as an aggregation while executing the query.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @param name the aggregation to read
+     * @return the cardinality (number of distinct values) in the field
+     */
+    public Integer getCardinality(String name) {
+        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
+        if (responseAggregations == null) {
+            return 0;
+        }
+
+        JSONObject aggregation = responseAggregations.getJSONObject(name);
+        if (aggregation == null) {
+            return 0;
+        }
+
+        return aggregation.getIntValue(KEY_VALUE);
     }
 
     /**
