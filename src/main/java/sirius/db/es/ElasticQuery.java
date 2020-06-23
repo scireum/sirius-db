@@ -83,6 +83,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_TO = "to";
     private static final String KEY_EXPLAIN = "explain";
     private static final String KEY_SUGGEST = "suggest";
+    public static final String KEY_VALUE = "value";
     private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
     private static final Mapping SCORE = Mapping.named("_score");
 
@@ -765,7 +766,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         JSONObject existsResponse =
                 client.exists(elastic.determineReadAlias(descriptor), filteredRouting, buildSimplePayload());
-        return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue("value") >= 1;
+        return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue(KEY_VALUE) >= 1;
     }
 
     @SuppressWarnings("unchecked")
