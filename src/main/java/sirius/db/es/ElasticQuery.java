@@ -927,6 +927,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Returns the total number of hits for this query.
+     *
+     * @return the total number of this (even when only {@link #computeAggregations()} was used).
+     */
+    public long getTotalHits() {
+        return getRawResponse().getJSONObject("hits").getJSONObject(KEY_TOTAL).getLong(KEY_VALUE);
+    }
+
+    /**
      * Returns the hits as a map of {@link JSONObject}s.
      * <p>
      * Note that the query has to be executed before calling this method.
