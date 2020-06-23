@@ -951,6 +951,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Returns the shards which were involved in this query.
+     *
+     * @return the total number of shards which have been queried
+     */
+    public long getNumShards() {
+        return getRawResponse().getJSONObject("_shards").getLong(KEY_TOTAL);
+    }
+
+    /**
      * Returns the hits as a map of {@link JSONObject}s.
      * <p>
      * Note that the query has to be executed before calling this method.
