@@ -12,7 +12,9 @@ import com.alibaba.fastjson.JSONObject;
 
 /**
  * Represents an option in an Elasticsearch suggest response.
+ * @deprecated use {@link SuggestionQuery}
  */
+@Deprecated
 public class SuggestOption {
 
     private static final String PARAM_TEXT = "text";

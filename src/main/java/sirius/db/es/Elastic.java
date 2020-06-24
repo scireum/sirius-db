@@ -16,6 +16,7 @@ import org.elasticsearch.client.RestClientBuilder;
 import sirius.db.KeyGenerator;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.es.constraints.ElasticFilterFactory;
+import sirius.db.es.suggest.SuggestionQuery;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
@@ -661,6 +662,19 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     public <E extends ElasticEntity> ElasticQuery<E> select(Class<E> type) {
         return new ElasticQuery<>(mixing.getDescriptor(type), getLowLevelClient());
+    }
+
+    /**
+     * Creates a new suggestion query.
+     * <p>
+     * A suggestion query can be used to generate term or phrase suggestions for a given input text.
+     *
+     * @param type the target entity for which suggestions should be computed
+     * @param <E>  the generic type of the entity
+     * @return a new suggestion query for the given type
+     */
+    public <E extends ElasticEntity> SuggestionQuery<E> suggest(Class<E> type) {
+        return new SuggestionQuery<>(mixing.getDescriptor(type), getLowLevelClient());
     }
 
     /**

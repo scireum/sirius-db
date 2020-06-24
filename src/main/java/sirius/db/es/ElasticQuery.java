@@ -12,9 +12,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
-import sirius.db.es.suggest.SuggestBuilder;
-import sirius.db.es.suggest.SuggestOption;
-import sirius.db.es.suggest.SuggestPart;
 import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -23,6 +20,7 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
@@ -63,6 +61,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private static final String KEY_FIELD = "field";
     private static final String KEY_TERMS = "terms";
+    private static final String KEY_CARDINALITY = "cardinality";
     private static final String KEY_SIZE = "size";
     private static final String KEY_DATE_RANGE = "date_range";
     private static final String KEY_KEYED = "keyed";
@@ -86,6 +85,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_TO = "to";
     private static final String KEY_EXPLAIN = "explain";
     private static final String KEY_SUGGEST = "suggest";
+    public static final String KEY_VALUE = "value";
     private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
     private static final Mapping SCORE = Mapping.named("_score");
 
@@ -554,6 +554,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds a cardinality aggregation for the given field.
+     *
+     * @param name  the name of the aggregation
+     * @param field the field to aggregate
+     * @return the query itself for fluent method calls
+     * @see #getCardinality(String)
+     */
+    public ElasticQuery<E> addCardinalityAggregation(String name, Mapping field) {
+        return addAggregation(AggregationBuilder.create(KEY_CARDINALITY, name)
+                                                .addBodyParameter(KEY_FIELD, field.toString()));
+    }
+
+    /**
      * Adds a date (bucket) aggregation.
      *
      * @param name   the name of the aggregation
@@ -586,7 +599,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param name    the name of the suggester
      * @param suggest a JSON object describing a suggest requirement
      * @return the query itself for fluent method calls
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
+    @Deprecated
     public ElasticQuery<E> suggest(String name, JSONObject suggest) {
         if (this.suggesters == null) {
             this.suggesters = new HashMap<>();
@@ -600,8 +615,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param suggestBuilder a suggest builder
      * @return the query itself for fluent method calls
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    public ElasticQuery<E> suggest(SuggestBuilder suggestBuilder) {
+    @Deprecated
+    public ElasticQuery<E> suggest(sirius.db.es.suggest.SuggestBuilder suggestBuilder) {
         return suggest(suggestBuilder.getName(), suggestBuilder.build());
     }
 
@@ -674,6 +691,21 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         return payload;
+    }
+
+    /**
+     * Creates a copy of the filters of this query.
+     * <p>
+     * This might be used e.g. in {@link sirius.db.es.suggest.SuggesterBuilder#collate(JSONObject, boolean)}.
+     *
+     * @return a copy of the filters of this query
+     */
+    public JSONObject getFilters() {
+        if (queryBuilder == null) {
+            return new JSONObject();
+        }
+
+        return queryBuilder.build();
     }
 
     /**
@@ -764,7 +796,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         JSONObject existsResponse =
                 client.exists(elastic.determineReadAlias(descriptor), filteredRouting, buildSimplePayload());
-        return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue("value") >= 1;
+        return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue(KEY_VALUE) >= 1;
     }
 
     @SuppressWarnings("unchecked")
@@ -827,16 +859,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getAggregationBuckets' not possible when scrolling")
-                            .handle();
-        }
-
         List<Tuple<String, Integer>> result = new ArrayList<>();
 
-        JSONObject responseAggregations = response.getJSONObject(KEY_AGGREGATIONS);
+        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
         if (responseAggregations == null) {
             return result;
         }
@@ -853,6 +878,28 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Returns the cardinality computed as an aggregation while executing the query.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @param name the aggregation to read
+     * @return the cardinality (number of distinct values) in the field
+     */
+    public Integer getCardinality(String name) {
+        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
+        if (responseAggregations == null) {
+            return 0;
+        }
+
+        JSONObject aggregation = responseAggregations.getJSONObject(name);
+        if (aggregation == null) {
+            return 0;
+        }
+
+        return aggregation.getIntValue(KEY_VALUE);
+    }
+
+    /**
      * Returns the aggregations as a {@link JSONObject}.
      * <p>
      * Note that the query has to be executed before calling this method.
@@ -860,14 +907,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the response as JSON
      */
     public JSONObject getRawAggregations() {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getRawAggregations' not possible when scrolling")
-                            .handle();
-        }
-
-        return response.getJSONObject(KEY_AGGREGATIONS);
+        return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
     }
 
     /**
@@ -877,15 +917,46 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the response as JSON
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public JSONObject getRawResponse() {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getRawResponse' not possible when scrolling")
-                            .handle();
+        if (response == null) {
+            if (useScrolling()) {
+                throw Exceptions.handle()
+                                .to(Mixing.LOG)
+                                .withSystemErrorMessage(
+                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when scrolling!",
+                                        descriptor.getType().getSimpleName())
+                                .handle();
+            } else {
+                throw Exceptions.handle()
+                                .to(Mixing.LOG)
+                                .withSystemErrorMessage(
+                                        "Error while reading entities of type '%s': Cannot access the response using 'getRawResponse' before a query is esecuted!",
+                                        descriptor.getType().getSimpleName())
+                                .handle();
+            }
         }
 
-        return (JSONObject) response.clone();
+        return response;
+    }
+
+    /**
+     * Returns the total number of hits for this query.
+     *
+     * @return the total number of this (even when only {@link #computeAggregations()} was used).
+     */
+    public long getTotalHits() {
+        return getRawResponse().getJSONObject("hits").getJSONObject(KEY_TOTAL).getLong(KEY_VALUE);
+    }
+
+    /**
+     * Returns the shards which were involved in this query.
+     *
+     * @return the total number of shards which have been queried
+     */
+    public long getNumShards() {
+        return getRawResponse().getJSONObject("_shards").getLong(KEY_TOTAL);
     }
 
     /**
@@ -898,19 +969,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Deprecated
     public Map<String, JSONObject> getRawHits() {
-        if (response == null && useScrolling()) {
-            throw Exceptions.handle()
-                            .to(Mixing.LOG)
-                            .withSystemErrorMessage("'getRawHits' not possible when scrolling")
-                            .handle();
-        }
-
-        return response.getJSONObject(KEY_HITS)
-                       .getJSONArray(KEY_HITS)
-                       .stream()
-                       .filter(hit -> hit instanceof JSONObject)
-                       .map(hit -> (JSONObject) hit)
-                       .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
+        return getRawResponse().getJSONObject(KEY_HITS)
+                               .getJSONArray(KEY_HITS)
+                               .stream()
+                               .filter(hit -> hit instanceof JSONObject)
+                               .map(hit -> (JSONObject) hit)
+                               .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
     }
 
     /**
@@ -918,8 +982,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param name the name of the suggester
      * @return a list of suggest options
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    public List<SuggestOption> getSuggestOptions(String name) {
+    @Deprecated
+    public List<sirius.db.es.suggest.SuggestOption> getSuggestOptions(String name) {
         return getSuggestParts(name).stream().flatMap(part -> part.getOptions().stream()).collect(Collectors.toList());
     }
 
@@ -930,8 +996,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param name the name of the suggester
      * @return a list of suggest parts
+     * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    public List<SuggestPart> getSuggestParts(String name) {
+    @Deprecated
+    public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
         if (response == null) {
             String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
@@ -948,7 +1016,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return responseSuggestions.getJSONArray(name)
                                   .stream()
                                   .map(part -> (JSONObject) part)
-                                  .map(SuggestPart::makeSuggestPart)
+                                  .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
                                   .collect(Collectors.toList());
     }
 
