@@ -21,7 +21,12 @@ import java.time.LocalDateTime;
 public class ESDataTypesEntity extends ElasticEntity {
 
     public enum TestEnum {
-        Test1, Test2
+        Test1, Test2;
+
+        @Override
+        public String toString() {
+            return name() + name().length();
+        }
     }
 
     private static final Mapping LONG_VALUE = Mapping.named("longValue");
