@@ -167,7 +167,7 @@ public class RedisDB {
         } finally {
             redisInstance.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("redis", description.get());
+                w.submitMicroTiming("REDIS", description.get());
             }
         }
     }
