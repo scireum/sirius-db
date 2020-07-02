@@ -120,7 +120,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
 
     @Override
     protected void onBeforeSaveChecks(Object entity) {
-        List<?> list = (List<?>) getValueFromField(entity);
+        NestedList<?> list = getNestedList(accessPath.apply(entity));
         list.forEach(value -> getNestedDescriptor().beforeSave(value));
     }
 
