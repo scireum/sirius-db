@@ -86,7 +86,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
                             .to(Mixing.LOG)
                             .error(e)
                             .withSystemErrorMessage(
-                                    "Unable to obtain EntityRef object from entity ref field ('%s' in '%s'): %s (%s)",
+                                    "Unable to obtain NestedList from entity field ('%s' in '%s'): %s (%s)",
                                     getName(),
                                     descriptor.getType().getName())
                             .handle();
@@ -100,10 +100,9 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
 
     @Override
     public Object getValueAsCopy(Object entity) {
-        return getNestedList(entity).copyList();
+        return getNestedList(accessPath.apply(entity)).copyList();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Object transformValue(Value value) {
         if (value.isEmptyString()) {
@@ -127,7 +126,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
 
     protected EntityDescriptor getNestedDescriptor() {
         if (nestedDescriptor == null) {
-            nestedDescriptor = mixing.getDescriptor(getNestedList(descriptor.getReferenceInstance()).getNestedType());
+            nestedDescriptor = mixing.getDescriptor(getNestedList(accessPath.apply(descriptor.getReferenceInstance())).getNestedType());
         }
 
         return nestedDescriptor;

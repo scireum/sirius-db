@@ -94,7 +94,7 @@ public class Redis implements Startable, Stoppable {
                                                   subscriber.getTopic())
                           .handle();
             }
-            w.submitMicroTiming("redis", channel);
+            w.submitMicroTiming("REDIS", channel);
             messageDuration.addValue(w.elapsedMillis());
         });
     }

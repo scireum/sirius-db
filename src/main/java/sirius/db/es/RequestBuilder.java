@@ -128,7 +128,7 @@ class RequestBuilder {
         } finally {
             elastic.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("elastic", method + ": " + uri);
+                w.submitMicroTiming("ELASTIC", method + ": " + uri);
             }
             if (w.elapsedMillis() > Elastic.getLogQueryThresholdMillis()) {
                 elastic.numSlowQueries.inc();
