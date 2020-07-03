@@ -957,7 +957,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Returns the total number of hits (with a maximum of 10000) for this query.
      * <p>
      * If more than 10000 hits are expected an appropriate aggregation should be {@link #addTotalHitsAggregation() added}
-     * and {@link #getAggregatedTotalHits() evaluated} instead to get the real count.
+     * and {@link #getAggregatedTotalHits() evaluated} instead, to get the real count.
      *
      * @return the total number of this (even when only {@link #computeAggregations()} was used).
      */
