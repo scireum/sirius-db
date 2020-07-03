@@ -62,6 +62,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_FIELD = "field";
     private static final String KEY_TERMS = "terms";
     private static final String KEY_CARDINALITY = "cardinality";
+    private static final String KEY_VALUE_COUNT = "value_count";
     private static final String KEY_SIZE = "size";
     private static final String KEY_DATE_RANGE = "date_range";
     private static final String KEY_KEYED = "keyed";
@@ -567,6 +568,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds an aggregation counting all matching entities for the given filters.
+     *
+     * @return the query itself for fluent method calls
+     * @see #getAggregatedTotalHits()
+     */
+    public ElasticQuery<E> addTotalHitsAggregation() {
+        return addAggregation(AggregationBuilder.create(KEY_VALUE_COUNT, KEY_TOTAL)
+                                                .addBodyParameter(KEY_FIELD, Elastic.ID_FIELD));
+    }
+
+    /**
      * Adds a date (bucket) aggregation.
      *
      * @param name   the name of the aggregation
@@ -942,12 +954,37 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Returns the total number of hits for this query.
+     * Returns the total number of hits (with a maximum of 10000) for this query.
+     * <p>
+     * If more than 10000 hits are expected an appropriate aggregation should be {@link #addTotalHitsAggregation() added}
+     * and {@link #getAggregatedTotalHits() evaluated} instead, to get the real count.
      *
      * @return the total number of this (even when only {@link #computeAggregations()} was used).
      */
     public long getTotalHits() {
         return getRawResponse().getJSONObject("hits").getJSONObject(KEY_TOTAL).getLong(KEY_VALUE);
+    }
+
+    /**
+     * Returns the number of total hits computed as an aggregation while executing the query.
+     * <p>
+     * Note that the query has to be executed before calling this method.
+     *
+     * @return the number of total hits in the field
+     * @see #addTotalHitsAggregation()
+     */
+    public long getAggregatedTotalHits() {
+        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
+        if (responseAggregations == null) {
+            return 0;
+        }
+
+        JSONObject aggregation = responseAggregations.getJSONObject(KEY_TOTAL);
+        if (aggregation == null) {
+            return 0;
+        }
+
+        return aggregation.getIntValue(KEY_VALUE);
     }
 
     /**
