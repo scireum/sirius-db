@@ -15,6 +15,7 @@ import sirius.kernel.commons.Explain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -137,6 +138,17 @@ public class BoolQueryBuilder {
      */
     public BoolQueryBuilder filter(ElasticConstraint filter) {
         return filter(filter.toJSON());
+    }
+
+    /**
+     * Removes all filters ({@link #filter(JSONObject)}) for which the given predicate matches.
+     *
+     * @param shouldRemove the predicate to determine which filters to remove
+     */
+    public void removeFilterIf(Predicate<JSONObject> shouldRemove) {
+        if (filter != null) {
+            filter.removeIf(shouldRemove);
+        }
     }
 
     /**

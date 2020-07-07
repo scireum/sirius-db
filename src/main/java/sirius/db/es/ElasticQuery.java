@@ -386,6 +386,31 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Permits to rewrite the internal filters of a query.
+     * <p>
+     * Actually this will iterate over all {@link BoolQueryBuilder#filter} of the internal query and apply the given
+     * predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed internally.
+     * <p>
+     * This can e.g. be used to move internal filters into {@link #postFilter(JSONObject)}.
+     *
+     * @param shouldRemove  the predicate to determine which filters to transform
+     * @param removeHandler the callback to transform / process the filter
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> rewriteFilters(Predicate<JSONObject> shouldRemove, Consumer<JSONObject> removeHandler) {
+        queryBuilder.removeFilterIf(constraint -> {
+            if (shouldRemove.test(constraint)) {
+                removeHandler.accept(constraint);
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        return this;
+    }
+
+    /**
      * Adds a sort statement to the query.
      *
      * @param sortBuilder a sort builder
