@@ -143,11 +143,11 @@ public class BoolQueryBuilder {
     /**
      * Removes all filters ({@link #filter(JSONObject)}) for which the given predicate matches.
      *
-     * @param test the predicate to determine which filters to remove
+     * @param shouldRemove the predicate to determine which filters to remove
      */
-    public void removeFilterIf(Predicate<JSONObject> test) {
+    public void removeFilterIf(Predicate<JSONObject> shouldRemove) {
         if (filter != null) {
-            filter.removeIf(test);
+            filter.removeIf(shouldRemove);
         }
     }
 

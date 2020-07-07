@@ -393,14 +393,14 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * This can e.g. be used to move internal filters into {@link #postFilter(JSONObject)}.
      *
-     * @param test     the predicate to determine which filters to transform
-     * @param consumer the callback to transform / process the filter
+     * @param shouldRemove  the predicate to determine which filters to transform
+     * @param removeHandler the callback to transform / process the filter
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> rewriteFilters(Predicate<JSONObject> test, Consumer<JSONObject> consumer) {
+    public ElasticQuery<E> rewriteFilters(Predicate<JSONObject> shouldRemove, Consumer<JSONObject> removeHandler) {
         queryBuilder.removeFilterIf(constraint -> {
-            if (test.test(constraint)) {
-                consumer.accept(constraint);
+            if (shouldRemove.test(constraint)) {
+                removeHandler.accept(constraint);
                 return true;
             } else {
                 return false;
