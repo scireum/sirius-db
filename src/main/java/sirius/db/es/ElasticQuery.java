@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -50,7 +51,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     /**
      * Contains the default number of buckets being collected and reported for an aggregation.
+     *
+     * @deprecated moved to {@link AggregationBuilder}
      */
+    @Deprecated
     public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
 
     private static final int SCROLL_TTL_SECONDS = 60 * 5;
@@ -60,9 +64,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_DOC_ID = "_doc";
 
     private static final String KEY_FIELD = "field";
-    private static final String KEY_TERMS = "terms";
-    private static final String KEY_CARDINALITY = "cardinality";
-    private static final String KEY_VALUE_COUNT = "value_count";
     private static final String KEY_SIZE = "size";
     private static final String KEY_DATE_RANGE = "date_range";
     private static final String KEY_KEYED = "keyed";
@@ -574,9 +575,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see #getAggregationBuckets(String)
      */
     public ElasticQuery<E> addTermAggregation(String name, Mapping field, int size) {
-        return addAggregation(AggregationBuilder.create(KEY_TERMS, name)
-                                                .addBodyParameter(KEY_FIELD, field.toString())
-                                                .addBodyParameter(KEY_SIZE, size));
+        return addAggregation(AggregationBuilder.create(AggregationBuilder.TERMS, name).field(field).size(size));
     }
 
     /**
@@ -588,8 +587,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see #getCardinality(String)
      */
     public ElasticQuery<E> addCardinalityAggregation(String name, Mapping field) {
-        return addAggregation(AggregationBuilder.create(KEY_CARDINALITY, name)
-                                                .addBodyParameter(KEY_FIELD, field.toString()));
+        return addAggregation(AggregationBuilder.createCardinality(name, field));
     }
 
     /**
@@ -599,8 +597,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see #getAggregatedTotalHits()
      */
     public ElasticQuery<E> addTotalHitsAggregation() {
-        return addAggregation(AggregationBuilder.create(KEY_VALUE_COUNT, KEY_TOTAL)
-                                                .addBodyParameter(KEY_FIELD, Elastic.ID_FIELD));
+        return addAggregation(AggregationBuilder.createValueCount(KEY_TOTAL, Mapping.named(Elastic.ID_FIELD)));
     }
 
     /**
@@ -896,22 +893,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
-        List<Tuple<String, Integer>> result = new ArrayList<>();
-
-        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
-        if (responseAggregations == null) {
-            return result;
-        }
-
-        JSONObject aggregation = responseAggregations.getJSONObject(name);
-        if (aggregation == null) {
-            return result;
-        }
-
-        return Bucket.fromAggregation(aggregation)
-                     .stream()
-                     .map(bucket -> Tuple.create(bucket.getKey(), bucket.getDocCount()))
-                     .collect(Collectors.toList());
+        return getRawAggregation(name).map(aggregation -> Bucket.fromAggregation(aggregation)
+                                                                .stream()
+                                                                .map(bucket -> Tuple.create(bucket.getKey(),
+                                                                                            bucket.getDocCount()))
+                                                                .collect(Collectors.toList()))
+                                      .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -923,17 +910,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the cardinality (number of distinct values) in the field
      */
     public Integer getCardinality(String name) {
-        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
-        if (responseAggregations == null) {
-            return 0;
-        }
-
-        JSONObject aggregation = responseAggregations.getJSONObject(name);
-        if (aggregation == null) {
-            return 0;
-        }
-
-        return aggregation.getIntValue(KEY_VALUE);
+        return getRawAggregation(name).map(aggregation -> aggregation.getIntValue(KEY_VALUE)).orElse(0);
     }
 
     /**
@@ -945,6 +922,26 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public JSONObject getRawAggregations() {
         return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
+    }
+
+    /**
+     * Provides access to the raw JSON object generated by an aggregation.
+     *
+     * @param name the name of the aggregation. Sub aggregations can be accessed by supplying a path like
+     *             aggregation.child
+     * @return the JSOB generated by the aggregation or an empty optional if no result was found for this aggregation
+     */
+    public Optional<JSONObject> getRawAggregation(String name) {
+        JSONObject object = getRawAggregations();
+        for (String aggregationName : name.split("\\.")) {
+            Object child = object.get(aggregationName);
+            if (!(child instanceof JSONObject)) {
+                return Optional.empty();
+            } else {
+                object = (JSONObject) child;
+            }
+        }
+        return Optional.of(object);
     }
 
     /**
@@ -999,17 +996,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see #addTotalHitsAggregation()
      */
     public long getAggregatedTotalHits() {
-        JSONObject responseAggregations = getRawResponse().getJSONObject(KEY_AGGREGATIONS);
-        if (responseAggregations == null) {
-            return 0;
-        }
-
-        JSONObject aggregation = responseAggregations.getJSONObject(KEY_TOTAL);
-        if (aggregation == null) {
-            return 0;
-        }
-
-        return aggregation.getIntValue(KEY_VALUE);
+        return getRawAggregation(KEY_TOTAL).map(aggregation -> aggregation.getIntValue(KEY_VALUE)).orElse(0);
     }
 
     /**
