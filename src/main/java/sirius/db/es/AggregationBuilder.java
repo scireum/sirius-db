@@ -15,6 +15,7 @@ import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,11 @@ public class AggregationBuilder {
     public static final String TERMS = "terms";
 
     /**
+     * Contains the default number of buckets being collected and reported for an aggregation.
+     */
+    public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
+
+    /**
      * Type string for min aggregations
      *
      * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-min-aggregation.html">
@@ -66,10 +72,18 @@ public class AggregationBuilder {
     /**
      * Type string for cardinality aggregations
      *
-     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/current/current/search-aggregations-metrics-cardinality-aggregation.html">
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-cardinality-aggregation.html">
      * ElasticSearch reference page for cardinality aggregations</a>
      */
     public static final String CARDINALITY = "cardinality";
+
+    /**
+     * Type string for value count aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-valuecount-aggregation.html">
+     * ElasticSearch reference page for value count aggregations</a>
+     */
+    public static final String VALUE_COUNT = "value_count";
 
     private static final String NESTED_PATH = "path";
     private static final String AGGREGATIONS = "aggs";
@@ -97,6 +111,39 @@ public class AggregationBuilder {
      */
     public static AggregationBuilder create(String type, String name) {
         return new AggregationBuilder(type, null, name);
+    }
+
+    /**
+     * Creates a new term aggregation builder.
+     *
+     * @param field the field to aggregate on
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createTerms(Mapping field) {
+        return new AggregationBuilder(TERMS, null, field.getName()).field(field)
+                                                                   .size(DEFAULT_TERM_AGGREGATION_BUCKET_COUNT);
+    }
+
+    /**
+     * Creates a new cardinality aggregation builder.
+     *
+     * @param name  the name of the aggregation
+     * @param field the field to aggregate on
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createCardinality(String name, Mapping field) {
+        return new AggregationBuilder(CARDINALITY, null, name).field(field);
+    }
+
+    /**
+     * Creates a new value count aggregation builder.
+     *
+     * @param name  the name of the aggregation
+     * @param field the field to aggregate on
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createValueCount(String name, Mapping field) {
+        return new AggregationBuilder(VALUE_COUNT, null, name).field(field);
     }
 
     /**
@@ -189,6 +236,24 @@ public class AggregationBuilder {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Returns the list of sub aggregations of this aggregation.
+     *
+     * @return the list of sub aggregations
+     */
+    public List<AggregationBuilder> getSubAggregations() {
+        return Collections.unmodifiableList(subAggregations);
+    }
+
+    /**
+     * Determines if this aggregation has sub-aggregations
+     *
+     * @return <tt>true</tt> if there are sub aggregations, <tt>false</tt> otherwise
+     */
+    public boolean hasSubAggregations() {
+        return !subAggregations.isEmpty();
     }
 
     /**
