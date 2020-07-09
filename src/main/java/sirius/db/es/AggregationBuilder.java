@@ -116,7 +116,7 @@ public class AggregationBuilder {
     /**
      * Creates a new term aggregation builder.
      *
-     * @param field the name of the aggregation
+     * @param field the field to aggregate on
      * @return the builder itself for fluent method calls
      */
     public static AggregationBuilder createTerms(Mapping field) {
@@ -128,7 +128,7 @@ public class AggregationBuilder {
      * Creates a new cardinality aggregation builder.
      *
      * @param name  the name of the aggregation
-     * @param field the name of the aggregation
+     * @param field the field to aggregate on
      * @return the builder itself for fluent method calls
      */
     public static AggregationBuilder createCardinality(String name, Mapping field) {
@@ -139,7 +139,7 @@ public class AggregationBuilder {
      * Creates a new value count aggregation builder.
      *
      * @param name  the name of the aggregation
-     * @param field the name of the aggregation
+     * @param field the field to aggregate on
      * @return the builder itself for fluent method calls
      */
     public static AggregationBuilder createValueCount(String name, Mapping field) {
