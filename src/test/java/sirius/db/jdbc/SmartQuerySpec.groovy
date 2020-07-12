@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc
 
+import sirius.db.es.ESListTestEntity
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
@@ -408,5 +409,20 @@ class SmartQuerySpec extends BaseSpecification {
         oma.select(ListTestEntity.class).queryList()
         then:
         thrown(HandledException)
+    }
+
+    def "a forcefully failed query does not yield any results"() {
+        when:
+        def qry =  oma.select(SmartQueryTestEntity.class).fail()
+        def flag = false
+        then:
+        qry.queryList().isEmpty()
+        and:
+        qry.iterateAll({ e -> flag = true })
+        !flag
+        and:
+        qry.count() == 0
+        and:
+        !qry.exists()
     }
 }

@@ -8,7 +8,7 @@
 
 package sirius.db.es
 
-
+import com.sun.org.apache.bcel.internal.generic.IAND
 import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
@@ -367,5 +367,29 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(ESListTestEntity.class).queryList()
         then:
         thrown(HandledException)
+    }
+
+    def "a forcefully failed query does not yield any results"() {
+        given:
+        elastic.select(ESListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 3; i++) {
+            def entityToCreate = new ESListTestEntity()
+            entityToCreate.setCounter(i)
+            elastic.update(entityToCreate)
+        }
+        when:
+        elastic.refresh(ESListTestEntity.class)
+        def qry = elastic.select(ESListTestEntity.class).fail()
+        def flag = false
+        then:
+        qry.queryList().isEmpty()
+        and:
+        qry.iterateAll({ e -> flag = true })
+        !flag
+        and:
+        qry.count() == 0
+        and:
+        !qry.exists()
     }
 }

@@ -143,6 +143,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     @Override
     public long count() {
+        if (forceFail) {
+            return 0;
+        }
         Watch w = Watch.start();
         Compiler compiler = compileCOUNT();
         try {
@@ -182,6 +185,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     @Override
     public boolean exists() {
+        if (forceFail) {
+            return false;
+        }
         return copy().fields(SQLEntity.ID).first().isPresent();
     }
 
@@ -196,6 +202,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      */
     @Override
     public void delete(@Nullable Consumer<E> entityCallback) {
+        if (forceFail) {
+            return;
+        }
         AtomicBoolean continueDeleting = new AtomicBoolean(true);
         TaskContext context = TaskContext.get();
         while (continueDeleting.get() && context.isActive()) {
@@ -236,6 +245,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     public void iterateBlockwise(Predicate<E> handler) {
+        if (forceFail) {
+            return;
+        }
         if (orderBys.isEmpty()) {
             iterateBlockwiseById(handler);
         } else {
@@ -346,6 +358,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * @return the query converted into a plain SQL query.
      */
     public SQLQuery asSQLQuery() {
+        if (forceFail) {
+            return null;
+        }
         Compiler compiler = compileSELECT();
         return new SQLQuery(db, compiler.getQuery()) {
             @Override
@@ -363,6 +378,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     public SmartQuery<E> copy() {
         SmartQuery<E> copy = new SmartQuery<>(descriptor, db);
         copy.distinct = distinct;
+        copy.forceFail = forceFail;
         copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
         copy.constaints.addAll(constaints);
@@ -372,6 +388,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     @Override
     public void iterate(Predicate<E> handler) {
+        if (forceFail) {
+            return;
+        }
         Compiler compiler = compileSELECT();
         try {
             Watch w = Watch.start();

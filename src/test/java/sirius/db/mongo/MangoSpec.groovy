@@ -8,7 +8,7 @@
 
 package sirius.db.mongo
 
-
+import sirius.db.es.ESListTestEntity
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
@@ -191,5 +191,28 @@ class MangoSpec extends BaseSpecification {
         mango.update(e)
         then:
         !e.hasJustBeenCreated()
+    }
+
+    def "a forcefully failed query does not yield any results"() {
+        given:
+        mango.select(MangoListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 3; i++) {
+            def entityToCreate = new MangoListTestEntity()
+            entityToCreate.setCounter(i)
+            mango.update(entityToCreate)
+        }
+        when:
+        def qry = mango.select(MangoListTestEntity.class).fail()
+        def flag = false
+        then:
+        qry.queryList().isEmpty()
+        and:
+        qry.iterateAll({ e -> flag = true })
+        !flag
+        and:
+        qry.count() == 0
+        and:
+        !qry.exists()
     }
 }

@@ -130,16 +130,25 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     @Override
     public void iterate(Predicate<E> resultHandler) {
+        if (forceFail) {
+            return;
+        }
         finder.eachIn(descriptor.getRelationName(), doc -> resultHandler.test(Mango.make(descriptor, doc)));
     }
 
     @Override
     public long count() {
+        if (forceFail) {
+            return 0;
+        }
         return finder.countIn(descriptor.getRelationName());
     }
 
     @Override
     public boolean exists() {
+        if (forceFail) {
+            return false;
+        }
         return finder.copyFilters().selectFields(MongoEntity.ID).singleIn(descriptor.getRelationName()).isPresent();
     }
 
@@ -154,7 +163,9 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      */
     public List<E> randomList() {
         List<E> result = new ArrayList<>();
-
+        if (forceFail) {
+            return result;
+        }
         // Ensure a sane limit...
         if (limit <= 0 || limit > MAX_LIST_SIZE) {
             throw Exceptions.handle()
@@ -186,6 +197,9 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     @Override
     public void truncate() {
+        if (forceFail) {
+            return;
+        }
         Deleter deleter = mongo.delete();
         finder.transferFilters(deleter);
         deleter.manyFrom(descriptor.getRelationName());
@@ -215,6 +229,9 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * Executes all previously attached facets in one go.
      */
     public void executeFacets() {
+        if (forceFail) {
+            return;
+        }
         finder.executeFacets(descriptor, facets);
     }
 

@@ -209,6 +209,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         ElasticQuery<E> copy = new ElasticQuery<>(descriptor, client);
         copy.limit = this.limit;
         copy.skip = this.skip;
+        copy.forceFail = this.forceFail;
         copy.routing = this.routing;
         copy.unrouted = this.unrouted;
         copy.explain = this.explain;
@@ -779,6 +780,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public long count() {
+        if (forceFail) {
+            return 0;
+        }
         if (skip > 0 || limit > 0) {
             Elastic.LOG.WARN("COUNT queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
@@ -822,6 +826,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public boolean exists() {
+        if (forceFail) {
+            return false;
+        }
         if (skip > 0 || limit > 0) {
             Elastic.LOG.WARN("EXISTS queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
@@ -836,6 +843,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @SuppressWarnings("unchecked")
     @Override
     public void iterate(Predicate<E> handler) {
+        if (forceFail) {
+            return;
+        }
         if (useScrolling()) {
             scroll(handler);
             return;
@@ -893,6 +903,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
+        if (forceFail) {
+            return Collections.emptyList();
+        }
         return getRawAggregation(name).map(aggregation -> Bucket.fromAggregation(aggregation)
                                                                 .stream()
                                                                 .map(bucket -> Tuple.create(bucket.getKey(),
@@ -910,6 +923,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the cardinality (number of distinct values) in the field
      */
     public Integer getCardinality(String name) {
+        if (forceFail) {
+            return 0;
+        }
         return getRawAggregation(name).map(aggregation -> aggregation.getIntValue(KEY_VALUE)).orElse(0);
     }
 
@@ -921,6 +937,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the response as JSON
      */
     public JSONObject getRawAggregations() {
+        if (forceFail) {
+            return new JSONObject();
+        }
         return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
     }
 
@@ -966,7 +985,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 throw Exceptions.handle()
                                 .to(Mixing.LOG)
                                 .withSystemErrorMessage(
-                                        "Error while reading entities of type '%s': Cannot access the response using 'getRawResponse' before a query is esecuted!",
+                                        "Error while reading entities of type '%s': Cannot access the response using 'getRawResponse' before a query is executed!",
                                         descriptor.getType().getSimpleName())
                                 .handle();
             }
@@ -1049,6 +1068,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Deprecated
     public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
+        if (forceFail) {
+            return Collections.emptyList();
+        }
         if (response == null) {
             String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
@@ -1191,6 +1213,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void truncate() {
+        if (forceFail) {
+            return;
+        }
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.WRITE);
         elastic.getLowLevelClient()
                .deleteByQuery(elastic.determineWriteAlias(descriptor), filteredRouting, buildSimplePayload());
