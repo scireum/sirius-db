@@ -241,12 +241,20 @@ public class AggregationBuilder {
 
     /**
      * Adds the size parameter to the aggregation.
+     * <p>
+     * Use a negative or <tt>0</tt> as size to suppress the size parameter.
      *
      * @param size the size to set
      * @return the builder itself for fluent method calls
      */
     public AggregationBuilder size(int size) {
-        return addBodyParameter(SIZE, size);
+
+        if (size > 0) {
+            return addBodyParameter(SIZE, size);
+        } else {
+            this.body.remove(SIZE);
+            return this;
+        }
     }
 
     /**
