@@ -94,10 +94,21 @@ public class AggregationBuilder {
      */
     public static final String COMPOSITE = "composite";
 
+    /**
+     * Type string for histogram aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-histogram-aggregation.html">
+     * ElasticSearch reference page for histogram aggregations</a>
+     */
+    public static final String HISTOGRAM = "histogram";
+
     private static final String NESTED_PATH = "path";
     private static final String AGGREGATIONS = "aggs";
     private static final String FIELD = "field";
     private static final String SIZE = "size";
+    private static final String OFFSET = "offset";
+    private static final String INTERVAL = "interval";
+    private static final String MIN_DOC_COUNT = "min_doc_count";
 
     private String name;
     private String type;
@@ -165,6 +176,33 @@ public class AggregationBuilder {
      */
     public static AggregationBuilder createNested(Mapping path, String name) {
         return new AggregationBuilder(null, path.getName(), name);
+    }
+
+    /**
+     * Creates a new composite aggregation builder.
+     *
+     * @param name the name of the aggregation
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createComposite(String name) {
+        return new AggregationBuilder(COMPOSITE, null, name);
+    }
+
+    /**
+     * Creates a new histogram aggregation builder.
+     *
+     * @param name the name of the aggregation
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createHistogram(String name,
+                                                     Mapping field,
+                                                     double offset,
+                                                     double interval,
+                                                     int minDocCount) {
+        return new AggregationBuilder(HISTOGRAM, null, name).field(field)
+                                                            .addBodyParameter(OFFSET, offset)
+                                                            .addBodyParameter(INTERVAL, interval)
+                                                            .addBodyParameter(MIN_DOC_COUNT, minDocCount);
     }
 
     /**
