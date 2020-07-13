@@ -196,7 +196,11 @@ public class AggregationBuilder {
     /**
      * Creates a new histogram aggregation builder.
      *
-     * @param name the name of the aggregation
+     * @param name        the name of the aggregation
+     * @param field       the field to build the histogram for
+     * @param offset      the offset (first bucket value) to use
+     * @param interval    the interval (bucket size) to use
+     * @param minDocCount determines the minimal document count for a bucket to be part of the result
      * @return the builder itself for fluent method calls
      */
     public static AggregationBuilder createHistogram(String name,
