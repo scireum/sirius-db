@@ -47,6 +47,11 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      */
     protected int skip;
 
+    /**
+     * If true, the query is marked as failed and should always return an empty result.
+     */
+    protected boolean forceFail;
+
     @Part
     protected static Mixing mixing;
 
@@ -69,6 +74,10 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      */
     protected Limit getLimit() {
         return new Limit(skip, limit);
+    }
+
+    public boolean isForceFail() {
+        return forceFail;
     }
 
     /**
@@ -101,6 +110,21 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     @SuppressWarnings("unchecked")
     public Q skip(int skip) {
         this.skip = skip > 0 ? skip : this.skip;
+        return (Q) this;
+    }
+
+    /**
+     * Marks this query as failed or invalid. Therefore, no matter on what constraints are set, this query will always
+     * return an empty result.
+     * <p>
+     * This method is intended for security checks which should not abort processing but just behave like the
+     * query didn't match any entities.
+     *
+     * @return the query itself for fluent method calls
+     */
+    @SuppressWarnings("unchecked")
+    public Q fail() {
+        forceFail = true;
         return (Q) this;
     }
 
@@ -140,6 +164,9 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      */
     public List<E> queryList() {
         List<E> result = new ArrayList<>();
+        if (forceFail) {
+            return result;
+        }
 
         // Ensure a sane limit...
         if (limit > MAX_LIST_SIZE) {
