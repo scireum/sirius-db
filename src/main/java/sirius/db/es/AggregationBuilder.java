@@ -8,6 +8,7 @@
 
 package sirius.db.es;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
@@ -85,16 +86,36 @@ public class AggregationBuilder {
      */
     public static final String VALUE_COUNT = "value_count";
 
+    /**
+     * Type string for composite aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html">
+     * ElasticSearch reference page for composite aggregations</a>
+     */
+    public static final String COMPOSITE = "composite";
+
+    /**
+     * Type string for histogram aggregations
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-histogram-aggregation.html">
+     * ElasticSearch reference page for histogram aggregations</a>
+     */
+    public static final String HISTOGRAM = "histogram";
+
     private static final String NESTED_PATH = "path";
     private static final String AGGREGATIONS = "aggs";
     private static final String FIELD = "field";
     private static final String SIZE = "size";
+    private static final String OFFSET = "offset";
+    private static final String INTERVAL = "interval";
+    private static final String MIN_DOC_COUNT = "min_doc_count";
 
     private String name;
     private String type;
     private JSONObject body = new JSONObject();
     private String path;
     private List<AggregationBuilder> subAggregations;
+    private List<AggregationBuilder> sourceAggregations;
 
     private AggregationBuilder(String type, String path, String name) {
         this.path = path;
@@ -158,6 +179,33 @@ public class AggregationBuilder {
     }
 
     /**
+     * Creates a new composite aggregation builder.
+     *
+     * @param name the name of the aggregation
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createComposite(String name) {
+        return new AggregationBuilder(COMPOSITE, null, name);
+    }
+
+    /**
+     * Creates a new histogram aggregation builder.
+     *
+     * @param name the name of the aggregation
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createHistogram(String name,
+                                                     Mapping field,
+                                                     double offset,
+                                                     double interval,
+                                                     int minDocCount) {
+        return new AggregationBuilder(HISTOGRAM, null, name).field(field)
+                                                            .addBodyParameter(OFFSET, offset)
+                                                            .addBodyParameter(INTERVAL, interval)
+                                                            .addBodyParameter(MIN_DOC_COUNT, minDocCount);
+    }
+
+    /**
      * Creates a new aggregation builder for a filter aggregation.
      *
      * @param name   the name of the aggregation
@@ -178,6 +226,32 @@ public class AggregationBuilder {
     public AggregationBuilder addBodyParameter(String name, Object value) {
         this.body.put(name, value);
         return this;
+    }
+
+    /**
+     * Adds the given aggregation as source aggregation to a {@link #COMPOSITE} aggegation.
+     *
+     * @param sourceAggregation the source aggregation to add.
+     * @return the aggregation builder itself for fluent methdo calls
+     */
+    public AggregationBuilder addSourceAggregation(AggregationBuilder sourceAggregation) {
+        if (sourceAggregations == null) {
+            sourceAggregations = new ArrayList<>();
+        }
+
+        sourceAggregations.add(sourceAggregation);
+
+        return this;
+    }
+
+    /**
+     * Adds a terms aggregation for the given field as a source to a {@link #COMPOSITE} aggegation.
+     *
+     * @param field the field to aggregate the terms from
+     * @return the aggregation builder itself for fluent methdo calls
+     */
+    public AggregationBuilder addTermSourceAggregation(Mapping field) {
+        return addSourceAggregation(AggregationBuilder.createTerms(field).size(-1));
     }
 
     /**
@@ -205,12 +279,20 @@ public class AggregationBuilder {
 
     /**
      * Adds the size parameter to the aggregation.
+     * <p>
+     * Use a negative or <tt>0</tt> as size to suppress the size parameter.
      *
      * @param size the size to set
      * @return the builder itself for fluent method calls
      */
     public AggregationBuilder size(int size) {
-        return addBodyParameter(SIZE, size);
+
+        if (size > 0) {
+            return addBodyParameter(SIZE, size);
+        } else {
+            this.body.remove(SIZE);
+            return this;
+        }
     }
 
     /**
@@ -274,6 +356,13 @@ public class AggregationBuilder {
             JSONObject subAggs = new JSONObject();
             subAggregations.forEach(subAggregation -> subAggs.put(subAggregation.getName(), subAggregation.build()));
             builder.put(AGGREGATIONS, subAggs);
+        }
+
+        if (sourceAggregations != null) {
+            JSONArray sourceAggs = new JSONArray();
+            sourceAggregations.forEach(sourceAgg -> sourceAggs.add(new JSONObject().fluentPut(sourceAgg.getName(),
+                                                                                              sourceAgg.build())));
+            body.put("sources", sourceAggs);
         }
 
         return builder;

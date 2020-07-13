@@ -10,10 +10,11 @@ package sirius.db.es;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import sirius.kernel.commons.Explain;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Represents a bucket of an aggregation result.
@@ -24,16 +25,12 @@ public class Bucket {
     private static final String KEY_KEY = "key";
     private static final String KEY_DOC_COUNT = "doc_count";
 
-    private String key;
-    private JSONObject jsonObject;
+    private JSONObject data;
 
-    private Bucket(JSONObject jsonObject) {
-        this(jsonObject.getString(KEY_KEY), jsonObject);
-    }
-
-    private Bucket(String key, JSONObject jsonObject) {
-        this.key = key;
-        this.jsonObject = jsonObject;
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
+    protected Bucket(JSONObject data) {
+        this.data = data;
     }
 
     /**
@@ -41,7 +38,9 @@ public class Bucket {
      *
      * @param aggregation the aggregation as {@link JSONObject} to read the buckets from
      * @return a list of buckets
+     * @deprecated use {@link AggregationResult#forEachBucket(Consumer)} etc.
      */
+    @Deprecated
     public static List<Bucket> fromAggregation(JSONObject aggregation) {
         List<Bucket> result = new ArrayList<>();
 
@@ -56,9 +55,8 @@ public class Bucket {
                 result.add(new Bucket((JSONObject) bucket));
             }
         } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
-                result.add(new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
-            }
+            // According to the ES docs, this can never happen!
+            throw new IllegalStateException("ES returned a map instead of an array as aggregation result...");
         }
 
         return result;
@@ -70,7 +68,20 @@ public class Bucket {
      * @return the key
      */
     public String getKey() {
-        return key;
+        return data.getString(KEY_KEY);
+    }
+
+    /**
+     * Returns an inner key field in case of a composite key.
+     * <p>
+     * Composite keys are commonly created when using {@link AggregationBuilder#COMPOSITE composite} aggregations with
+     * multiple sources.
+     *
+     * @param name the name of the source aggregation which value is to be fetched
+     * @return the aggregated source value
+     */
+    public String getKey(String name) {
+        return data.getJSONObject(KEY_KEY).getString(name);
     }
 
     /**
@@ -79,7 +90,7 @@ public class Bucket {
      * @return the doc count
      */
     public int getDocCount() {
-        return jsonObject.getIntValue(KEY_DOC_COUNT);
+        return data.getIntValue(KEY_DOC_COUNT);
     }
 
     /**
@@ -87,7 +98,19 @@ public class Bucket {
      *
      * @return the raw {@link JSONObject}
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
     public JSONObject getJSONObject() {
-        return jsonObject;
+        return data;
+    }
+
+    /**
+     * Returns the inner aggregation result with the given name.
+     *
+     * @param name the name of the sub aggregation
+     * @return the collected result for the given sub aggregation
+     */
+    public AggregationResult getSubAggregation(String name) {
+        return AggregationResult.of(data.getJSONObject(name));
     }
 }
