@@ -595,6 +595,21 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Adds a cardinality aggregation for the given field.
+     *
+     * @param name      the name of the aggregation
+     * @param field     the field to aggregate
+     * @param precision the precision threshold to apply. This contains the number up to which the returned cardinality
+     *                  is exact.
+     * @return the query itself for fluent method calls
+     * @see #getCardinality(String)
+     */
+    public ElasticQuery<E> addCardinalityAggregation(String name, Mapping field, int precision) {
+        return addAggregation(AggregationBuilder.createCardinality(name, field)
+                                                .addBodyParameter(AggregationBuilder.PRECISION_THRESHOLD, precision));
+    }
+
+    /**
      * Adds an aggregation counting all matching entities for the given filters.
      *
      * @return the query itself for fluent method calls

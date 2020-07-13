@@ -79,6 +79,11 @@ public class AggregationBuilder {
     public static final String CARDINALITY = "cardinality";
 
     /**
+     * Contains the field name of the precision_threshold, which controls how exact a cardinality aggregation is.
+     */
+    public static final String PRECISION_THRESHOLD = "precision_threshold";
+
+    /**
      * Type string for value count aggregations
      *
      * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-valuecount-aggregation.html">
@@ -191,7 +196,11 @@ public class AggregationBuilder {
     /**
      * Creates a new histogram aggregation builder.
      *
-     * @param name the name of the aggregation
+     * @param name        the name of the aggregation
+     * @param field       the field to build the histogram for
+     * @param offset      the offset (first bucket value) to use
+     * @param interval    the interval (bucket size) to use
+     * @param minDocCount determines the minimal document count for a bucket to be part of the result
      * @return the builder itself for fluent method calls
      */
     public static AggregationBuilder createHistogram(String name,
