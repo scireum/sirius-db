@@ -8,7 +8,7 @@
 
 package sirius.db.es
 
-import com.sun.org.apache.bcel.internal.generic.IAND
+
 import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping

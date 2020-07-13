@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc
 
-import sirius.db.es.ESListTestEntity
+
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
@@ -16,7 +16,6 @@ import sirius.kernel.Scope
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
-import spock.lang.Stepwise
 
 import java.util.function.Function
 import java.util.stream.Collectors

@@ -8,7 +8,7 @@
 
 package sirius.db.mongo
 
-import sirius.db.es.ESListTestEntity
+
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
