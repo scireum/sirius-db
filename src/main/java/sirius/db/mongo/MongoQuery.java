@@ -230,7 +230,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      */
     public void executeFacets() {
         if (forceFail) {
-            return;
+            throw new IllegalStateException("Facets can not be executed on a failed query.");
         }
         finder.executeFacets(descriptor, facets);
     }

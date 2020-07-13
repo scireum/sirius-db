@@ -76,6 +76,10 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
         return new Limit(skip, limit);
     }
 
+    public boolean isForceFail() {
+        return forceFail;
+    }
+
     /**
      * Returns the underlying descriptor
      *

@@ -880,6 +880,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * The computed aggregations can be read via {@link #getAggregationBuckets(String)}.
      */
     public void computeAggregations() {
+        if (forceFail) {
+            throw new IllegalStateException("Aggregations can not be computed on a failed query.");
+        }
         if (limit != 0) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
@@ -903,9 +906,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      */
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
-        if (forceFail) {
-            return Collections.emptyList();
-        }
         return getRawAggregation(name).map(aggregation -> Bucket.fromAggregation(aggregation)
                                                                 .stream()
                                                                 .map(bucket -> Tuple.create(bucket.getKey(),
@@ -923,9 +923,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the cardinality (number of distinct values) in the field
      */
     public Integer getCardinality(String name) {
-        if (forceFail) {
-            return 0;
-        }
         return getRawAggregation(name).map(aggregation -> aggregation.getIntValue(KEY_VALUE)).orElse(0);
     }
 
@@ -937,9 +934,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the response as JSON
      */
     public JSONObject getRawAggregations() {
-        if (forceFail) {
-            return new JSONObject();
-        }
         return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
     }
 

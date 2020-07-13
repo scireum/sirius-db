@@ -359,7 +359,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      */
     public SQLQuery asSQLQuery() {
         if (forceFail) {
-            return null;
+            throw new IllegalStateException("A failed query can not be converted into a SQL query.");
         }
         Compiler compiler = compileSELECT();
         return new SQLQuery(db, compiler.getQuery()) {
