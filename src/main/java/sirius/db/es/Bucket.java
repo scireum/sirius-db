@@ -14,6 +14,7 @@ import sirius.kernel.commons.Explain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -25,11 +26,13 @@ public class Bucket {
     private static final String KEY_KEY = "key";
     private static final String KEY_DOC_COUNT = "doc_count";
 
+    private final String key;
     private JSONObject data;
 
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
-    protected Bucket(JSONObject data) {
+    protected Bucket(String key, JSONObject data) {
+        this.key = key;
         this.data = data;
     }
 
@@ -52,11 +55,12 @@ public class Bucket {
 
         if (buckets instanceof JSONArray) {
             for (Object bucket : (JSONArray) buckets) {
-                result.add(new Bucket((JSONObject) bucket));
+                result.add(new Bucket(null, (JSONObject) bucket));
             }
         } else if (buckets instanceof JSONObject) {
-            // According to the ES docs, this can never happen!
-            throw new IllegalStateException("ES returned a map instead of an array as aggregation result...");
+            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
+                result.add(new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
+            }
         }
 
         return result;
@@ -68,6 +72,10 @@ public class Bucket {
      * @return the key
      */
     public String getKey() {
+        if (key != null) {
+            return key;
+        }
+
         return data.getString(KEY_KEY);
     }
 
