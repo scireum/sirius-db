@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -69,7 +70,11 @@ public class AggregationResult {
 
         if (buckets instanceof JSONArray) {
             for (Object bucket : (JSONArray) buckets) {
-                bucketConsumer.accept(new Bucket((JSONObject) bucket));
+                bucketConsumer.accept(new Bucket(null, (JSONObject) bucket));
+            }
+        } else if (buckets instanceof JSONObject) {
+            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
+                bucketConsumer.accept(new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
             }
         }
     }
@@ -108,7 +113,12 @@ public class AggregationResult {
         Object buckets = data.get(KEY_BUCKETS);
 
         if (buckets instanceof JSONArray && !((JSONArray) buckets).isEmpty()) {
-            return Optional.of(new Bucket((JSONObject) ((JSONArray) buckets).get(0)));
+            return Optional.of(new Bucket(null, (JSONObject) ((JSONArray) buckets).get(0)));
+        } else if (buckets instanceof JSONObject) {
+            return ((JSONObject) buckets).entrySet()
+                                         .stream()
+                                         .findFirst()
+                                         .map(entry -> new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
         } else {
             return Optional.empty();
         }
