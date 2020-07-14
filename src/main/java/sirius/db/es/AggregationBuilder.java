@@ -8,6 +8,7 @@
 
 package sirius.db.es;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.constraints.ElasticConstraint;
@@ -15,7 +16,10 @@ import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 
+import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -114,6 +118,7 @@ public class AggregationBuilder {
     private static final String OFFSET = "offset";
     private static final String INTERVAL = "interval";
     private static final String MIN_DOC_COUNT = "min_doc_count";
+    private static final String AFTER = "after";
 
     private String name;
     private String type;
@@ -261,6 +266,25 @@ public class AggregationBuilder {
      */
     public AggregationBuilder addTermSourceAggregation(Mapping field) {
         return addSourceAggregation(AggregationBuilder.createTerms(field).size(-1));
+    }
+
+    /**
+     * Installs an "after key" which is used to perform pagination.
+     * <p>
+     * The key is produced by {@link AggregationResult#getCompoundAfterKey()} and can be passed into this method
+     * to access the "next page".
+     *
+     * @param afterKey the compond after key to parse and install
+     * @return the aggregation builder itself for fluent methdo calls
+     */
+    public AggregationBuilder withCompoundAfterKey(@Nullable String afterKey) {
+        if (Strings.isFilled(afterKey)) {
+            JSONObject afterKeyObject =
+                    JSON.parseObject(new String(Base64.getDecoder().decode(afterKey), StandardCharsets.UTF_8));
+            addBodyParameter(AFTER, afterKeyObject);
+        }
+
+        return this;
     }
 
     /**
