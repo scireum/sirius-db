@@ -107,7 +107,7 @@ public class AggregationResult {
     public Optional<Bucket> getFirstBucket() {
         Object buckets = data.get(KEY_BUCKETS);
 
-        if (buckets instanceof JSONArray) {
+        if (buckets instanceof JSONArray && !((JSONArray) buckets).isEmpty()) {
             return Optional.of(new Bucket((JSONObject) ((JSONArray) buckets).get(0)));
         } else {
             return Optional.empty();
