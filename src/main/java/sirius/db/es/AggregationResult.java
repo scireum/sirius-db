@@ -16,7 +16,9 @@ import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -122,6 +124,34 @@ public class AggregationResult {
         } else {
             return Optional.empty();
         }
+    }
+
+    /**
+     * Obtains the after key which is created by a {@link AggregationBuilder#COMPOSITE} aggregation to support
+     * pagination.
+     *
+     * @return the after key object or an empty optional if the end of the aggregation has been reached
+     */
+    public Optional<JSONObject> getAfterKey() {
+        return Optional.ofNullable(data.getJSONObject("after_key"));
+    }
+
+    /**
+     * Returns the after key in a single string.
+     * <p>
+     * This can later be put into {@link AggregationBuilder#withCompoundAfterKey(String)} to fetch the next
+     * page.
+     *
+     * @return the after key as compound / single string.
+     */
+    @Nullable
+    public String getCompoundAfterKey() {
+        JSONObject afterKey = getAfterKey().orElse(null);
+        if (afterKey == null) {
+            return null;
+        }
+
+        return Base64.getEncoder().encodeToString(afterKey.toJSONString().getBytes(StandardCharsets.UTF_8));
     }
 
     /**
