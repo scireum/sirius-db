@@ -974,6 +974,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Determines if the query has been executed using either {@link #queryList()} or the like or
+     * {@link #computeAggregations()}.
+     *
+     * @return <tt>true</tt> if the query has been executed and a result is ready, <tt>false</tt> otherwise
+     */
+    public boolean isExecuted() {
+        return response != null;
+    }
+
+    /**
      * Returns the aggregation result for the given aggregation.
      *
      * @param name the name of the aggregation to fetch the result for
