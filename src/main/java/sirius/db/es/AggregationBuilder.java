@@ -359,6 +359,10 @@ public class AggregationBuilder {
      * @return the list of sub aggregations
      */
     public List<AggregationBuilder> getSubAggregations() {
+        if (subAggregations == null) {
+            return Collections.emptyList();
+        }
+
         return Collections.unmodifiableList(subAggregations);
     }
 
@@ -368,7 +372,7 @@ public class AggregationBuilder {
      * @return <tt>true</tt> if there are sub aggregations, <tt>false</tt> otherwise
      */
     public boolean hasSubAggregations() {
-        return !subAggregations.isEmpty();
+        return subAggregations != null && !subAggregations.isEmpty();
     }
 
     /**
