@@ -71,18 +71,44 @@ public class FunctionScoreBuilder {
     }
 
     /**
+     * Adds a script function which uses the given script to return the score to use.
+     *
+     * @param script the script used to compute the score
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder script(String script) {
+        return function(new JSONObject().fluentPut("script_score",
+                                                   new JSONObject().fluentPut("script",
+                                                                              new JSONObject().fluentPut("source",
+                                                                                                         script))));
+    }
+
+    /**
      * Adds a score function which simply reads the given field.
      *
      * @param field   the field to read
      * @param factor  the factor to apply (multiply with)
      * @param missing the value to use in case the given field is empty
      * @return the builder itself for fluent method calls
+     * @see #fieldValueFunction(Mapping, float) if the value needs to be limited by a lower bound
      */
     public FunctionScoreBuilder fieldValueFunction(Mapping field, float factor, float missing) {
         return function(new JSONObject().fluentPut(FUNCTION_FIELD_VALUE_FACTOR,
                                                    new JSONObject().fluentPut(FIELD_FIELD, field.toString())
                                                                    .fluentPut(FIELD_FACTOR, factor)
                                                                    .fluentPut(FIELD_MISSING, missing)));
+    }
+
+    /**
+     * Adds a computed function which uses a field value which is limited to the given lower level.
+     *
+     * @param field    the field to read
+     * @param minValue the minimal value to apply in case the field value is lower
+     * @return the max value of either the field or the given lower limit
+     * @see #fieldValueFunction(Mapping, float, float)
+     */
+    public FunctionScoreBuilder maxFieldValueFunction(Mapping field, float minValue) {
+        return script("Math.max(" + minValue + ", doc['" + field.toString() + "'])");
     }
 
     private FunctionScoreBuilder dateTimeDecayFunction(String function,

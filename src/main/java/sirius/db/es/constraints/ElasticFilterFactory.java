@@ -28,7 +28,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Generates filters and constraints for {@link sirius.db.es.ElasticQuery}.
@@ -154,6 +156,60 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         BoolQueryBuilder qry = new BoolQueryBuilder();
         effectiveConstraints.forEach(qry::should);
         return wrap(qry.build());
+    }
+
+    /**
+     * Generates an AND constraint just like {@link #and(List)} but gives the generated query a name.
+     * <p>
+     * This can later be checked using {@link sirius.db.es.ElasticEntity#isMatchedNamedQuery(String)}.
+     *
+     * @param name        the name of the query to use
+     * @param constraints the constraints to combine
+     * @return the newly generated named query
+     */
+    public ElasticConstraint namedAnd(String name, List<ElasticConstraint> constraints) {
+        BoolQueryBuilder query = new BoolQueryBuilder();
+        constraints.stream().filter(Objects::nonNull).forEach(query::must);
+        query.named(name);
+        return wrap(query.build());
+    }
+
+    /**
+     * Provides a boilerplate for {@link #namedAnd(String, List)} which accepts constraints as varargs.
+     *
+     * @param name        the name of the query to use
+     * @param constraints the constraints to combine
+     * @return the newly generated named query
+     */
+    public ElasticConstraint namedAnd(String name, ElasticConstraint... constraints) {
+        return namedAnd(name, Arrays.asList(constraints));
+    }
+
+    /**
+     * Generates an OR constraint just like {@link #or(List)} but gives the generated query a name.
+     * <p>
+     * This can later be checked using {@link sirius.db.es.ElasticEntity#isMatchedNamedQuery(String)}.
+     *
+     * @param name        the name of the query to use
+     * @param constraints the constraints to combine
+     * @return the newly generated named query
+     */
+    public ElasticConstraint namedOr(String name, List<ElasticConstraint> constraints) {
+        BoolQueryBuilder query = new BoolQueryBuilder();
+        constraints.stream().filter(Objects::nonNull).forEach(query::should);
+        query.named(name);
+        return wrap(query.build());
+    }
+
+    /**
+     * Provides a boilerplate for {@link #namedOr(String, List)} which accepts constraints as varargs.
+     *
+     * @param name        the name of the query to use
+     * @param constraints the constraints to combine
+     * @return the newly generated named query
+     */
+    public ElasticConstraint namedOr(String name, ElasticConstraint... constraints) {
+        return namedOr(name, Arrays.asList(constraints));
     }
 
     @Override
