@@ -34,18 +34,6 @@ public class ElasticConstraint extends Constraint {
         this.constraint = constraint;
     }
 
-    /**
-     * Makes this constraint a named query.
-     *
-     * @param name the name of the query
-     * @return the constraint itself for fluent method calls
-     */
-    public ElasticConstraint named(String name) {
-        this.constraint.put("_name", name);
-
-        return this;
-    }
-
     @Override
     public void asString(StringBuilder builder) {
         builder.append(constraint);

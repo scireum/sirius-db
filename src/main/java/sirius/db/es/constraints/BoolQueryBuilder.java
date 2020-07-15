@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticQuery;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ public class BoolQueryBuilder {
     private List<JSONObject> mustNot;
     private List<JSONObject> should;
     private List<JSONObject> filter;
+    private String name;
 
     private List<JSONObject> autoinit(List<JSONObject> list) {
         if (list == null) {
@@ -152,6 +154,19 @@ public class BoolQueryBuilder {
     }
 
     /**
+     * Specifies the query name to use.
+     * <p>
+     * This can later be checked using {@link sirius.db.es.ElasticEntity#isMatchedNamedQuery(String)}.
+     *
+     * @param name the name of the query
+     * @return the query itself for fluent method calls
+     */
+    public BoolQueryBuilder named(String name) {
+        this.name = name;
+        return this;
+    }
+
+    /**
      * Compiles the boolen query into a constraint.
      *
      * @return the query as constraint
@@ -186,7 +201,11 @@ public class BoolQueryBuilder {
             query.put("filter", filter);
         }
 
-        return new JSONObject().fluentPut("bool", query);
+        JSONObject result = new JSONObject().fluentPut("bool", query);
+        if (Strings.isFilled(name)) {
+            query.put("_name", name);
+        }
+        return result;
     }
 
     /**
@@ -208,6 +227,8 @@ public class BoolQueryBuilder {
         if (filter != null) {
             copy.filter = this.filter.stream().map(Elastic::copyJSON).collect(Collectors.toList());
         }
+
+        copy.name = name;
 
         return copy;
     }
