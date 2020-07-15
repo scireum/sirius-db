@@ -168,10 +168,10 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return the newly generated named query
      */
     public ElasticConstraint namedAnd(String name, List<ElasticConstraint> constraints) {
-        BoolQueryBuilder qry = new BoolQueryBuilder();
-        constraints.stream().filter(Objects::nonNull).forEach(qry::must);
-        qry.named(name);
-        return wrap(qry.build());
+        BoolQueryBuilder query = new BoolQueryBuilder();
+        constraints.stream().filter(Objects::nonNull).forEach(query::must);
+        query.named(name);
+        return wrap(query.build());
     }
 
     /**
@@ -195,10 +195,10 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return the newly generated named query
      */
     public ElasticConstraint namedOr(String name, List<ElasticConstraint> constraints) {
-        BoolQueryBuilder qry = new BoolQueryBuilder();
-        constraints.stream().filter(Objects::nonNull).forEach(qry::should);
-        qry.named(name);
-        return wrap(qry.build());
+        BoolQueryBuilder query = new BoolQueryBuilder();
+        constraints.stream().filter(Objects::nonNull).forEach(query::should);
+        query.named(name);
+        return wrap(query.build());
     }
 
     /**
