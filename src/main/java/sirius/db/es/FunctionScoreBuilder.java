@@ -90,7 +90,7 @@ public class FunctionScoreBuilder {
      * @param factor  the factor to apply (multiply with)
      * @param missing the value to use in case the given field is empty
      * @return the builder itself for fluent method calls
-     * @see #fieldValueFunction(Mapping, float) if the value needs to be limited by a lower bound
+     * @see #maxFieldValueFunction(Mapping, float) if the value needs to be limited by a lower bound
      */
     public FunctionScoreBuilder fieldValueFunction(Mapping field, float factor, float missing) {
         return function(new JSONObject().fluentPut(FUNCTION_FIELD_VALUE_FACTOR,
@@ -108,7 +108,7 @@ public class FunctionScoreBuilder {
      * @see #fieldValueFunction(Mapping, float, float)
      */
     public FunctionScoreBuilder maxFieldValueFunction(Mapping field, float minValue) {
-        return script("Math.max(" + minValue + ", doc['" + field.toString() + "'])");
+        return script("Math.max(" + minValue + ", doc['" + field.toString() + "'].value)");
     }
 
     private FunctionScoreBuilder dateTimeDecayFunction(String function,
