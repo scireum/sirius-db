@@ -9,11 +9,11 @@
 package sirius.db.text;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Extracts sub-tokens based on regular expressions.
@@ -54,9 +54,19 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
      *                     captured groups where 0 is the token itself.
      */
     public PatternExtractProcessor(Pattern pattern, String... replacements) {
+        this(pattern, Stream.of(replacements));
+    }
+
+    /**
+     * Creates a new processor.
+     *
+     * @param pattern      the pattern to match
+     * @param replacements the tokens to emit if the given pattern matches. Using {0}...{N} one can reference to the
+     *                     captured groups where 0 is the token itself.
+     */
+    public PatternExtractProcessor(Pattern pattern, Stream<String> replacements) {
         this.pattern = pattern;
-        this.replacements =
-                Arrays.stream(replacements).map(this::compileReplacementPattern).collect(Collectors.toList());
+        this.replacements = replacements.map(this::compileReplacementPattern).collect(Collectors.toList());
     }
 
     /**
