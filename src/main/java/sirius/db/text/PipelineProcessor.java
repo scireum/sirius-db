@@ -8,10 +8,11 @@
 
 package sirius.db.text;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Permits to combine several chainable token processors into a single one.
@@ -23,10 +24,19 @@ public class PipelineProcessor extends ChainableTokenProcessor {
     /**
      * Creates a new processor.
      *
-     * @param processors the internal processors that chain together to form the desired pipeline
+     * @param processors the internal processors to chain together to form the desired pipeline
      */
     public PipelineProcessor(List<ChainableTokenProcessor> processors) {
-        this.processors = Collections.synchronizedList(processors);
+        this(processors.stream());
+    }
+
+    /**
+     * Creates a new processor.
+     *
+     * @param processorsStream the internal processors to chain together to form the desired pipeline
+     */
+    public PipelineProcessor(Stream<ChainableTokenProcessor> processorsStream) {
+        this.processors = processorsStream.filter(Objects::nonNull).collect(Collectors.toList());
         for (int i = 0; i < processors.size() - 1; i++) {
             processors.get(i).chain(processors.get(i + 1));
         }
@@ -35,10 +45,10 @@ public class PipelineProcessor extends ChainableTokenProcessor {
     /**
      * Creates a new processor.
      *
-     * @param processors the internal processors the chain together to form the desired pipeline
+     * @param processors the internal processors to chain together to form the desired pipeline
      */
     public PipelineProcessor(ChainableTokenProcessor... processors) {
-        this(Arrays.asList(processors));
+        this(Stream.of(processors));
     }
 
     @Override
