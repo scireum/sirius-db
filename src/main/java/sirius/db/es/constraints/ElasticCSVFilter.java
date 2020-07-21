@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Generates a optimized constraint for ES.
  */
-public class ElasticCSVFilter extends CSVFilter<ElasticConstraint> {
+class ElasticCSVFilter extends CSVFilter<ElasticConstraint> {
 
     protected ElasticCSVFilter(FilterFactory<ElasticConstraint> factory, Mapping field, String value, Mode mode) {
         super(factory, field, value, mode);
