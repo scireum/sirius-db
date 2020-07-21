@@ -213,12 +213,12 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     @Override
-    public ElasticCSVFilter containsAny(Mapping field, Value commaSeparatedValues) {
+    public CSVFilter<ElasticConstraint> containsAny(Mapping field, Value commaSeparatedValues) {
         return new ElasticCSVFilter(this, field, commaSeparatedValues.asString(), CSVFilter.Mode.CONTAINS_ANY);
     }
 
     @Override
-    public ElasticCSVFilter containsAll(Mapping field, Value commaSeparatedValues) {
+    public CSVFilter<ElasticConstraint> containsAll(Mapping field, Value commaSeparatedValues) {
         return new ElasticCSVFilter(this, field, commaSeparatedValues.asString(), CSVFilter.Mode.CONTAINS_ALL);
     }
 
