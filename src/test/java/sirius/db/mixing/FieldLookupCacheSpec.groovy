@@ -10,7 +10,6 @@ package sirius.db.mixing
 
 import sirius.db.jdbc.OMA
 import sirius.db.jdbc.SmartQueryTestEntity
-import sirius.db.mixing.FieldLookupCache
 import sirius.db.mongo.Mango
 import sirius.db.mongo.MangoTestEntity
 import sirius.kernel.BaseSpecification
