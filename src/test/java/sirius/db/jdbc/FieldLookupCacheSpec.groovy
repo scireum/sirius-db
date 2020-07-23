@@ -9,6 +9,7 @@
 package sirius.db.jdbc
 
 import sirius.db.mixing.FieldLookupCache
+import sirius.db.mongo.Mango
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 
@@ -31,9 +32,9 @@ class FieldLookupCacheSpec extends BaseSpecification {
         def value2 = lookupCache.lookup(SmartQueryTestEntity.class, entity.getId(), SmartQueryTestEntity.TEST_NUMBER)
         def value3 = lookupCache.lookup(SmartQueryTestEntity.class, entity.getId(), SmartQueryTestEntity.VALUE)
         then:
-        value1.asString() == "Cache Test"
-        value2.asInt(0) == 12345
-        value3.asString() == "Cache Test"
+        value1 == "Cache Test"
+        value2 == 12345
+        value3 == "Cache Test"
     }
 
 }

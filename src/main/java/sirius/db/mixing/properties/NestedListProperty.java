@@ -165,7 +165,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         if (mapperType == Mango.class) {
             return transformFromMango(object);
         } else if (mapperType == Elastic.class) {

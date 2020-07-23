@@ -95,7 +95,7 @@ public class MultiPointLocationProperty extends Property {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         if (mapperType != Mango.class) {
             throw new UnsupportedOperationException(
                     "MultiPointLocationProperty currently only supports Mango as mapper!");

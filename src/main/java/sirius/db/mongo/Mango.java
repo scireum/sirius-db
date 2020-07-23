@@ -348,7 +348,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    public Value fetchField(Class<? extends MongoEntity> type, Object id, Mapping field) throws Exception {
+    public Object fetchField(Class<? extends MongoEntity> type, Object id, Mapping field) throws Exception {
         if (Strings.isEmpty(id)) {
             return Value.EMPTY;
         }
@@ -358,8 +358,8 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                     .selectFields(field)
                     .where(MongoEntity.ID, id)
                     .singleIn(descriptor.getRelationName())
-                    .map(doc -> doc.get(field))
-                    .orElse(Value.EMPTY);
+                    .map(doc -> descriptor.getProperty(field).transformFromDatasource(getClass(), doc.get(field)))
+                    .orElse(null);
     }
 
     @Override

@@ -117,7 +117,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         return object.get();
     }
 

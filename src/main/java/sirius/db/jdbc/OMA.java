@@ -460,7 +460,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     @Override
-    public Value fetchField(Class<? extends SQLEntity> type, Object id, Mapping field) throws Exception {
+    public Object fetchField(Class<? extends SQLEntity> type, Object id, Mapping field) throws Exception {
         if (Strings.isEmpty(id)) {
             return Value.EMPTY;
         }
@@ -470,8 +470,10 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
                            .eq(SQLEntity.ID, id)
                            .asSQLQuery()
                            .first()
-                           .map(row -> row.getValue(field.toString()))
-                           .orElse(Value.EMPTY);
+                           .map(row -> mixing.getDescriptor(type)
+                                             .getProperty(field)
+                                             .transformFromDatasource(getClass(), row.getValue(field.toString())))
+                           .orElse(null);
     }
 
     @Override

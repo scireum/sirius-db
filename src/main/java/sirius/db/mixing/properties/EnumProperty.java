@@ -123,7 +123,7 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
 
     @SuppressWarnings({"unchecked", "raw", "rawtypes"})
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value data) {
         if (data.isNull()) {
             return null;
         }

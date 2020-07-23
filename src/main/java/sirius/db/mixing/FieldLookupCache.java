@@ -12,7 +12,6 @@ import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.cache.Cache;
 import sirius.kernel.cache.CacheManager;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -28,12 +27,12 @@ import javax.annotation.Nullable;
 @Register(classes = FieldLookupCache.class)
 public class FieldLookupCache {
 
-    private Cache<String, Value> cache = CacheManager.createLocalCache("mixing-field-lookup");
+    private Cache<String, Object> cache = CacheManager.createLocalCache("mixing-field-lookup");
 
     @Part
     private Mixing mixing;
 
-    private <E extends BaseEntity<?>> Value load(Class<E> type, @Nullable Object id, Mapping field) throws Exception {
+    private <E extends BaseEntity<?>> Object load(Class<E> type, @Nullable Object id, Mapping field) throws Exception {
         return mixing.getDescriptor(type).getMapper().fetchField(type, id, field);
     }
 
@@ -47,16 +46,16 @@ public class FieldLookupCache {
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or an empty value if either the field is empty or the given ID was <tt>null</tt>
+     * @return the value of the field or null if either the field is empty or the given ID was <tt>null</tt>
      */
-    public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, Mapping field) {
+    public <E extends BaseEntity<?>> Object lookup(Class<E> type, Object id, Mapping field) {
         if (Strings.isEmpty(id)) {
-            return Value.EMPTY;
+            return null;
         }
 
         try {
             String cacheKey = Mixing.getUniqueName(type, id) + "-" + field;
-            Value result = cache.get(cacheKey);
+            Object result = cache.get(cacheKey);
             if (result == null) {
                 result = load(type, id, field);
                 cache.put(cacheKey, result);
@@ -73,7 +72,7 @@ public class FieldLookupCache {
                               id,
                               type)
                       .handle();
-            return Value.EMPTY;
+            return null;
         }
     }
 
@@ -84,9 +83,9 @@ public class FieldLookupCache {
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or an empty value if either the field is empty or the given ID was <tt>null</tt>
+     * @return the value of the field or null if either the field is empty or the given ID was <tt>null</tt>
      */
-    public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, String field) {
+    public <E extends BaseEntity<?>> Object lookup(Class<E> type, Object id, String field) {
         return lookup(type, id, Mapping.named(field));
     }
 
@@ -96,9 +95,9 @@ public class FieldLookupCache {
      * @param ref   the reference which points to the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or an empty value if either the field is empty or if the given reference was empty
+     * @return the value of the field or null if either the field is empty or if the given reference was empty
      */
-    public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, String field) {
+    public <E extends BaseEntity<?>> Object lookup(BaseEntityRef<?, E> ref, String field) {
         return lookup(ref.getType(), ref.getId(), field);
     }
 
@@ -108,9 +107,9 @@ public class FieldLookupCache {
      * @param ref   the reference which points to the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or an empty value if either the field is empty or if the given reference was empty
+     * @return the value of the field or null if either the field is empty or if the given reference was empty
      */
-    public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, Mapping field) {
+    public <E extends BaseEntity<?>> Object lookup(BaseEntityRef<?, E> ref, Mapping field) {
         return lookup(ref.getType(), ref.getId(), field);
     }
 }
