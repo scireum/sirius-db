@@ -215,4 +215,30 @@ class MangoSpec extends BaseSpecification {
         and:
         !qry.exists()
     }
+
+    def "simple aggregations work"() {
+        when:
+        def mango1 = new MangoAggregationsTestEntity()
+        mango1.setTestInt(30)
+        mango.update(mango1)
+        def mango2 = new MangoAggregationsTestEntity()
+        mango2.setTestInt(10)
+        mango.update(mango2)
+        def mango3 = new MangoAggregationsTestEntity()
+        mango3.setTestInt(20)
+        mango.update(mango3)
+        then:
+        mango.select(MangoAggregationsTestEntity.class).
+                aggregateSum(MangoAggregationsTestEntity.TEST_INT).
+                asInt(0) == 60
+        mango.select(MangoAggregationsTestEntity.class).
+                aggregateAverage(MangoAggregationsTestEntity.TEST_INT).
+                asDouble(0) == 20.0
+        mango.select(MangoAggregationsTestEntity.class).
+                aggregateMin(MangoAggregationsTestEntity.TEST_INT).
+                asInt(0) == 10
+        mango.select(MangoAggregationsTestEntity.class).
+                aggregateMax(MangoAggregationsTestEntity.TEST_INT).
+                asInt(0) == 30
+    }
 }
