@@ -40,6 +40,9 @@ class FieldLookupCacheSpec extends BaseSpecification {
         miles.as(SQLSuperHeroTestMixin.class).getHeroNames().setLastname("Man")
         oma.update(miles)
         when:
+        def cacheKey = lookupCache.
+                getCacheKey((SQLFieldLookUpTestEntity.class), miles.getId(), SQLFieldLookUpTestEntity.NAMES.inner(
+                        NameFieldsTestComposite.FIRSTNAME))
         def name1 = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
                                        SQLFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME))
         def name2 = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
@@ -60,8 +63,10 @@ class FieldLookupCacheSpec extends BaseSpecification {
                                               Mapping.mixin(SQLSuperHeroTestMixin.class)
                                                      .inner(SQLSuperHeroTestMixin.HERO_NAMES)
                                                      .inner(NameFieldsTestComposite.LASTNAME))
+
         then:
         name1.asString() == "Miles"
+        lookupCache.cache.get(cacheKey).asString() == "Miles"
         name2.asString() == "Miles"
         age.asInt(0) == 16
         !!cool == true
@@ -84,6 +89,9 @@ class FieldLookupCacheSpec extends BaseSpecification {
         tony.as(MongoSuperHeroTestMixin.class).getHeroNames().setLastname("Man")
         mango.update(tony)
         when:
+        def cacheKey = lookupCache.
+                getCacheKey((MongoFieldLookUpTestEntity.class), tony.getId(), MongoFieldLookUpTestEntity.NAMES.inner(
+                        NameFieldsTestComposite.FIRSTNAME))
         def name1 = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
                                        MongoFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME))
         def name2 = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
@@ -106,6 +114,7 @@ class FieldLookupCacheSpec extends BaseSpecification {
                                                      .inner(NameFieldsTestComposite.LASTNAME))
         then:
         name1.asString() == "Tony"
+        lookupCache.cache.get(cacheKey).asString() == "Tony"
         name2.asString() == "Tony"
         age.asInt(0) == 50
         !!cool == true

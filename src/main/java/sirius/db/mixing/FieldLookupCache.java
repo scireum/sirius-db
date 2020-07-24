@@ -17,6 +17,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -55,7 +56,7 @@ public class FieldLookupCache {
         }
 
         try {
-            String cacheKey = Mixing.getUniqueName(type, id) + "-" + field;
+            String cacheKey = getCacheKey(type, id, field);
             Value result = cache.get(cacheKey);
             if (result == null) {
                 result = load(type, id, field);
@@ -75,6 +76,11 @@ public class FieldLookupCache {
                       .handle();
             return null;
         }
+    }
+
+    @Nonnull
+    private <E extends BaseEntity<?>> String getCacheKey(Class<E> type, Object id, Mapping field) {
+        return Mixing.getUniqueName(type, id) + "-" + field;
     }
 
     /**
