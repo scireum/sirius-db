@@ -15,9 +15,11 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.db.mongo.facets.MongoFacet;
+import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,6 +184,54 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         });
 
         return result;
+    }
+
+    /**
+     * Aggregates the documents in the result of the given query with an sum operator.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param field the field to aggregate
+     * @return the result of the accumulation (int or double depending on the field)
+     */
+    public Value aggregateSum(@Nonnull Mapping field) {
+        return finder.aggregateIn(descriptor.getRelationName(), field, "$sum");
+    }
+
+    /**
+     * Aggregates the documents in the result of the given query with an an average operator.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param field the field to aggregate
+     * @return the result of the accumulation (double)
+     */
+    public Value aggregateAverage(@Nonnull Mapping field) {
+        return finder.aggregateIn(descriptor.getRelationName(), field, "$avg");
+    }
+
+    /**
+     * Aggregates the documents in the result of the given query and returns the highest expression.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param field the field to aggregate
+     * @return the result of the accumulation (int or double depending on the field)
+     */
+    public Value aggregateMax(@Nonnull Mapping field) {
+        return finder.aggregateIn(descriptor.getRelationName(), field, "$max");
+    }
+
+    /**
+     * Aggregates the documents in the result of the given query returns the lowest expression.
+     * <p>
+     * Note that limits are ignored for this query.
+     *
+     * @param field the field to aggregate
+     * @return the result of the accumulation (int or double depending on the field)
+     */
+    public Value aggregateMin(@Nonnull Mapping field) {
+        return finder.aggregateIn(descriptor.getRelationName(), field, "$min");
     }
 
     @Override
