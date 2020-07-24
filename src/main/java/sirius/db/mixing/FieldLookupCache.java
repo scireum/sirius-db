@@ -51,7 +51,7 @@ public class FieldLookupCache {
      */
     public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, Mapping field) {
         if (Strings.isEmpty(id)) {
-            return null;
+            return Value.EMPTY;
         }
 
         try {
@@ -73,7 +73,7 @@ public class FieldLookupCache {
                               id,
                               type)
                       .handle();
-            return null;
+            return Value.EMPTY;
         }
     }
 

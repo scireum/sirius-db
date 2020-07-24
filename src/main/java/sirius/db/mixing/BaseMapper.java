@@ -550,7 +550,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @param type  the type of the entity
      * @param id    the id of the entity
      * @param field the field to resolve
-     * @return the field value, transformed into the appropiate type
+     * @return the field value, transformed into the appropriate type
      * @throws Exception in case of an error during a lookup
      */
     public abstract Value fetchField(Class<? extends B> type, Object id, Mapping field) throws Exception;
