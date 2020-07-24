@@ -211,7 +211,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     /**
-     * Aggregates the documents in the result of the given query and returns the lowest expression.
+     * Aggregates the documents in the result of the given query and returns the highest expression.
      * <p>
      * Note that limits are ignored for this query.
      *
@@ -223,7 +223,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     /**
-     * Aggregates the documents in the result of the given query returns the highest expression.
+     * Aggregates the documents in the result of the given query returns the lowest expression.
      * <p>
      * Note that limits are ignored for this query.
      *
