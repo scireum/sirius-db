@@ -47,7 +47,7 @@ public class FieldLookupCache {
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or null if either the field is empty or the given ID was <tt>null</tt>
+     * @return the value of the field or an empty value if either the field is empty or the given ID was <tt>null</tt>
      */
     public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, Mapping field) {
         if (Strings.isEmpty(id)) {
@@ -84,7 +84,7 @@ public class FieldLookupCache {
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or null if either the field is empty or the given ID was <tt>null</tt>
+     * @return the value of the field or an empty value if either the field is empty or the given ID was <tt>null</tt>
      */
     public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, String field) {
         return lookup(type, id, Mapping.named(field));
@@ -96,7 +96,7 @@ public class FieldLookupCache {
      * @param ref   the reference which points to the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or null if either the field is empty or if the given reference was empty
+     * @return the value of the field or an empty value if either the field is empty or if the given reference was empty
      */
     public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, String field) {
         return lookup(ref.getType(), ref.getId(), field);
@@ -108,7 +108,7 @@ public class FieldLookupCache {
      * @param ref   the reference which points to the entity to resolve
      * @param field the field to resolve
      * @param <E>   the generic type of the entitiy
-     * @return the value of the field or null if either the field is empty or if the given reference was empty
+     * @return the value of the field or an empty value if either the field is empty or if the given reference was empty
      */
     public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, Mapping field) {
         return lookup(ref.getType(), ref.getId(), field);
