@@ -39,9 +39,9 @@ class FieldLookupCacheSpec extends BaseSpecification {
         def value2 = lookupCache.lookup(SmartQueryTestEntity.class, entity.getId(), SmartQueryTestEntity.TEST_NUMBER)
         def value3 = lookupCache.lookup(SmartQueryTestEntity.class, entity.getId(), SmartQueryTestEntity.VALUE)
         then:
-        value1 == "Cache Test"
-        value2 == 12345
-        value3 == "Cache Test"
+        value1.asString() == "Cache Test"
+        value2.asInt(0) == 12345
+        value3.asString() == "Cache Test"
     }
 
     def "mongo field lookup works"() {
@@ -63,12 +63,12 @@ class FieldLookupCacheSpec extends BaseSpecification {
         def cool = lookupCache.lookup(MangoTestEntity.class, mangoTest.getId(), MangoTestEntity.COOL)
         def powers = lookupCache.lookup(MangoTestEntity.class, mangoTest.getId(), MangoTestEntity.SUPER_POWERS)
         then:
-        name1 == "Gordon"
-        name2 == "Gordon"
-        age == 50
-        birthday == localDateTime
-        cool == true
-        powers == Arrays.asList("Cooking", "Raging")
+        name1.asString() == "Gordon"
+        name2.asString() == "Gordon"
+        age.asInt(0) == 50
+        birthday.asLocalDateTime() == localDateTime
+        !!cool == true
+        powers.get() == Arrays.asList("Cooking", "Raging")
     }
 
 }
