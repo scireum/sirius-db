@@ -50,8 +50,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     private final String preparedSQL;
     private boolean longRunning;
 
-    WrappedPreparedStatement(PreparedStatement prepareStatement, boolean longRunning, String preparedSQL) {
-        this.delegate = prepareStatement;
+    WrappedPreparedStatement(PreparedStatement preparedStatement, boolean longRunning, String preparedSQL) {
+        this.delegate = preparedStatement;
         this.longRunning = longRunning;
         this.preparedSQL = preparedSQL;
     }
