@@ -85,7 +85,7 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     private Duration determineOperationDuration() {
-        return longRunning ? LONG_RUNNING_QUERY_OPERATION : QUERY_OPERATION);
+        return longRunning ? LONG_RUNNING_QUERY_OPERATION : QUERY_OPERATION;
     }
 
     @Override
