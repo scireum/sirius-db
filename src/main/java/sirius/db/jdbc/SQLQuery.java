@@ -50,6 +50,7 @@ public class SQLQuery extends BaseSQLQuery {
     private final Database ds;
     private final String sql;
     private Context params = Context.create();
+    private boolean longRunning;
 
     /**
      * Creates a new instance for the given datasource and query.
@@ -87,11 +88,25 @@ public class SQLQuery extends BaseSQLQuery {
         return this;
     }
 
+    /**
+     * Marks the connection and its statements as potentially long running.
+     * <p>
+     * These connections and statements won't contribute to the query duration metrics and will not report slow queries.
+     * Note however, that each query is still wrapped in an {@link sirius.kernel.async.Operation} which is considered
+     * as hanging after 5mins.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public SQLQuery markAsLongRunning() {
+        this.longRunning = true;
+        return this;
+    }
+
     @Override
     public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         Watch w = Watch.start();
         fieldNames = null;
-        try (Connection c = ds.getConnection()) {
+        try (Connection c = longRunning ? ds.getLongRunningConnection() : ds.getConnection()) {
             try (PreparedStatement stmt = createPreparedStatement(c)) {
                 if (stmt == null) {
                     return;
