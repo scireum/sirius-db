@@ -75,12 +75,11 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
-    protected void setValueFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Object entity, Value data) {
-        Object effectiveValue = data.get();
+    protected Object transformFromJDBC(Value object) {
+        Object effectiveValue = object.get();
         if (effectiveValue instanceof Clob) {
             try {
-                setValue(entity, ((Clob) effectiveValue).getSubString(1, (int) ((Clob) effectiveValue).length()));
-                return;
+                return ((Clob) effectiveValue).getSubString(1, (int) ((Clob) effectiveValue).length());
             } catch (Exception e) {
                 throw Exceptions.handle()
                                 .to(Mixing.LOG)
@@ -92,8 +91,17 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
                                 .handle();
             }
         }
+        return effectiveValue;
+    }
 
-        setValue(entity, effectiveValue);
+    @Override
+    protected Object transformFromElastic(Value object) {
+        return object.get();
+    }
+
+    @Override
+    protected Object transformFromMongo(Value object) {
+        return object.get();
     }
 
     @Override

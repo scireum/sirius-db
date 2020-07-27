@@ -74,7 +74,7 @@ public class IntegerProperty extends NumberProperty implements SQLPropertyInfo, 
     }
 
     @Override
-    protected Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         if (object.get() instanceof Long) {
             return Integer.valueOf(((Long) object.get()).intValue());
         }

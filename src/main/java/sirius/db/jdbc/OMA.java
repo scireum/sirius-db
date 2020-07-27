@@ -470,7 +470,10 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
                            .eq(SQLEntity.ID, id)
                            .asSQLQuery()
                            .first()
-                           .map(row -> row.getValue(field.toString()))
+                           .map(row -> Value.of(mixing.getDescriptor(type)
+                                                      .getProperty(field)
+                                                      .transformFromDatasource(getClass(),
+                                                                               row.getValue(field.toString()))))
                            .orElse(Value.EMPTY);
     }
 

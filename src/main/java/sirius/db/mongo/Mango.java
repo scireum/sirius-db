@@ -358,7 +358,8 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                     .selectFields(field)
                     .where(MongoEntity.ID, id)
                     .singleIn(descriptor.getRelationName())
-                    .map(doc -> doc.get(field))
+                    .map(doc -> Value.of(descriptor.getProperty(field)
+                                                   .transformFromDatasource(getClass(), doc.get(field))))
                     .orElse(Value.EMPTY);
     }
 
