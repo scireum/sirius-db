@@ -124,7 +124,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     public Optional<String> getText(String language) {
         if (!hasText(language)) {
             if (hasFallback()) {
-                return Optional.of(data.get(FALLBACK_KEY));
+                return Optional.of(data().get(FALLBACK_KEY));
             }
             return Optional.empty();
         }
@@ -190,7 +190,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
             throw new IllegalStateException(
                     "Can not call fetchTextOrFallback on a MultiLanguageString without fallback enabled.");
         }
-        return data().getOrDefault(language, data.get(FALLBACK_KEY));
+        return data().getOrDefault(language, data().get(FALLBACK_KEY));
     }
 
     private boolean hasFallback() {
