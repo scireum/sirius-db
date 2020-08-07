@@ -52,7 +52,7 @@ class RequestBuilder {
     private static final String PARAM_IF_PRIMARY_TERM = "if_primary_term";
     private static final String PARAM_IF_SEQ_NO = "if_seq_no";
     private static final String PARAM_ERROR = "error";
-    private static final int MAX_CONTENT_LONG_LENGTH = 256;
+    private static final int MAX_CONTENT_LONG_LENGTH = 1024;
 
     private String method;
     private RestClient restClient;
