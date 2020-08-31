@@ -372,6 +372,23 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
     }
 
     /**
+     * Checks whether any {@link Mapping} of the current {@link BaseEntity} changed.
+     * <p>
+     * If a property wears an {@link sirius.db.mixing.annotations.Trim} annotation or if "" and <tt>null</tt>
+     * should be considered equal, {@link Strings#areEqual(Object, Object)}
+     * or {@link Strings#areTrimmedEqual(Object, Object)} can be used as <tt>equalsFunction</tt>.
+     *
+     * @param equalsFunction the function which compares the current and the previously persisted value and returns
+     *                       <tt>true</tt> if they are equal or <tt>false</tt> otherwise
+     * @return <tt>true</tt> if at least one column was changed, <tt>false</tt> otherwise.
+     */
+    public boolean isAnyMappingChanged(BiPredicate<? super Object, ? super Object> equalsFunction) {
+        return getDescriptor().getProperties()
+                              .stream()
+                              .anyMatch(property -> getDescriptor().isChanged(this, property, equalsFunction));
+    }
+
+    /**
      * Returns a hash code value for the object. This method is supported for the benefit of hash tables such as those
      * provided by {@link java.util.HashMap}.
      * <p>
