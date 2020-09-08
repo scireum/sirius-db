@@ -299,7 +299,7 @@ public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extend
     private void cascadeDelete(TaskContext taskContext, BaseEntity<?> other) {
         Watch watch = Watch.start();
         other.getMapper().delete(other);
-        taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedDelete"), watch.elapsedMillis());
+        taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedDelete"), watch.elapsedMillis(), true);
     }
 
     protected void onDeleteReject(Object e) {
