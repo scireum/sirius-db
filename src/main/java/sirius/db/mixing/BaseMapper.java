@@ -352,7 +352,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * Performs a database lookup to select the entity of the given type with the given id.
      *
      * @param type the type of entity to select
-     * @param id   the id (which can be either a long, Long or String) to select
+     * @param id   the id (which can be either a long, int or String) to select
      * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @param <E>  the generic type of the entity to select
      * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given id exists
@@ -362,6 +362,17 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             if (Strings.isEmpty(id)) {
                 return Optional.empty();
             }
+
+            Class<?> clazz = id.getClass();
+            if (!isPossibleId(clazz)) {
+                throw Exceptions.handle()
+                                .to(Mixing.LOG)
+                                .withSystemErrorMessage("The given object is not an ID (String, long, int): %s (%s)",
+                                                        id,
+                                                        type)
+                                .handle();
+            }
+
             EntityDescriptor ed = mixing.getDescriptor(type);
             return findEntity(id, ed, makeContext(info));
         } catch (HandledException e) {
@@ -373,6 +384,16 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                             .withSystemErrorMessage("Unable to FIND  %s (%s): %s (%s)", type.getSimpleName(), id)
                             .handle();
         }
+    }
+
+    @SuppressWarnings("java:S1067")
+    @Explain("We rather keep all possible cases in one place.")
+    private boolean isPossibleId(Class<?> clazz) {
+        return clazz == String.class
+               || clazz == long.class
+               || clazz == Long.class
+               || clazz == int.class
+               || clazz == Integer.class;
     }
 
     private Function<String, Value> makeContext(ContextInfo[] info) {
