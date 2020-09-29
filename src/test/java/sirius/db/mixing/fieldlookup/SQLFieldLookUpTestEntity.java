@@ -10,6 +10,7 @@ package sirius.db.mixing.fieldlookup;
 
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.StringList;
 
@@ -31,6 +32,7 @@ public class SQLFieldLookUpTestEntity extends SQLEntity {
     private LocalDateTime birthday;
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
+    @Length(100)
     private final StringList superPowers = new StringList();
 
     public int getAge() {

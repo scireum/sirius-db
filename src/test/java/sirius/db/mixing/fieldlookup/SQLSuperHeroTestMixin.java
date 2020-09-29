@@ -10,6 +10,7 @@ package sirius.db.mixing.fieldlookup;
 
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixable;
+import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.types.StringList;
 
@@ -20,6 +21,7 @@ public class SQLSuperHeroTestMixin extends Mixable {
     private final NameFieldsTestComposite heroNames = new NameFieldsTestComposite();
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
+    @Length(100)
     private final StringList superPowers = new StringList();
 
     public NameFieldsTestComposite getHeroNames() {
