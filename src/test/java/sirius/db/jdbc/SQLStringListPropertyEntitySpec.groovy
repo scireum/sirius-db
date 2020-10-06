@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc
 
-import com.mysql.jdbc.MysqlDataTruncation
+
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
