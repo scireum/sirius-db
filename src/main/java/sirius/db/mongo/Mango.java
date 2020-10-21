@@ -123,7 +123,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
         try {
             long updatedRows = updater.executeFor(ed.getRelationName()).getModifiedCount();
-            enforceUpdate(entity, force, updatedRows);
+            enforceUpdate(entity, force, updatedRows, ed.isVersioned());
 
             if (ed.isVersioned()) {
                 entity.setVersion(entity.getVersion() + 1);
@@ -137,13 +137,26 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
     }
 
-    private <E extends MongoEntity> void enforceUpdate(E entity, boolean force, long updatedRows)
+    private <E extends MongoEntity> void enforceUpdate(E entity, boolean force, long updatedRows, boolean versioned)
             throws OptimisticLockException {
         if (force || updatedRows > 0) {
             return;
         }
         if (find(entity.getClass(), entity.getId()).isPresent()) {
-            throw new OptimisticLockException();
+            if (versioned) {
+                throw new OptimisticLockException();
+            } else {
+                throw Exceptions.handle()
+                                .to(Mongo.LOG)
+                                .withSystemErrorMessage(
+                                        "Tried to update the changed entity %s (%s)," +
+                                                " but actually nothing was changed in the database!" +
+                                                " There might be an error in one of its properties' transform or equals methods," +
+                                                " as the framework indicated a changed property.",
+                                        entity,
+                                        entity.getId())
+                                .handle();
+            }
         } else {
             throw Exceptions.handle()
                             .to(Mongo.LOG)
