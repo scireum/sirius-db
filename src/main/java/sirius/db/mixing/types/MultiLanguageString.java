@@ -54,7 +54,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds a new text using the language defined by {@link NLS#getCurrentLang()}.
      * <p>
-     * Empty texts will be ignored.
+     * Null texts will be ignored.
      *
      * @param text the text associated with the language
      * @return the object itself for fluent method calls
@@ -67,7 +67,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds a new text for the given language.
      * <p>
-     * Empty texts will be ignored.
+     * Null texts will be ignored.
      *
      * @param language the language code
      * @param text     the text associated with the language
@@ -84,7 +84,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds the given text as a fallback to the map.
      * <p>
-     * Empty texts will be ignored.
+     * Null texts will be ignored.
      *
      * @param text the text to be used as fallback
      * @return the object itself for fluent method calls
