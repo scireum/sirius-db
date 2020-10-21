@@ -8,6 +8,7 @@
 
 package sirius.db.mongo.properties
 
+import sirius.db.mixing.types.MultiLanguageString
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
 import sirius.kernel.BaseSpecification
@@ -33,6 +34,21 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
 
         then:
         thrown(HandledException)
+    }
+
+    def "Comparing persisted data with null keys works as expected"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangText().addText("de", null)
+        mango.update(entity)
+        when:
+        entity = mango.tryRefresh(entity)
+        entity.getMultiLangText().addText("de", null)
+        mango.update(entity)
+        then:
+        noExceptionThrown()
+        and:
+        entity.getMultiLangText() == new MultiLanguageString()
     }
 
     def "store retrieve and validate"() {
