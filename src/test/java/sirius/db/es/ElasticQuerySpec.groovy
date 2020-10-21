@@ -13,6 +13,8 @@ import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.properties.StringMapProperty
+import sirius.db.mongo.Mango
+import sirius.db.mongo.MangoTestEntity
 import sirius.kernel.BaseSpecification
 import sirius.kernel.Scope
 import sirius.kernel.commons.Doubles
@@ -28,6 +30,9 @@ class ElasticQuerySpec extends BaseSpecification {
 
     @Part
     private static Elastic elastic
+
+    @Part
+    private static Mango mango
 
     def setupSpec() {
         elastic.getReadyFuture().await(Duration.ofSeconds(60))
@@ -391,5 +396,42 @@ class ElasticQuerySpec extends BaseSpecification {
         qry.count() == 0
         and:
         !qry.exists()
+    }
+
+    def "search for a mongo reference works" () {
+        when: "We create an example mongo entity"
+        MangoTestEntity mangoTestEntity = new MangoTestEntity()
+        mangoTestEntity.firstname = "Compiler"
+        mangoTestEntity.lastname = "Test"
+        and:
+        mango.update(mangoTestEntity)
+        and: "We create an example elastic entity holding a reference"
+        QueryTestEntity elasticTestEntity = new QueryTestEntity()
+        elasticTestEntity.getMongoId().setValue(mangoTestEntity)
+        elasticTestEntity.setCounter(10)
+        elasticTestEntity.setValue("Test123")
+        and:
+        elastic.update(elasticTestEntity)
+        elastic.refresh(QueryTestEntity.class)
+        and: "We query via a constraint"
+        QueryTestEntity elasticTestEntityRecoveredViaConstraint = elastic.
+                select(QueryTestEntity.class).
+                eq(QueryTestEntity.MONGO_ID, mangoTestEntity.getId()).
+                queryOne()
+        and: "We query via a query string"
+        QueryTestEntity elasticTestEntityRecoveredViaQueryString = elastic.
+                select(QueryTestEntity.class).
+                where(elastic.filters().queryString(
+                        elasticTestEntity.getDescriptor(),
+                        QueryTestEntity.MONGO_ID.getName() + ":" + mangoTestEntity.getId())).
+                queryOne()
+        then:
+        elasticTestEntityRecoveredViaConstraint != null
+        elasticTestEntityRecoveredViaConstraint.getCounter() == 10
+        elasticTestEntityRecoveredViaConstraint.getValue() == "Test123"
+        and:
+        elasticTestEntityRecoveredViaQueryString != null
+        elasticTestEntityRecoveredViaQueryString.getCounter() == 10
+        elasticTestEntityRecoveredViaQueryString.getValue() == "Test123"
     }
 }
