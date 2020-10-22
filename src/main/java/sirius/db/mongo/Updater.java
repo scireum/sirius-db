@@ -340,7 +340,7 @@ public class Updater extends QueryBuilder<Updater> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("mongo", "UPDATE - " + collection + ": " + filterObject);
+                w.submitMicroTiming("mongo", "UPDATE - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired(collection, w);
         }
