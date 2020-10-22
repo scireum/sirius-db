@@ -11,6 +11,9 @@ package sirius.db.es;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.types.BaseEntityRef;
+import sirius.db.mongo.MangoTestEntity;
+import sirius.db.mongo.types.MongoRef;
 
 import java.time.LocalDateTime;
 
@@ -26,6 +29,10 @@ public class QueryTestEntity extends ElasticEntity {
     public static final Mapping DATE_TIME = Mapping.named("dateTime");
     @NullAllowed
     private LocalDateTime dateTime;
+
+    public static final Mapping MONGO_ID = Mapping.named("mongoId");
+    @NullAllowed
+    private final MongoRef<MangoTestEntity> mongoId = MongoRef.on(MangoTestEntity.class, BaseEntityRef.OnDelete.IGNORE);
 
     public String getValue() {
         return value;
@@ -49,5 +56,9 @@ public class QueryTestEntity extends ElasticEntity {
 
     public void setDateTime(LocalDateTime dateTime) {
         this.dateTime = dateTime;
+    }
+
+    public MongoRef<MangoTestEntity> getMongoId() {
+        return mongoId;
     }
 }
