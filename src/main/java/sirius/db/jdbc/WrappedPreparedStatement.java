@@ -57,7 +57,7 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     protected void updateStatistics(String sql, Watch w) {
-        w.submitMicroTiming("SQL", sql);
+        w.submitMicroTiming("SQL","PreparedStatement: "+ sql);
         Databases.numQueries.inc();
         if (!longRunning) {
             Databases.queryDuration.addValue(w.elapsedMillis());
@@ -412,7 +412,7 @@ class WrappedPreparedStatement implements PreparedStatement {
         Watch w = Watch.start();
         try (Operation op = new Operation(() -> "executeBatch: " + preparedSQL, determineOperationDuration())) {
             int[] result = delegate.executeBatch();
-            w.submitMicroTiming("BATCH-SQL", preparedSQL);
+            w.submitMicroTiming("SQL","Batch: " + preparedSQL);
             Databases.numQueries.inc();
             if (!longRunning) {
                 Databases.queryDuration.addValue(w.elapsedMillis());
