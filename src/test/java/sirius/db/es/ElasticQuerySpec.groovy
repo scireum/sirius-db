@@ -429,9 +429,11 @@ class ElasticQuerySpec extends BaseSpecification {
         elasticTestEntityRecoveredViaConstraint != null
         elasticTestEntityRecoveredViaConstraint.getCounter() == 10
         elasticTestEntityRecoveredViaConstraint.getValue() == "Test123"
+        elasticTestEntityRecoveredViaConstraint.getMongoId().getId() == mangoTestEntity.getId()
         and:
         elasticTestEntityRecoveredViaQueryString != null
         elasticTestEntityRecoveredViaQueryString.getCounter() == 10
         elasticTestEntityRecoveredViaQueryString.getValue() == "Test123"
+        elasticTestEntityRecoveredViaQueryString.getMongoId().getId() == mangoTestEntity.getId()
     }
 }
