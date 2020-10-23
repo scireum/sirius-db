@@ -42,8 +42,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
      *
      * @param validLanguages set of language codes to validate against
      */
-    public MultiLanguageString(Set<String> validLanguages) {
-        this.validLanguages = validLanguages;
+    public MultiLanguageString(@Nonnull Set<String> validLanguages) {
+        this.validLanguages = Collections.unmodifiableSet(validLanguages);
     }
 
     /**
@@ -61,13 +61,13 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @param withFallback   if a fallback should also be stored in the map
      * @param validLanguages set of language codes to validate against
      */
-    public MultiLanguageString(boolean withFallback, Set<String> validLanguages) {
+    public MultiLanguageString(boolean withFallback, @Nonnull Set<String> validLanguages) {
         this.withFallback = withFallback;
-        this.validLanguages = validLanguages;
+        this.validLanguages = Collections.unmodifiableSet(validLanguages);
     }
 
     public Set<String> getValidLanguages() {
-        return validLanguages;
+        return Collections.unmodifiableSet(validLanguages);
     }
 
     @Override
