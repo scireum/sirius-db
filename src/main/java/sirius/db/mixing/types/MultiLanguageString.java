@@ -12,6 +12,7 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,7 +25,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     public static final String FALLBACK_KEY = "fallback";
 
-    private Set<String> validLanguages;
+    private Set<String> validLanguages = Collections.emptySet();
 
     private boolean withFallback;
 
@@ -65,7 +66,6 @@ public class MultiLanguageString extends SafeMap<String, String> {
         this.validLanguages = validLanguages;
     }
 
-    @Nullable
     public Set<String> getValidLanguages() {
         return validLanguages;
     }

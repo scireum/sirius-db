@@ -81,7 +81,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             if (Strings.areEqual(language, MultiLanguageString.FALLBACK_KEY)) {
                 return;
             }
-            if (multiLanguageString.getValidLanguages() != null && !multiLanguageString.getValidLanguages().contains(language)) {
+            if (!multiLanguageString.getValidLanguages().contains(language)) {
                 throw Exceptions.createHandled()
                         .withNLSKey("MultiLanguageString.invalidLanguage")
                         .set("language", language)
