@@ -57,7 +57,7 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     protected void updateStatistics(String sql, Watch w) {
-        w.submitMicroTiming("SQL","PreparedStatement: "+ sql);
+        w.submitMicroTiming("SQL","PreparedStatement: " + sql);
         Databases.numQueries.inc();
         if (!longRunning) {
             Databases.queryDuration.addValue(w.elapsedMillis());
