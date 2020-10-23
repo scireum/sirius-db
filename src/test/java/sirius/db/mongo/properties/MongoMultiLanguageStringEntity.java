@@ -12,6 +12,10 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.db.mongo.MongoEntity;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Represents an entity to test properties of type {@link MultiLanguageString}
  */
@@ -22,11 +26,19 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
     public static final Mapping MULTILANGTEXT_WITH_FALLBACK = Mapping.named("multiLangTextWithFallback");
     private final MultiLanguageString multiLangTextWithFallback = new MultiLanguageString(true);
 
+    private final Set<String> validLanguages = new HashSet<>(Arrays.asList("da", "nl", "en", "fi", "fr", "de", "hu", "it", "nb", "pt", "ro", "ru", "es", "sv", "tr"));
+    public static final Mapping MULTILANGTEXT_WITH_VALID_LANGUAGES = Mapping.named("multiLangTextWithValidLanguages");
+    private final MultiLanguageString multiLangTextWithValidLanguages = new MultiLanguageString(validLanguages);
+
     public MultiLanguageString getMultiLangText() {
         return multiLangText;
     }
 
     public MultiLanguageString getMultiLangTextWithFallback() {
         return multiLangTextWithFallback;
+    }
+
+    public MultiLanguageString getMultiLangTextWithValidLanguages() {
+        return multiLangTextWithValidLanguages;
     }
 }

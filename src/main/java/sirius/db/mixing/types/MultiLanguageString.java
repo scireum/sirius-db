@@ -13,6 +13,7 @@ import sirius.kernel.nls.NLS;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Provides a language-text map as property value.
@@ -22,6 +23,8 @@ import java.util.Optional;
 public class MultiLanguageString extends SafeMap<String, String> {
 
     public static final String FALLBACK_KEY = "fallback";
+
+    private Set<String> validLanguages;
 
     private boolean withFallback;
 
@@ -33,12 +36,38 @@ public class MultiLanguageString extends SafeMap<String, String> {
     }
 
     /**
+     * Creates a new object to hold a language-text map validating against the given set of language codes
+     * with no place for a fallback string.
+     *
+     * @param validLanguages set of language codes to validate against
+     */
+    public MultiLanguageString(Set<String> validLanguages) {
+        this.validLanguages = validLanguages;
+    }
+
+    /**
      * Creates a new object to hold a language-text map.
      *
      * @param withFallback if a fallback should also be stored in the map
      */
     public MultiLanguageString(boolean withFallback) {
         this.withFallback = withFallback;
+    }
+
+    /**
+     * Creates a new object to hold a language-text map validating against the given set of language codes.
+     *
+     * @param withFallback   if a fallback should also be stored in the map
+     * @param validLanguages set of language codes to validate against
+     */
+    public MultiLanguageString(boolean withFallback, Set<String> validLanguages) {
+        this.withFallback = withFallback;
+        this.validLanguages = validLanguages;
+    }
+
+    @Nullable
+    public Set<String> getValidLanguages() {
+        return validLanguages;
     }
 
     @Override
