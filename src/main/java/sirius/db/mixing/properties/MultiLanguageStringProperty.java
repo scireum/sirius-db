@@ -83,11 +83,11 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             }
             if (!multiLanguageString.getValidLanguages().contains(language)) {
                 throw Exceptions.createHandled()
-                        .withNLSKey("MultiLanguageString.invalidLanguage")
-                        .set("language", language)
-                        .set("text", text)
-                        .set("field", getField().getName())
-                        .handle();
+                                .withNLSKey("MultiLanguageString.invalidLanguage")
+                                .set("language", language)
+                                .set("text", text)
+                                .set("field", getField().getName())
+                                .handle();
             }
         });
 
@@ -104,12 +104,12 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             return (MultiLanguageString) field.get(target);
         } catch (IllegalAccessException e) {
             throw Exceptions.handle()
-                    .to(Mixing.LOG)
-                    .error(e)
-                    .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
-                            getName(),
-                            getDefinition())
-                    .handle();
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
+                                                    getName(),
+                                                    getDefinition())
+                            .handle();
         }
     }
 
