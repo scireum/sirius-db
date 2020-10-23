@@ -77,21 +77,22 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     protected void onBeforeSaveChecks(Object entity) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
-        multiLanguageString.data().forEach((language, text) -> {
-            if (Strings.areEqual(language, MultiLanguageString.FALLBACK_KEY)) {
-                return;
-            }
-            if (!multiLanguageString.getValidLanguages().isEmpty() && !multiLanguageString.getValidLanguages()
-                                                                                          .contains(language)) {
-                throw Exceptions.createHandled()
-                                .withNLSKey("MultiLanguageString.invalidLanguage")
-                                .set("language", language)
-                                .set("text", text)
-                                .set("field", getField().getName())
-                                .handle();
-            }
-        });
-
+        if (!multiLanguageString.getValidLanguages().isEmpty()) {
+            multiLanguageString.data()
+                               .entrySet()
+                               .stream()
+                               .filter(entry -> !Strings.areEqual(entry.getKey(), MultiLanguageString.FALLBACK_KEY))
+                               .filter(entry -> !multiLanguageString.getValidLanguages().contains(entry.getKey()))
+                               .findAny()
+                               .ifPresent(entry -> {
+                                   throw Exceptions.createHandled()
+                                                   .withNLSKey("MultiLanguageString.invalidLanguage")
+                                                   .set("language", entry.getKey())
+                                                   .set("text", entry.getValue())
+                                                   .set("field", getField().getName())
+                                                   .handle();
+                               });
+        }
         super.onBeforeSaveChecks(entity);
     }
 
