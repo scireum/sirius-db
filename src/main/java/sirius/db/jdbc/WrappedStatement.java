@@ -46,7 +46,7 @@ class WrappedStatement implements Statement {
     }
 
     protected void updateStatistics(String sql, Watch w) {
-        w.submitMicroTiming("SQL", sql);
+        w.submitMicroTiming("SQL", "Statement: " + sql);
         Databases.numQueries.inc();
         Databases.queryDuration.addValue(w.elapsedMillis());
         if (w.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {

@@ -62,8 +62,8 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                            Consumer<Property> propertyConsumer) {
             if (!Modifier.isFinal(field.getModifiers())) {
                 Mixing.LOG.WARN("Field %s in %s is not final! This will probably result in errors.",
-                                field.getName(),
-                                field.getDeclaringClass().getName());
+                        field.getName(),
+                        field.getDeclaringClass().getName());
             }
 
             propertyConsumer.accept(new MultiLanguageStringProperty(descriptor, accessPath, field));
@@ -134,12 +134,10 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
 
         List<Document> texts = new ArrayList<>();
         ((Map<String, String>) object).forEach((language, text) -> {
-            if (text != null) {
-                Document doc = new Document();
-                doc.put(LANGUAGE_PROPERTY, language);
-                doc.put(TEXT_PROPERTY, text);
-                texts.add(doc);
-            }
+            Document doc = new Document();
+            doc.put(LANGUAGE_PROPERTY, language);
+            doc.put(TEXT_PROPERTY, text);
+            texts.add(doc);
         });
         return texts;
     }
@@ -166,11 +164,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         }
 
         JSONObject texts = new JSONObject();
-        ((Map<String, String>) object).forEach((language, text) -> {
-            if (text != null) {
-                texts.fluentPut(language, text);
-            }
-        });
+        ((Map<String, String>) object).forEach(texts::fluentPut);
         return texts;
     }
 

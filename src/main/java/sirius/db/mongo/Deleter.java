@@ -51,7 +51,7 @@ public class Deleter extends QueryBuilder<Deleter> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("mongo", "DELETE - " + collection + ": " + filterObject);
+                w.submitMicroTiming("mongo", "DELETE - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired(collection, w);
         }
@@ -86,7 +86,7 @@ public class Deleter extends QueryBuilder<Deleter> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("mongo", "DELETE - " + collection + ": " + filterObject);
+                w.submitMicroTiming("mongo", "DELETE - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired(collection, w);
         }

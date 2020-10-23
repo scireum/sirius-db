@@ -82,6 +82,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     /**
      * Adds a new text using the language defined by {@link NLS#getCurrentLang()}.
+     * <p>
+     * Null texts will be ignored.
      *
      * @param text the text associated with the language
      * @return the object itself for fluent method calls
@@ -93,6 +95,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     /**
      * Adds a new text for the given language.
+     * <p>
+     * Null texts will be ignored.
      *
      * @param language the language code
      * @param text     the text associated with the language
@@ -100,12 +104,16 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @throws sirius.kernel.health.HandledException if the provided language code is invalid
      */
     public MultiLanguageString addText(String language, String text) {
-        put(language, text);
+        if (text != null) {
+            put(language, text);
+        }
         return this;
     }
 
     /**
      * Adds the given text as a fallback to the map.
+     * <p>
+     * Null texts will be ignored.
      *
      * @param text the text to be used as fallback
      * @return the object itself for fluent method calls

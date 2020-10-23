@@ -226,7 +226,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             mongo.callDuration.addValue(watch.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                watch.submitMicroTiming(KEY_MONGO, "FIND ONE - " + collection + ": " + filterObject);
+                watch.submitMicroTiming(KEY_MONGO, "FIND ONE - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired(collection, watch);
         }
@@ -327,7 +327,7 @@ public class Finder extends QueryBuilder<Finder> {
     private void handleTracingAndReporting(String collection, Watch w) {
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {
-            w.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject);
+            w.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
         }
         traceIfRequired(collection, w);
     }
@@ -384,7 +384,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject);
+                w.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired(collection, w);
         }
@@ -437,7 +437,7 @@ public class Finder extends QueryBuilder<Finder> {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO,
-                                    "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject);
+                                    "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject.keySet());
             }
             traceIfRequired("aggregate-" + collection, w);
         }
@@ -479,7 +479,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject);
+                w.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject.keySet());
             }
             traceIfRequired("facets-" + collection, w);
         }

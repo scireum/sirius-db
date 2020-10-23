@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
  */
 public class UpdateStatement extends GeneratedStatement<UpdateStatement> {
 
-    private static final String MICROTIMING_KEY = "SQL-UPDATE";
+    private static final String MICROTIMING_KEY = "UPDATE";
     private final Monoflop setPartStarted = Monoflop.create();
 
     protected UpdateStatement(EntityDescriptor descriptor, Database db) {
