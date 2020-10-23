@@ -46,7 +46,7 @@ public class SQLQuery extends BaseSQLQuery {
      */
     public static final int DEFAULT_FETCH_SIZE = 1000;
 
-    private static final String MICROTIMING_KEY = "SQL-QUERY";
+    private static final String MICROTIMING_KEY = "SQL";
     private final Database ds;
     private final String sql;
     private Context params = Context.create();
@@ -116,7 +116,7 @@ public class SQLQuery extends BaseSQLQuery {
                 applyFetchSize(stmt, effectiveLimit);
 
                 try (ResultSet rs = stmt.executeQuery()) {
-                    w.submitMicroTiming(MICROTIMING_KEY, sql);
+                    w.submitMicroTiming(MICROTIMING_KEY, "ITERATE: " + sql);
                     TaskContext tc = TaskContext.get();
                     processResultSet(handler, effectiveLimit, rs, tc);
                 }
@@ -179,7 +179,7 @@ public class SQLQuery extends BaseSQLQuery {
                 return stmt.executeUpdate();
             }
         } finally {
-            w.submitMicroTiming(MICROTIMING_KEY, sql);
+            w.submitMicroTiming(MICROTIMING_KEY, "UPDATE: " + sql);
         }
     }
 
@@ -205,7 +205,7 @@ public class SQLQuery extends BaseSQLQuery {
                 return dbs.fetchGeneratedKeys(stmt);
             }
         } finally {
-            w.submitMicroTiming(MICROTIMING_KEY, sql);
+            w.submitMicroTiming(MICROTIMING_KEY, "UPDATE: " + sql);
         }
     }
 

@@ -104,7 +104,7 @@ public class Inserter {
         mongo.db(database).getCollection(collection).insertOne(obj);
         mongo.callDuration.addValue(w.elapsedMillis());
         if (Microtiming.isEnabled()) {
-            w.submitMicroTiming("mongo", "INSERT - " + collection + ": " + obj);
+            w.submitMicroTiming("mongo", "INSERT - " + collection + ": " + obj.keySet());
         }
         return new Doc(obj);
     }

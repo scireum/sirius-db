@@ -153,7 +153,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 return execCount(compiler, c);
             } finally {
                 if (Microtiming.isEnabled()) {
-                    w.submitMicroTiming("OMA", compiler.toString());
+                    w.submitMicroTiming("OMA", "COUNT: " + compiler.getQuery());
                 }
             }
         } catch (Exception e) {
@@ -403,7 +403,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 }
             } finally {
                 if (Microtiming.isEnabled()) {
-                    w.submitMicroTiming("OMA", compiler.toString());
+                    w.submitMicroTiming("OMA", "ITERATE: " + compiler.getQuery());
                 }
             }
         } catch (Exception e) {

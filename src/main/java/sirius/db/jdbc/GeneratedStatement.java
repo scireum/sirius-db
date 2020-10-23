@@ -202,7 +202,7 @@ abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
                 return stmt.executeUpdate();
             }
         } finally {
-            watch.submitMicroTiming(microtimingKey(), sql);
+            watch.submitMicroTiming("SQL", microtimingKey() + ": " + sql);
         }
     }
 

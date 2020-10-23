@@ -25,7 +25,7 @@ import java.sql.SQLException;
  */
 public class DeleteStatement extends GeneratedStatement<DeleteStatement> {
 
-    private static final String MICROTIMING_KEY = "SQL-DELETE";
+    private static final String MICROTIMING_KEY = "DELETE";
 
     protected DeleteStatement(EntityDescriptor descriptor, Database db) {
         super(descriptor, db);
