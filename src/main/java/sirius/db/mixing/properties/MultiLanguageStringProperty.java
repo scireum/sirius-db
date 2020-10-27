@@ -111,7 +111,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         Map<String, String> texts = new LinkedHashMap<>();
         for (Document document : (List<Document>) object.get()) {
             Object textValue = document.get(TEXT_PROPERTY);
-            texts.put(document.get(LANGUAGE_PROPERTY).toString(), textValue != null ? textValue.toString() : null);
+            if (textValue != null) {
+               texts.put(document.get(LANGUAGE_PROPERTY).toString(), ttextValue.toString());
+            }
         }
         return texts;
     }
