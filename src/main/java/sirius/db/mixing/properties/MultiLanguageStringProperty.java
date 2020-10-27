@@ -110,7 +110,8 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     protected Object transformFromMongo(Value object) {
         Map<String, String> texts = new LinkedHashMap<>();
         for (Document document : (List<Document>) object.get()) {
-            texts.put(document.get(LANGUAGE_PROPERTY).toString(), document.get(TEXT_PROPERTY).toString());
+            Object textValue = document.get(TEXT_PROPERTY);
+            texts.put(document.get(LANGUAGE_PROPERTY).toString(), textValue != null ? textValue.toString() : null);
         }
         return texts;
     }
