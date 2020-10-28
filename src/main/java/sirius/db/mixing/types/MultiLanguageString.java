@@ -222,4 +222,11 @@ public class MultiLanguageString extends SafeMap<String, String> {
         }
         return this;
     }
+
+    @Override
+    public void setData(Map<String, String> newData) {
+        // remove keys with null values first
+        newData.entrySet().removeIf(entry -> entry.getValue() == null);
+        super.setData(newData);
+    }
 }

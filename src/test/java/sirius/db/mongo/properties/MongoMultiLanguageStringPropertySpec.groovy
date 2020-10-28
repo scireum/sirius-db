@@ -214,4 +214,23 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         then:
         output.getMultiLangTextWithFallback().fetchText() == null
     }
+
+    def "asserts setData removes null keys before persisting"() {
+        given:
+        CallContext.getCurrent().setLang("en")
+        def entity = new MongoMultiLanguageStringEntity()
+        Map<String, String> data = new LinkedHashMap<>()
+        data.put("en", "Great")
+        data.put("de", null)
+        entity.getMultiLangText().setData(data)
+        mango.update(entity)
+
+        when:
+        def output = mango.refreshOrFail(entity)
+
+        then:
+        output.getMultiLangText().fetchText("en") == "Great"
+        output.getMultiLangText().fetchText("de") == null
+        output.getMultiLangText().original().size() == 1
+    }
 }
