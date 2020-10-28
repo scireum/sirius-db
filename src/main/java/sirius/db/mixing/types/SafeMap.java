@@ -55,13 +55,19 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
 
     /**
      * Puts the given key and value into the map.
+     * <br>
+     * Keys with null values will be removed.
      *
      * @param key   the key used to store the value
      * @param value the value to store
      * @return the map itself for fluent method calls
      */
     public SafeMap<K, V> put(@Nonnull K key, V value) {
-        modify().put(key, value);
+        if (value != null) {
+            modify().put(key, value);
+        } else {
+            modify().remove(key);
+        }
         return this;
     }
 
