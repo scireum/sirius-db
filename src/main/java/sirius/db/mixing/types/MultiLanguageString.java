@@ -54,7 +54,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds a new text using the language defined by {@link NLS#getCurrentLang()}.
      * <p>
-     * Null texts will be ignored.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param text the text associated with the language
      * @return the object itself for fluent method calls
@@ -67,7 +67,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds a new text for the given language.
      * <p>
-     * Null texts will be ignored.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param language the language code
      * @param text     the text associated with the language
@@ -75,16 +75,14 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @throws sirius.kernel.health.HandledException if the provided language code is invalid
      */
     public MultiLanguageString addText(String language, String text) {
-        if (text != null) {
-            put(language, text);
-        }
+        put(language, text);
         return this;
     }
 
     /**
      * Adds the given text as a fallback to the map.
      * <p>
-     * Null texts will be ignored.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param text the text to be used as fallback
      * @return the object itself for fluent method calls
@@ -203,5 +201,24 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     private boolean hasFallback() {
         return withFallback && containsKey(FALLBACK_KEY);
+    }
+
+    /**
+     * Puts the given key and value into the map.
+     * <br>
+     * Keys with null values will be removed.
+     *
+     * @param key   the key used to store the value
+     * @param value the value to store
+     * @return the map itself for fluent method calls
+     */
+    @Override
+    public SafeMap<String, String> put(@Nonnull String key, String value) {
+        if (value != null) {
+            modify().put(key, value);
+        } else {
+            modify().remove(key);
+        }
+        return this;
     }
 }
