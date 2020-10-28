@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Provides a language-text map as property value.
@@ -226,7 +227,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
     @Override
     public void setData(Map<String, String> newData) {
         // remove keys with null values first
-        newData.entrySet().removeIf(entry -> entry.getValue() == null);
-        super.setData(newData);
+        super.setData(newData.entrySet()
+                             .stream()
+                             .filter(entry -> entry.getValue() != null)
+                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 }
