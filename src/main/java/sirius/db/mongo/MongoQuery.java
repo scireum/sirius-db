@@ -146,6 +146,23 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         return finder.countIn(descriptor.getRelationName());
     }
 
+    /**
+     * Executes the query and counts the number of results.
+     * <p>
+     * In contrast to {@link #count()} adds some mongo specific performance related options.
+     *
+     * @param forceAccurate always count the actual query using countDocuments
+     * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
+     * @return the number of matched result entries
+     * @see Finder#countIn(String, boolean, long)
+     */
+    public long count(boolean forceAccurate, long maxTimeMS) {
+        if (forceFail) {
+            return 0;
+        }
+        return finder.countIn(descriptor.getRelationName(), forceAccurate, maxTimeMS);
+    }
+
     @Override
     public boolean exists() {
         if (forceFail) {

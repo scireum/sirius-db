@@ -13,6 +13,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.CountOptions;
+import com.mongodb.client.model.EstimatedDocumentCountOptions;
 import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -28,6 +29,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -314,11 +316,11 @@ public class Finder extends QueryBuilder<Finder> {
         }
 
         MongoIterable<Document> cursor = mongo.db(database)
-                                              .getCollection(collection)
-                                              .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
-                                                                       new BasicDBObject(OPERATOR_SAMPLE,
-                                                                                         new BasicDBObject("size",
-                                                                                                           limit))));
+                .getCollection(collection)
+                .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
+                        new BasicDBObject(OPERATOR_SAMPLE,
+                                new BasicDBObject("size",
+                                        limit))));
 
         applyBatchSize(cursor);
         processCursor(cursor, processor, collection);
@@ -371,16 +373,35 @@ public class Finder extends QueryBuilder<Finder> {
      * Counts the number of documents in the result of the given query.
      * <p>
      * Note that limits are ignored for this query.
+     * If the there are no filters in this query, an estimate is returned instead.
      *
      * @param collection the collection to search in
      * @return the number of documents found
      */
     public long countIn(String collection) {
+        return countIn(collection, false, 0);
+    }
+
+    /**
+     * Counts the number of documents in the result of the given query.
+     * <p>
+     * Note that limits are ignored for this query.
+     * If the there are no filters in this query and forceAccurate is false, a pre-counted estimate is returned instead.
+     *
+     * @param collection    the collection to search in
+     * @param forceAccurate always count the actual query using countDocuments
+     * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
+     * @return the number of documents found
+     */
+    public long countIn(String collection, boolean forceAccurate, long maxTimeMS) {
         Watch w = Watch.start();
         try {
+            if (filterObject.size() == 0 && !forceAccurate) {
+                return mongo.db().getCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(maxTimeMS, TimeUnit.MILLISECONDS));
+            }
             return mongo.db()
-                        .getCollection(collection)
-                        .countDocuments(filterObject, new CountOptions().collation(mongo.determineCollation()));
+                    .getCollection(collection)
+                    .countDocuments(filterObject, new CountOptions().collation(mongo.determineCollation()).maxTime(maxTimeMS, TimeUnit.MILLISECONDS));
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -420,14 +441,14 @@ public class Finder extends QueryBuilder<Finder> {
         Watch w = Watch.start();
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
-                                                          .append("result", new BasicDBObject(operator, "$" + field));
+                    .append("result", new BasicDBObject(operator, "$" + field));
             MongoCursor<Document> queryResult = mongo.db()
-                                                     .getCollection(collection)
-                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                                filterObject),
-                                                                              new BasicDBObject("$group", groupStage)))
-                                                     .collation(mongo.determineCollation())
-                                                     .iterator();
+                    .getCollection(collection)
+                    .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                    filterObject),
+                            new BasicDBObject("$group", groupStage)))
+                    .collation(mongo.determineCollation())
+                    .iterator();
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
             } else {
@@ -437,7 +458,7 @@ public class Finder extends QueryBuilder<Finder> {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO,
-                                    "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject.keySet());
+                        "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject.keySet());
             }
             traceIfRequired("aggregate-" + collection, w);
         }
@@ -463,12 +484,12 @@ public class Finder extends QueryBuilder<Finder> {
 
         try {
             MongoCursor<Document> queryResult = mongo.db()
-                                                     .getCollection(collection)
-                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                                filterObject),
-                                                                              new BasicDBObject("$facet", facetStage)))
-                                                     .collation(mongo.determineCollation())
-                                                     .iterator();
+                    .getCollection(collection)
+                    .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                    filterObject),
+                            new BasicDBObject("$facet", facetStage)))
+                    .collation(mongo.determineCollation())
+                    .iterator();
 
             if (queryResult.hasNext()) {
                 Doc doc = new Doc(queryResult.next());
