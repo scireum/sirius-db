@@ -12,7 +12,9 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Provides a language-text map as property value.
@@ -54,7 +56,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds a new text using the language defined by {@link NLS#getCurrentLang()}.
      * <p>
-     * Null texts will be ignored.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param text the text associated with the language
      * @return the object itself for fluent method calls
@@ -67,7 +69,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Adds a new text for the given language.
      * <p>
-     * Null texts will be ignored.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param language the language code
      * @param text     the text associated with the language
@@ -75,16 +77,14 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @throws sirius.kernel.health.HandledException if the provided language code is invalid
      */
     public MultiLanguageString addText(String language, String text) {
-        if (text != null) {
-            put(language, text);
-        }
+        put(language, text);
         return this;
     }
 
     /**
      * Adds the given text as a fallback to the map.
      * <p>
-     * Null texts will be ignored.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param text the text to be used as fallback
      * @return the object itself for fluent method calls
@@ -203,5 +203,72 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     private boolean hasFallback() {
         return withFallback && containsKey(FALLBACK_KEY);
+    }
+
+    /**
+     * Puts the given key and value into the map.
+     * <br>
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
+     *
+     * @param key   the key used to store the value
+     * @param value the value to store
+     * @return the map itself for fluent method calls
+     */
+    @Override
+    public SafeMap<String, String> put(@Nonnull String key, String value) {
+        if (value != null) {
+            super.modify().put(key, value);
+        } else {
+            super.modify().remove(key);
+        }
+        return this;
+    }
+
+    @Override
+    public void setData(Map<String, String> newData) {
+        // remove keys with null values first
+        super.setData(newData.entrySet()
+                             .stream()
+                             .filter(entry -> entry.getValue() != null)
+                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    /**
+     * Direct modifications of the underlying map are not allowed. Therefore upon calling a {@link UnsupportedOperationException} will be thrown.
+     * <br>
+     * Please use one of the other methods to modify the underlying map:
+     * <ul>
+     *     <li>{@link MultiLanguageString#addText(String)}</li>
+     *     <li>{@link MultiLanguageString#addText(String, String)}</li>
+     *     <li>{@link MultiLanguageString#setData(Map)}</li>
+     *     <li>{@link MultiLanguageString#put(String, String)}</li>
+     *     <li>{@link MultiLanguageString#remove(String)}</li>
+     *     <li>{@link MultiLanguageString#clear()}
+     * </ul>
+     *
+     * @return throws an {@link UnsupportedOperationException}
+     */
+    @Override
+    public Map<String, String> modify() {
+        String className = getClass().getName();
+        throw new UnsupportedOperationException(className
+                                                + " does not support modify. Please use "
+                                                + className
+                                                + ".remove, "
+                                                + className
+                                                + ".put, "
+                                                + className
+                                                + ".addText or "
+                                                + className
+                                                + ".addFallback.");
+    }
+
+    /**
+     * Removes the given language key from the list of languages.
+     *
+     * @param languageKey the language key to be removed from the underlying list of languages.
+     */
+    public void remove(String languageKey) {
+        super.modify().remove(languageKey);
     }
 }
