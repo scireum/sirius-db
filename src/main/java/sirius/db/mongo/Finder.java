@@ -375,7 +375,7 @@ public class Finder extends QueryBuilder<Finder> {
      * Counts the number of documents in the result of the given query.
      * <p>
      * Note that limits are ignored for this query.
-     * If the there are no filters in this query, an estimate is returned instead.
+     * If there are no filters in this query, an estimate is returned instead.
      *
      * @param collection the collection to search in
      * @return the number of documents found
