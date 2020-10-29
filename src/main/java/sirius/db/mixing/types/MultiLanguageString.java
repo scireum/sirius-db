@@ -233,6 +233,21 @@ public class MultiLanguageString extends SafeMap<String, String> {
                              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
+    /**
+     * Direct modifications of the underlying map are not allowed. Therefore upon calling a {@link UnsupportedOperationException} will be thrown.
+     * <br>
+     * Please use one of the other methods to modify the underlying map:
+     * <ul>
+     *     <li>{@link MultiLanguageString#addText(String)}</li>
+     *     <li>{@link MultiLanguageString#addText(String, String)}</li>
+     *     <li>{@link MultiLanguageString#setData(Map)}</li>
+     *     <li>{@link MultiLanguageString#put(String, String)}</li>
+     *     <li>{@link MultiLanguageString#remove(String)}</li>
+     *     <li>{@link MultiLanguageString#clear()}
+     * </ul>
+     *
+     * @return throws an {@link UnsupportedOperationException}
+     */
     @Override
     public Map<String, String> modify() {
         String className = getClass().getName();
