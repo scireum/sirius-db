@@ -208,7 +208,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
     /**
      * Puts the given key and value into the map.
      * <br>
-     * Keys with null values will be removed.
+     * If a null text is given it will be ignored, if the list already contains an entry it will be removed.
      *
      * @param key   the key used to store the value
      * @param value the value to store
