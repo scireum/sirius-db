@@ -237,4 +237,15 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         output.getMultiLangText().fetchText("de") == null
         output.getMultiLangText().original().size() == 1
     }
+
+    def "trying to directly call modify should throw an unsupported operation exception"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+
+        when:
+        entity.getMultiLangText().modify().put("de", null)
+
+        then:
+        thrown(UnsupportedOperationException)
+    }
 }

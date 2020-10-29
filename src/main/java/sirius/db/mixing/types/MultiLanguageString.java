@@ -217,9 +217,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
     @Override
     public SafeMap<String, String> put(@Nonnull String key, String value) {
         if (value != null) {
-            modify().put(key, value);
+            super.modify().put(key, value);
         } else {
-            modify().remove(key);
+            super.modify().remove(key);
         }
         return this;
     }
@@ -231,5 +231,29 @@ public class MultiLanguageString extends SafeMap<String, String> {
                              .stream()
                              .filter(entry -> entry.getValue() != null)
                              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    @Override
+    public Map<String, String> modify() {
+        String className = getClass().getName();
+        throw new UnsupportedOperationException(className
+                                                + " does not support modify. Please use "
+                                                + className
+                                                + ".remove, "
+                                                + className
+                                                + ".put, "
+                                                + className
+                                                + ".addText or "
+                                                + className
+                                                + ".addFallback.");
+    }
+
+    /**
+     * Removes the given language key from the list of languages.
+     *
+     * @param languageKey the language key to be removed from the underlying list of languages.
+     */
+    public void remove(String languageKey) {
+        super.modify().remove(languageKey);
     }
 }
