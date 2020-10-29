@@ -9,6 +9,7 @@
 package sirius.db.mongo;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
@@ -22,6 +23,7 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
@@ -316,11 +318,11 @@ public class Finder extends QueryBuilder<Finder> {
         }
 
         MongoIterable<Document> cursor = mongo.db(database)
-                .getCollection(collection)
-                .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
-                        new BasicDBObject(OPERATOR_SAMPLE,
-                                new BasicDBObject("size",
-                                        limit))));
+                                              .getCollection(collection)
+                                              .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
+                                                                       new BasicDBObject(OPERATOR_SAMPLE,
+                                                                                         new BasicDBObject("size",
+                                                                                                           limit))));
 
         applyBatchSize(cursor);
         processCursor(cursor, processor, collection);
@@ -379,29 +381,37 @@ public class Finder extends QueryBuilder<Finder> {
      * @return the number of documents found
      */
     public long countIn(String collection) {
-        return countIn(collection, false, 0);
+        return countIn(collection, false, 0).orElse(0L);
     }
 
     /**
      * Counts the number of documents in the result of the given query.
      * <p>
      * Note that limits are ignored for this query.
-     * If the there are no filters in this query and forceAccurate is false, a pre-counted estimate is returned instead.
+     * If there are no filters in this query and forceAccurate is false, a pre-counted estimate is returned instead.
      *
      * @param collection    the collection to search in
      * @param forceAccurate if set to <tt>true</tt> we'll never use <b>estimatedDocumentCount</b> which is way more efficient but might return wrong values in case a cluster is active which had experienced an unclean shutdown.
      * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
-     * @return the number of documents found
+     * @return the number of documents found, wrapped in an Optional, or an empty Optional if the query timed out
      */
-    public long countIn(String collection, boolean forceAccurate, long maxTimeMS) {
+    public Optional<Long> countIn(String collection, boolean forceAccurate, long maxTimeMS) {
         Watch w = Watch.start();
         try {
             if (filterObject.isEmpty() && !forceAccurate) {
-                return mongo.db().getCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(maxTimeMS, TimeUnit.MILLISECONDS));
+                return Optional.of(mongo.db()
+                                        .getCollection(collection)
+                                        .estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(maxTimeMS,
+                                                                                                            TimeUnit.MILLISECONDS)));
             }
-            return mongo.db()
-                    .getCollection(collection)
-                    .countDocuments(filterObject, new CountOptions().collation(mongo.determineCollation()).maxTime(maxTimeMS, TimeUnit.MILLISECONDS));
+            return Optional.of(mongo.db()
+                                    .getCollection(collection)
+                                    .countDocuments(filterObject,
+                                                    new CountOptions().collation(mongo.determineCollation())
+                                                                      .maxTime(maxTimeMS, TimeUnit.MILLISECONDS)));
+        } catch (MongoExecutionTimeoutException e) {
+            Exceptions.ignore(e);
+            return Optional.empty();
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -441,14 +451,14 @@ public class Finder extends QueryBuilder<Finder> {
         Watch w = Watch.start();
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
-                    .append("result", new BasicDBObject(operator, "$" + field));
+                                                          .append("result", new BasicDBObject(operator, "$" + field));
             MongoCursor<Document> queryResult = mongo.db()
-                    .getCollection(collection)
-                    .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                    filterObject),
-                            new BasicDBObject("$group", groupStage)))
-                    .collation(mongo.determineCollation())
-                    .iterator();
+                                                     .getCollection(collection)
+                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                                                                                filterObject),
+                                                                              new BasicDBObject("$group", groupStage)))
+                                                     .collation(mongo.determineCollation())
+                                                     .iterator();
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
             } else {
@@ -458,7 +468,14 @@ public class Finder extends QueryBuilder<Finder> {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO,
-                        "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject.keySet());
+                                    "AGGREGATE - "
+                                    + collection
+                                    + "."
+                                    + field
+                                    + " ("
+                                    + operator
+                                    + "): "
+                                    + filterObject.keySet());
             }
             traceIfRequired("aggregate-" + collection, w);
         }
@@ -484,12 +501,12 @@ public class Finder extends QueryBuilder<Finder> {
 
         try {
             MongoCursor<Document> queryResult = mongo.db()
-                    .getCollection(collection)
-                    .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                    filterObject),
-                            new BasicDBObject("$facet", facetStage)))
-                    .collation(mongo.determineCollation())
-                    .iterator();
+                                                     .getCollection(collection)
+                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                                                                                filterObject),
+                                                                              new BasicDBObject("$facet", facetStage)))
+                                                     .collation(mongo.determineCollation())
+                                                     .iterator();
 
             if (queryResult.hasNext()) {
                 Doc doc = new Doc(queryResult.next());

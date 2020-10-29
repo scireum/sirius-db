@@ -152,6 +152,23 @@ class MangoSpec extends BaseSpecification {
         thrown(HandledException)
     }
 
+    @Scope(Scope.SCOPE_NIGHTLY)
+    def "a timed out mongo count returns an empty optional"() {
+        when:
+        mango.select(MangoListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 100_000; i++) {
+            def entityToCreate = new MangoListTestEntity()
+            entityToCreate.setCounter(i)
+            mango.update(entityToCreate)
+        }
+        and:
+        MongoQuery<MangoListTestEntity> query = mango
+                .select(MangoListTestEntity.class)
+        then:
+        query.count(true, 1) == Optional.empty()
+    }
+
     def "MongoQuery.exists works as expected and leaves the query intact"() {
         when:
         mango.select(MangoListTestEntity.class).delete()

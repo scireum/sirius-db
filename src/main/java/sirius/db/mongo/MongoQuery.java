@@ -23,6 +23,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -153,12 +154,12 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      *
      * @param forceAccurate always count the actual query using countDocuments
      * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
-     * @return the number of matched result entries
+     * @return the number of matched result entries, wrapped in an Optional, or an empty Optional if the query failed
      * @see Finder#countIn(String, boolean, long)
      */
-    public long count(boolean forceAccurate, long maxTimeMS) {
+    public Optional<Long> count(boolean forceAccurate, long maxTimeMS) {
         if (forceFail) {
-            return 0;
+            return Optional.empty();
         }
         return finder.countIn(descriptor.getRelationName(), forceAccurate, maxTimeMS);
     }
