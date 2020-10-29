@@ -9,10 +9,12 @@
 package sirius.db.mongo;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.CountOptions;
+import com.mongodb.client.model.EstimatedDocumentCountOptions;
 import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -21,6 +23,7 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
@@ -28,6 +31,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -371,16 +375,43 @@ public class Finder extends QueryBuilder<Finder> {
      * Counts the number of documents in the result of the given query.
      * <p>
      * Note that limits are ignored for this query.
+     * If there are no filters in this query, an estimate is returned instead.
      *
      * @param collection the collection to search in
      * @return the number of documents found
      */
     public long countIn(String collection) {
+        return countIn(collection, false, 0).orElse(0L);
+    }
+
+    /**
+     * Counts the number of documents in the result of the given query.
+     * <p>
+     * Note that limits are ignored for this query.
+     * If there are no filters in this query and forceAccurate is false, a pre-counted estimate is returned instead.
+     *
+     * @param collection    the collection to search in
+     * @param forceAccurate if set to <tt>true</tt> we'll never use <b>estimatedDocumentCount</b> which is way more efficient but might return wrong values in case a cluster is active which had experienced an unclean shutdown.
+     * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
+     * @return the number of documents found, wrapped in an Optional, or an empty Optional if the query timed out
+     */
+    public Optional<Long> countIn(String collection, boolean forceAccurate, long maxTimeMS) {
         Watch w = Watch.start();
         try {
-            return mongo.db()
-                        .getCollection(collection)
-                        .countDocuments(filterObject, new CountOptions().collation(mongo.determineCollation()));
+            if (filterObject.isEmpty() && !forceAccurate) {
+                return Optional.of(mongo.db()
+                                        .getCollection(collection)
+                                        .estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(maxTimeMS,
+                                                                                                            TimeUnit.MILLISECONDS)));
+            }
+            return Optional.of(mongo.db()
+                                    .getCollection(collection)
+                                    .countDocuments(filterObject,
+                                                    new CountOptions().collation(mongo.determineCollation())
+                                                                      .maxTime(maxTimeMS, TimeUnit.MILLISECONDS)));
+        } catch (MongoExecutionTimeoutException e) {
+            Exceptions.ignore(e);
+            return Optional.empty();
         } finally {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -437,7 +468,14 @@ public class Finder extends QueryBuilder<Finder> {
             mongo.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO,
-                                    "AGGREGATE - " + collection + "." + field + " (" + operator + "): " + filterObject.keySet());
+                                    "AGGREGATE - "
+                                    + collection
+                                    + "."
+                                    + field
+                                    + " ("
+                                    + operator
+                                    + "): "
+                                    + filterObject.keySet());
             }
             traceIfRequired("aggregate-" + collection, w);
         }
