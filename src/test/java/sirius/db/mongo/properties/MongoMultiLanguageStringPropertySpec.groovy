@@ -206,7 +206,11 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
 
         when:
         entity = mango.refreshOrFail(entity)
+
+        then:
         entity.getMultiLangText().fetchText() == "Super"
+
+        when:
         entity.getMultiLangText().addText("en", null)
         mango.update(entity)
         def output = mango.refreshOrFail(entity)
