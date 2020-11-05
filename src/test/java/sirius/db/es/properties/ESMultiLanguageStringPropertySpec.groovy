@@ -30,7 +30,7 @@ class ESMultiLanguageStringPropertySpec extends BaseSpecification {
         resolved.getMultiLang().getText("en").get() == "This is a test"
 
         when:
-        resolved.getMultiLang().modify().remove("de")
+        resolved.getMultiLang().remove("de")
         and:
         elastic.update(resolved)
         and:

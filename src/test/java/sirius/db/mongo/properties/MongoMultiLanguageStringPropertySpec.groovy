@@ -177,4 +177,75 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         output.getMultiLangTextWithFallback().fetchTextOrFallback() == "OK"
         output.getMultiLangTextWithFallback().getText() == Optional.of("OK")
     }
+
+    def "new null values are not stored"() {
+        given:
+        CallContext.getCurrent().setLang("en")
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangTextWithFallback().addText(null)
+        entity.getMultiLangTextWithFallback().addText("de", "Super")
+        entity.getMultiLangTextWithFallback().addFallback(null)
+        mango.update(entity)
+
+        when:
+        def output = mango.refreshOrFail(entity)
+
+        then:
+        output.getMultiLangTextWithFallback().fetchText() == null
+        output.getMultiLangTextWithFallback().fetchText("en") == null
+        output.getMultiLangTextWithFallback().fetchText("de") == "Super"
+        output.getMultiLangTextWithFallback().fetchText("fallback") == null
+    }
+
+    def "keys with null values are removed from the underlying map if a key already exists"() {
+        given:
+        CallContext.getCurrent().setLang("en")
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangText().addText("en", "Super")
+        mango.update(entity)
+
+        when:
+        entity = mango.refreshOrFail(entity)
+
+        then:
+        entity.getMultiLangText().fetchText() == "Super"
+
+        when:
+        entity.getMultiLangText().addText("en", null)
+        mango.update(entity)
+        def output = mango.refreshOrFail(entity)
+
+        then:
+        output.getMultiLangTextWithFallback().fetchText() == null
+    }
+
+    def "asserts setData removes null keys before persisting"() {
+        given:
+        CallContext.getCurrent().setLang("en")
+        def entity = new MongoMultiLanguageStringEntity()
+        Map<String, String> data = new LinkedHashMap<>()
+        data.put("en", "Great")
+        data.put("de", null)
+        entity.getMultiLangText().setData(data)
+        mango.update(entity)
+
+        when:
+        def output = mango.refreshOrFail(entity)
+
+        then:
+        output.getMultiLangText().fetchText("en") == "Great"
+        output.getMultiLangText().fetchText("de") == null
+        output.getMultiLangText().original().size() == 1
+    }
+
+    def "trying to directly call modify should throw an unsupported operation exception"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+
+        when:
+        entity.getMultiLangText().modify().put("de", null)
+
+        then:
+        thrown(UnsupportedOperationException)
+    }
 }

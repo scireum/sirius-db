@@ -62,8 +62,8 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                            Consumer<Property> propertyConsumer) {
             if (!Modifier.isFinal(field.getModifiers())) {
                 Mixing.LOG.WARN("Field %s in %s is not final! This will probably result in errors.",
-                        field.getName(),
-                        field.getDeclaringClass().getName());
+                                field.getName(),
+                                field.getDeclaringClass().getName());
             }
 
             propertyConsumer.accept(new MultiLanguageStringProperty(descriptor, accessPath, field));
@@ -115,12 +115,21 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         }
     }
 
+    /**
+     * Loads a value from a MongoDB datasource into a {@link MultiLanguageStringProperty} and skips language entries with null values.
+     *
+     * @param object the database value
+     * @return the value which can be stored in the associated {@link MultiLanguageStringProperty} field
+     */
     @Override
     @SuppressWarnings("unchecked")
     protected Object transformFromMongo(Value object) {
         Map<String, String> texts = new LinkedHashMap<>();
         for (Document document : (List<Document>) object.get()) {
-            texts.put(document.get(LANGUAGE_PROPERTY).toString(), document.get(TEXT_PROPERTY).toString());
+            Object textValue = document.get(TEXT_PROPERTY);
+            if (textValue != null) {
+                texts.put(document.get(LANGUAGE_PROPERTY).toString(), textValue.toString());
+            }
         }
         return texts;
     }
