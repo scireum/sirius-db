@@ -36,6 +36,30 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         thrown(HandledException)
     }
 
+    def "invalid language in composite"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangComposite().getCompositeMultiLangTextWithValidLanguages().addText("00", "")
+
+        when:
+        mango.update(entity)
+
+        then:
+        thrown(HandledException)
+    }
+
+    def "invalid language in mixin"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntityWithMixin()
+        entity.as(MongoMultiLanguageStringMixin.class).getMixinMultiLangTextWithValidLanguages().addText("00", "")
+
+        when:
+        mango.update(entity)
+
+        then:
+        thrown(HandledException)
+    }
+
     def "Comparing persisted data with null keys works as expected"() {
         given:
         def entity = new MongoMultiLanguageStringEntity()

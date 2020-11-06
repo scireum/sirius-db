@@ -103,7 +103,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
      */
     protected MultiLanguageString getMultiLanguageString(Object target) {
         try {
-            return (MultiLanguageString) field.get(target);
+            return (MultiLanguageString) field.get(accessPath.apply(target));
         } catch (IllegalAccessException e) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)

@@ -26,9 +26,25 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
     public static final Mapping MULTILANGTEXT_WITH_FALLBACK = Mapping.named("multiLangTextWithFallback");
     private final MultiLanguageString multiLangTextWithFallback = new MultiLanguageString(true);
 
-    private final Set<String> validLanguages = new HashSet<>(Arrays.asList("da", "nl", "en", "fi", "fr", "de", "hu", "it", "nb", "pt", "ro", "ru", "es", "sv", "tr"));
+    public static final Set<String> validLanguages = new HashSet<>(Arrays.asList("da",
+                                                                                 "nl",
+                                                                                 "en",
+                                                                                 "fi",
+                                                                                 "fr",
+                                                                                 "de",
+                                                                                 "hu",
+                                                                                 "it",
+                                                                                 "nb",
+                                                                                 "pt",
+                                                                                 "ro",
+                                                                                 "ru",
+                                                                                 "es",
+                                                                                 "sv",
+                                                                                 "tr"));
     public static final Mapping MULTILANGTEXT_WITH_VALID_LANGUAGES = Mapping.named("multiLangTextWithValidLanguages");
     private final MultiLanguageString multiLangTextWithValidLanguages = new MultiLanguageString(validLanguages);
+
+    private final MongoMultiLanguageStringComposite multiLangComposite = new MongoMultiLanguageStringComposite();
 
     public MultiLanguageString getMultiLangText() {
         return multiLangText;
@@ -40,5 +56,9 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
 
     public MultiLanguageString getMultiLangTextWithValidLanguages() {
         return multiLangTextWithValidLanguages;
+    }
+
+    public MongoMultiLanguageStringComposite getMultiLangComposite() {
+        return multiLangComposite;
     }
 }
