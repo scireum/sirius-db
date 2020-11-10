@@ -294,12 +294,12 @@ public class DateRange {
      */
     public <C extends Constraint> void applyTo(String field, boolean useLocalDate, Query<?, ?, C> query) {
         List<C> constraints = new ArrayList<>(2);
-        if (fromSupplier != null) {
-            LocalDateTime from = fromSupplier.get();
+        LocalDateTime from = getFrom();
+        if (from != null) {
             constraints.add(query.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
-        if (untilSupplier != null) {
-            LocalDateTime until = untilSupplier.get();
+        LocalDateTime until = getUntil();
+        if (until != null) {
             constraints.add(query.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
         query.where(query.filters().and(constraints));
