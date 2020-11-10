@@ -352,9 +352,11 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     /**
      * Creates a query for the given type using the <tt>secondary</tt> datasource.
      * <p>
-     * Note that an entity fetched from a secondary database shoudln't be updated back into the
+     * Note that an entity fetched from a secondary database shouldn't be updated back into the
      * primary database. Call {@link #tryRefresh(E)} to obtain a up-to-date copy from
      * the primary or use <tt>optimistic locking</tt> to prevent re-inserting stale data into the primary db.
+     * <p>
+     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
      *
      * @param type the type of entities to query for.
      * @param <E>  the generic type of entities to be returned
