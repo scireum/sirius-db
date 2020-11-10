@@ -39,7 +39,7 @@ public class DateRange {
      * and two date suppliers specifying the range
      *
      * @param key           the unique name of the ranged used as filter value
-     * @param nameSupplier          the translated name shown to the user
+     * @param nameSupplier  the translated name shown to the user
      * @param fromSupplier  the lower limit (including) of the range
      * @param untilSupplier the upper limit (including) of the range
      */
@@ -296,14 +296,11 @@ public class DateRange {
         List<C> constraints = new ArrayList<>(2);
         if (fromSupplier != null) {
             LocalDateTime from = fromSupplier.get();
-            constraints.add(query.filters()
-                                 .gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
+            constraints.add(query.filters().gte(Mapping.named(field), useLocalDate ? from.toLocalDate() : from));
         }
         if (untilSupplier != null) {
             LocalDateTime until = untilSupplier.get();
-            constraints.add(query.filters()
-                                 .lte(Mapping.named(field),
-                                      useLocalDate ? until.toLocalDate() : until));
+            constraints.add(query.filters().lte(Mapping.named(field), useLocalDate ? until.toLocalDate() : until));
         }
         query.where(query.filters().and(constraints));
     }
