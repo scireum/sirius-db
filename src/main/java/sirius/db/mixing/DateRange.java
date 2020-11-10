@@ -35,8 +35,28 @@ public class DateRange {
     private final Supplier<LocalDateTime> untilSupplier;
 
     /**
+     * Creates a new DateRange with the given unique key, translated (shown) name and two dates specifying the
+     * range.
+     *
+     * @param key   the unique name of the ranged used as filter value
+     * @param name  the translated name shown to the user
+     * @param from  the lower limit (including) of the range
+     * @param until the upper limit (including) of the range
+     *
+     * @deprecated use {@link DateRange(String, Supplier, Supplier, Supplier)} instead, as using this constructor in
+     * a static context determines the dates at the start of the server
+     */
+    @Deprecated
+    public DateRange(String key,
+                     String name,
+                     @Nullable LocalDateTime from,
+                     @Nullable LocalDateTime until) {
+        this(key, () -> name, () -> from, () -> until);
+    }
+
+    /**
      * Creates a new DateRange with the given unique key, a supplier that returns the translated (shown) name
-     * and two date suppliers specifying the range
+     * and two date suppliers specifying the range.
      *
      * @param key           the unique name of the ranged used as filter value
      * @param nameSupplier  the translated name shown to the user
