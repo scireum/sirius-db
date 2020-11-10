@@ -57,11 +57,15 @@ class FacetSpec extends BaseSpecification {
                                                                  Arrays.asList(DateRange.today(),
                                                                                DateRange.yesterday(),
                                                                                new DateRange("both",
-                                                                                             "both",
-                                                                                             DateRange.yesterday().
-                                                                                                     getFrom(),
-                                                                                             DateRange.today().
-                                                                                                     getUntil()),
+                                                                                             { -> "both" },
+                                                                                             { ->
+                                                                                                 DateRange.yesterday().
+                                                                                                         getFrom()
+                                                                                             },
+                                                                                             { ->
+                                                                                                 DateRange.today().
+                                                                                                         getUntil()
+                                                                                             }),
                                                                                DateRange.beforeLastYear()))
         when:
         mango.select(MangoTestEntity.class)
