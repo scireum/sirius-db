@@ -34,20 +34,144 @@ public class DateRange {
     private final Supplier<LocalDateTime> fromSupplier;
     private final Supplier<LocalDateTime> untilSupplier;
 
-    public static final DateRange LAST_FIVE_MINUTES = lastFiveMinutes();
-    public static final DateRange LAST_FIFTEEN_MINUTES = lastFiveteenMinutes();
-    public static final DateRange LAST_HOUR = lastHour();
-    public static final DateRange LAST_TWO_HOURS = lastTwoHours();
-    public static final DateRange TODAY = today();
-    public static final DateRange YESTERDAY = yesterday();
-    public static final DateRange THIS_WEEK = thisWeek();
-    public static final DateRange LAST_WEEK = lastWeek();
-    public static final DateRange THIS_MONTH = thisMonth();
-    public static final DateRange LAST_MONTH = lastMonth();
-    public static final DateRange THIS_YEAR = thisYear();
-    public static final DateRange LAST_YEAR = lastYear();
-    public static final DateRange BEFORE_THIS_YEAR = beforeThisYear();
-    public static final DateRange BEFORE_LAST_YEAR = beforeLastYear();
+    /**
+     * Date range that filters on the last 5 minutes.
+     */
+    public static final DateRange LAST_FIVE_MINUTES = new DateRange("5m",
+                                                                    () -> NLS.get("DateRange.5m"),
+                                                                    () -> LocalDateTime.now().minusMinutes(5),
+                                                                    LocalDateTime::now);
+    /**
+     * Date range that filters on the last 15 minutes.
+     */
+    public static final DateRange LAST_FIFTEEN_MINUTES = new DateRange("15m",
+                                                                       () -> NLS.get("DateRange.15m"),
+                                                                       () -> LocalDateTime.now().minusMinutes(15),
+                                                                       LocalDateTime::now);
+
+    /**
+     * Date range that filters on the last hour.
+     */
+    public static final DateRange LAST_HOUR = new DateRange("1h",
+                                                            () -> NLS.get("DateRange.1h"),
+                                                            () -> LocalDateTime.now().minusHours(1),
+                                                            LocalDateTime::now);
+
+    /**
+     * Date range that filters on the last two hours.
+     */
+    public static final DateRange LAST_TWO_HOURS = new DateRange("2h",
+                                                                 () -> NLS.get("DateRange.2h"),
+                                                                 () -> LocalDateTime.now().minusHours(2),
+                                                                 LocalDateTime::now);
+
+    /**
+     * Date range that filters on everything regarding today.
+     */
+    public static final DateRange TODAY = new DateRange("today",
+                                                        () -> NLS.get("DateRange.today"),
+                                                        () -> LocalDate.now().atStartOfDay(),
+                                                        LocalDateTime::now);
+
+    /**
+     * Date range that filters on everything regarding yesterday.
+     */
+    public static final DateRange YESTERDAY = new DateRange("yesterday",
+                                                            () -> NLS.get("DateRange.yesterday"),
+                                                            () -> LocalDate.now().minusDays(1).atStartOfDay(),
+                                                            () -> LocalDate.now().minusDays(1).atTime(23, 59));
+
+    /**
+     * Date range that filters on the current week.
+     */
+    public static final DateRange THIS_WEEK = new DateRange("thisWeek",
+                                                            () -> NLS.get("DateRange.thisWeek"),
+                                                            () -> LocalDate.now()
+                                                                           .with(WeekFields.of(Locale.getDefault())
+                                                                                           .dayOfWeek(), 1)
+                                                                           .atStartOfDay(),
+                                                            LocalDateTime::now);
+
+    /**
+     * Date range that filters on last week.
+     */
+    public static final DateRange LAST_WEEK = new DateRange("lastWeek",
+                                                            () -> NLS.get("DateRange.lastWeek"),
+                                                            () -> LocalDate.now()
+                                                                           .minusWeeks(1)
+                                                                           .with(WeekFields.of(Locale.getDefault())
+                                                                                           .dayOfWeek(), 1)
+                                                                           .atStartOfDay(),
+                                                            () -> LocalDate.now()
+                                                                           .minusWeeks(1)
+                                                                           .with(WeekFields.of(Locale.getDefault())
+                                                                                           .dayOfWeek(), 7)
+                                                                           .atTime(23, 59));
+
+    /**
+     * Date range that filters on the current month.
+     */
+    public static final DateRange THIS_MONTH = new DateRange("thisMonth",
+                                                             () -> NLS.get("DateRange.thisMonth"),
+                                                             () -> LocalDate.now().withDayOfMonth(1).atStartOfDay(),
+                                                             LocalDateTime::now);
+
+    /**
+     * Date range that filters on last month.
+     */
+    public static final DateRange LAST_MONTH = new DateRange("lastMonth",
+                                                             () -> NLS.get("DateRange.lastMonth"),
+                                                             () -> LocalDate.now()
+                                                                            .minusMonths(1)
+                                                                            .withDayOfMonth(1)
+                                                                            .atStartOfDay(),
+                                                             () -> LocalDate.now()
+                                                                            .withDayOfMonth(1)
+                                                                            .minusDays(1)
+                                                                            .atTime(23, 59));
+
+    /**
+     * Date range that filters on this year.
+     */
+    public static final DateRange THIS_YEAR = new DateRange("thisYear",
+                                                            () -> NLS.get("DateRange.thisYear"),
+                                                            () -> LocalDate.now().withDayOfYear(1).atStartOfDay(),
+                                                            LocalDateTime::now);
+
+    /**
+     * Date range that filters on last year.
+     */
+    public static final DateRange LAST_YEAR = new DateRange("lastYear",
+                                                            () -> NLS.get("DateRange.lastYear"),
+                                                            () -> LocalDate.now()
+                                                                           .minusYears(1)
+                                                                           .withDayOfYear(1)
+                                                                           .atStartOfDay(),
+                                                            () -> LocalDate.now()
+                                                                           .withDayOfYear(1)
+                                                                           .minusDays(1)
+                                                                           .atStartOfDay());
+
+    /**
+     * Date range that filters on everything before this year.
+     */
+    public static final DateRange BEFORE_THIS_YEAR = new DateRange("beforeThisYear",
+                                                                   () -> NLS.get("DateRange.beforeThisYear"),
+                                                                   () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
+                                                                   () -> LocalDate.now()
+                                                                                  .withDayOfYear(1)
+                                                                                  .atStartOfDay());
+
+    /**
+     * Date range that filters on everything before last year.
+     */
+    public static final DateRange BEFORE_LAST_YEAR = new DateRange("beforeLastYear",
+                                                                   () -> NLS.get("DateRange.beforeLastYear"),
+                                                                   () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
+                                                                   () -> LocalDate.now()
+                                                                                  .minusYears(1)
+                                                                                  .withDayOfYear(1)
+                                                                                  .atStartOfDay());
 
     /**
      * Creates a new DateRange with the given unique key, translated (shown) name and two dates specifying the
@@ -92,10 +216,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastFiveMinutes() {
-        return new DateRange("5m",
-                             () -> NLS.get("DateRange.5m"),
-                             () -> LocalDateTime.now().minusMinutes(5),
-                             LocalDateTime::now);
+        return LAST_FIVE_MINUTES;
     }
 
     /**
@@ -106,10 +227,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastFiveteenMinutes() {
-        return new DateRange("15m",
-                             () -> NLS.get("DateRange.15m"),
-                             () -> LocalDateTime.now().minusMinutes(15),
-                             LocalDateTime::now);
+        return LAST_FIFTEEN_MINUTES;
     }
 
     /**
@@ -120,10 +238,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastHour() {
-        return new DateRange("1h",
-                             () -> NLS.get("DateRange.1h"),
-                             () -> LocalDateTime.now().minusHours(1),
-                             LocalDateTime::now);
+        return LAST_HOUR;
     }
 
     /**
@@ -134,10 +249,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastTwoHours() {
-        return new DateRange("2h",
-                             () -> NLS.get("DateRange.2h"),
-                             () -> LocalDateTime.now().minusHours(2),
-                             LocalDateTime::now);
+        return LAST_TWO_HOURS;
     }
 
     /**
@@ -148,10 +260,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange today() {
-        return new DateRange("today",
-                             () -> NLS.get("DateRange.today"),
-                             () -> LocalDate.now().atStartOfDay(),
-                             LocalDateTime::now);
+        return TODAY;
     }
 
     /**
@@ -162,10 +271,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange yesterday() {
-        return new DateRange("yesterday",
-                             () -> NLS.get("DateRange.yesterday"),
-                             () -> LocalDate.now().minusDays(1).atStartOfDay(),
-                             () -> LocalDate.now().minusDays(1).atTime(23, 59));
+        return YESTERDAY;
     }
 
     /**
@@ -176,12 +282,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange thisWeek() {
-        return new DateRange("thisWeek",
-                             () -> NLS.get("DateRange.thisWeek"),
-                             () -> LocalDate.now()
-                                            .with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1)
-                                            .atStartOfDay(),
-                             LocalDateTime::now);
+        return THIS_WEEK;
     }
 
     /**
@@ -192,16 +293,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastWeek() {
-        return new DateRange("lastWeek",
-                             () -> NLS.get("DateRange.lastWeek"),
-                             () -> LocalDate.now()
-                                            .minusWeeks(1)
-                                            .with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1)
-                                            .atStartOfDay(),
-                             () -> LocalDate.now()
-                                            .minusWeeks(1)
-                                            .with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 7)
-                                            .atTime(23, 59));
+        return LAST_WEEK;
     }
 
     /**
@@ -212,10 +304,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange thisMonth() {
-        return new DateRange("thisMonth",
-                             () -> NLS.get("DateRange.thisMonth"),
-                             () -> LocalDate.now().withDayOfMonth(1).atStartOfDay(),
-                             LocalDateTime::now);
+        return THIS_MONTH;
     }
 
     /**
@@ -226,10 +315,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastMonth() {
-        return new DateRange("lastMonth",
-                             () -> NLS.get("DateRange.lastMonth"),
-                             () -> LocalDate.now().minusMonths(1).withDayOfMonth(1).atStartOfDay(),
-                             () -> LocalDate.now().withDayOfMonth(1).minusDays(1).atTime(23, 59));
+        return LAST_MONTH;
     }
 
     /**
@@ -256,10 +342,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange thisYear() {
-        return new DateRange("thisYear",
-                             () -> NLS.get("DateRange.thisYear"),
-                             () -> LocalDate.now().withDayOfYear(1).atStartOfDay(),
-                             LocalDateTime::now);
+        return THIS_YEAR;
     }
 
     /**
@@ -270,10 +353,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange lastYear() {
-        return new DateRange("lastYear",
-                             () -> NLS.get("DateRange.lastYear"),
-                             () -> LocalDate.now().minusYears(1).withDayOfYear(1).atStartOfDay(),
-                             () -> LocalDate.now().withDayOfYear(1).minusDays(1).atStartOfDay());
+        return LAST_YEAR;
     }
 
     /**
@@ -284,10 +364,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange beforeThisYear() {
-        return new DateRange("beforeThisYear",
-                             () -> NLS.get("DateRange.beforeThisYear"),
-                             () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
-                             () -> LocalDate.now().withDayOfYear(1).atStartOfDay());
+        return BEFORE_THIS_YEAR;
     }
 
     /**
@@ -298,10 +375,7 @@ public class DateRange {
      */
     @Deprecated
     public static DateRange beforeLastYear() {
-        return new DateRange("beforeLastYear",
-                             () -> NLS.get("DateRange.beforeLastYear"),
-                             () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
-                             () -> LocalDate.now().minusYears(1).withDayOfYear(1).atStartOfDay());
+        return BEFORE_LAST_YEAR;
     }
 
     /**
