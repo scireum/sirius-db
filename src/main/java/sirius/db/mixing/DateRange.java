@@ -30,25 +30,25 @@ import java.util.function.Supplier;
 public class DateRange {
 
     private final String key;
-    private final String name;
+    private final Supplier<String> nameSupplier;
     private final Supplier<LocalDateTime> fromSupplier;
     private final Supplier<LocalDateTime> untilSupplier;
 
     /**
-     * Creates a new DateRange with the given unique key, translated (shown) name and two date suppliers
-     * specifying the range
+     * Creates a new DateRange with the given unique key, a supplier that returns the translated (shown) name
+     * and two date suppliers specifying the range
      *
      * @param key           the unique name of the ranged used as filter value
-     * @param name          the translated name shown to the user
+     * @param nameSupplier          the translated name shown to the user
      * @param fromSupplier  the lower limit (including) of the range
      * @param untilSupplier the upper limit (including) of the range
      */
     public DateRange(String key,
-                     String name,
+                     Supplier<String> nameSupplier,
                      @Nullable Supplier<LocalDateTime> fromSupplier,
                      @Nullable Supplier<LocalDateTime> untilSupplier) {
         this.key = key;
-        this.name = name;
+        this.nameSupplier = nameSupplier;
         this.fromSupplier = fromSupplier;
         this.untilSupplier = untilSupplier;
     }
@@ -60,7 +60,7 @@ public class DateRange {
      */
     public static DateRange lastFiveMinutes() {
         return new DateRange("5m",
-                             NLS.get("DateRange.5m"),
+                             () -> NLS.get("DateRange.5m"),
                              () -> LocalDateTime.now().minusMinutes(5),
                              LocalDateTime::now);
     }
@@ -72,7 +72,7 @@ public class DateRange {
      */
     public static DateRange lastFiveteenMinutes() {
         return new DateRange("15m",
-                             NLS.get("DateRange.15m"),
+                             () -> NLS.get("DateRange.15m"),
                              () -> LocalDateTime.now().minusMinutes(15),
                              LocalDateTime::now);
     }
@@ -84,7 +84,7 @@ public class DateRange {
      */
     public static DateRange lastHour() {
         return new DateRange("1h",
-                             NLS.get("DateRange.1h"),
+                             () -> NLS.get("DateRange.1h"),
                              () -> LocalDateTime.now().minusHours(1),
                              LocalDateTime::now);
     }
@@ -96,7 +96,7 @@ public class DateRange {
      */
     public static DateRange lastTwoHours() {
         return new DateRange("2h",
-                             NLS.get("DateRange.2h"),
+                             () -> NLS.get("DateRange.2h"),
                              () -> LocalDateTime.now().minusHours(2),
                              LocalDateTime::now);
     }
@@ -108,7 +108,7 @@ public class DateRange {
      */
     public static DateRange today() {
         return new DateRange("today",
-                             NLS.get("DateRange.today"),
+                             () -> NLS.get("DateRange.today"),
                              () -> LocalDate.now().atStartOfDay(),
                              LocalDateTime::now);
     }
@@ -120,7 +120,7 @@ public class DateRange {
      */
     public static DateRange yesterday() {
         return new DateRange("yesterday",
-                             NLS.get("DateRange.yesterday"),
+                             () -> NLS.get("DateRange.yesterday"),
                              () -> LocalDate.now().minusDays(1).atStartOfDay(),
                              () -> LocalDate.now().minusDays(1).atTime(23, 59));
     }
@@ -132,7 +132,7 @@ public class DateRange {
      */
     public static DateRange thisWeek() {
         return new DateRange("thisWeek",
-                             NLS.get("DateRange.thisWeek"),
+                             () -> NLS.get("DateRange.thisWeek"),
                              () -> LocalDate.now()
                                             .with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1)
                                             .atStartOfDay(),
@@ -146,7 +146,7 @@ public class DateRange {
      */
     public static DateRange lastWeek() {
         return new DateRange("lastWeek",
-                             NLS.get("DateRange.lastWeek"),
+                             () -> NLS.get("DateRange.lastWeek"),
                              () -> LocalDate.now()
                                             .minusWeeks(1)
                                             .with(WeekFields.of(Locale.getDefault()).dayOfWeek(), 1)
@@ -164,7 +164,7 @@ public class DateRange {
      */
     public static DateRange thisMonth() {
         return new DateRange("thisMonth",
-                             NLS.get("DateRange.thisMonth"),
+                             () -> NLS.get("DateRange.thisMonth"),
                              () -> LocalDate.now().withDayOfMonth(1).atStartOfDay(),
                              LocalDateTime::now);
     }
@@ -176,7 +176,7 @@ public class DateRange {
      */
     public static DateRange lastMonth() {
         return new DateRange("lastMonth",
-                             NLS.get("DateRange.lastMonth"),
+                             () -> NLS.get("DateRange.lastMonth"),
                              () -> LocalDate.now().minusMonths(1).withDayOfMonth(1).atStartOfDay(),
                              () -> LocalDate.now().withDayOfMonth(1).minusDays(1).atTime(23, 59));
     }
@@ -192,7 +192,7 @@ public class DateRange {
      */
     public static DateRange lastMonths(int months) {
         return new DateRange("lastMonths" + months,
-                             NLS.fmtr("DateRange.lastMonths").set("months", months).format(),
+                             () -> NLS.fmtr("DateRange.lastMonths").set("months", months).format(),
                              () -> LocalDate.now().minusMonths(months).withDayOfMonth(1).atStartOfDay(),
                              () -> LocalDate.now().withDayOfMonth(1).minusDays(1).atTime(23, 59));
     }
@@ -204,7 +204,7 @@ public class DateRange {
      */
     public static DateRange thisYear() {
         return new DateRange("thisYear",
-                             NLS.get("DateRange.thisYear"),
+                             () -> NLS.get("DateRange.thisYear"),
                              () -> LocalDate.now().withDayOfYear(1).atStartOfDay(),
                              LocalDateTime::now);
     }
@@ -216,7 +216,7 @@ public class DateRange {
      */
     public static DateRange lastYear() {
         return new DateRange("lastYear",
-                             NLS.get("DateRange.lastYear"),
+                             () -> NLS.get("DateRange.lastYear"),
                              () -> LocalDate.now().minusYears(1).withDayOfYear(1).atStartOfDay(),
                              () -> LocalDate.now().withDayOfYear(1).minusDays(1).atStartOfDay());
     }
@@ -228,7 +228,7 @@ public class DateRange {
      */
     public static DateRange beforeThisYear() {
         return new DateRange("beforeThisYear",
-                             NLS.get("DateRange.beforeThisYear"),
+                             () -> NLS.get("DateRange.beforeThisYear"),
                              () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
                              () -> LocalDate.now().withDayOfYear(1).atStartOfDay());
     }
@@ -240,7 +240,7 @@ public class DateRange {
      */
     public static DateRange beforeLastYear() {
         return new DateRange("beforeLastYear",
-                             NLS.get("DateRange.beforeLastYear"),
+                             () -> NLS.get("DateRange.beforeLastYear"),
                              () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
                              () -> LocalDate.now().minusYears(1).withDayOfYear(1).atStartOfDay());
     }
@@ -310,6 +310,6 @@ public class DateRange {
 
     @Override
     public String toString() {
-        return name;
+        return nameSupplier.get();
     }
 }
