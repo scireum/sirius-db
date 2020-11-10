@@ -234,7 +234,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
      * may return stale data if a secondary lags behind. Therefore this data must not be stored back in the primary
      * database using {@link Mango#update(MongoEntity)}. This should rather only be used to serve web requests or other
-     * queries where occasional stale date does no harm.
+     * queries where occasional stale data does no harm.
      * <p>
      * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
      *
