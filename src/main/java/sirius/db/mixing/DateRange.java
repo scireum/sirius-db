@@ -34,6 +34,21 @@ public class DateRange {
     private final Supplier<LocalDateTime> fromSupplier;
     private final Supplier<LocalDateTime> untilSupplier;
 
+    public static final DateRange LAST_FIVE_MINUTES = lastFiveMinutes();
+    public static final DateRange LAST_FIFTEEN_MINUTES = lastFiveteenMinutes();
+    public static final DateRange LAST_HOUR = lastHour();
+    public static final DateRange LAST_TWO_HOURS = lastTwoHours();
+    public static final DateRange TODAY = today();
+    public static final DateRange YESTERDAY = yesterday();
+    public static final DateRange THIS_WEEK = thisWeek();
+    public static final DateRange LAST_WEEK = lastWeek();
+    public static final DateRange THIS_MONTH = thisMonth();
+    public static final DateRange LAST_MONTH = lastMonth();
+    public static final DateRange THIS_YEAR = thisYear();
+    public static final DateRange LAST_YEAR = lastYear();
+    public static final DateRange BEFORE_THIS_YEAR = beforeThisYear();
+    public static final DateRange BEFORE_LAST_YEAR = beforeLastYear();
+
     /**
      * Creates a new DateRange with the given unique key, translated (shown) name and two dates specifying the
      * range.
@@ -42,15 +57,11 @@ public class DateRange {
      * @param name  the translated name shown to the user
      * @param from  the lower limit (including) of the range
      * @param until the upper limit (including) of the range
-     *
      * @deprecated use {@link DateRange(String, Supplier, Supplier, Supplier)} instead, as using this constructor in
      * a static context determines the dates at the start of the server
      */
     @Deprecated
-    public DateRange(String key,
-                     String name,
-                     @Nullable LocalDateTime from,
-                     @Nullable LocalDateTime until) {
+    public DateRange(String key, String name, @Nullable LocalDateTime from, @Nullable LocalDateTime until) {
         this(key, () -> name, () -> from, () -> until);
     }
 
@@ -77,7 +88,9 @@ public class DateRange {
      * Creates a date range filtering on the last five minutes.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastFiveMinutes() {
         return new DateRange("5m",
                              () -> NLS.get("DateRange.5m"),
@@ -89,7 +102,9 @@ public class DateRange {
      * Creates a date range filtering on the last 15 minutes.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastFiveteenMinutes() {
         return new DateRange("15m",
                              () -> NLS.get("DateRange.15m"),
@@ -101,7 +116,9 @@ public class DateRange {
      * Creates a date range filtering on the last hour.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastHour() {
         return new DateRange("1h",
                              () -> NLS.get("DateRange.1h"),
@@ -113,7 +130,9 @@ public class DateRange {
      * Creates a date range filtering on the last two hours.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastTwoHours() {
         return new DateRange("2h",
                              () -> NLS.get("DateRange.2h"),
@@ -125,7 +144,9 @@ public class DateRange {
      * Creates a date range filtering on "today".
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange today() {
         return new DateRange("today",
                              () -> NLS.get("DateRange.today"),
@@ -137,7 +158,9 @@ public class DateRange {
      * Creates a date range filtering on "yesterday".
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange yesterday() {
         return new DateRange("yesterday",
                              () -> NLS.get("DateRange.yesterday"),
@@ -149,7 +172,9 @@ public class DateRange {
      * Creates a date range filtering on this week.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange thisWeek() {
         return new DateRange("thisWeek",
                              () -> NLS.get("DateRange.thisWeek"),
@@ -163,7 +188,9 @@ public class DateRange {
      * Creates a date range filtering on the last week.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastWeek() {
         return new DateRange("lastWeek",
                              () -> NLS.get("DateRange.lastWeek"),
@@ -181,7 +208,9 @@ public class DateRange {
      * Creates a date range filtering on the current month.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange thisMonth() {
         return new DateRange("thisMonth",
                              () -> NLS.get("DateRange.thisMonth"),
@@ -193,7 +222,9 @@ public class DateRange {
      * Creates a date range filtering on the last month.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastMonth() {
         return new DateRange("lastMonth",
                              () -> NLS.get("DateRange.lastMonth"),
@@ -221,7 +252,9 @@ public class DateRange {
      * Creates a date range filtering on the current year.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange thisYear() {
         return new DateRange("thisYear",
                              () -> NLS.get("DateRange.thisYear"),
@@ -233,7 +266,9 @@ public class DateRange {
      * Creates a date range filtering on the last year.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange lastYear() {
         return new DateRange("lastYear",
                              () -> NLS.get("DateRange.lastYear"),
@@ -245,7 +280,9 @@ public class DateRange {
      * Creates a date range filtering on everything before this year.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange beforeThisYear() {
         return new DateRange("beforeThisYear",
                              () -> NLS.get("DateRange.beforeThisYear"),
@@ -257,7 +294,9 @@ public class DateRange {
      * Creates a date range filtering on everything before the last year.
      *
      * @return a date range for the given interval
+     * @deprecated use constant instead
      */
+    @Deprecated
     public static DateRange beforeLastYear() {
         return new DateRange("beforeLastYear",
                              () -> NLS.get("DateRange.beforeLastYear"),
