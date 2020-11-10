@@ -54,19 +54,20 @@ class FacetSpec extends BaseSpecification {
         MongoBooleanFacet coolFacet = new MongoBooleanFacet(MangoTestEntity.COOL)
         MongoTermFacet superPowersFacet = new MongoTermFacet(MangoTestEntity.SUPER_POWERS)
         MongoDateRangeFacet datesFacet = new MongoDateRangeFacet(MangoTestEntity.BIRTHDAY,
-                                                                 Arrays.asList(DateRange.today(),
-                                                                               DateRange.yesterday(),
+                                                                 Arrays.asList(DateRange.TODAY,
+                                                                               DateRange.YESTERDAY,
                                                                                new DateRange("both",
                                                                                              { -> "both" },
                                                                                              { ->
-                                                                                                 DateRange.yesterday().
+                                                                                                 DateRange.
+                                                                                                         YESTERDAY.
                                                                                                          getFrom()
                                                                                              },
                                                                                              { ->
-                                                                                                 DateRange.today().
+                                                                                                 DateRange.TODAY.
                                                                                                          getUntil()
                                                                                              }),
-                                                                               DateRange.beforeLastYear()))
+                                                                               DateRange.BEFORE_LAST_YEAR))
         when:
         mango.select(MangoTestEntity.class)
              .eq(MangoTestEntity.AGE, 999)
