@@ -11,6 +11,7 @@ package sirius.db.mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
+import com.mongodb.ReadPreference;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Collation;
@@ -214,11 +215,43 @@ public class Mongo implements Startable, Stoppable {
     /**
      * Returns a fluent query builder to find one or more documents in the database
      *
+     * @param database       the name of the database configuration to use
+     * @param readPreference the read preference to enforce. Note that one should most probably rather use
+     *                       {@link #find(String)} or {@link #findInSecondary(String)} to enforce a proper read
+     *                       reference. However, as this only permits to use <tt>PRIMARY</tt> or <tt>NEAREST</tt>, we
+     *                       still permit to specify a custom preference here. Note that <tt>null</tt> and
+     *                       <tt>PRIMARY</tt> are treated indentically.
+     * @return a query builder to create a find statement
+     */
+    public Finder find(String database, @Nullable ReadPreference readPreference) {
+        return new Finder(this, database, readPreference);
+    }
+
+    /**
+     * Returns a fluent query builder to find one or more documents in the database
+     *
      * @param database the name of the database configuration to use
      * @return a query builder to create a find statement
      */
     public Finder find(String database) {
-        return new Finder(this, database);
+        return find(database, null);
+    }
+
+    /**
+     * Returns a fluent query builder to find one or more documents in the secondary database.
+     * <p>
+     * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
+     * may return stale data if a secondary lags behind. Therefore this data must not be stored back in the primary
+     * database. This should rather only be used to serve web requests or other queries where occasional stale date
+     * does no harm.
+     * <p>
+     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
+     *
+     * @param database the name of the database configuration to use
+     * @return a query builder to create a find statement
+     */
+    public Finder findInSecondary(String database) {
+        return find(database, ReadPreference.nearest());
     }
 
     /**
@@ -228,6 +261,22 @@ public class Mongo implements Startable, Stoppable {
      */
     public Finder find() {
         return find(Mixing.DEFAULT_REALM);
+    }
+
+    /**
+     * Returns a fluent query builder to find one or more documents in the default database
+     * <p>
+     * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
+     * may return stale data if a secondary lags behind. Therefore this data must not be stored back in the primary
+     * database. This should rather only be used to serve web requests or other queries where occasional stale date
+     * does no harm.
+     * <p>
+     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
+     *
+     * @return a query builder to create a find statement
+     */
+    public Finder findInSecondary() {
+        return findInSecondary(Mixing.DEFAULT_REALM);
     }
 
     /**

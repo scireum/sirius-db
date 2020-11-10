@@ -10,6 +10,7 @@ package sirius.db.mongo;
 
 import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
+import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
@@ -148,13 +149,12 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             } else {
                 throw Exceptions.handle()
                                 .to(Mongo.LOG)
-                                .withSystemErrorMessage(
-                                        "Tried to update the changed entity %s (%s)," +
-                                                " but actually nothing was changed in the database!" +
-                                                " There might be an error in one of its properties' transform or equals methods," +
-                                                " as the framework indicated a changed property.",
-                                        entity,
-                                        entity.getId())
+                                .withSystemErrorMessage("Tried to update the changed entity %s (%s),"
+                                                        + " but actually nothing was changed in the database!"
+                                                        + " There might be an error in one of its properties' transform or equals methods,"
+                                                        + " as the framework indicated a changed property.",
+                                                        entity,
+                                                        entity.getId())
                                 .handle();
             }
         } else {
@@ -225,7 +225,25 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     @Override
     public <E extends MongoEntity> MongoQuery<E> select(Class<E> type) {
-        return new MongoQuery<>(mixing.getDescriptor(type));
+        return new MongoQuery<>(mixing.getDescriptor(type), null);
+    }
+
+    /**
+     * In contrast to {@link #select(Class)} this doesn't necessarily read from the primary node but from the nearest.
+     * <p>
+     * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
+     * may return stale data if a secondary lags behind. Therefore this data must not be stored back in the primary
+     * database using {@link Mango#update(MongoEntity)}. This should rather only be used to serve web requests or other
+     * queries where occasional stale date does no harm.
+     * <p>
+     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
+     *
+     * @param type the type of entities to query for
+     * @param <E>  the generic type of entities to be returned
+     * @return a query used to search for entities of the given type in the nearest MongoDB instance
+     */
+    public <E extends MongoEntity> MongoQuery<E> selectFromSecondary(Class<E> type) {
+        return new MongoQuery<>(mixing.getDescriptor(type), ReadPreference.nearest());
     }
 
     @Override

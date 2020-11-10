@@ -10,7 +10,9 @@ package sirius.db.mongo;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoExecutionTimeoutException;
+import com.mongodb.ReadPreference;
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.CountOptions;
@@ -50,8 +52,14 @@ public class Finder extends QueryBuilder<Finder> {
     private int limit;
     private int batchSize;
 
-    protected Finder(Mongo mongo, String database) {
+    private ReadPreference readPreference;
+
+    protected Finder(Mongo mongo, String database, @Nullable ReadPreference readPreference) {
         super(mongo, database);
+
+        if (readPreference != null && readPreference != ReadPreference.primary()) {
+            this.readPreference = readPreference;
+        }
     }
 
     /**
@@ -63,7 +71,7 @@ public class Finder extends QueryBuilder<Finder> {
      * therefore modifying the filters of one object will not modify those of the other.
      */
     public Finder copyFilters() {
-        Finder newFinder = new Finder(mongo, database);
+        Finder newFinder = new Finder(mongo, database, readPreference);
         transferFilters(newFinder);
         return newFinder;
     }
@@ -237,16 +245,24 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     private FindIterable<Document> buildCursor(String collection) {
-        FindIterable<Document> cursor =
-                mongo.db(database).getCollection(collection).find(filterObject).collation(mongo.determineCollation());
+        FindIterable<Document> cursor = getMongoCollection(collection).find(filterObject).collation(mongo.determineCollation());
         if (fields != null) {
             cursor.projection(fields);
         }
         if (orderBy != null) {
             cursor.sort(orderBy);
         }
+
         cursor.skip(skip);
         return cursor;
+    }
+
+    private MongoCollection<Document> getMongoCollection(String collection) {
+        MongoCollection<Document> mongoCollection = mongo.db(database).getCollection(collection);
+        if (readPreference != null) {
+            mongoCollection = mongoCollection.withReadPreference(readPreference);
+        }
+        return mongoCollection;
     }
 
     /**
@@ -317,8 +333,7 @@ public class Finder extends QueryBuilder<Finder> {
             Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
         }
 
-        MongoIterable<Document> cursor = mongo.db(database)
-                                              .getCollection(collection)
+        MongoIterable<Document> cursor = getMongoCollection(collection)
                                               .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
                                                                        new BasicDBObject(OPERATOR_SAMPLE,
                                                                                          new BasicDBObject("size",
@@ -399,13 +414,11 @@ public class Finder extends QueryBuilder<Finder> {
         Watch w = Watch.start();
         try {
             if (filterObject.isEmpty() && !forceAccurate) {
-                return Optional.of(mongo.db()
-                                        .getCollection(collection)
+                return Optional.of(getMongoCollection(collection)
                                         .estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(maxTimeMS,
                                                                                                             TimeUnit.MILLISECONDS)));
             }
-            return Optional.of(mongo.db()
-                                    .getCollection(collection)
+            return Optional.of(getMongoCollection(collection)
                                     .countDocuments(filterObject,
                                                     new CountOptions().collation(mongo.determineCollation())
                                                                       .maxTime(maxTimeMS, TimeUnit.MILLISECONDS)));
@@ -452,8 +465,7 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
-            MongoCursor<Document> queryResult = mongo.db()
-                                                     .getCollection(collection)
+            MongoCursor<Document> queryResult = getMongoCollection(collection)
                                                      .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
                                                                                                 filterObject),
                                                                               new BasicDBObject("$group", groupStage)))
@@ -500,8 +512,7 @@ public class Finder extends QueryBuilder<Finder> {
         }
 
         try {
-            MongoCursor<Document> queryResult = mongo.db()
-                                                     .getCollection(collection)
+            MongoCursor<Document> queryResult = getMongoCollection(collection)
                                                      .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
                                                                                                 filterObject),
                                                                               new BasicDBObject("$facet", facetStage)))

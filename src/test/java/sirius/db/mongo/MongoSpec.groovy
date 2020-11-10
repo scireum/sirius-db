@@ -34,6 +34,19 @@ class MongoSpec extends BaseSpecification {
                 orElse(null) == testString
     }
 
+    def "read from secondary works"() {
+        given:
+        def testString = String.valueOf(System.currentTimeMillis())
+        when:
+        def result = mongo.insert().set("test", testString).set("id", keyGen.generateId()).into("test")
+        then:
+        mongo.findInSecondary().
+                where("id", result.getString("id")).
+                singleIn("test").
+                map({ d -> d.getString("test") }).
+                orElse(null) == testString
+    }
+
     def "sort works for singleIn"() {
         when:
         def result1 = mongo.insert().set("sortBy", 1).set("id", keyGen.generateId()).into("test")

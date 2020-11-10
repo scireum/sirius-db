@@ -8,6 +8,7 @@
 
 package sirius.db.mongo;
 
+import com.mongodb.ReadPreference;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
@@ -48,10 +49,11 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * Creates a new query for the given descriptor.
      *
      * @param descriptor the descriptor of the entities being queried
+     * @param readPreference the read preference to enforce
      */
-    protected MongoQuery(EntityDescriptor descriptor) {
+    protected MongoQuery(EntityDescriptor descriptor, ReadPreference readPreference) {
         super(descriptor);
-        this.finder = mongo.find(descriptor.getRealm());
+        this.finder = mongo.find(descriptor.getRealm(), readPreference);
     }
 
     /**
