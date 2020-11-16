@@ -17,8 +17,14 @@ public class BasicIndexTokenizer extends Tokenizer {
 
     @Override
     protected ChainableTokenProcessor createProcessor() {
+        // ATTENTION: The pipeline used to contain a "new ReduceCharacterProcessor()" stage. This lead to the search
+        // index containing normalised strings, unlike earlier verions of sirius-db. Consequently, MEMOIO was no longer
+        // able to find search terms containing umlauts. Weighing the two possible options — keeping the normalised
+        // index and normalising the search term, or reverting the index – the decision was made to remove search index
+        // normalisation.
+        // --- Stage removed by JVO on 2020/11/16 after discussion with AHA
+
         return new PipelineProcessor(PatternReplaceProcessor.createRemoveControlCharacters(),
-                                     new ReduceCharacterProcessor(),
                                      PatternSplitProcessor.createHardBoundarySplitter(),
                                      PatternSplitProcessor.createWhitespaceSplitter(),
                                      PatternExtractProcessor.createEmailExtractor(),
