@@ -22,7 +22,6 @@ public class BasicIndexTokenizer extends Tokenizer {
         // able to find search terms containing umlauts. Weighing the two possible options — keeping the normalised
         // index and normalising the search term, or reverting the index – the decision was made to remove search index
         // normalisation.
-        // --- Stage removed by JVO on 2020/11/16 after discussion with AHA
 
         return new PipelineProcessor(PatternReplaceProcessor.createRemoveControlCharacters(),
                                      PatternSplitProcessor.createHardBoundarySplitter(),
