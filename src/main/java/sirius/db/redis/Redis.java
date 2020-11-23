@@ -27,6 +27,7 @@ import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Average;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Log;
+import sirius.kernel.settings.Extension;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Provides a thin layer to access Redis.
@@ -178,6 +180,19 @@ public class Redis implements Startable, Stoppable {
 
     private RedisDB makeDatabase(String name) {
         return new RedisDB(this, Sirius.getSettings().getExtension("redis.pools", name));
+    }
+
+    /**
+     * Lists all known pools.
+     *
+     * @return a list of all configured pools in the system configuration
+     */
+    public List<String> getPools() {
+        return Sirius.getSettings()
+                     .getExtensions("redis.pools")
+                     .stream()
+                     .map(Extension::getId)
+                     .collect(Collectors.toList());
     }
 
     /**
