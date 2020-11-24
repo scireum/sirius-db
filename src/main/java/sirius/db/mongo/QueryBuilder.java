@@ -18,6 +18,7 @@ import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,11 +101,14 @@ public abstract class QueryBuilder<S> {
     /**
      * Adds a complex filter which determines which documents should be selected.
      *
-     * @param filter the filter to apply
+     * @param filter the filter to apply, null will be skipped
      * @return the builder itself for fluent method calls
      */
     @SuppressWarnings("unchecked")
-    public S where(MongoConstraint filter) {
+    public S where(@Nullable MongoConstraint filter) {
+        if (filter == null) {
+            return (S) this;
+        }
         if (filterObject.containsField(filter.getKey())) {
             Object other = filterObject.get(filter.getKey());
             if ("$and".equals(filter.getKey())) {
