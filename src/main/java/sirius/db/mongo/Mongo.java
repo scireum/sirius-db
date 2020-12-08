@@ -58,8 +58,8 @@ public class Mongo implements Startable, Stoppable {
 
     private static final int MONGO_PORT = 27017;
 
-    private Map<String, Tuple<MongoClient, String>> mongoClients = new HashMap<>();
-    private Map<String, Boolean> mongoClientConfigured = new HashMap<>();
+    private final Map<String, Tuple<MongoClient, String>> mongoClients = new HashMap<>();
+    private final Map<String, Boolean> mongoClientConfigured = new HashMap<>();
 
     @ConfigValue("mongo.logQueryThreshold")
     private Duration logQueryThreshold;
@@ -73,6 +73,7 @@ public class Mongo implements Startable, Stoppable {
     private PartCollection<IndexDescription> indexDescriptions;
 
     protected Average callDuration = new Average();
+    protected Average secondaryCallDuration = new Average();
     protected Counter numSlowQueries = new Counter();
 
     /**

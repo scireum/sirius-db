@@ -66,24 +66,24 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     private Mongo mongo;
 
     @Override
-    protected void createEntity(MongoEntity entity, EntityDescriptor ed) throws Exception {
+    protected void createEntity(MongoEntity entity, EntityDescriptor descriptor) throws Exception {
         Inserter insert = mongo.insert();
         String generatedId = entity.generateId();
         insert.set(MongoEntity.ID, generatedId);
-        if (ed.isVersioned()) {
+        if (descriptor.isVersioned()) {
             insert.set(VERSION, 1);
         }
 
-        for (Property p : ed.getProperties()) {
-            if (!MongoEntity.ID.getName().equals(p.getName())) {
-                insert.set(p.getPropertyName(), p.getValueForDatasource(Mango.class, entity));
+        for (Property property : descriptor.getProperties()) {
+            if (!MongoEntity.ID.getName().equals(property.getName())) {
+                insert.set(property.getPropertyName(), property.getValueForDatasource(Mango.class, entity));
             }
         }
 
         try {
-            insert.into(ed.getRelationName());
+            insert.into(descriptor.getRelationName());
             entity.setId(generatedId);
-            if (ed.isVersioned()) {
+            if (descriptor.isVersioned()) {
                 entity.setVersion(1);
             }
         } catch (MongoWriteException e) {
@@ -96,16 +96,16 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    protected void updateEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        Updater updater = mongo.update(ed.getRealm());
+    protected void updateEntity(MongoEntity entity, boolean force, EntityDescriptor descriptor) throws Exception {
+        Updater updater = mongo.update(descriptor.getRealm());
         boolean changed = false;
-        for (Property p : ed.getProperties()) {
-            if (ed.isChanged(entity, p)) {
-                if (MongoEntity.ID.getName().equals(p.getName())) {
+        for (Property property : descriptor.getProperties()) {
+            if (descriptor.isChanged(entity, property)) {
+                if (MongoEntity.ID.getName().equals(property.getName())) {
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
                 }
 
-                updater.set(p.getPropertyName(), p.getValueForDatasource(Mango.class, entity));
+                updater.set(property.getPropertyName(), property.getValueForDatasource(Mango.class, entity));
                 changed = true;
             }
         }
@@ -115,7 +115,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         updater.where(MongoEntity.ID, entity.getId());
-        if (ed.isVersioned()) {
+        if (descriptor.isVersioned()) {
             updater.set(VERSION, entity.getVersion() + 1);
             if (!force) {
                 updater.where(VERSION, entity.getVersion());
@@ -123,10 +123,10 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         try {
-            long updatedRows = updater.executeFor(ed.getRelationName()).getModifiedCount();
-            enforceUpdate(entity, force, updatedRows, ed.isVersioned());
+            long updatedRows = updater.executeFor(descriptor.getRelationName()).getModifiedCount();
+            enforceUpdate(entity, force, updatedRows, descriptor.isVersioned());
 
-            if (ed.isVersioned()) {
+            if (descriptor.isVersioned()) {
                 entity.setVersion(entity.getVersion() + 1);
             }
         } catch (MongoWriteException e) {
@@ -169,46 +169,46 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        Deleter deleter = mongo.delete(ed.getRealm()).where(MongoEntity.ID, entity.getId());
-        if (!force && ed.isVersioned()) {
+    protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor descriptor) throws Exception {
+        Deleter deleter = mongo.delete(descriptor.getRealm()).where(MongoEntity.ID, entity.getId());
+        if (!force && descriptor.isVersioned()) {
             deleter.where(VERSION, entity.getVersion());
         }
 
-        long numDeleted = deleter.singleFrom(ed.getRelationName()).getDeletedCount();
+        long numDeleted = deleter.singleFrom(descriptor.getRelationName()).getDeletedCount();
         if (numDeleted == 0
             && !force
-            && ed.isVersioned()
-            && mongo.find().where(MongoEntity.ID, entity.getId()).countIn(ed.getRelationName()) > 0) {
+            && descriptor.isVersioned()
+            && mongo.find().where(MongoEntity.ID, entity.getId()).countIn(descriptor.getRelationName()) > 0) {
             throw new OptimisticLockException();
         }
     }
 
     @Override
     protected <E extends MongoEntity> Optional<E> findEntity(Object id,
-                                                             EntityDescriptor ed,
+                                                             EntityDescriptor descriptor,
                                                              Function<String, Value> context) throws Exception {
-        return mongo.find(ed.getRealm())
+        return mongo.find(descriptor.getRealm())
                     .where(MongoEntity.ID, id.toString())
-                    .singleIn(ed.getRelationName())
-                    .map(doc -> make(ed, doc));
+                    .singleIn(descriptor.getRelationName())
+                    .map(doc -> make(descriptor, doc));
     }
 
     /**
      * Creates a new entity for the given descriptor based on the given doc.
      *
-     * @param ed  the descriptor of the entity to create
-     * @param doc the document to read the values from
-     * @param <E> the effective type of the generated entity
+     * @param descriptor the descriptor of the entity to create
+     * @param doc        the document to read the values from
+     * @param <E>        the effective type of the generated entity
      * @return the generated entity
      */
     @SuppressWarnings("unchecked")
-    public static <E extends MongoEntity> E make(EntityDescriptor ed, Doc doc) {
+    public static <E extends MongoEntity> E make(EntityDescriptor descriptor, Doc doc) {
         try {
-            E result = (E) ed.make(Mango.class,
-                                   null,
-                                   key -> doc.getUnderlyingObject().containsKey(key) ? doc.get(key) : null);
-            if (ed.isVersioned()) {
+            E result = (E) descriptor.make(Mango.class,
+                                           null,
+                                           key -> doc.getUnderlyingObject().containsKey(key) ? doc.get(key) : null);
+            if (descriptor.isVersioned()) {
                 result.setVersion(doc.get(VERSION).asInt(0));
             }
             return result;
@@ -275,27 +275,27 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
         IntSummaryStatistics createdIndices = mixing.getDescriptors()
                                                     .stream()
-                                                    .filter(ed -> MongoEntity.class.isAssignableFrom(ed.getType()))
+                                                    .filter(descriptor -> MongoEntity.class.isAssignableFrom(descriptor.getType()))
                                                     .mapToInt(this::createIndices)
                                                     .summaryStatistics();
         Mongo.LOG.INFO("Initialized %s indices for %s collections", createdIndices.getSum(), createdIndices.getCount());
     }
 
-    private int createIndices(EntityDescriptor entityDescriptor) {
-        String database = entityDescriptor.getRealm();
+    private int createIndices(EntityDescriptor descriptor) {
+        String database = descriptor.getRealm();
         if (!mongo.isConfigured(database)) {
             Mongo.LOG.WARN("Skipping MongoDB indices for: %s as no configuration for database %s is present...",
-                           entityDescriptor.getRelationName(),
+                           descriptor.getRelationName(),
                            database);
             return 0;
         }
 
         Set<String> seenIndices = new HashSet<>();
-        entityDescriptor.getAnnotations(Index.class)
-                        .filter(index -> deduplicateByName(index, seenIndices))
-                        .filter(this::skipParentIndexSuppressions)
-                        .filter(index -> checkColumnSettings(index, entityDescriptor))
-                        .forEach(index -> createIndex(entityDescriptor, mongo.db(database), index));
+        descriptor.getAnnotations(Index.class)
+                  .filter(index -> deduplicateByName(index, seenIndices))
+                  .filter(this::skipParentIndexSuppressions)
+                  .filter(index -> checkColumnSettings(index, descriptor))
+                  .forEach(index -> createIndex(descriptor, mongo.db(database), index));
 
         return seenIndices.size();
     }
@@ -349,7 +349,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         return false;
     }
 
-    private void createIndex(EntityDescriptor ed, MongoDatabase client, Index index) {
+    private void createIndex(EntityDescriptor descriptor, MongoDatabase client, Index index) {
         try {
             boolean textColumnSeen = false;
             Document document = new Document();
@@ -364,16 +364,16 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                 indexOptions.collation(mongo.determineCollation());
             }
 
-            Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), ed.getRelationName());
-            client.getCollection(ed.getRelationName()).createIndex(document, indexOptions);
+            Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), descriptor.getRelationName());
+            client.getCollection(descriptor.getRelationName()).createIndex(document, indexOptions);
         } catch (Exception e) {
             Exceptions.handle()
                       .error(e)
                       .to(Mongo.LOG)
                       .withSystemErrorMessage("Failed to create index %s of %s (%s) - %s (%s)",
                                               index.name(),
-                                              ed.getType().getName(),
-                                              ed.getRelationName())
+                                              descriptor.getType().getName(),
+                                              descriptor.getRelationName())
                       .handle();
         }
     }
