@@ -236,7 +236,11 @@ public class Finder extends QueryBuilder<Finder> {
                 return Optional.of(new Doc(obj));
             }
         } finally {
-            mongo.callDuration.addValue(watch.elapsedMillis());
+            long callDuration = watch.elapsedMillis();
+            mongo.callDuration.addValue(callDuration);
+            if (readPreference != null && readPreference.isSlaveOk()) {
+                mongo.secondaryCallDuration.addValue(callDuration);
+            }
             if (Microtiming.isEnabled()) {
                 watch.submitMicroTiming(KEY_MONGO, "FIND ONE - " + collection + ": " + filterObject.keySet());
             }
@@ -245,7 +249,8 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     private FindIterable<Document> buildCursor(String collection) {
-        FindIterable<Document> cursor = getMongoCollection(collection).find(filterObject).collation(mongo.determineCollation());
+        FindIterable<Document> cursor =
+                getMongoCollection(collection).find(filterObject).collation(mongo.determineCollation());
         if (fields != null) {
             cursor.projection(fields);
         }
@@ -333,8 +338,8 @@ public class Finder extends QueryBuilder<Finder> {
             Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
         }
 
-        MongoIterable<Document> cursor = getMongoCollection(collection)
-                                              .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
+        MongoIterable<Document> cursor =
+                getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
                                                                        new BasicDBObject(OPERATOR_SAMPLE,
                                                                                          new BasicDBObject("size",
                                                                                                            limit))));
@@ -343,12 +348,16 @@ public class Finder extends QueryBuilder<Finder> {
         processCursor(cursor, processor, collection);
     }
 
-    private void handleTracingAndReporting(String collection, Watch w) {
-        mongo.callDuration.addValue(w.elapsedMillis());
-        if (Microtiming.isEnabled()) {
-            w.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
+    private void handleTracingAndReporting(String collection, Watch watch) {
+        long callDuration = watch.elapsedMillis();
+        mongo.callDuration.addValue(callDuration);
+        if (readPreference != null && readPreference.isSlaveOk()) {
+            mongo.secondaryCallDuration.addValue(callDuration);
         }
-        traceIfRequired(collection, w);
+        if (Microtiming.isEnabled()) {
+            watch.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
+        }
+        traceIfRequired(collection, watch);
     }
 
     /**
@@ -414,19 +423,23 @@ public class Finder extends QueryBuilder<Finder> {
         Watch w = Watch.start();
         try {
             if (filterObject.isEmpty() && !forceAccurate) {
-                return Optional.of(getMongoCollection(collection)
-                                        .estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(maxTimeMS,
-                                                                                                            TimeUnit.MILLISECONDS)));
+                return Optional.of(getMongoCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions()
+                                                                                                 .maxTime(maxTimeMS,
+                                                                                                          TimeUnit.MILLISECONDS)));
             }
-            return Optional.of(getMongoCollection(collection)
-                                    .countDocuments(filterObject,
-                                                    new CountOptions().collation(mongo.determineCollation())
-                                                                      .maxTime(maxTimeMS, TimeUnit.MILLISECONDS)));
+            return Optional.of(getMongoCollection(collection).countDocuments(filterObject,
+                                                                             new CountOptions().collation(mongo.determineCollation())
+                                                                                               .maxTime(maxTimeMS,
+                                                                                                        TimeUnit.MILLISECONDS)));
         } catch (MongoExecutionTimeoutException e) {
             Exceptions.ignore(e);
             return Optional.empty();
         } finally {
-            mongo.callDuration.addValue(w.elapsedMillis());
+            long callDuration = w.elapsedMillis();
+            mongo.callDuration.addValue(callDuration);
+            if (readPreference != null && readPreference.isSlaveOk()) {
+                mongo.secondaryCallDuration.addValue(callDuration);
+            }
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject.keySet());
             }
@@ -465,19 +478,23 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
-            MongoCursor<Document> queryResult = getMongoCollection(collection)
-                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                                filterObject),
-                                                                              new BasicDBObject("$group", groupStage)))
-                                                     .collation(mongo.determineCollation())
-                                                     .iterator();
+            MongoCursor<Document> queryResult =
+                    getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                                                                             filterObject),
+                                                                           new BasicDBObject("$group", groupStage)))
+                                                  .collation(mongo.determineCollation())
+                                                  .iterator();
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
             } else {
                 return Value.EMPTY;
             }
         } finally {
-            mongo.callDuration.addValue(w.elapsedMillis());
+            long callDuration = w.elapsedMillis();
+            mongo.callDuration.addValue(callDuration);
+            if (readPreference != null && readPreference.isSlaveOk()) {
+                mongo.secondaryCallDuration.addValue(callDuration);
+            }
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO,
                                     "AGGREGATE - "
@@ -512,12 +529,12 @@ public class Finder extends QueryBuilder<Finder> {
         }
 
         try {
-            MongoCursor<Document> queryResult = getMongoCollection(collection)
-                                                     .aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                                filterObject),
-                                                                              new BasicDBObject("$facet", facetStage)))
-                                                     .collation(mongo.determineCollation())
-                                                     .iterator();
+            MongoCursor<Document> queryResult =
+                    getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
+                                                                                             filterObject),
+                                                                           new BasicDBObject("$facet", facetStage)))
+                                                  .collation(mongo.determineCollation())
+                                                  .iterator();
 
             if (queryResult.hasNext()) {
                 Doc doc = new Doc(queryResult.next());
@@ -526,7 +543,11 @@ public class Finder extends QueryBuilder<Finder> {
                 }
             }
         } finally {
-            mongo.callDuration.addValue(w.elapsedMillis());
+            long callDuration = w.elapsedMillis();
+            mongo.callDuration.addValue(callDuration);
+            if (readPreference != null && readPreference.isSlaveOk()) {
+                mongo.secondaryCallDuration.addValue(callDuration);
+            }
             if (Microtiming.isEnabled()) {
                 w.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject.keySet());
             }

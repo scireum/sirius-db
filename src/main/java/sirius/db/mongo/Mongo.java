@@ -73,6 +73,7 @@ public class Mongo implements Startable, Stoppable {
     private PartCollection<IndexDescription> indexDescriptions;
 
     protected Average callDuration = new Average();
+    protected Average secondaryCallDuration = new Average();
     protected Counter numSlowQueries = new Counter();
 
     /**
