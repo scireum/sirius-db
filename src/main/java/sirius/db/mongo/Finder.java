@@ -228,12 +228,12 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             FindIterable<Document> cur = buildCursor(collection);
 
-            Document obj = cur.first();
+            Document document = cur.first();
 
-            if (obj == null) {
+            if (document == null) {
                 return Optional.empty();
             } else {
-                return Optional.of(new Doc(obj));
+                return Optional.of(new Doc(document));
             }
         } finally {
             long callDuration = watch.elapsedMillis();
@@ -310,15 +310,15 @@ public class Finder extends QueryBuilder<Finder> {
 
     private void processCursor(MongoIterable<Document> cursor, Predicate<Doc> processor, String collection) {
         Watch watch = Watch.start();
-        TaskContext ctx = TaskContext.get();
-        Monoflop mf = Monoflop.create();
+        TaskContext taskContext = TaskContext.get();
+        Monoflop shouldHandleTracing = Monoflop.create();
         for (Document doc : cursor) {
-            if (mf.firstCall()) {
+            if (shouldHandleTracing.firstCall()) {
                 handleTracingAndReporting(collection, watch);
             }
 
             boolean keepGoing = processor.test(new Doc(doc));
-            if (!keepGoing || !ctx.isActive()) {
+            if (!keepGoing || !taskContext.isActive()) {
                 return;
             }
         }
@@ -377,8 +377,8 @@ public class Finder extends QueryBuilder<Finder> {
      * @param processor  the processor to handle matches
      */
     public void allIn(String collection, Consumer<Doc> processor) {
-        eachIn(collection, d -> {
-            processor.accept(d);
+        eachIn(collection, doc -> {
+            processor.accept(doc);
             return true;
         });
     }
@@ -420,7 +420,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @return the number of documents found, wrapped in an Optional, or an empty Optional if the query timed out
      */
     public Optional<Long> countIn(String collection, boolean forceAccurate, long maxTimeMS) {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try {
             if (filterObject.isEmpty() && !forceAccurate) {
                 return Optional.of(getMongoCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions()
@@ -435,15 +435,15 @@ public class Finder extends QueryBuilder<Finder> {
             Exceptions.ignore(e);
             return Optional.empty();
         } finally {
-            long callDuration = w.elapsedMillis();
+            long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
             if (readPreference != null && readPreference.isSlaveOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject.keySet());
+                watch.submitMicroTiming(KEY_MONGO, "COUNT - " + collection + ": " + filterObject.keySet());
             }
-            traceIfRequired(collection, w);
+            traceIfRequired(collection, watch);
         }
     }
 
@@ -474,7 +474,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @see <a href="https://docs.mongodb.com/manual/reference/operator/aggregation/group/#accumulator-operator">MongoDB Reference</a>
      */
     public Value aggregateIn(@Nonnull String collection, @Nonnull Mapping field, @Nonnull String operator) {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
@@ -490,23 +490,23 @@ public class Finder extends QueryBuilder<Finder> {
                 return Value.EMPTY;
             }
         } finally {
-            long callDuration = w.elapsedMillis();
+            long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
             if (readPreference != null && readPreference.isSlaveOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(KEY_MONGO,
-                                    "AGGREGATE - "
-                                    + collection
-                                    + "."
-                                    + field
-                                    + " ("
-                                    + operator
-                                    + "): "
-                                    + filterObject.keySet());
+                watch.submitMicroTiming(KEY_MONGO,
+                                        "AGGREGATE - "
+                                        + collection
+                                        + "."
+                                        + field
+                                        + " ("
+                                        + operator
+                                        + "): "
+                                        + filterObject.keySet());
             }
-            traceIfRequired("aggregate-" + collection, w);
+            traceIfRequired("aggregate-" + collection, watch);
         }
     }
 
@@ -521,7 +521,7 @@ public class Finder extends QueryBuilder<Finder> {
             return;
         }
 
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         String collection = descriptor.getRelationName();
         BasicDBObject facetStage = new BasicDBObject();
         for (MongoFacet facet : facets) {
@@ -543,15 +543,15 @@ public class Finder extends QueryBuilder<Finder> {
                 }
             }
         } finally {
-            long callDuration = w.elapsedMillis();
+            long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
             if (readPreference != null && readPreference.isSlaveOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject.keySet());
+                watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject.keySet());
             }
-            traceIfRequired("facets-" + collection, w);
+            traceIfRequired("facets-" + collection, watch);
         }
     }
 }

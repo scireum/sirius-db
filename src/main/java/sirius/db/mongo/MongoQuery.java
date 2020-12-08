@@ -48,7 +48,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     /**
      * Creates a new query for the given descriptor.
      *
-     * @param descriptor the descriptor of the entities being queried
+     * @param descriptor     the descriptor of the entities being queried
      * @param readPreference the read preference to enforce
      */
     protected MongoQuery(EntityDescriptor descriptor, ReadPreference readPreference) {
@@ -155,15 +155,15 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * In contrast to {@link #count()} adds some mongo specific performance related options.
      *
      * @param forceAccurate always count the actual query using countDocuments
-     * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
+     * @param maxTimeMillis the maximum process time for this cursor in milliseconds, 0 for unlimited
      * @return the number of matched result entries, wrapped in an Optional, or an empty Optional if the query failed
      * @see Finder#countIn(String, boolean, long)
      */
-    public Optional<Long> count(boolean forceAccurate, long maxTimeMS) {
+    public Optional<Long> count(boolean forceAccurate, long maxTimeMillis) {
         if (forceFail) {
             return Optional.empty();
         }
-        return finder.countIn(descriptor.getRelationName(), forceAccurate, maxTimeMS);
+        return finder.countIn(descriptor.getRelationName(), forceAccurate, maxTimeMillis);
     }
 
     @Override
