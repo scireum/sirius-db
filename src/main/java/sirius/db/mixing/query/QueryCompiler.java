@@ -12,6 +12,7 @@ import parsii.tokenizer.LookaheadReader;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.properties.BaseEntityRefListProperty;
 import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.LocalDateProperty;
 import sirius.db.mixing.properties.LocalDateTimeProperty;
@@ -23,6 +24,7 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nullable;
 import java.io.StringReader;
@@ -710,7 +712,22 @@ public abstract class QueryCompiler<C extends Constraint> {
             }
         }
 
-        return property.transformValue(Value.of(value));
+        // first line of defence: reference types are not processed as transformation triggers a lookup in the
+        // referenced database; if that lookup yields no results, the value is considered invalid despite the fact that
+        // looking for it in the original database may make sense
+        if (property instanceof BaseEntityRefProperty || property instanceof BaseEntityRefListProperty) {
+            return Value.of(value);
+        }
+
+        try {
+            return property.transformValue(Value.of(value));
+        } catch (Exception e) {
+            // second line of defence: should the transformation fail for whatever reason, we pass the original string
+            // as is, leaving it to the database to come up with no results if searching for an invalid value (such as a
+            // string in a numeric field)
+            Exceptions.ignore(e);
+            return Value.of(value);
+        }
     }
 
     private LocalDateTime parseDeltaValue(String value) {
