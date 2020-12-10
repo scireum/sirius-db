@@ -24,6 +24,7 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.std.Part;
+import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nullable;
 import java.io.StringReader;
@@ -724,6 +725,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             // second line of defence: should the transformation fail for whatever reason, we pass the original string
             // as is, leaving it to the database to come up with no results if searching for an invalid value (such as a
             // string in a numeric field)
+            Exceptions.ignore(e);
             return Value.of(value);
         }
     }
