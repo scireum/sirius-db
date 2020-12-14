@@ -123,7 +123,7 @@ class RequestBuilder {
                             .to(Elastic.LOG)
                             .error(e)
                             .withSystemErrorMessage(
-                                    "An IO exception ocurred when performing a request against elasticsearch: %s")
+                                    "An IO exception occurred when performing a request against elasticsearch: %s")
                             .handle();
         } finally {
             elastic.callDuration.addValue(w.elapsedMillis());
@@ -203,7 +203,7 @@ class RequestBuilder {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
                             .error(e)
-                            .withSystemErrorMessage("An unexpected optimitic locking error ocurred: %s")
+                            .withSystemErrorMessage("An unexpected optimistic locking error occurred: %s")
                             .handle();
         }
     }
@@ -270,7 +270,7 @@ class RequestBuilder {
                             .to(Elastic.LOG)
                             .error(e)
                             .withSystemErrorMessage(
-                                    "An IO exception ocurred when performing a request against elasticsearch: %s")
+                                    "An IO exception occurred when performing a request against elasticsearch: %s")
                             .handle();
         }
     }
