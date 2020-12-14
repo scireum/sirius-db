@@ -15,7 +15,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks an entity as versioned and therefore elibile for <tt>optimitic locking</tt>
+ * Marks an entity as versioned and therefore eligibile for <tt>optimistic locking</tt>.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
