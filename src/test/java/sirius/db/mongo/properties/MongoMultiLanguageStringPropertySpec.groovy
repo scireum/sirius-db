@@ -27,7 +27,31 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
     def "invalid language"() {
         given:
         def entity = new MongoMultiLanguageStringEntity()
-        entity.getMultiLangText().addText("00", "")
+        entity.getMultiLangTextWithValidLanguages().addText("00", "")
+
+        when:
+        mango.update(entity)
+
+        then:
+        thrown(HandledException)
+    }
+
+    def "invalid language in composite"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntity()
+        entity.getMultiLangComposite().getCompositeMultiLangTextWithValidLanguages().addText("00", "")
+
+        when:
+        mango.update(entity)
+
+        then:
+        thrown(HandledException)
+    }
+
+    def "invalid language in mixin"() {
+        given:
+        def entity = new MongoMultiLanguageStringEntityWithMixin()
+        entity.as(MongoMultiLanguageStringMixin.class).getMixinMultiLangTextWithValidLanguages().addText("00", "")
 
         when:
         mango.update(entity)

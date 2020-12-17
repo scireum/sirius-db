@@ -21,7 +21,6 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
-import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -45,9 +43,6 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
 
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
-
-    @ConfigValue("mixing.multiLanguageStrings.supportedLanguages")
-    private static Set<String> supportedLanguages;
 
     /**
      * Factory for generating properties based on their field type
@@ -81,28 +76,43 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
 
     @Override
     protected void onBeforeSaveChecks(Object entity) {
-        getMultiLanguageString(entity).data().forEach((language, text) -> {
-            if (Strings.areEqual(language, MultiLanguageString.FALLBACK_KEY)) {
-                return;
-            }
-            if (supportedLanguages != null && !supportedLanguages.contains(language)) {
-                throw Exceptions.createHandled()
-                                .withNLSKey("MultiLanguageString.invalidLanguage")
-                                .set("language", language)
-                                .set("text", text)
-                                .set("field", getField().getName())
-                                .handle();
-            }
-        });
-
+        MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
+        if (!multiLanguageString.getValidLanguages().isEmpty()) {
+            multiLanguageString.data()
+                               .entrySet()
+                               .stream()
+                               .filter(entry -> !Strings.areEqual(entry.getKey(), MultiLanguageString.FALLBACK_KEY))
+                               .filter(entry -> !multiLanguageString.getValidLanguages().contains(entry.getKey()))
+                               .findAny()
+                               .ifPresent(entry -> {
+                                   throw Exceptions.createHandled()
+                                                   .withNLSKey("MultiLanguageString.invalidLanguage")
+                                                   .set("language", entry.getKey())
+                                                   .set("text", entry.getValue())
+                                                   .set("field", getField().getName())
+                                                   .handle();
+                               });
+        }
         super.onBeforeSaveChecks(entity);
     }
 
-    @SuppressWarnings("unchecked")
-    protected MultiLanguageString getMultiLanguageString(Object entity) {
-        MultiLanguageString multiLanguageString = new MultiLanguageString();
-        multiLanguageString.setData((Map<String, String>) super.getValueFromField(entity));
-        return multiLanguageString;
+    /**
+     * Bypasses {@link BaseMapProperty#getValueFromField(Object)} to access the actual MultiLanguageString entity.
+     *
+     * @see Property#getValueFromField(Object)
+     */
+    protected MultiLanguageString getMultiLanguageString(Object target) {
+        try {
+            return (MultiLanguageString) field.get(accessPath.apply(target));
+        } catch (IllegalAccessException e) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(e)
+                            .withSystemErrorMessage("Cannot read property '%s' (from '%s'): %s (%s)",
+                                                    getName(),
+                                                    getDefinition())
+                            .handle();
+        }
     }
 
     /**
