@@ -45,6 +45,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @param validLanguages set of language codes to validate against
      */
     public MultiLanguageString(@Nonnull Set<String> validLanguages) {
+        this.withFallback = false;
         this.validLanguages = Collections.unmodifiableSet(validLanguages);
     }
 
