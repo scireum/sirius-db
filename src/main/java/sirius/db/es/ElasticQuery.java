@@ -58,9 +58,24 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @Deprecated
     public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
 
-    private static final int SCROLL_TTL_SECONDS = 60 * 5;
-    private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 50;
-    private static final int MAX_SCROLL_RESULTS_PER_SHARD = 10;
+    /**
+     * This is the timeout we specify for elastic search for a scroll requests.
+     * <p>
+     * This essentially instructs ES to keep a scroll response open for the given timeout
+     */
+    private static final int SCROLL_TTL_SECONDS = 60 * 15;
+
+    /**
+     * If we only fetch from a single shard (as we use a routing), we fetch up to 800 entities at once and hope to
+     * process them within {@link #SCROLL_TTL_SECONDS}.
+     */
+    private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 800;
+
+    /**
+     * If we fetch from many shards, we fetch up to 100 entities per shards and hope to process them within
+     * {@link #SCROLL_TTL_SECONDS}.
+     */
+    private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
     private static final String KEY_SCROLL_ID = "_scroll_id";
     private static final String KEY_DOC_ID = "_doc";
 
@@ -1152,7 +1167,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             JSONObject scrollResponse = client.createScroll(elastic.determineReadAlias(descriptor),
                                                             filteredRouting,
                                                             0,
-                                                            filteredRouting == null ?
+                                                            filteredRouting != null ?
                                                             MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
                                                             MAX_SCROLL_RESULTS_PER_SHARD,
                                                             SCROLL_TTL_SECONDS,
