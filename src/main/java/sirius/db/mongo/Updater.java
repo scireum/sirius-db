@@ -44,9 +44,14 @@ public class Updater extends QueryBuilder<Updater> {
      * Specifies that multiple documents should be updated.
      * <p>
      * By default only one document is updated.
+     * <p>
+     * Note that this is a legacy flag and will not be honery by neither {@link #executeForOne(String)} nor
+     * {@link #executeForMany(String)}.
      *
      * @return the builder itself for fluent method calls
+     * @deprecated use {@link #executeForOne(String)} or {@link #executeForMany(String)}
      */
+    @Deprecated
     public Updater many() {
         this.many = true;
         return this;
@@ -297,9 +302,31 @@ public class Updater extends QueryBuilder<Updater> {
      *
      * @param type the type of entities to update
      * @return the result of the update
+     * @deprecated use either {@link #executeForOne(Class)} or {@link #executeForMany(Class)}
      */
+    @Deprecated
     public UpdateResult executeFor(Class<?> type) {
         return executeFor(getRelationName(type));
+    }
+
+    /**
+     * Executes the update on the given collection for a single document.
+     *
+     * @param type the type of entities to update
+     * @return the result of the update
+     */
+    public UpdateResult executeForOne(Class<?> type) {
+        return executeForOne(getRelationName(type));
+    }
+
+    /**
+     * Executes the update on the given collection for many documents.
+     *
+     * @param type the type of entities to update
+     * @return the result of the update
+     */
+    public UpdateResult executeForMany(Class<?> type) {
+        return executeForMany(getRelationName(type));
     }
 
     /**
@@ -310,7 +337,7 @@ public class Updater extends QueryBuilder<Updater> {
      */
     public UpdateResult executeFor(MongoEntity entity) {
         where(MongoEntity.ID, entity.getId());
-        return executeFor(entity.getDescriptor().getRelationName());
+        return executeForOne(entity.getDescriptor().getRelationName());
     }
 
     /**
@@ -318,8 +345,34 @@ public class Updater extends QueryBuilder<Updater> {
      *
      * @param collection the collection to update
      * @return the result of the update
+     * @deprecated use either {@link #executeForOne(String)} or {@link #executeForMany(String)}
      */
+    @Deprecated
     public UpdateResult executeFor(String collection) {
+        return execute(collection, many);
+    }
+
+    /**
+     * Executes the update on the given collection for a single document.
+     *
+     * @param collection the collection to update
+     * @return the result of the update
+     */
+    public UpdateResult executeForOne(String collection) {
+        return execute(collection, false);
+    }
+
+    /**
+     * Executes the update on the given collection for many documents.
+     *
+     * @param collection the collection to update
+     * @return the result of the update
+     */
+    public UpdateResult executeForMany(String collection) {
+        return execute(collection, true);
+    }
+
+    private UpdateResult execute(String collection, boolean forMany) {
         Document updateObject = prepareUpdate(collection);
 
         Watch w = Watch.start();
@@ -328,7 +381,7 @@ public class Updater extends QueryBuilder<Updater> {
                 Mongo.LOG.FINE("UPDATE: %s\nFilter: %s\n Update:%s", collection, filterObject, updateObject);
             }
             UpdateOptions updateOptions = new UpdateOptions().upsert(this.upsert).collation(mongo.determineCollation());
-            if (many) {
+            if (forMany) {
                 return mongo.db(database)
                             .getCollection(collection)
                             .updateMany(filterObject, updateObject, updateOptions);
