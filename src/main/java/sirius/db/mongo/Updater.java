@@ -45,7 +45,7 @@ public class Updater extends QueryBuilder<Updater> {
      * <p>
      * By default only one document is updated.
      * <p>
-     * Note that this is a legacy flag and will not be honery by neither {@link #executeForOne(String)} nor
+     * Note that this is a legacy flag and will not be honored by neither {@link #executeForOne(String)} nor
      * {@link #executeForMany(String)}.
      *
      * @return the builder itself for fluent method calls
