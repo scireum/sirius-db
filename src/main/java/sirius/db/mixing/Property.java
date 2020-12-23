@@ -626,7 +626,7 @@ public abstract class Property extends Composable {
      * @param value the illegal value itself
      * @return an exception filled with an appropriate message
      */
-    protected HandledException illegalFieldValue(Value value) {
+    public HandledException illegalFieldValue(Value value) {
         return Exceptions.createHandled()
                          .error(new InvalidFieldException(getName()))
                          .withNLSKey("Property.illegalValue")
