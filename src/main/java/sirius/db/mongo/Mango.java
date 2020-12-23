@@ -123,7 +123,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         try {
-            long updatedRows = updater.executeFor(descriptor.getRelationName()).getModifiedCount();
+            long updatedRows = updater.executeForOne(descriptor.getRelationName()).getModifiedCount();
             enforceUpdate(entity, force, updatedRows, descriptor.isVersioned());
 
             if (descriptor.isVersioned()) {

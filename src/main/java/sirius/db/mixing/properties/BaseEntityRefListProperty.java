@@ -236,7 +236,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             mongo.update()
                  .where(nameAsMapping, idBeingDeleted)
                  .pull(nameAsMapping, idBeingDeleted)
-                 .executeFor(referenceInstance.getClass());
+                 .executeForMany(referenceInstance.getClass());
         } else {
             referenceInstance.getMapper()
                              .select(referenceInstance.getClass())
