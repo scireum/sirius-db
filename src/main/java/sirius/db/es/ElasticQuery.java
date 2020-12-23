@@ -66,13 +66,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final int SCROLL_TTL_SECONDS = 60 * 15;
 
     /**
-     * If we only fetch from a single shard (as we use a routing), we fetch up to 800 entities at once and hope to
+     * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD} entities at once and hope to
      * process them within {@link #SCROLL_TTL_SECONDS}.
      */
     private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 800;
 
     /**
-     * If we fetch from many shards, we fetch up to 100 entities per shards and hope to process them within
+     * If we fetch from many shards, we fetch up to {@link #MAX_SCROLL_RESULTS_PER_SHARD} entities per shards and hope to process them within
      * {@link #SCROLL_TTL_SECONDS}.
      */
     private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
