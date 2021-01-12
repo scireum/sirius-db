@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -144,12 +145,12 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
-    public OneInField<MongoConstraint> oneInField(Mapping field, List<?> values) {
+    public OneInField<MongoConstraint> oneInField(Mapping field, Collection<?> values) {
         return new MongoOneInField(this, field, values);
     }
 
     @Override
-    public MongoConstraint noneInField(Mapping field, List<?> values) {
+    public MongoConstraint noneInField(Mapping field, Collection<?> values) {
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
             list.add(transform(value));
