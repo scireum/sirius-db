@@ -14,6 +14,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.constraints.OneInField;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -21,7 +22,7 @@ import java.util.List;
  */
 class MongoOneInField extends OneInField<MongoConstraint> {
 
-    protected MongoOneInField(MongoFilterFactory factory, Mapping field, List<?> values) {
+    protected MongoOneInField(MongoFilterFactory factory, Mapping field, Collection<?> values) {
         super(factory, field, values);
     }
 

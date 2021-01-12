@@ -22,6 +22,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -485,7 +486,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param values the values to check
      * @return a filter builder used to generate a constraint
      */
-    public OneInField<C> oneInField(Mapping field, List<?> values) {
+    public OneInField<C> oneInField(Mapping field, Collection<?> values) {
         return new OneInField<>(this, field, values);
     }
 
@@ -507,7 +508,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param values the values to check
      * @return the generated constraint
      */
-    public C noneInField(Mapping field, List<?> values) {
+    public C noneInField(Mapping field, Collection<?> values) {
         if (values == null || values.isEmpty()) {
             return null;
         }
@@ -581,5 +582,4 @@ public abstract class FilterFactory<C extends Constraint> {
      * @return a constraint representing the compiled query
      */
     public abstract Tuple<C, Boolean> compileString(EntityDescriptor descriptor, String query, List<QueryField> fields);
-
 }
