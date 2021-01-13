@@ -48,7 +48,7 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
     def "invalid language"() {
         given:
         def entity = new MongoMultiLanguageStringEntity()
-        entity.getMultiLangTextWithValidLanguages().addText("00", "")
+        entity.getMultiLangTextWithValidLanguages().addText("00", "some text")
 
         when:
         mango.update(entity)
@@ -60,7 +60,7 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
     def "invalid language in composite"() {
         given:
         def entity = new MongoMultiLanguageStringEntity()
-        entity.getMultiLangComposite().getCompositeMultiLangTextWithValidLanguages().addText("00", "")
+        entity.getMultiLangComposite().getCompositeMultiLangTextWithValidLanguages().addText("00", "some text")
 
         when:
         mango.update(entity)
@@ -72,7 +72,7 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
     def "invalid language in mixin"() {
         given:
         def entity = new MongoMultiLanguageStringEntityWithMixin()
-        entity.as(MongoMultiLanguageStringMixin.class).getMixinMultiLangTextWithValidLanguages().addText("00", "")
+        entity.as(MongoMultiLanguageStringMixin.class).getMixinMultiLangTextWithValidLanguages().addText("00", "some text")
 
         when:
         mango.update(entity)
@@ -158,7 +158,7 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         mango.update(entity)
 
         when:
-        def expectedString = "[Document{{lang=pt, text=Borboleta}}, Document{{lang=es, text=Mariposa}}, Document{{lang=en, text=}}]"
+        def expectedString = "[Document{{lang=pt, text=Borboleta}}, Document{{lang=es, text=Mariposa}}]"
         def storedString = mongo.find()
                                 .where("id", entity.getId())
                                 .singleIn("mongomultilanguagestringentity")
