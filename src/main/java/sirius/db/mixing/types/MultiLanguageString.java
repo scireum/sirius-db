@@ -8,6 +8,7 @@
 
 package sirius.db.mixing.types;
 
+import sirius.kernel.commons.Strings;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
@@ -246,7 +247,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
      */
     @Override
     public SafeMap<String, String> put(@Nonnull String key, String value) {
-        if (value != null) {
+        if (Strings.isFilled(value)) {
             super.modify().put(key, value);
         } else {
             super.modify().remove(key);
