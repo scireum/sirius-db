@@ -9,6 +9,7 @@
 package sirius.db.mongo.properties;
 
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.db.mongo.MongoEntity;
 
@@ -21,9 +22,11 @@ import java.util.Set;
  */
 public class MongoMultiLanguageStringEntity extends MongoEntity {
     public static final Mapping MULTILANGTEXT = Mapping.named("multiLangText");
+    @NullAllowed
     private final MultiLanguageString multiLangText = new MultiLanguageString();
 
     public static final Mapping MULTILANGTEXT_WITH_FALLBACK = Mapping.named("multiLangTextWithFallback");
+    @NullAllowed
     private final MultiLanguageString multiLangTextWithFallback = new MultiLanguageString(true);
 
     public static final Set<String> validLanguages = new HashSet<>(Arrays.asList("da",
@@ -42,6 +45,7 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
                                                                                  "sv",
                                                                                  "tr"));
     public static final Mapping MULTILANGTEXT_WITH_VALID_LANGUAGES = Mapping.named("multiLangTextWithValidLanguages");
+    @NullAllowed
     private final MultiLanguageString multiLangTextWithValidLanguages = new MultiLanguageString(validLanguages);
 
     private final MongoMultiLanguageStringComposite multiLangComposite = new MongoMultiLanguageStringComposite();
