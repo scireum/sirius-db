@@ -188,4 +188,17 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     public boolean doesEnableDynamicMappings() {
         return true;
     }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected boolean isConsideredNull(Object propertyValue) {
+        if (propertyValue == null) {
+            return true;
+        }
+        Map<String, String> values = ((Map<String, String>) propertyValue);
+        if (values.isEmpty()) {
+            return true;
+        }
+        return values.entrySet().stream().anyMatch(entry -> Strings.isEmpty(entry.getValue()));
+    }
 }
