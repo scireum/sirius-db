@@ -78,23 +78,24 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     protected Object transformValueFromImport(Value value) {
-        if (value.isFilled()) {
-            // If a value is present, we check if any constant name or its translation matches...
-            String stringValue = value.asString().trim();
-            for (Enum enumValue : ((Class<Enum>) field.getType()).getEnumConstants()) {
-                // Check for a match of the constant...
-                if (Strings.equalIgnoreCase(enumValue.name(), stringValue)) {
-                    return enumValue;
-                }
+        if (value.isEmptyString()) {
+            return null;
+        }
+        // If a value is present, we check if any constant name or its translation matches...
+        String stringValue = value.asString().trim();
+        for (Enum enumValue : ((Class<Enum>) field.getType()).getEnumConstants()) {
+            // Check for a match of the constant...
+            if (Strings.equalIgnoreCase(enumValue.name(), stringValue)) {
+                return enumValue;
+            }
 
-                // Check of a match of the translation...
-                if (Strings.equalIgnoreCase(enumValue.toString(), stringValue)) {
-                    return enumValue;
-                }
+            // Check of a match of the translation...
+            if (Strings.equalIgnoreCase(enumValue.toString(), stringValue)) {
+                return enumValue;
             }
         }
 
-        return super.transformValueFromImport(value);
+        throw illegalFieldValue(value);
     }
 
     @SuppressWarnings("unchecked")
