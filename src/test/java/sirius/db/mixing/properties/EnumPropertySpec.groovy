@@ -13,6 +13,7 @@ import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 class EnumPropertySpec extends BaseSpecification {
 
@@ -34,10 +35,10 @@ class EnumPropertySpec extends BaseSpecification {
         then:
         entity.getTestEnum() == ESDataTypesEntity.TestEnum.Test1
 
-        when: // Invalid values become nulll
+        when: // Invalid values throws an exception
         property.parseValueFromImport(entity, Value.of("test0"))
         then:
-        entity.getTestEnum() == null
+        thrown(HandledException)
         when: // Enum constants can be resolved by their "toString" representation...
         property.parseValueFromImport(entity, Value.of("test25"))
         then:
