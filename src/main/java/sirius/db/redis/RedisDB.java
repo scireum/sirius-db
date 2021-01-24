@@ -94,7 +94,16 @@ public class RedisDB {
         }
     }
 
-    protected Jedis getConnection() {
+    /**
+     * Provides raw access to the underlying Redis connection.
+     * <p>
+     * Note that this method should be used with absolute care and calling {@link #query(Supplier, Function)}
+     * or {@link #exec(Supplier, Consumer)} is preferred as it ensures monitoring and proper connection handling.
+     *
+     * @return access to a Redis connection from the managed pool. Note that {@link Jedis#close()} has to be called
+     * in any case to ensure that the connection is returned to the pool.
+     */
+    public Jedis getConnection() {
         if (sentinelPool != null) {
             return sentinelPool.getResource();
         }
