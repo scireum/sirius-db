@@ -273,7 +273,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             return;
         }
 
-        if (mongo.isConfigured()) {
+        if (!mongo.isConfigured()) {
             Mongo.LOG.INFO("No configuration for MongoDB is present, skipping index creation...");
             return;
         }
