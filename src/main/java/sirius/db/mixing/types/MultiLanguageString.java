@@ -9,6 +9,7 @@
 package sirius.db.mixing.types;
 
 import sirius.kernel.commons.Strings;
+import com.alibaba.fastjson.JSONObject;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
@@ -301,5 +302,11 @@ public class MultiLanguageString extends SafeMap<String, String> {
      */
     public void remove(String languageKey) {
         super.modify().remove(languageKey);
+    }
+
+    public String getAsJSON() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.putAll(data);
+        return jsonObject.toJSONString();
     }
 }

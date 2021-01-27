@@ -21,6 +21,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
@@ -200,5 +201,21 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             return true;
         }
         return values.entrySet().stream().anyMatch(entry -> Strings.isEmpty(entry.getValue()));
+    }
+
+    @Override
+    public void parseValues(Object e, Values values) {
+        // html should provide an array of strings like ["de|||eins,en|||one"]
+        Map<String, String> map = new HashMap<>();
+        values.stream()
+              .filter(value -> !value.isEmptyString())
+              .filter(value -> value.contains("|||"))
+              .forEach(entry -> {
+                  String[] pair = entry.getString().split("\\|\\|\\|");
+                  if (pair.length == 2) {
+                      map.put(pair[0], pair[1]);
+                  }
+              });
+        parseValue(e, Value.of(map));
     }
 }
