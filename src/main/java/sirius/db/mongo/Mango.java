@@ -273,6 +273,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             return;
         }
 
+        if (!mongo.isConfigured()) {
+            Mongo.LOG.INFO("No configuration for MongoDB is present, skipping index creation...");
+            return;
+        }
+
         IntSummaryStatistics createdIndices = mixing.getDescriptors()
                                                     .stream()
                                                     .filter(descriptor -> MongoEntity.class.isAssignableFrom(descriptor.getType()))

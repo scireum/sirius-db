@@ -405,6 +405,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     public void createAndInstallWriteIndex(EntityDescriptor ed) {
         String nextIndexName = indexMappings.determineNextIndexName(ed);
         indexMappings.createMapping(ed, nextIndexName, IndexMappings.DynamicMapping.STRICT);
+        installWriteIndex(ed, nextIndexName);
+    }
+
+    /**
+     * Installs the given write index for the given entity by writing it into the {@link #writeIndexTable}.
+     * <p>
+     * This can be used if the write index has already been created previously or on another node.
+     *
+     * @param ed            the descriptor of the entity to set the write index for
+     * @param nextIndexName the index name to send writes to (This is probably a name like entity-2021-01-01).
+     */
+    public void installWriteIndex(EntityDescriptor ed, String nextIndexName) {
         writeIndexTable.put(ed, nextIndexName);
     }
 
