@@ -268,6 +268,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     @Override
     public void started() {
+        if (mixing.getDescriptors().stream().noneMatch(descriptor -> mongo.isConfigured(descriptor.getRealm()))) {
+            // This system hasn't any settings for a MongoDB - we can simply and silently ignore all this...
+            return;
+        }
+
         if (!mixing.shouldExecuteSafeSchemaChanges()) {
             Mongo.LOG.INFO("Skipping index checks on this node...");
             return;
@@ -289,7 +294,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     private int createIndices(EntityDescriptor descriptor) {
         String database = descriptor.getRealm();
         if (!mongo.isConfigured(database)) {
-            Mongo.LOG.WARN("Skipping MongoDB indices for: %s as no configuration for database %s is present...",
+            Mongo.LOG.INFO("Skipping MongoDB indices for: %s as no configuration for database %s is present...",
                            descriptor.getRelationName(),
                            database);
             return 0;
