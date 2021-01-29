@@ -14,6 +14,7 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -24,15 +25,19 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents a {@link MultiLanguageString} field in a {@link sirius.db.mongo.MongoEntity}.
@@ -204,18 +209,17 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     }
 
     @Override
-    public void parseValues(Object e, Values values) {
-        // html should provide an array of strings like ["de|||eins,en|||one"]
-        Map<String, String> map = new HashMap<>();
-        values.stream()
-              .filter(value -> !value.isEmptyString())
-              .filter(value -> value.contains("|||"))
-              .forEach(entry -> {
-                  String[] pair = entry.getString().split("\\|\\|\\|");
-                  if (pair.length == 2) {
-                      map.put(pair[0], pair[1]);
-                  }
-              });
-        parseValue(e, Value.of(map));
+    public void parseComplexValues(Object e, Map<String, Value> values) {
+        parseValue(e, Value.of(values));
+    }
+
+    @Override
+    public List<String> computeAdditionalFieldNames(BaseEntity<?> entity) {
+        MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
+        Set<String> validLanguages = multiLanguageString.getValidLanguages();
+        if(validLanguages.isEmpty()) {
+            validLanguages = NLS.getSupportedLanguages();
+        }
+        return validLanguages.stream().map(language -> getName() + "-" + language).collect(Collectors.toList());
     }
 }
