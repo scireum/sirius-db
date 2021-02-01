@@ -39,6 +39,26 @@ import java.util.Objects;
  */
 public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
+    private static final String PARAM_VALUE = "value";
+    private static final String PARAM_REWRITE = "rewrite";
+    private static final String TOP_TERMS_256 = "top_terms_256";
+    private static final String PARAM_PREFIX = "prefix";
+    private static final String PARAM_QUERY = "query";
+    private static final String PARAM_MATCH_PHRASE = "match_phrase";
+    private static final String PARAM_REGEXP = "regexp";
+    private static final String PARAM_WILDCARD = "wildcard";
+    private static final String PARAM_FUZZINESS = "fuzziness";
+    private static final String FUZZINESS_AUTO = "auto";
+    private static final String PARAM_MAX_EXPANSIONS = "max_expansions";
+    private static final String PARAM_PREFIX_LENGTH = "prefix_length";
+    private static final String PARAM_TRANSPOSITIONS = "transpositions";
+    private static final String CONSTANT_SCORE = "constant_score";
+    private static final String PARAM_FUZZY = "fuzzy";
+    private static final String PARAM_MATCH_ALL = "match_all";
+    private static final String PARAM_MATCH_NONE = "match_none";
+    private static final String PARAM_FILTER = "filter";
+    private static final String PARAM_BOOST = "boost";
+
     @Override
     protected Object customTransform(Object value) {
         if (value instanceof Instant) {
@@ -273,8 +293,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut("value", value).fluentPut("rewrite", "top_terms_256");
-        return wrap(new JSONObject().fluentPut("prefix",
+        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value).fluentPut(PARAM_REWRITE, TOP_TERMS_256);
+        return wrap(new JSONObject().fluentPut(PARAM_PREFIX,
                                                new JSONObject().fluentPut(determineFilterField(field), settings)));
     }
 
@@ -292,8 +312,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut("query", value);
-        return wrap(new JSONObject().fluentPut("match_phrase",
+        JSONObject settings = new JSONObject().fluentPut(PARAM_QUERY, value);
+        return wrap(new JSONObject().fluentPut(PARAM_MATCH_PHRASE,
                                                new JSONObject().fluentPut(determineFilterField(field), settings)));
     }
 
@@ -309,8 +329,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut("value", value);
-        return wrap(new JSONObject().fluentPut("regexp",
+        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value);
+        return wrap(new JSONObject().fluentPut(PARAM_REGEXP,
                                                new JSONObject().fluentPut(determineFilterField(field), settings)));
     }
 
@@ -326,8 +346,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut("value", value);
-        return wrap(new JSONObject().fluentPut("wildcard",
+        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value);
+        return wrap(new JSONObject().fluentPut(PARAM_WILDCARD,
                                                new JSONObject().fluentPut(determineFilterField(field), settings)));
     }
 
@@ -358,13 +378,13 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut("value", value)
-                                              .fluentPut("fuzziness", fuzziness == null ? "auto" : fuzziness)
-                                              .fluentPut("max_expansions", maxExpansions)
-                                              .fluentPut("prefix_length", prefixLength)
-                                              .fluentPut("transpositions", transpositions)
-                                              .fluentPut("rewrite", rewrite == null ? "constant_score" : rewrite);
-        return new ElasticConstraint(new JSONObject().fluentPut("fuzzy",
+        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value)
+                                              .fluentPut(PARAM_FUZZINESS, fuzziness == null ? FUZZINESS_AUTO : fuzziness)
+                                              .fluentPut(PARAM_MAX_EXPANSIONS, maxExpansions)
+                                              .fluentPut(PARAM_PREFIX_LENGTH, prefixLength)
+                                              .fluentPut(PARAM_TRANSPOSITIONS, transpositions)
+                                              .fluentPut(PARAM_REWRITE, rewrite == null ? CONSTANT_SCORE : rewrite);
+        return new ElasticConstraint(new JSONObject().fluentPut(PARAM_FUZZY,
                                                                 new JSONObject().fluentPut(determineFilterField(field),
                                                                                            settings)));
     }
@@ -375,7 +395,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return a new match_all query.
      */
     public ElasticConstraint matchAll() {
-        return wrap(new JSONObject().fluentPut("match_all", new JSONObject()));
+        return wrap(new JSONObject().fluentPut(PARAM_MATCH_ALL, new JSONObject()));
     }
 
     /**
@@ -384,7 +404,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return a new match_none query.
      */
     public ElasticConstraint matchNone() {
-        return wrap(new JSONObject().fluentPut("match_none", new JSONObject()));
+        return wrap(new JSONObject().fluentPut(PARAM_MATCH_NONE, new JSONObject()));
     }
 
     /**
@@ -401,8 +421,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     public ElasticConstraint constantScore(ElasticConstraint constraint, float boost) {
         JSONObject jsonObject = new JSONObject();
 
-        jsonObject.put("constant_score",
-                       new JSONObject().fluentPut("filter", constraint.toJSON()).fluentPut("boost", boost));
+        jsonObject.put(CONSTANT_SCORE,
+                       new JSONObject().fluentPut(PARAM_FILTER, constraint.toJSON()).fluentPut(PARAM_BOOST, boost));
 
         return new ElasticConstraint(jsonObject);
     }
