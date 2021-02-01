@@ -595,7 +595,7 @@ public abstract class Property extends Composable {
      * @param values the values to parse and apply
      */
     public void parseComplexValues(Object entity, Map<String, Value> values) {
-        throw new UnsupportedOperationException(getClass().getName() + " must be overriden");
+        throw new UnsupportedOperationException(getClass().getName() + " must be overridden");
     }
 
     /**
