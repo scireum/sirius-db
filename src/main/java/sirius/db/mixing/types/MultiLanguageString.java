@@ -306,7 +306,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     public String getAsJSON() {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.putAll(data);
+        if(data != null) {
+            jsonObject.putAll(data);
+        }
         return jsonObject.toJSONString();
     }
 }
