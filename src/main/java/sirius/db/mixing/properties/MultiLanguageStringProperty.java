@@ -22,7 +22,6 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
-import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -30,7 +29,6 @@ import sirius.kernel.nls.NLS;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -210,14 +208,18 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
 
     @Override
     public void parseComplexValues(Object e, Map<String, Value> values) {
-        parseValue(e, Value.of(values));
+        setValue(e,
+                 values.entrySet()
+                       .stream()
+                       .collect(Collectors.toMap(entry -> Strings.split(entry.getKey(), "-").getSecond(),
+                                                 entry -> entry.getValue().asString())));
     }
 
     @Override
     public List<String> computeAdditionalFieldNames(BaseEntity<?> entity) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
         Set<String> validLanguages = multiLanguageString.getValidLanguages();
-        if(validLanguages.isEmpty()) {
+        if (validLanguages.isEmpty()) {
             validLanguages = NLS.getSupportedLanguages();
         }
         return validLanguages.stream().map(language -> getName() + "-" + language).collect(Collectors.toList());
