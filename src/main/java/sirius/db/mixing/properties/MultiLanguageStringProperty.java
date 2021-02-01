@@ -14,6 +14,7 @@ import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
@@ -23,6 +24,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -31,7 +33,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents a {@link MultiLanguageString} field in a {@link sirius.db.mongo.MongoEntity}.
@@ -200,5 +204,24 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             return true;
         }
         return values.entrySet().stream().anyMatch(entry -> Strings.isEmpty(entry.getValue()));
+    }
+
+    @Override
+    public void parseComplexValues(Object entity, Map<String, Value> values) {
+        setValue(entity,
+                 values.entrySet()
+                       .stream()
+                       .collect(Collectors.toMap(entry -> Strings.split(entry.getKey(), "-").getSecond(),
+                                                 entry -> entry.getValue().asString())));
+    }
+
+    @Override
+    public List<String> computeAdditionalFieldNames(BaseEntity<?> entity) {
+        MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
+        Set<String> validLanguages = multiLanguageString.getValidLanguages();
+        if (validLanguages.isEmpty()) {
+            validLanguages = NLS.getSupportedLanguages();
+        }
+        return validLanguages.stream().map(language -> getName() + "-" + language).collect(Collectors.toList());
     }
 }

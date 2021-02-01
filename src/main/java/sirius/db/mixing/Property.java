@@ -27,6 +27,9 @@ import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -573,6 +576,26 @@ public abstract class Property extends Composable {
      */
     public void parseValues(Object e, Values values) {
         parseValue(e, values.at(0));
+    }
+
+    /**
+     * Computes additional field names to parse based on the entity given.
+     *
+     * @param entity Entity whose additional fields to compute for
+     * @return List of additional field names
+     */
+    public List<String> computeAdditionalFieldNames(BaseEntity<?> entity) {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Parses the given complex values map and applies it to the given entity if possible.
+     *
+     * @param entity      the entity to receive the parsed value
+     * @param values the values to parse and apply
+     */
+    public void parseComplexValues(Object entity, Map<String, Value> values) {
+        throw new UnsupportedOperationException(getClass().getName() + " must be overridden");
     }
 
     /**
