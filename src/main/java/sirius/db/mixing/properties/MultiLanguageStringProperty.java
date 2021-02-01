@@ -207,7 +207,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     }
 
     @Override
-    public void parseComplexValues(Object e, Map<String, Value> values) {
+    public void parseComplexValues(Object entity, Map<String, Value> values) {
         setValue(e,
                  values.entrySet()
                        .stream()
