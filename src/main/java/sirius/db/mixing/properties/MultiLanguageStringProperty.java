@@ -22,6 +22,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -204,6 +205,14 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             return true;
         }
         return values.entrySet().stream().anyMatch(entry -> Strings.isEmpty(entry.getValue()));
+    }
+
+    @Override
+    public void parseValues(Object e, Values values) {
+        MultiLanguageString multiLanguageString = getMultiLanguageString(e);
+        Map<String, String> mlsMap = new HashMap<>(multiLanguageString.data());
+        mlsMap.put("fallback", values.at(0).getString());
+        setValue(e, mlsMap);
     }
 
     @Override
