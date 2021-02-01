@@ -25,6 +25,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Optional;
 
@@ -35,7 +36,7 @@ import java.util.Optional;
  * @param <E> the type of entities being referenced
  * @param <R> the type of the reference itself
  */
-public abstract class BaseEntityRefProperty<I, E extends BaseEntity<I>, R extends BaseEntityRef<I, E>>
+public abstract class BaseEntityRefProperty<I extends Serializable, E extends BaseEntity<I>, R extends BaseEntityRef<I, E>>
         extends Property {
 
     private static final String PARAM_TYPE = "type";
