@@ -8,8 +8,8 @@
 
 package sirius.db.mixing.types;
 
-import sirius.kernel.commons.Strings;
 import com.alibaba.fastjson.JSONObject;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
@@ -304,9 +304,14 @@ public class MultiLanguageString extends SafeMap<String, String> {
         super.modify().remove(languageKey);
     }
 
+    /**
+     * Transforms the multilanguage map into an JSON object.
+     *
+     * @return Multilanguage map as a JSON object
+     */
     public String getAsJSON() {
         JSONObject jsonObject = new JSONObject();
-        if(data != null) {
+        if (data != null) {
             jsonObject.putAll(data);
         }
         return jsonObject.toJSONString();
