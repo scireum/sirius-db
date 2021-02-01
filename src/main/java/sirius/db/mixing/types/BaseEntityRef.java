@@ -16,6 +16,7 @@ import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -24,11 +25,15 @@ import java.util.Optional;
  * <p>
  * Instead of directly keeping the entity in a Java field, it is wrapped in an <tt>EntityRef</tt>. This leads to clean
  * semantics for lazy loading as both the ID and (if fetched) the value are stored in this wrapper.
+ * <p>
+ * Note that a reference is serializable but will only serialize the id, not the currently loaded value.
  *
  * @param <I> the generic type of the primary key / id used by the entity
  * @param <E> the generic type of the referenced entity
  */
-public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
+public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity<I>> implements Serializable {
+
+    private static final long serialVersionUID = -6950811329430896367L;
 
     /**
      * Declares cascade actions which determine what happens if a referenced entity is deleted.
@@ -56,10 +61,10 @@ public abstract class BaseEntityRef<I, E extends BaseEntity<I>> {
     }
 
     protected Class<E> type;
-    protected OnDelete deleteHandler;
-    protected boolean writeOnce;
+    protected transient OnDelete deleteHandler;
+    protected transient boolean writeOnce;
     protected I id;
-    protected E value;
+    protected transient E value;
 
     @Part
     private static Mixing mixing;
