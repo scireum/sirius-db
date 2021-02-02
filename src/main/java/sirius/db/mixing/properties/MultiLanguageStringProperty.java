@@ -209,6 +209,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     public void parseValues(Object entity, Values values) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
+        if (!multiLanguageString.hasFallback()) {
+            return;
+        }
         Map<String, String> mlsMap = new HashMap<>(multiLanguageString.data());
         mlsMap.put(MultiLanguageString.FALLBACK_KEY, values.at(0).getString());
         setValue(entity, mlsMap);
