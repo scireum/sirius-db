@@ -16,6 +16,7 @@ import sirius.db.es.annotations.IndexMode;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.db.mixing.InvalidFieldException;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
@@ -212,6 +213,31 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         Map<String, String> mlsMap = new HashMap<>(multiLanguageString.data());
         mlsMap.put(MultiLanguageString.FALLBACK_KEY, values.at(0).getString());
         setValue(entity, mlsMap);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void checkNullability(Object propertyValue) {
+        if (!isNullable()) {
+            Map<String, String> values = ((Map<String, String>) propertyValue);
+            boolean containsFallback = values.containsKey("fallback");
+            if(containsFallback && Strings.isEmpty(values.get("fallback"))) {
+                throw Exceptions.createHandled()
+                                .error(new InvalidFieldException(getName()))
+                                .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
+                                .set("field", getFullLabel())
+                                .handle();
+            }
+
+            boolean consideredNull = isConsideredNull(propertyValue);
+            if(consideredNull) {
+                throw Exceptions.createHandled()
+                                .error(new InvalidFieldException(getName()))
+                                .withNLSKey("MultiLanguageStringProperty.empty")
+                                .set("field", getFullLabel())
+                                .handle();
+            }
+        }
     }
 
     @Override
