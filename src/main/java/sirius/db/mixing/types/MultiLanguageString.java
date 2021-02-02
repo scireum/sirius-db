@@ -15,9 +15,9 @@ import sirius.kernel.nls.NLS;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -29,7 +29,7 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     public static final String FALLBACK_KEY = "fallback";
 
-    private Set<String> validLanguages = Collections.emptySet();
+    private List<String> validLanguages = Collections.emptyList();
 
     private boolean withFallback;
 
@@ -46,9 +46,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
      *
      * @param validLanguages set of language codes to validate against
      */
-    public MultiLanguageString(@Nonnull Set<String> validLanguages) {
+    public MultiLanguageString(@Nonnull List<String> validLanguages) {
         this.withFallback = false;
-        this.validLanguages = Collections.unmodifiableSet(validLanguages);
+        this.validLanguages = Collections.unmodifiableList(validLanguages);
     }
 
     /**
@@ -66,13 +66,13 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * @param withFallback   if a fallback should also be stored in the map
      * @param validLanguages set of language codes to validate against
      */
-    public MultiLanguageString(boolean withFallback, @Nonnull Set<String> validLanguages) {
+    public MultiLanguageString(boolean withFallback, @Nonnull List<String> validLanguages) {
         this.withFallback = withFallback;
-        this.validLanguages = Collections.unmodifiableSet(validLanguages);
+        this.validLanguages = Collections.unmodifiableList(validLanguages);
     }
 
-    public Set<String> getValidLanguages() {
-        return Collections.unmodifiableSet(validLanguages);
+    public List<String> getValidLanguages() {
+        return Collections.unmodifiableList(validLanguages);
     }
 
     @Override

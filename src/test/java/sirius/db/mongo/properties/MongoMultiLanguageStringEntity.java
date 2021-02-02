@@ -13,6 +13,7 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.MultiLanguageString;
 import sirius.db.mongo.MongoEntity;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,7 +47,7 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
                                                                                  "tr"));
     public static final Mapping MULTILANGTEXT_WITH_VALID_LANGUAGES = Mapping.named("multiLangTextWithValidLanguages");
     @NullAllowed
-    private final MultiLanguageString multiLangTextWithValidLanguages = new MultiLanguageString(validLanguages);
+    private final MultiLanguageString multiLangTextWithValidLanguages = new MultiLanguageString(new ArrayList<>(validLanguages));
 
     private final MongoMultiLanguageStringComposite multiLangComposite = new MongoMultiLanguageStringComposite();
 

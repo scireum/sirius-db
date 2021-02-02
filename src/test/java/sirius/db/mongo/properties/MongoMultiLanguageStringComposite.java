@@ -13,6 +13,8 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.MultiLanguageString;
 
+import java.util.ArrayList;
+
 /**
  * Represents a composite to test properties of type {@link MultiLanguageString}
  */
@@ -21,7 +23,7 @@ public class MongoMultiLanguageStringComposite extends Composite {
             Mapping.named("compositeMultiLangTextWithValidLanguages");
     @NullAllowed
     private final MultiLanguageString compositeMultiLangTextWithValidLanguages =
-            new MultiLanguageString(MongoMultiLanguageStringEntity.validLanguages);
+            new MultiLanguageString(new ArrayList<>(MongoMultiLanguageStringEntity.validLanguages));
 
     public MultiLanguageString getCompositeMultiLangTextWithValidLanguages() {
         return compositeMultiLangTextWithValidLanguages;

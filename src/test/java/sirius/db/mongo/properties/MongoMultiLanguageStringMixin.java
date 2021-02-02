@@ -14,6 +14,8 @@ import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.MultiLanguageString;
 
+import java.util.ArrayList;
+
 /**
  * Represents an entity with a mixin to test properties of type {@link MultiLanguageString}
  */
@@ -23,7 +25,7 @@ public class MongoMultiLanguageStringMixin extends Mixable {
             Mapping.named("mixinMultiLangTextWithValidLanguages");
     @NullAllowed
     private final MultiLanguageString mixinMultiLangTextWithValidLanguages =
-            new MultiLanguageString(MongoMultiLanguageStringEntity.validLanguages);
+            new MultiLanguageString(new ArrayList<>(MongoMultiLanguageStringEntity.validLanguages));
 
     public MultiLanguageString getMixinMultiLangTextWithValidLanguages() {
         return mixinMultiLangTextWithValidLanguages;

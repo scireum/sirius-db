@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -218,9 +217,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     public List<String> computeAdditionalFieldNames(BaseEntity<?> entity) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
-        Set<String> validLanguages = multiLanguageString.getValidLanguages();
+        List<String> validLanguages = multiLanguageString.getValidLanguages();
         if (validLanguages.isEmpty()) {
-            validLanguages = NLS.getSupportedLanguages();
+            validLanguages = new ArrayList<>(NLS.getSupportedLanguages());
         }
         return validLanguages.stream().map(language -> getName() + "-" + language).collect(Collectors.toList());
     }
