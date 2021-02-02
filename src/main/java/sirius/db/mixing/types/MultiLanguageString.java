@@ -31,6 +31,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     private List<String> validLanguages = Collections.emptyList();
 
+    private String i18nPermission;
+
     private boolean withFallback;
 
     /**
@@ -71,8 +73,25 @@ public class MultiLanguageString extends SafeMap<String, String> {
         this.validLanguages = Collections.unmodifiableList(validLanguages);
     }
 
+    /**
+     * Creates a new object to hold a language-text map validating against the given set of language codes.
+     *
+     * @param withFallback   if a fallback should also be stored in the map
+     * @param validLanguages set of language codes to validate against
+     * @param i18nPermission the name of the permission required to add translated texts
+     */
+    public MultiLanguageString(boolean withFallback, @Nonnull List<String> validLanguages, String i18nPermission) {
+        this.withFallback = withFallback;
+        this.validLanguages = Collections.unmodifiableList(validLanguages);
+        this.i18nPermission = i18nPermission;
+    }
+
     public List<String> getValidLanguages() {
         return Collections.unmodifiableList(validLanguages);
+    }
+
+    public String getI18nPermission() {
+        return i18nPermission;
     }
 
     @Override
