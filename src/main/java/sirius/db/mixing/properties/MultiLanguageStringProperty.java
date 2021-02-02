@@ -80,6 +80,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected void onBeforeSaveChecks(Object entity) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
         if (!multiLanguageString.getValidLanguages().isEmpty()) {
@@ -98,6 +99,38 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                                                    .handle();
                                });
         }
+
+        Object propertyValue = getValue(entity);
+        boolean withFallback = multiLanguageString.hasFallback();
+        boolean consideredEmpty = isConsideredEmpty(propertyValue);
+        Map<String, String> values = ((Map<String, String>) propertyValue);
+
+        if(!consideredEmpty && withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(getName()))
+                            .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
+                            .set("field", getFullLabel())
+                            .handle();
+        }
+
+        if (!isNullable()) {
+            if(withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
+                throw Exceptions.createHandled()
+                                .error(new InvalidFieldException(getName()))
+                                .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
+                                .set("field", getFullLabel())
+                                .handle();
+            }
+
+            if (consideredEmpty) {
+                throw Exceptions.createHandled()
+                                .error(new InvalidFieldException(getName()))
+                                .withNLSKey("MultiLanguageStringProperty.empty")
+                                .set("field", getFullLabel())
+                                .handle();
+            }
+        }
+
         super.onBeforeSaveChecks(entity);
     }
 
@@ -218,26 +251,6 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     @SuppressWarnings("unchecked")
     protected void checkNullability(Object propertyValue) {
-        if (!isNullable()) {
-            Map<String, String> values = ((Map<String, String>) propertyValue);
-            boolean containsFallback = values.containsKey("fallback");
-            if(containsFallback && Strings.isEmpty(values.get("fallback"))) {
-                throw Exceptions.createHandled()
-                                .error(new InvalidFieldException(getName()))
-                                .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
-                                .set("field", getFullLabel())
-                                .handle();
-            }
-
-            boolean consideredNull = isConsideredEmpty(propertyValue);
-            if(consideredNull) {
-                throw Exceptions.createHandled()
-                                .error(new InvalidFieldException(getName()))
-                                .withNLSKey("MultiLanguageStringProperty.empty")
-                                .set("field", getFullLabel())
-                                .handle();
-            }
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -249,7 +262,10 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         if (values.isEmpty()) {
             return true;
         }
-        return values.entrySet().stream().filter(entry -> !"fallback".equals(entry.getKey())).allMatch(entry -> Strings.isEmpty(entry.getValue()));
+        return values.entrySet()
+                     .stream()
+                     .filter(entry -> !MultiLanguageString.FALLBACK_KEY.equals(entry.getKey()))
+                     .allMatch(entry -> Strings.isEmpty(entry.getValue()));
     }
 
     @Override
