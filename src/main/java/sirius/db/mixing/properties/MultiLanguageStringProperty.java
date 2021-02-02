@@ -101,7 +101,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
         }
 
         Object propertyValue = getValue(entity);
-        boolean withFallback = multiLanguageString.hasFallback();
+        boolean withFallback = multiLanguageString.isWithFallback();
         Map<String, String> values = ((Map<String, String>) propertyValue);
 
         if (!isNullable()) {
