@@ -229,7 +229,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                                 .handle();
             }
 
-            boolean consideredNull = isConsideredNull(propertyValue);
+            boolean consideredNull = isConsideredEmpty(propertyValue);
             if(consideredNull) {
                 throw Exceptions.createHandled()
                                 .error(new InvalidFieldException(getName()))
@@ -238,6 +238,18 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                                 .handle();
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean isConsideredEmpty(Object propertyValue) {
+        if (propertyValue == null) {
+            return true;
+        }
+        Map<String, String> values = ((Map<String, String>) propertyValue);
+        if (values.isEmpty()) {
+            return true;
+        }
+        return values.entrySet().stream().filter(entry -> !"fallback".equals(entry.getKey())).allMatch(entry -> Strings.isEmpty(entry.getValue()));
     }
 
     @Override
