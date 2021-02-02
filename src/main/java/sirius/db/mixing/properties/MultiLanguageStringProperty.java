@@ -102,16 +102,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
 
         Object propertyValue = getValue(entity);
         boolean withFallback = multiLanguageString.hasFallback();
-        boolean consideredEmpty = isConsideredEmpty(propertyValue);
         Map<String, String> values = ((Map<String, String>) propertyValue);
-
-        if(!consideredEmpty && withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
-            throw Exceptions.createHandled()
-                            .error(new InvalidFieldException(getName()))
-                            .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
-                            .set("field", getFullLabel())
-                            .handle();
-        }
 
         if (!isNullable()) {
             if(withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
@@ -122,6 +113,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                                 .handle();
             }
 
+            boolean consideredEmpty = isConsideredNull(propertyValue);
             if (consideredEmpty) {
                 throw Exceptions.createHandled()
                                 .error(new InvalidFieldException(getName()))
@@ -251,21 +243,6 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     @SuppressWarnings("unchecked")
     protected void checkNullability(Object propertyValue) {
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean isConsideredEmpty(Object propertyValue) {
-        if (propertyValue == null) {
-            return true;
-        }
-        Map<String, String> values = ((Map<String, String>) propertyValue);
-        if (values.isEmpty()) {
-            return true;
-        }
-        return values.entrySet()
-                     .stream()
-                     .filter(entry -> !MultiLanguageString.FALLBACK_KEY.equals(entry.getKey()))
-                     .allMatch(entry -> Strings.isEmpty(entry.getValue()));
     }
 
     @Override
