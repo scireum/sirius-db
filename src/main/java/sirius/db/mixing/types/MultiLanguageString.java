@@ -233,7 +233,12 @@ public class MultiLanguageString extends SafeMap<String, String> {
         return data().getOrDefault(language, data().get(FALLBACK_KEY));
     }
 
-    private boolean hasFallback() {
+    /**
+     * Returns true if this instance has been created with {@link #withFallback} enabled.
+     *
+     * @return true if it has a fallback enabled and a fallback key exists, false otherwise
+     */
+    public boolean hasFallback() {
         return withFallback && containsKey(FALLBACK_KEY);
     }
 
