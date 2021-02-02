@@ -15,8 +15,7 @@ import sirius.db.mongo.MongoEntity;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Represents an entity to test properties of type {@link MultiLanguageString}
@@ -30,24 +29,12 @@ public class MongoMultiLanguageStringEntity extends MongoEntity {
     @NullAllowed
     private final MultiLanguageString multiLangTextWithFallback = new MultiLanguageString(true);
 
-    public static final Set<String> validLanguages = new HashSet<>(Arrays.asList("da",
-                                                                                 "nl",
-                                                                                 "en",
-                                                                                 "fi",
-                                                                                 "fr",
-                                                                                 "de",
-                                                                                 "hu",
-                                                                                 "it",
-                                                                                 "nb",
-                                                                                 "pt",
-                                                                                 "ro",
-                                                                                 "ru",
-                                                                                 "es",
-                                                                                 "sv",
-                                                                                 "tr"));
+    public static final List<String> validLanguages =
+            Arrays.asList("da", "nl", "en", "fi", "fr", "de", "hu", "it", "nb", "pt", "ro", "ru", "es", "sv", "tr");
     public static final Mapping MULTILANGTEXT_WITH_VALID_LANGUAGES = Mapping.named("multiLangTextWithValidLanguages");
     @NullAllowed
-    private final MultiLanguageString multiLangTextWithValidLanguages = new MultiLanguageString(new ArrayList<>(validLanguages));
+    private final MultiLanguageString multiLangTextWithValidLanguages =
+            new MultiLanguageString(new ArrayList<>(validLanguages));
 
     private final MongoMultiLanguageStringComposite multiLangComposite = new MongoMultiLanguageStringComposite();
 
