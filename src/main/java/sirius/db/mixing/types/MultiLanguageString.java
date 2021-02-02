@@ -47,7 +47,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * with no place for a fallback string.
      *
      * @param validLanguages set of language codes to validate against
+     * @deprecated use fluent api instead ({@link MultiLanguageString#withValidLanguages(List)})
      */
+    @Deprecated
     public MultiLanguageString(@Nonnull List<String> validLanguages) {
         this.withFallback = false;
         this.validLanguages = Collections.unmodifiableList(validLanguages);
@@ -57,7 +59,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * Creates a new object to hold a language-text map.
      *
      * @param withFallback if a fallback should also be stored in the map
+     * @deprecated use fluent api instead ({@link MultiLanguageString#withFallback})
      */
+    @Deprecated
     public MultiLanguageString(boolean withFallback) {
         this.withFallback = withFallback;
     }
@@ -67,23 +71,27 @@ public class MultiLanguageString extends SafeMap<String, String> {
      *
      * @param withFallback   if a fallback should also be stored in the map
      * @param validLanguages set of language codes to validate against
+     * @deprecated use fluent api instead ({@link MultiLanguageString#withFallback}, {@link MultiLanguageString#withValidLanguages(List)})
      */
+    @Deprecated
     public MultiLanguageString(boolean withFallback, @Nonnull List<String> validLanguages) {
         this.withFallback = withFallback;
         this.validLanguages = Collections.unmodifiableList(validLanguages);
     }
 
-    /**
-     * Creates a new object to hold a language-text map validating against the given set of language codes.
-     *
-     * @param withFallback   if a fallback should also be stored in the map
-     * @param validLanguages set of language codes to validate against
-     * @param i18nPermission the name of the permission required to add translated texts
-     */
-    public MultiLanguageString(boolean withFallback, @Nonnull List<String> validLanguages, String i18nPermission) {
-        this.withFallback = withFallback;
-        this.validLanguages = Collections.unmodifiableList(validLanguages);
+    public MultiLanguageString withFallback() {
+        this.withFallback = true;
+        return this;
+    }
+
+    public MultiLanguageString withValidLanguages(@Nonnull List<String> validLanguages) {
+        this.validLanguages = validLanguages;
+        return this;
+    }
+
+    public MultiLanguageString withI18nPermission(@Nonnull String i18nPermission) {
         this.i18nPermission = i18nPermission;
+        return this;
     }
 
     public List<String> getValidLanguages() {
