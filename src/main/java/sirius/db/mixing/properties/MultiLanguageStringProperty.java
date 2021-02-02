@@ -105,7 +105,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
      *
      * @see Property#getValueFromField(Object)
      */
-    protected MultiLanguageString getMultiLanguageString(Object target) {
+    public MultiLanguageString getMultiLanguageString(Object target) {
         try {
             return (MultiLanguageString) field.get(accessPath.apply(target));
         } catch (IllegalAccessException e) {
