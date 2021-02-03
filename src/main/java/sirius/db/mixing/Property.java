@@ -579,26 +579,6 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Computes additional field names to parse based on the entity given.
-     *
-     * @param entity Entity whose additional fields to compute for
-     * @return List of additional field names
-     */
-    public List<String> computeAdditionalFieldNames(BaseEntity<?> entity) {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Parses the given complex values map and applies it to the given entity if possible.
-     *
-     * @param entity      the entity to receive the parsed value
-     * @param values the values to parse and apply
-     */
-    public void parseComplexValues(Object entity, Map<String, Value> values) {
-        throw new UnsupportedOperationException(getClass().getName() + " must be overridden");
-    }
-
-    /**
      * Converts the given value, which most probably contains user input as string into the target type of this
      * property.
      *
