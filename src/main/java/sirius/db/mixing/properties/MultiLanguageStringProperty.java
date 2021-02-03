@@ -103,34 +103,38 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
             return;
         }
         boolean withFallback = multiLanguageString.isWithFallback();
-        Map<String, String> values = multiLanguageString.data();
-        if (withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
+        if (!withFallback && multiLanguageString.getValidLanguages().isEmpty()) {
+            return;
+        }
+        if (withFallback && Strings.isEmpty(multiLanguageString.data().get(MultiLanguageString.FALLBACK_KEY))) {
             throw Exceptions.createHandled()
                             .error(new InvalidFieldException(getName()))
                             .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
                             .set(PARAM_FIELD, getFullLabel())
                             .handle();
         }
-        multiLanguageString.data()
-                           .entrySet()
-                           .stream()
-                           .filter(entry -> Strings.isEmpty(entry.getValue()))
-                           .findAny()
-                           .ifPresent(entry -> {
-                               throw Exceptions.createHandled()
-                                               .error(new InvalidFieldException(getName()))
-                                               .withNLSKey("MultiLanguageStringProperty.empty")
-                                               .set(PARAM_FIELD, getFullLabel())
-                                               .handle();
-                           });
+        if (!withFallback) {
+            multiLanguageString.data()
+                               .entrySet()
+                               .stream()
+                               .filter(entry -> Strings.isEmpty(entry.getValue()))
+                               .findAny()
+                               .ifPresent(entry -> {
+                                   throw Exceptions.createHandled()
+                                                   .error(new InvalidFieldException(getName()))
+                                                   .withNLSKey("MultiLanguageStringProperty.empty")
+                                                   .set(PARAM_FIELD, getFullLabel())
+                                                   .handle();
+                               });
+        }
     }
 
     /**
      * Bypasses {@link BaseMapProperty#getValueFromField(Object)} to access the actual MultiLanguageString entity.
      *
-     * @see Property#getValueFromField(Object)
      * @param target the target object determined by the access path
      * @return the corresponding {@link MultiLanguageString} object determined by the access path
+     * @see Property#getValueFromField(Object)
      */
     public MultiLanguageString getMultiLanguageString(Object target) {
         try {
