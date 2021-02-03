@@ -131,7 +131,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
      *
      * @see Property#getValueFromField(Object)
      */
-    protected MultiLanguageString getMultiLanguageString(Object target) {
+    public MultiLanguageString getMultiLanguageString(Object target) {
         try {
             return (MultiLanguageString) field.get(accessPath.apply(target));
         } catch (IllegalAccessException e) {
@@ -235,6 +235,9 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     public void parseValues(Object entity, Values values) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
+        if (!multiLanguageString.hasFallback()) {
+            return;
+        }
         Map<String, String> mlsMap = new HashMap<>(multiLanguageString.data());
         mlsMap.put(MultiLanguageString.FALLBACK_KEY, values.at(0).getString());
         setValue(entity, mlsMap);

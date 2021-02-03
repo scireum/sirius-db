@@ -31,6 +31,8 @@ public class MultiLanguageString extends SafeMap<String, String> {
 
     private List<String> validLanguages = Collections.emptyList();
 
+    private String i18nPermission;
+
     private boolean withFallback;
 
     /**
@@ -45,7 +47,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * with no place for a fallback string.
      *
      * @param validLanguages set of language codes to validate against
+     * @deprecated use fluent api instead ({@link MultiLanguageString#withValidLanguages(List)})
      */
+    @Deprecated
     public MultiLanguageString(@Nonnull List<String> validLanguages) {
         this.withFallback = false;
         this.validLanguages = Collections.unmodifiableList(validLanguages);
@@ -55,7 +59,9 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * Creates a new object to hold a language-text map.
      *
      * @param withFallback if a fallback should also be stored in the map
+     * @deprecated use fluent api instead ({@link MultiLanguageString#withFallback})
      */
+    @Deprecated
     public MultiLanguageString(boolean withFallback) {
         this.withFallback = withFallback;
     }
@@ -64,15 +70,53 @@ public class MultiLanguageString extends SafeMap<String, String> {
      * Creates a new object to hold a language-text map validating against the given set of language codes.
      *
      * @param withFallback   if a fallback should also be stored in the map
-     * @param validLanguages set of language codes to validate against
+     * @param validLanguages list of language codes to validate against
+     * @deprecated use fluent api instead ({@link MultiLanguageString#withFallback}, {@link MultiLanguageString#withValidLanguages(List)})
      */
+    @Deprecated
     public MultiLanguageString(boolean withFallback, @Nonnull List<String> validLanguages) {
         this.withFallback = withFallback;
         this.validLanguages = Collections.unmodifiableList(validLanguages);
     }
 
+    /**
+     * Enables fallback for this MultiLanguageString.
+     *
+     * @return the object itself for fluent method calls
+     */
+    public MultiLanguageString withFallback() {
+        this.withFallback = true;
+        return this;
+    }
+
+    /**
+     * Sets the given set of valid languages.
+     *
+     * @param validLanguages the list of language codes to validate against
+     * @return the object itself for fluent method calls
+     */
+    public MultiLanguageString withValidLanguages(@Nonnull List<String> validLanguages) {
+        this.validLanguages = validLanguages;
+        return this;
+    }
+
+    /**
+     * Sets the given internationalization permission.
+     *
+     * @param i18nPermission the permission required to change entries other than 'fallback'
+     * @return the object itself for fluent method calls
+     */
+    public MultiLanguageString withI18nPermission(@Nonnull String i18nPermission) {
+        this.i18nPermission = i18nPermission;
+        return this;
+    }
+
     public List<String> getValidLanguages() {
         return Collections.unmodifiableList(validLanguages);
+    }
+
+    public String getI18nPermission() {
+        return i18nPermission;
     }
 
     @Override
