@@ -19,7 +19,8 @@ import java.util.Arrays;
  */
 public class MongoMultiLanguageStringRequiredNoFallbackEntity extends MongoEntity {
     public static final Mapping MULTILANGTEXT = Mapping.named("multiLangText");
-    private final MultiLanguageString multiLangText = new MultiLanguageString().withValidLanguages(Arrays.asList("de","en"));
+    private final MultiLanguageString multiLangText =
+            new MultiLanguageString().withValidLanguages(Arrays.asList("de", "en"));
 
     public MultiLanguageString getMultiLangText() {
         return multiLangText;

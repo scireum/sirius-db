@@ -24,6 +24,17 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
     @Part
     private static Mongo mongo
 
+    def "mls without fallback and valid languages must have all languages filled"() {
+        given:
+        def entity = new MongoMultiLanguageStringRequiredNoFallbackEntity()
+
+        when:
+        mango.update(entity)
+
+        then:
+        thrown(HandledException)
+    }
+
     def "invalid language"() {
         given:
         def entity = new MongoMultiLanguageStringEntity()
@@ -73,20 +84,6 @@ class MongoMultiLanguageStringPropertySpec extends BaseSpecification {
         noExceptionThrown()
         and:
         entity.getMultiLangText() == new MultiLanguageString()
-    }
-
-    def "store works without fallback"() {
-        given:
-        def entity = new MongoMultiLanguageStringRequiredNoFallbackEntity()
-
-        entity.getMultiLangText().addText("de", "")
-        mango.update(entity)
-
-        when:
-        def output = mango.refreshOrFail(entity)
-
-        then:
-        noExceptionThrown()
     }
 
     def "store retrieve and validate"() {

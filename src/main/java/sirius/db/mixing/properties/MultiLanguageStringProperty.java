@@ -114,6 +114,13 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                             .handle();
         }
         if (!withFallback) {
+            if (multiLanguageString.data().isEmpty()) {
+                throw Exceptions.createHandled()
+                                .error(new InvalidFieldException(getName()))
+                                .withNLSKey("MultiLanguageStringProperty.empty")
+                                .set(PARAM_FIELD, getFullLabel())
+                                .handle();
+            }
             multiLanguageString.data()
                                .entrySet()
                                .stream()
