@@ -48,6 +48,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
 
     private static final String LANGUAGE_PROPERTY = "lang";
     private static final String TEXT_PROPERTY = "text";
+    private static final String PARAM_FIELD = "field";
 
     /**
      * Factory for generating properties based on their field type
@@ -80,7 +81,6 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected void onBeforeSaveChecks(Object entity) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
         if (!multiLanguageString.getValidLanguages().isEmpty()) {
@@ -95,41 +95,42 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
                                                    .withNLSKey("MultiLanguageString.invalidLanguage")
                                                    .set("language", entry.getKey())
                                                    .set("text", entry.getValue())
-                                                   .set("field", getField().getName())
+                                                   .set(PARAM_FIELD, getField().getName())
                                                    .handle();
                                });
         }
-
-        Object propertyValue = getValue(entity);
-        boolean withFallback = multiLanguageString.isWithFallback();
-        Map<String, String> values = ((Map<String, String>) propertyValue);
-
-        if (!isNullable()) {
-            if(withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
-                throw Exceptions.createHandled()
-                                .error(new InvalidFieldException(getName()))
-                                .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
-                                .set("field", getFullLabel())
-                                .handle();
-            }
-
-            boolean consideredEmpty = isConsideredNull(propertyValue);
-            if (consideredEmpty) {
-                throw Exceptions.createHandled()
-                                .error(new InvalidFieldException(getName()))
-                                .withNLSKey("MultiLanguageStringProperty.empty")
-                                .set("field", getFullLabel())
-                                .handle();
-            }
+        if (isNullable()) {
+            return;
         }
-
-        super.onBeforeSaveChecks(entity);
+        boolean withFallback = multiLanguageString.isWithFallback();
+        Map<String, String> values = multiLanguageString.data();
+        if (withFallback && Strings.isEmpty(values.get(MultiLanguageString.FALLBACK_KEY))) {
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(getName()))
+                            .withNLSKey("MultiLanguageStringProperty.fallbackNotSet")
+                            .set(PARAM_FIELD, getFullLabel())
+                            .handle();
+        }
+        multiLanguageString.data()
+                           .entrySet()
+                           .stream()
+                           .filter(entry -> Strings.isEmpty(entry.getValue()))
+                           .findAny()
+                           .ifPresent(entry -> {
+                               throw Exceptions.createHandled()
+                                               .error(new InvalidFieldException(getName()))
+                                               .withNLSKey("MultiLanguageStringProperty.empty")
+                                               .set(PARAM_FIELD, getFullLabel())
+                                               .handle();
+                           });
     }
 
     /**
      * Bypasses {@link BaseMapProperty#getValueFromField(Object)} to access the actual MultiLanguageString entity.
      *
      * @see Property#getValueFromField(Object)
+     * @param target the target object determined by the access path
+     * @return the corresponding {@link MultiLanguageString} object determined by the access path
      */
     public MultiLanguageString getMultiLanguageString(Object target) {
         try {
@@ -235,7 +236,7 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     @Override
     public void parseValues(Object entity, Values values) {
         MultiLanguageString multiLanguageString = getMultiLanguageString(entity);
-        if (!multiLanguageString.hasFallback()) {
+        if (!multiLanguageString.isWithFallback()) {
             return;
         }
         Map<String, String> mlsMap = new HashMap<>(multiLanguageString.data());
@@ -244,8 +245,8 @@ public class MultiLanguageStringProperty extends BaseMapProperty implements ESPr
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected void checkNullability(Object propertyValue) {
+        // Intentionally left empty as logic is implemented in onBeforeSaveChecks
     }
 
     @Override
