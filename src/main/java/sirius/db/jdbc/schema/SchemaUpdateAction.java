@@ -122,7 +122,7 @@ public class SchemaUpdateAction {
                 if (!Sirius.isStartedAsTest()) {
                     OMA.LOG.INFO("Executing Schema Update: %s", statement);
                 }
-                db.createQuery(statement).executeUpdate();
+                db.createQuery(statement).markAsLongRunning().executeUpdate();
             }
         } catch (Exception e) {
             Exceptions.handle()
