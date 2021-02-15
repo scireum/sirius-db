@@ -106,12 +106,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
                 }
 
-                Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
-                if (isDefaultValue(valueForDatasource) && property.isAnnotationPresent(SkipDefaultValue.class)) {
-                    updater.unset(property.getPropertyName());
-                } else {
-                    updater.set(property.getPropertyName(), valueForDatasource);
-                }
+                writeField(entity, updater, property);
                 changed = true;
             }
         }
@@ -141,6 +136,15 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             } else {
                 throw e;
             }
+        }
+    }
+
+    private void writeField(MongoEntity entity, Updater updater, Property property) {
+        Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
+        if (isDefaultValue(valueForDatasource) && property.isAnnotationPresent(SkipDefaultValue.class)) {
+            updater.unset(property.getPropertyName());
+        } else {
+            updater.set(property.getPropertyName(), valueForDatasource);
         }
     }
 
