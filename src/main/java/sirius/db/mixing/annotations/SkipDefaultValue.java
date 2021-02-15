@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
  * This can e.g. be used for MongoDB where we can simply skip fields which are <tt>null</tt> or <tt>false</tt>, as when
  * reading them back, the property will restore the default value anyway.
  * <p>
- * Note that this is not enabled by default as it migth lead to unexpected behavior in queries.
+ * Note that this is not enabled by default as it might lead to unexpected behavior in queries.
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
