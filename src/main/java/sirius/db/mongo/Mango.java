@@ -21,6 +21,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
+import sirius.db.mixing.annotations.SkipDefaultValue;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.kernel.Startable;
@@ -75,8 +76,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         for (Property property : descriptor.getProperties()) {
-            if (!MongoEntity.ID.getName().equals(property.getName())) {
-                insert.set(property.getPropertyName(), property.getValueForDatasource(Mango.class, entity));
+            Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
+            if (!MongoEntity.ID.getName().equals(property.getName()) && (!isDefaultValue(valueForDatasource)
+                                                                         || !property.isAnnotationPresent(
+                    SkipDefaultValue.class))) {
+                insert.set(property.getPropertyName(), valueForDatasource);
             }
         }
 
@@ -105,7 +109,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
                 }
 
-                updater.set(property.getPropertyName(), property.getValueForDatasource(Mango.class, entity));
+                writeField(entity, updater, property);
                 changed = true;
             }
         }
@@ -136,6 +140,27 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                 throw e;
             }
         }
+    }
+
+    private void writeField(MongoEntity entity, Updater updater, Property property) {
+        Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
+        if (isDefaultValue(valueForDatasource) && property.isAnnotationPresent(SkipDefaultValue.class)) {
+            updater.unset(property.getPropertyName());
+        } else {
+            updater.set(property.getPropertyName(), valueForDatasource);
+        }
+    }
+
+    /**
+     * Determines if the given value is the default value.
+     * <p>
+     * This is the value which is also assumed if no value at all is present in the database.
+     *
+     * @param valueForDatasource the value to check
+     * @return <tt>true</tt> if the given value is a default value, <tt>false</tt> otherwise
+     */
+    private boolean isDefaultValue(Object valueForDatasource) {
+        return valueForDatasource == null || Boolean.FALSE.equals(valueForDatasource);
     }
 
     private <E extends MongoEntity> void enforceUpdate(E entity, boolean force, long updatedRows, boolean versioned)

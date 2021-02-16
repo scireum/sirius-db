@@ -580,7 +580,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see AggregationResult#forEachBucket(Consumer)
      */
     public ElasticQuery<E> addTermAggregation(Mapping field) {
-        return addTermAggregation(field.toString(), field, DEFAULT_TERM_AGGREGATION_BUCKET_COUNT);
+        return addTermAggregation(field.toString(), field, AggregationBuilder.DEFAULT_TERM_AGGREGATION_BUCKET_COUNT);
     }
 
     /**
