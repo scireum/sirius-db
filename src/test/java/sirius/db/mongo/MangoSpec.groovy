@@ -21,6 +21,9 @@ class MangoSpec extends BaseSpecification {
     @Part
     private static Mango mango
 
+    @Part
+    private static Mongo mongo
+
     def "write a test entity and read it back"() {
         given:
         MangoTestEntity e = new MangoTestEntity()
@@ -257,5 +260,68 @@ class MangoSpec extends BaseSpecification {
         mango.select(MangoAggregationsTestEntity.class).
                 aggregateMax(MangoAggregationsTestEntity.TEST_INT).
                 asInt(0) == 30
+    }
+
+    def "SkipDefaultValues works as expected"() {
+        when:
+        SkipDefaultTestEntity test = new SkipDefaultTestEntity()
+        mango.update(test)
+        and:
+        test = mango.find(SkipDefaultTestEntity.class, test.getId()).get()
+        then:
+        test.getStringTest() == null
+        test.isBoolTest() == false
+        and:
+        // Only the id (and _id) is stored...
+        mongo.
+                find().
+                where(SkipDefaultTestEntity.ID, test.getId()).
+                singleIn(SkipDefaultTestEntity.class).
+                get().
+                getUnderlyingObject().
+                keySet().
+                size() == 2
+
+        when:
+        test = new SkipDefaultTestEntity()
+        test.setStringTest("Hello")
+        test.setBoolTest(true)
+        mango.update(test)
+        and:
+        test = mango.find(SkipDefaultTestEntity.class, test.getId()).get()
+        then:
+        test.getStringTest() == "Hello"
+        test.isBoolTest() == true
+        and:
+        // All fields are stored...
+        mongo.
+                find().
+                where(SkipDefaultTestEntity.ID, test.getId()).
+                singleIn(SkipDefaultTestEntity.class).
+                get().
+                getUnderlyingObject().
+                keySet().
+                size() == 4
+
+        when:
+        test.setStringTest(null)
+        test.setBoolTest(false)
+        mango.update(test)
+        and:
+        test = mango.find(SkipDefaultTestEntity.class, test.getId()).get()
+        then:
+        test.getStringTest() == null
+        test.isBoolTest() == false
+        and:
+        // Only the id (and again _id) is stored...
+        mongo.
+                find().
+                where(SkipDefaultTestEntity.ID, test.getId()).
+                singleIn(SkipDefaultTestEntity.class).
+                get().
+                getUnderlyingObject().
+                keySet().
+                size() == 2
+
     }
 }

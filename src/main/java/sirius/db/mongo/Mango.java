@@ -76,8 +76,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         for (Property property : descriptor.getProperties()) {
-            if (!MongoEntity.ID.getName().equals(property.getName())) {
-                insert.set(property.getPropertyName(), property.getValueForDatasource(Mango.class, entity));
+            Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
+            if (!MongoEntity.ID.getName().equals(property.getName()) && (!isDefaultValue(valueForDatasource)
+                                                                         || !property.isAnnotationPresent(
+                    SkipDefaultValue.class))) {
+                insert.set(property.getPropertyName(), valueForDatasource);
             }
         }
 

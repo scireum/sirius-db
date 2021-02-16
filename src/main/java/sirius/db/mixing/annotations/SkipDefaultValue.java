@@ -19,7 +19,11 @@ import java.lang.annotation.Target;
  * This can e.g. be used for MongoDB where we can simply skip fields which are <tt>null</tt> or <tt>false</tt>, as when
  * reading them back, the property will restore the default value anyway.
  * <p>
- * Note that this is not enabled by default as it might lead to unexpected behavior in queries.
+ * Note that this is not enabled by default as it might lead to unexpected behavior in queries. For example using
+ * {@code db.collection.find({"non_existent_flag", false})} will not return document which <tt>false</tt> has been
+ * skipped by not storing a value at all.
+ * <p>
+ * The bottom line is, that this can be used to "optimize away" sparse values <b>which are not used in queries</b>.
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
