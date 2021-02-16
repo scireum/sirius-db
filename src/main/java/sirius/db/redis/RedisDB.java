@@ -44,6 +44,7 @@ public class RedisDB {
     private String host;
     private int port;
     private int connectTimeout;
+    private int readTimeout;
     private String password;
     private int db;
     private int maxActive;
@@ -61,6 +62,7 @@ public class RedisDB {
         this.host = config.getString("host");
         this.port = config.getInt("port");
         this.connectTimeout = config.getInt("connectTimeout");
+        this.readTimeout = config.getInt("readTimeout");
         this.password = config.getString("password");
         this.db = config.getInt("db");
         this.maxActive = config.getInt("maxActive");
@@ -124,7 +126,11 @@ public class RedisDB {
                                                  Arrays.stream(sentinels.split(","))
                                                        .map(String::trim)
                                                        .collect(Collectors.toSet()),
-                                                 poolConfig);
+                                                 poolConfig,
+                                                 connectTimeout,
+                                                 readTimeout,
+                                                 null,
+                                                 db);
             return sentinelPool.getResource();
         }
         if (sentinelPool != null) {
@@ -147,6 +153,7 @@ public class RedisDB {
                                   effectiveHostAndPort.getFirst(),
                                   effectiveHostAndPort.getSecond(),
                                   connectTimeout,
+                                  readTimeout,
                                   Strings.isFilled(password) ? password : null,
                                   db,
                                   CallContext.getNodeName());
