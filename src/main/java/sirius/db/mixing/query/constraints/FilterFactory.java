@@ -522,6 +522,26 @@ public abstract class FilterFactory<C extends Constraint> {
     }
 
     /**
+     * Creates a constraint which ensures that the given field contains all of the given values.
+     *
+     * @param field  the field to filter on
+     * @param values the values to check
+     * @return the generated constraint
+     */
+    public C allInField(Mapping field, Collection<?> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+
+        List<C> clauses = new ArrayList<>();
+        for (Object value : values) {
+            clauses.add(eq(field, value));
+        }
+
+        return and(clauses);
+    }
+
+    /**
      * Creates a new constraint for the given field which asserts that one of the given values in the string is
      * present.
      * <p>

@@ -165,7 +165,8 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      * @param values the values to check
      * @return the generated constraint
      */
-    public MongoConstraint allInField(Mapping field, List<?> values) {
+    @Override
+    public MongoConstraint allInField(Mapping field, Collection<?> values) {
         BasicDBList list = new BasicDBList();
         for (Object value : values) {
             list.add(transform(value));

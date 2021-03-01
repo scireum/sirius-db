@@ -8,7 +8,6 @@
 
 package sirius.db.es
 
-
 import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
@@ -295,6 +294,30 @@ class ElasticQuerySpec extends BaseSpecification {
                .queryOne().getId() == entityEmpty.getId()
     }
 
+    def "allInField query works"() {
+        setup:
+        ESStringListEntity entity = new ESStringListEntity()
+        entity.getList().modify().addAll(["1", "2", "3"])
+        when:
+        elastic.update(entity)
+        elastic.refresh(ESStringListEntity.class)
+        then:
+        elastic.select(ESStringListEntity.class)
+               .eq(ESStringListEntity.ID, entity.getId())
+               .where(Elastic.FILTERS.allInField(ESStringListEntity.LIST, ["1", "2", "3", "4"]))
+               .count() == 0
+        then:
+        elastic.select(ESStringListEntity.class)
+               .eq(ESStringListEntity.ID, entity.getId())
+               .where(Elastic.FILTERS.allInField(ESStringListEntity.LIST, ["1", "2", "3"]))
+               .queryOne().getId() == entity.getId()
+        then:
+        elastic.select(ESStringListEntity.class)
+               .eq(ESStringListEntity.ID, entity.getId())
+               .where(Elastic.FILTERS.allInField(ESStringListEntity.LIST, ["1", "2"]))
+               .queryOne().getId() == entity.getId()
+    }
+
     def "field value score queries work"() {
         when:
         for (int i = 0; i < 100; i++) {
@@ -398,7 +421,7 @@ class ElasticQuerySpec extends BaseSpecification {
         !qry.exists()
     }
 
-    def "search for a mongo reference works" () {
+    def "search for a mongo reference works"() {
         when: "We create an example mongo entity"
         MangoTestEntity mangoTestEntity = new MangoTestEntity()
         mangoTestEntity.firstname = "Compiler"
