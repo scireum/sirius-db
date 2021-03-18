@@ -146,7 +146,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     private void writeField(MongoEntity entity, Updater updater, Property property) {
         Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
-        if (isDefaultValue(valueForDatasource) && property.isAnnotationPresent(SkipDefaultValue.class)) {
+        if (property.isAnnotationPresent(SkipDefaultValue.class) && isDefaultValue(valueForDatasource)) {
             updater.unset(property.getPropertyName());
         } else {
             updater.set(property.getPropertyName(), valueForDatasource);
