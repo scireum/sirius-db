@@ -10,6 +10,8 @@ package sirius.db.mongo;
 
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.SkipDefaultValue;
+import sirius.db.mixing.types.StringList;
+import sirius.db.mixing.types.StringMap;
 
 public class SkipDefaultTestEntity extends MongoEntity {
 
@@ -19,6 +21,12 @@ public class SkipDefaultTestEntity extends MongoEntity {
 
     @SkipDefaultValue
     private boolean boolTest;
+
+    @SkipDefaultValue
+    private final StringList listTest = new StringList();
+
+    @SkipDefaultValue
+    private final StringMap mapTest = new StringMap();
 
     public String getStringTest() {
         return stringTest;
@@ -34,5 +42,13 @@ public class SkipDefaultTestEntity extends MongoEntity {
 
     public void setBoolTest(boolean boolTest) {
         this.boolTest = boolTest;
+    }
+
+    public StringList getListTest() {
+        return listTest;
+    }
+
+    public StringMap getMapTest() {
+        return mapTest;
     }
 }
