@@ -271,6 +271,8 @@ class MangoSpec extends BaseSpecification {
         then:
         test.getStringTest() == null
         test.isBoolTest() == false
+        test.getListTest().size() == 0
+        test.getMapTest().size() == 0
         and:
         // Only the id (and _id) is stored...
         mongo.
@@ -286,12 +288,16 @@ class MangoSpec extends BaseSpecification {
         test = new SkipDefaultTestEntity()
         test.setStringTest("Hello")
         test.setBoolTest(true)
+        test.getListTest().add("Item")
+        test.getMapTest().put("Key", "Value")
         mango.update(test)
         and:
         test = mango.find(SkipDefaultTestEntity.class, test.getId()).get()
         then:
         test.getStringTest() == "Hello"
         test.isBoolTest() == true
+        test.getListTest().contains("Item")
+        test.getMapTest().get("Key").orElse("") == "Value"
         and:
         // All fields are stored...
         mongo.
@@ -301,17 +307,21 @@ class MangoSpec extends BaseSpecification {
                 get().
                 getUnderlyingObject().
                 keySet().
-                size() == 4
+                size() == 6
 
         when:
         test.setStringTest(null)
         test.setBoolTest(false)
+        test.getListTest().clear()
+        test.getMapTest().clear()
         mango.update(test)
         and:
         test = mango.find(SkipDefaultTestEntity.class, test.getId()).get()
         then:
         test.getStringTest() == null
         test.isBoolTest() == false
+        test.getListTest().size() == 0
+        test.getMapTest().size() == 0
         and:
         // Only the id (and again _id) is stored...
         mongo.

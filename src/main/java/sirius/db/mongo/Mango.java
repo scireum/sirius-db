@@ -33,6 +33,8 @@ import sirius.kernel.health.Exceptions;
 
 import java.util.HashSet;
 import java.util.IntSummaryStatistics;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -144,7 +146,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     private void writeField(MongoEntity entity, Updater updater, Property property) {
         Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
-        if (isDefaultValue(valueForDatasource) && property.isAnnotationPresent(SkipDefaultValue.class)) {
+        if (property.isAnnotationPresent(SkipDefaultValue.class) && isDefaultValue(valueForDatasource)) {
             updater.unset(property.getPropertyName());
         } else {
             updater.set(property.getPropertyName(), valueForDatasource);
@@ -160,7 +162,19 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * @return <tt>true</tt> if the given value is a default value, <tt>false</tt> otherwise
      */
     private boolean isDefaultValue(Object valueForDatasource) {
-        return valueForDatasource == null || Boolean.FALSE.equals(valueForDatasource);
+        if (valueForDatasource == null) {
+            return true;
+        }
+
+        if (valueForDatasource instanceof List && ((List<?>) valueForDatasource).isEmpty()) {
+            return true;
+        }
+
+        if (valueForDatasource instanceof Map && ((Map<?, ?>) valueForDatasource).isEmpty()) {
+            return true;
+        }
+
+        return Boolean.FALSE.equals(valueForDatasource);
     }
 
     private <E extends MongoEntity> void enforceUpdate(E entity, boolean force, long updatedRows, boolean versioned)
