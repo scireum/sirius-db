@@ -25,6 +25,8 @@ import java.util.Optional;
  */
 public class ElasticRef<E extends ElasticEntity> extends BaseEntityRef<String, E> {
 
+    private static final long serialVersionUID = -2145898365724128406L;
+
     @Part
     private static Elastic elastic;
 
