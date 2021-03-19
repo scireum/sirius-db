@@ -24,6 +24,8 @@ import java.util.Optional;
  */
 public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
 
+    private static final long serialVersionUID = 1326527428258744219L;
+
     @Part
     private static OMA oma;
 

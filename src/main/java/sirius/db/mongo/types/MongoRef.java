@@ -25,6 +25,8 @@ import java.util.Optional;
  */
 public class MongoRef<E extends MongoEntity> extends BaseEntityRef<String, E> {
 
+    private static final long serialVersionUID = -6313142563678458058L;
+
     @Part
     private static Mango mango;
 
