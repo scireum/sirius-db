@@ -63,7 +63,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         }
     }
 
-    StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
+    protected StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.trim = field.isAnnotationPresent(Trim.class);
         this.lob = field.isAnnotationPresent(Lob.class);
