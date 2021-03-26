@@ -24,6 +24,7 @@ import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.UnitOfWork;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Wait;
+import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -195,7 +196,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
 
         try {
             EntityDescriptor ed = entity.getDescriptor();
-            ed.beforeSave(entity);
+            invokeBeforeSaveHandlers(entity, ed);
 
             if (entity.isNew()) {
                 createEntity(entity, ed);
@@ -203,7 +204,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                 updateEntity(entity, force, ed);
             }
 
-            ed.afterSave(entity);
+            invokeAfterSaveHandlers(entity, ed);
         } catch (IntegrityConstraintFailedException | OptimisticLockException e) {
             throw e;
         } catch (Exception e) {
@@ -214,6 +215,24 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                                     entity,
                                                     entity.getClass().getSimpleName())
                             .handle();
+        }
+    }
+
+    private <E extends B> void invokeBeforeSaveHandlers(E entity, EntityDescriptor ed) {
+        Watch watch = Watch.start();
+        try {
+            ed.beforeSave(entity);
+        } finally {
+            watch.submitMicroTiming("MIXING", "BeforeSave - " + ed.getName());
+        }
+    }
+
+    private <E extends B> void invokeAfterSaveHandlers(E entity, EntityDescriptor ed) {
+        Watch watch = Watch.start();
+        try {
+            ed.afterSave(entity);
+        } finally {
+            watch.submitMicroTiming("MIXING", "AferSave - " + ed.getName());
         }
     }
 
@@ -290,10 +309,10 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
 
         try {
             EntityDescriptor ed = entity.getDescriptor();
-            ed.beforeDelete(entity);
+            invokeBeforeDeleteHandlers(entity, ed);
             if (TaskContext.get().isActive()) {
                 deleteEntity(entity, force, ed);
-                ed.afterDelete(entity);
+                invokeAfterDeleteHandlers(entity, ed);
             }
         } catch (OptimisticLockException e) {
             throw e;
@@ -305,6 +324,24 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                                     entity,
                                                     entity.getClass().getSimpleName())
                             .handle();
+        }
+    }
+
+    private <E extends B> void invokeBeforeDeleteHandlers(E entity, EntityDescriptor ed) {
+        Watch watch = Watch.start();
+        try {
+            ed.beforeDelete(entity);
+        } finally {
+            watch.submitMicroTiming("MIXING", "BeforeDelete - " + ed.getName());
+        }
+    }
+
+    private <E extends B> void invokeAfterDeleteHandlers(E entity, EntityDescriptor ed) {
+        Watch watch = Watch.start();
+        try {
+            ed.afterDelete(entity);
+        } finally {
+            watch.submitMicroTiming("MIXING", "AfterDelete - " + ed.getName());
         }
     }
 
