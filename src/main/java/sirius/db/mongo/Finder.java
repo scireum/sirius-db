@@ -549,7 +549,7 @@ public class Finder extends QueryBuilder<Finder> {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
-                watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject.keySet());
+                watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired("facets-" + collection, watch);
         }
