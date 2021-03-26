@@ -231,7 +231,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     /**
      * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
      * <p>
-     * In contrast to {@link #iterate(Predicate)}, this method is suitable for large result sets or log processing
+     * In contrast to {@link #iterate(Predicate)}, this method is suitable for large result sets or long processing
      * times. As <tt>iterate</tt> keeps the JDBC <tt>ResultSet</tt> open, the underlying server might discard the
      * result at some point in time (e.g. MySQL does this after 30-45min). Therefore, we execute the query and start
      * processing. If a timeout ({@link #QUERY_ITERATE_TIMEOUT} is reached, we stop iterating, discard the result set
