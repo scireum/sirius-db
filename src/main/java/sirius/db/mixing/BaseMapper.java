@@ -45,6 +45,7 @@ import java.util.function.Function;
 public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, Q extends Query<?, ? extends B, C>> {
 
     private static final Function<String, Value> EMPTY_CONTEXT = key -> Value.EMPTY;
+    private static final String TIMING_CATEGORY_MIXING = "MIXING";
 
     /**
      * Contains the name of the version column used for optimistic locking.
@@ -223,7 +224,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         try {
             entityDescriptor.beforeSave(entity);
         } finally {
-            watch.submitMicroTiming("MIXING", "BeforeSave - " + ed.getName());
+            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "BeforeSave - " + entityDescriptor.getName());
         }
     }
 
@@ -232,7 +233,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         try {
             entityDescriptor.afterSave(entity);
         } finally {
-            watch.submitMicroTiming("MIXING", "AferSave - " + ed.getName());
+            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "AferSave - " + entityDescriptor.getName());
         }
     }
 
@@ -332,7 +333,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         try {
             entityDescriptor.beforeDelete(entity);
         } finally {
-            watch.submitMicroTiming("MIXING", "BeforeDelete - " + ed.getName());
+            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "BeforeDelete - " + entityDescriptor.getName());
         }
     }
 
@@ -341,7 +342,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         try {
             entityDescriptor.afterDelete(entity);
         } finally {
-            watch.submitMicroTiming("MIXING", "AfterDelete - " + ed.getName());
+            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "AfterDelete - " + entityDescriptor.getName());
         }
     }
 
