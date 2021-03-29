@@ -195,16 +195,16 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         }
 
         try {
-            EntityDescriptor ed = entity.getDescriptor();
-            invokeBeforeSaveHandlers(entity, ed);
+            EntityDescriptor entityDescriptor = entity.getDescriptor();
+            invokeBeforeSaveHandlers(entity, entityDescriptor);
 
             if (entity.isNew()) {
-                createEntity(entity, ed);
+                createEntity(entity, entityDescriptor);
             } else {
-                updateEntity(entity, force, ed);
+                updateEntity(entity, force, entityDescriptor);
             }
 
-            invokeAfterSaveHandlers(entity, ed);
+            invokeAfterSaveHandlers(entity, entityDescriptor);
         } catch (IntegrityConstraintFailedException | OptimisticLockException e) {
             throw e;
         } catch (Exception e) {
@@ -218,19 +218,19 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         }
     }
 
-    private <E extends B> void invokeBeforeSaveHandlers(E entity, EntityDescriptor ed) {
+    private <E extends B> void invokeBeforeSaveHandlers(E entity, EntityDescriptor entityDescriptor) {
         Watch watch = Watch.start();
         try {
-            ed.beforeSave(entity);
+            entityDescriptor.beforeSave(entity);
         } finally {
             watch.submitMicroTiming("MIXING", "BeforeSave - " + ed.getName());
         }
     }
 
-    private <E extends B> void invokeAfterSaveHandlers(E entity, EntityDescriptor ed) {
+    private <E extends B> void invokeAfterSaveHandlers(E entity, EntityDescriptor entityDescriptor) {
         Watch watch = Watch.start();
         try {
-            ed.afterSave(entity);
+            entityDescriptor.afterSave(entity);
         } finally {
             watch.submitMicroTiming("MIXING", "AferSave - " + ed.getName());
         }
@@ -240,20 +240,20 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * Creates a new entity in the underlying database.
      *
      * @param entity the entity to create
-     * @param ed     the descriptor of the entity
+     * @param entityDescriptor     the descriptor of the entity
      * @throws Exception in case of an database error
      */
-    protected abstract void createEntity(B entity, EntityDescriptor ed) throws Exception;
+    protected abstract void createEntity(B entity, EntityDescriptor entityDescriptor) throws Exception;
 
     /**
      * Updates an existing entity in the underlying database.
      *
      * @param entity the entity to update
      * @param force  <tt>ture</tt> if the update is forced and optimistic locking must be disabled
-     * @param ed     the descriptor of the entity
+     * @param entityDescriptor     the descriptor of the entity
      * @throws Exception in case of an database error
      */
-    protected abstract void updateEntity(B entity, boolean force, EntityDescriptor ed) throws Exception;
+    protected abstract void updateEntity(B entity, boolean force, EntityDescriptor entityDescriptor) throws Exception;
 
     /**
      * Deletes the given entity from the database.
@@ -308,11 +308,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         }
 
         try {
-            EntityDescriptor ed = entity.getDescriptor();
-            invokeBeforeDeleteHandlers(entity, ed);
+            EntityDescriptor entityDescriptor = entity.getDescriptor();
+            invokeBeforeDeleteHandlers(entity, entityDescriptor);
             if (TaskContext.get().isActive()) {
-                deleteEntity(entity, force, ed);
-                invokeAfterDeleteHandlers(entity, ed);
+                deleteEntity(entity, force, entityDescriptor);
+                invokeAfterDeleteHandlers(entity, entityDescriptor);
             }
         } catch (OptimisticLockException e) {
             throw e;
@@ -327,19 +327,19 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         }
     }
 
-    private <E extends B> void invokeBeforeDeleteHandlers(E entity, EntityDescriptor ed) {
+    private <E extends B> void invokeBeforeDeleteHandlers(E entity, EntityDescriptor entityDescriptor) {
         Watch watch = Watch.start();
         try {
-            ed.beforeDelete(entity);
+            entityDescriptor.beforeDelete(entity);
         } finally {
             watch.submitMicroTiming("MIXING", "BeforeDelete - " + ed.getName());
         }
     }
 
-    private <E extends B> void invokeAfterDeleteHandlers(E entity, EntityDescriptor ed) {
+    private <E extends B> void invokeAfterDeleteHandlers(E entity, EntityDescriptor entityDescriptor) {
         Watch watch = Watch.start();
         try {
-            ed.afterDelete(entity);
+            entityDescriptor.afterDelete(entity);
         } finally {
             watch.submitMicroTiming("MIXING", "AfterDelete - " + ed.getName());
         }
@@ -350,10 +350,10 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      *
      * @param entity the entity to delete
      * @param force  <tt>true</tt> if the delete is forced and optimistic locking must be disabled
-     * @param ed     the descriptor of the entity
+     * @param entityDescriptor     the descriptor of the entity
      * @throws Exception in case of an database error
      */
-    protected abstract void deleteEntity(B entity, boolean force, EntityDescriptor ed) throws Exception;
+    protected abstract void deleteEntity(B entity, boolean force, EntityDescriptor entityDescriptor) throws Exception;
 
     /**
      * Determines if the given entity has validation warnings.
@@ -366,8 +366,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             return false;
         }
 
-        EntityDescriptor ed = entity.getDescriptor();
-        return ed.hasValidationWarnings(entity);
+        EntityDescriptor entityDescriptor = entity.getDescriptor();
+        return entityDescriptor.hasValidationWarnings(entity);
     }
 
     /**
@@ -381,8 +381,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             return Collections.emptyList();
         }
 
-        EntityDescriptor ed = entity.getDescriptor();
-        return ed.validate(entity);
+        EntityDescriptor entityDescriptor = entity.getDescriptor();
+        return entityDescriptor.validate(entity);
     }
 
     /**
@@ -410,8 +410,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                 .handle();
             }
 
-            EntityDescriptor ed = mixing.getDescriptor(type);
-            return findEntity(id, ed, makeContext(info));
+            EntityDescriptor entityDescriptor = mixing.getDescriptor(type);
+            return findEntity(id, entityDescriptor, makeContext(info));
         } catch (HandledException e) {
             throw e;
         } catch (Exception e) {
@@ -453,7 +453,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * Tries to find the entity with the given id.
      *
      * @param id      the id of the entity to find
-     * @param ed      the descriptor of the entity to find
+     * @param entityDescriptor      the descriptor of the entity to find
      * @param context the advanced search context which can be populated using {@link ContextInfo} in
      *                {@link #find(Class, Object, ContextInfo...)}
      * @param <E>     the effective type of the entity
@@ -461,7 +461,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @throws Exception in case of a database error
      */
     protected abstract <E extends B> Optional<E> findEntity(Object id,
-                                                            EntityDescriptor ed,
+                                                            EntityDescriptor entityDescriptor,
                                                             Function<String, Value> context) throws Exception;
 
     /**

@@ -190,20 +190,20 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     @Override
-    protected void createEntity(SQLEntity entity, EntityDescriptor ed) throws Exception {
+    protected void createEntity(SQLEntity entity, EntityDescriptor entityDescriptor) throws Exception {
         Context insertData = Context.create();
-        for (Property p : ed.getProperties()) {
+        for (Property p : entityDescriptor.getProperties()) {
             if (!SQLEntity.ID.getName().equals(p.getName())) {
                 insertData.set(p.getPropertyName(), p.getValueForDatasource(OMA.class, entity));
             }
         }
 
-        if (ed.isVersioned()) {
+        if (entityDescriptor.isVersioned()) {
             insertData.set(VERSION, 1);
         }
 
         try {
-            Row keys = getDatabase(ed.getRealm()).insertRow(ed.getRelationName(), insertData);
+            Row keys = getDatabase(entityDescriptor.getRealm()).insertRow(entityDescriptor.getRelationName(), insertData);
             loadCreatedId(entity, keys);
             entity.setVersion(1);
         } catch (SQLIntegrityConstraintViolationException e) {
@@ -231,17 +231,17 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     @Override
-    protected void updateEntity(SQLEntity entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void updateEntity(SQLEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
         StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(ed.getRelationName());
+        sql.append(entityDescriptor.getRelationName());
         sql.append(" SET ");
-        List<Object> data = buildUpdateStatement(entity, ed, sql);
+        List<Object> data = buildUpdateStatement(entity, entityDescriptor, sql);
 
         if (data.isEmpty()) {
             return;
         }
 
-        if (ed.isVersioned()) {
+        if (entityDescriptor.isVersioned()) {
             if (!data.isEmpty()) {
                 sql.append(",");
             }
@@ -249,10 +249,10 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         }
 
         sql.append(SQL_WHERE_ID);
-        if (ed.isVersioned() && !force) {
+        if (entityDescriptor.isVersioned() && !force) {
             sql.append(SQL_AND_VERSION);
         }
-        executeUPDATE(entity, ed, force, sql.toString(), data);
+        executeUPDATE(entity, entityDescriptor, force, sql.toString(), data);
     }
 
     private List<Object> buildUpdateStatement(SQLEntity entity, EntityDescriptor ed, StringBuilder sql) {
@@ -320,19 +320,19 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     @Override
-    protected void deleteEntity(SQLEntity entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void deleteEntity(SQLEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
         StringBuilder sb = new StringBuilder("DELETE FROM ");
-        sb.append(ed.getRelationName());
+        sb.append(entityDescriptor.getRelationName());
         sb.append(SQL_WHERE_ID);
 
-        if (ed.isVersioned() && !force) {
+        if (entityDescriptor.isVersioned() && !force) {
             sb.append(SQL_AND_VERSION);
         }
 
-        try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
+        try (Connection c = getDatabase(entityDescriptor.getRealm()).getConnection()) {
             try (PreparedStatement stmt = c.prepareStatement(sb.toString())) {
                 stmt.setLong(1, entity.getId());
-                if (ed.isVersioned() && !force) {
+                if (entityDescriptor.isVersioned() && !force) {
                     stmt.setInt(2, entity.getVersion());
                 }
                 int updatedRows = stmt.executeUpdate();
@@ -404,7 +404,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * Tries to find the entity with the given id
      *
      * @param id      the id of the entity to find
-     * @param ed      the descriptor of the entity to find
+     * @param entityDescriptor      the descriptor of the entity to find
      * @param context the advanced search context which can be populated using
      *                {@link sirius.db.mixing.ContextInfo context info elements}.
      * @param <E>     the generic type of the entity tp find
@@ -413,10 +413,10 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      */
     @Override
     protected <E extends SQLEntity> Optional<E> findEntity(Object id,
-                                                           EntityDescriptor ed,
+                                                           EntityDescriptor entityDescriptor,
                                                            Function<String, Value> context) throws Exception {
-        try (Connection c = getDatabase(ed.getRealm()).getConnection()) {
-            return execFind(id, ed, c);
+        try (Connection c = getDatabase(entityDescriptor.getRealm()).getConnection()) {
+            return execFind(id, entityDescriptor, c);
         }
     }
 

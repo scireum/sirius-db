@@ -69,15 +69,15 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     private Mongo mongo;
 
     @Override
-    protected void createEntity(MongoEntity entity, EntityDescriptor descriptor) throws Exception {
+    protected void createEntity(MongoEntity entity, EntityDescriptor entityDescriptor) throws Exception {
         Inserter insert = mongo.insert();
         String generatedId = entity.generateId();
         insert.set(MongoEntity.ID, generatedId);
-        if (descriptor.isVersioned()) {
+        if (entityDescriptor.isVersioned()) {
             insert.set(VERSION, 1);
         }
 
-        for (Property property : descriptor.getProperties()) {
+        for (Property property : entityDescriptor.getProperties()) {
             Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
             if (!MongoEntity.ID.getName().equals(property.getName()) && (!isDefaultValue(valueForDatasource)
                                                                          || !property.isAnnotationPresent(
@@ -87,9 +87,9 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         try {
-            insert.into(descriptor.getRelationName());
+            insert.into(entityDescriptor.getRelationName());
             entity.setId(generatedId);
-            if (descriptor.isVersioned()) {
+            if (entityDescriptor.isVersioned()) {
                 entity.setVersion(1);
             }
         } catch (MongoWriteException e) {
@@ -102,11 +102,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    protected void updateEntity(MongoEntity entity, boolean force, EntityDescriptor descriptor) throws Exception {
-        Updater updater = mongo.update(descriptor.getRealm());
+    protected void updateEntity(MongoEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
+        Updater updater = mongo.update(entityDescriptor.getRealm());
         boolean changed = false;
-        for (Property property : descriptor.getProperties()) {
-            if (descriptor.isChanged(entity, property)) {
+        for (Property property : entityDescriptor.getProperties()) {
+            if (entityDescriptor.isChanged(entity, property)) {
                 if (MongoEntity.ID.getName().equals(property.getName())) {
                     throw new IllegalStateException("The id column of an entity must not be modified manually!");
                 }
@@ -121,7 +121,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         updater.where(MongoEntity.ID, entity.getId());
-        if (descriptor.isVersioned()) {
+        if (entityDescriptor.isVersioned()) {
             updater.set(VERSION, entity.getVersion() + 1);
             if (!force) {
                 updater.where(VERSION, entity.getVersion());
@@ -129,10 +129,10 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
 
         try {
-            long updatedRows = updater.executeForOne(descriptor.getRelationName()).getModifiedCount();
-            enforceUpdate(entity, force, updatedRows, descriptor.isVersioned());
+            long updatedRows = updater.executeForOne(entityDescriptor.getRelationName()).getModifiedCount();
+            enforceUpdate(entity, force, updatedRows, entityDescriptor.isVersioned());
 
-            if (descriptor.isVersioned()) {
+            if (entityDescriptor.isVersioned()) {
                 entity.setVersion(entity.getVersion() + 1);
             }
         } catch (MongoWriteException e) {
@@ -208,29 +208,29 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor descriptor) throws Exception {
-        Deleter deleter = mongo.delete(descriptor.getRealm()).where(MongoEntity.ID, entity.getId());
-        if (!force && descriptor.isVersioned()) {
+    protected void deleteEntity(MongoEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
+        Deleter deleter = mongo.delete(entityDescriptor.getRealm()).where(MongoEntity.ID, entity.getId());
+        if (!force && entityDescriptor.isVersioned()) {
             deleter.where(VERSION, entity.getVersion());
         }
 
-        long numDeleted = deleter.singleFrom(descriptor.getRelationName()).getDeletedCount();
+        long numDeleted = deleter.singleFrom(entityDescriptor.getRelationName()).getDeletedCount();
         if (numDeleted == 0
             && !force
-            && descriptor.isVersioned()
-            && mongo.find().where(MongoEntity.ID, entity.getId()).countIn(descriptor.getRelationName()) > 0) {
+            && entityDescriptor.isVersioned()
+            && mongo.find().where(MongoEntity.ID, entity.getId()).countIn(entityDescriptor.getRelationName()) > 0) {
             throw new OptimisticLockException();
         }
     }
 
     @Override
     protected <E extends MongoEntity> Optional<E> findEntity(Object id,
-                                                             EntityDescriptor descriptor,
+                                                             EntityDescriptor entityDescriptor,
                                                              Function<String, Value> context) throws Exception {
-        return mongo.find(descriptor.getRealm())
+        return mongo.find(entityDescriptor.getRealm())
                     .where(MongoEntity.ID, id.toString())
-                    .singleIn(descriptor.getRelationName())
-                    .map(doc -> make(descriptor, doc));
+                    .singleIn(entityDescriptor.getRelationName())
+                    .map(doc -> make(entityDescriptor, doc));
     }
 
     /**
