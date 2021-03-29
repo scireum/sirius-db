@@ -312,6 +312,7 @@ public class Finder extends QueryBuilder<Finder> {
         Watch watch = Watch.start();
         TaskContext taskContext = TaskContext.get();
         Monoflop shouldHandleTracing = Monoflop.create();
+
         for (Document doc : cursor) {
             if (shouldHandleTracing.firstCall()) {
                 handleTracingAndReporting(collection, watch);
@@ -321,6 +322,13 @@ public class Finder extends QueryBuilder<Finder> {
             if (!keepGoing || !taskContext.isActive()) {
                 return;
             }
+        }
+
+        // If we didn't log any tracing data up until now, the result was completely empty and
+        // we can (and should) safely log now - otherwise some entries might be missing in
+        // the Microtiming...
+        if (shouldHandleTracing.firstCall()) {
+            handleTracingAndReporting(collection, watch);
         }
     }
 
@@ -549,7 +557,7 @@ public class Finder extends QueryBuilder<Finder> {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
-                watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + "): " + filterObject.keySet());
+                watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired("facets-" + collection, watch);
         }

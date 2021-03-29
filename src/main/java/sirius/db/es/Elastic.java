@@ -242,19 +242,19 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    protected void createEntity(ElasticEntity entity, EntityDescriptor ed) throws Exception {
+    protected void createEntity(ElasticEntity entity, EntityDescriptor entityDescriptor) throws Exception {
         JSONObject data = new JSONObject();
-        toJSON(ed, entity, data);
+        toJSON(entityDescriptor, entity, data);
 
         String id = determineId(entity);
-        JSONObject response = getLowLevelClient().index(determineWriteAlias(ed),
+        JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         id,
-                                                        determineRouting(ed, entity, RoutingAccessMode.WRITE),
+                                                        determineRouting(entityDescriptor, entity, RoutingAccessMode.WRITE),
                                                         null,
                                                         null,
                                                         data);
         entity.setId(id);
-        if (ed.isVersioned()) {
+        if (entityDescriptor.isVersioned()) {
             entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
             entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
         }
@@ -283,22 +283,22 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    protected void updateEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
+    protected void updateEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
         JSONObject data = new JSONObject();
-        boolean changed = toJSON(ed, entity, data);
+        boolean changed = toJSON(entityDescriptor, entity, data);
 
         if (!changed) {
             return;
         }
 
-        JSONObject response = getLowLevelClient().index(determineWriteAlias(ed),
+        JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         determineId(entity),
-                                                        determineRouting(ed, entity, RoutingAccessMode.WRITE),
-                                                        determinePrimaryTerm(force, ed, entity),
-                                                        determineSeqNo(force, ed, entity),
+                                                        determineRouting(entityDescriptor, entity, RoutingAccessMode.WRITE),
+                                                        determinePrimaryTerm(force, entityDescriptor, entity),
+                                                        determineSeqNo(force, entityDescriptor, entity),
                                                         data);
 
-        if (ed.isVersioned()) {
+        if (entityDescriptor.isVersioned()) {
             entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
             entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
         }
@@ -501,12 +501,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor ed) throws Exception {
-        getLowLevelClient().delete(determineWriteAlias(ed),
+    protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
+        getLowLevelClient().delete(determineWriteAlias(entityDescriptor),
                                    entity.getId(),
-                                   determineRouting(ed, entity, RoutingAccessMode.WRITE),
-                                   determinePrimaryTerm(force, ed, entity),
-                                   determineSeqNo(force, ed, entity));
+                                   determineRouting(entityDescriptor, entity, RoutingAccessMode.WRITE),
+                                   determinePrimaryTerm(force, entityDescriptor, entity),
+                                   determineSeqNo(force, entityDescriptor, entity));
     }
 
     /**
@@ -547,17 +547,17 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @SuppressWarnings("unchecked")
     @Override
     protected <E extends ElasticEntity> Optional<E> findEntity(Object id,
-                                                               EntityDescriptor ed,
+                                                               EntityDescriptor entityDescriptor,
                                                                Function<String, Value> context) throws Exception {
-        JSONObject obj = getLowLevelClient().get(determineReadAlias(ed),
+        JSONObject obj = getLowLevelClient().get(determineReadAlias(entityDescriptor),
                                                  id.toString(),
-                                                 determineRoutingForFind(id, ed, context),
+                                                 determineRoutingForFind(id, entityDescriptor, context),
                                                  true);
         if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
             return Optional.empty();
         }
 
-        E result = (E) make(ed, obj);
+        E result = (E) make(entityDescriptor, obj);
         return Optional.of(result);
     }
 
