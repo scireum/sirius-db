@@ -252,7 +252,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             }
             return result;
         } catch (Exception e) {
-            throw Exceptions.handle(Mongo.LOG, e);
+            throw Exceptions.handle()
+                            .error(e)
+                            .withSystemErrorMessage("Failed processing entity (_id = %s)", doc.id())
+                            .to(Mongo.LOG)
+                            .handle();
         }
     }
 

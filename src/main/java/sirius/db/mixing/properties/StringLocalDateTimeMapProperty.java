@@ -33,6 +33,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -116,9 +117,9 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
             return null;
         }
 
-        if (date.contains("+")) {
+        try {
             return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(date));
-        } else {
+        } catch (DateTimeParseException e) {
             return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(date));
         }
     }

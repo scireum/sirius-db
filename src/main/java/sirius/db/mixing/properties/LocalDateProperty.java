@@ -31,6 +31,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.function.Consumer;
 
 /**
@@ -90,9 +91,9 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
             return null;
         }
 
-        if (valueAsString.contains("+")) {
+        try {
             return LocalDate.from(DateTimeFormatter.ISO_OFFSET_DATE.parse(valueAsString));
-        } else {
+        } catch (DateTimeParseException e) {
             return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(valueAsString));
         }
     }

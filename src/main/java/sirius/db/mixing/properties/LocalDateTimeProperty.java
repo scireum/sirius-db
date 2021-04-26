@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.function.Consumer;
 
 /**
@@ -91,9 +92,9 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
             return null;
         }
 
-        if (valueAsString.contains("+")) {
+        try {
             return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString));
-        } else {
+        } catch (DateTimeParseException e) {
             return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString));
         }
     }

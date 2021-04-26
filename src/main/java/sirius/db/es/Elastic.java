@@ -517,11 +517,13 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return a new entity based on the given data
      */
     protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
+        String id = obj.getString(ID_FIELD);
+
         try {
             JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
             ElasticEntity result = (ElasticEntity) ed.make(Elastic.class, null, key -> Value.of(source.get(key)));
             result.setSearchHit(obj);
-            result.setId(obj.getString(ID_FIELD));
+            result.setId(id);
 
             if (ed.isVersioned()) {
                 result.setPrimaryTerm(obj.getLong(RESPONSE_PRIMARY_TERM));
@@ -530,7 +532,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
             return result;
         } catch (Exception e) {
-            throw Exceptions.handle(Elastic.LOG, e);
+            throw Exceptions.handle()
+                            .error(e)
+                            .withSystemErrorMessage("Failed processing entity (_id = %s)", id)
+                            .to(Elastic.LOG)
+                            .handle();
         }
     }
 
