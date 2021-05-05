@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides a fluent query API for Elasticsearch.
@@ -112,6 +114,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Part
     private static IndexMappings indexMappings;
+
+    /**
+     * Contains a list of additional descriptors / entities to perform a query across multiple indices.
+     */
+    protected List<EntityDescriptor> additionalDescriptors;
 
     private final LowLevelClient client;
 
@@ -263,6 +270,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                                        entry -> (JSONObject) entry.getValue().clone()));
         }
 
+        copy.additionalDescriptors = additionalDescriptors;
+
         return copy;
     }
 
@@ -272,6 +281,26 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         return list;
+    }
+
+    /**
+     * Spans the query over the given additional indices.
+     * <p>
+     * Note that the given indices are added to the main index / descriptor which is arleady present. Also, not
+     * that all settings (most notably routing) are determined by looking at the main descriptor. Therefore, all
+     * additional descriptors must share the same settings. Also note, that all entities / descriptors must share
+     * the fields being queried / aggregated for this to make sense.
+     *
+     * @param additionalEntitiesToQuery the additional entities to be queried
+     * @return the query itself for fluent method calls
+     */
+    @SafeVarargs
+    public final ElasticQuery<E> withAdditionalIndices(Class<? extends ElasticEntity>... additionalEntitiesToQuery) {
+        this.additionalDescriptors = Arrays.stream(additionalEntitiesToQuery)
+                                           .map(type -> mixing.getDescriptor(type))
+                                           .collect(Collectors.toList());
+
+        return this;
     }
 
     /**
@@ -823,9 +852,28 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        JSONObject countResponse =
-                client.count(elastic.determineReadAlias(descriptor), filteredRouting, buildSimplePayload());
+        JSONObject countResponse = client.count(computeEffectiveIndexName(elastic::determineReadAlias),
+                                                filteredRouting,
+                                                buildSimplePayload());
         return countResponse.getLong(KEY_COUNT);
+    }
+
+    /**
+     * Computes the effective index name to query.
+     * <p>
+     * In most cases this is simply the lowercased entity name (or its alias if one is present. However,
+     * if additional descriptors are present, we concatenate all index names using "," e.g. <tt>index1,index2</tt>.
+     *
+     * @return the effective index name to use
+     */
+    private String computeEffectiveIndexName(Function<EntityDescriptor, String> aliasFunction) {
+        if (additionalDescriptors == null) {
+            return aliasFunction.apply(descriptor);
+        } else {
+            return Stream.concat(Stream.of(descriptor), additionalDescriptors.stream())
+                         .map(aliasFunction)
+                         .collect(Collectors.joining(","));
+        }
     }
 
     private String filterRouting(Elastic.RoutingAccessMode accessMode) {
@@ -869,8 +917,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        JSONObject existsResponse =
-                client.exists(elastic.determineReadAlias(descriptor), filteredRouting, buildSimplePayload());
+        JSONObject existsResponse = client.exists(computeEffectiveIndexName(elastic::determineReadAlias),
+                                                  filteredRouting,
+                                                  buildSimplePayload());
         return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue(KEY_VALUE) >= 1;
     }
 
@@ -887,8 +936,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        this.response =
-                client.search(elastic.determineReadAlias(descriptor), filteredRouting, skip, limit, buildPayload());
+        this.response = client.search(computeEffectiveIndexName(elastic::determineReadAlias),
+                                      filteredRouting,
+                                      skip,
+                                      limit,
+                                      buildPayload());
         for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
             if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
                 return;
@@ -927,8 +979,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        this.response =
-                client.search(elastic.determineReadAlias(descriptor), filteredRouting, skip, limit, buildPayload());
+        this.response = client.search(computeEffectiveIndexName(elastic::determineReadAlias),
+                                      filteredRouting,
+                                      skip,
+                                      limit,
+                                      buildPayload());
     }
 
     /**
@@ -992,7 +1047,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Determines if the query has been executed using either {@link #queryList()} or the like or
      * {@link #computeAggregations()}.
      *
-     * @return <tt>true</tt> if the query has been executed and a result is ready, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the query has been executed, and a result is ready, <tt>false</tt> otherwise
      */
     public boolean isExecuted() {
         return response != null;
@@ -1131,8 +1186,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (response == null) {
             String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-            this.response =
-                    client.search(elastic.determineReadAlias(descriptor), filteredRouting, skip, limit, buildPayload());
+            this.response = client.search(computeEffectiveIndexName(elastic::determineReadAlias),
+                                          filteredRouting,
+                                          skip,
+                                          limit,
+                                          buildPayload());
         }
 
         JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
@@ -1164,7 +1222,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
             String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-            JSONObject scrollResponse = client.createScroll(elastic.determineReadAlias(descriptor),
+            JSONObject scrollResponse = client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
                                                             filteredRouting,
                                                             0,
                                                             filteredRouting != null ?
@@ -1273,9 +1331,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (forceFail) {
             return;
         }
+
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.WRITE);
         elastic.getLowLevelClient()
-               .deleteByQuery(elastic.determineWriteAlias(descriptor), filteredRouting, buildSimplePayload());
+               .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
+                              filteredRouting,
+                              buildSimplePayload());
     }
 
     @Override
