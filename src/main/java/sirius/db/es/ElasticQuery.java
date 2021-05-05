@@ -286,7 +286,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Spans the query over the given additional indices.
      * <p>
-     * Note that the given indices are added to the main index / descriptor which is arleady present. Also, not
+     * Note that the given indices are added to the main index / descriptor which is already present. Also, not
      * that all settings (most notably routing) are determined by looking at the main descriptor. Therefore, all
      * additional descriptors must share the same settings. Also note, that all entities / descriptors must share
      * the fields being queried / aggregated for this to make sense.
