@@ -23,6 +23,7 @@ import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
+import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -54,7 +55,8 @@ import java.util.function.Predicate;
  */
 public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQLConstraint> {
 
-    private static final Duration QUERY_ITERATE_TIMEOUT = Duration.ofMinutes(15);
+    @ConfigValue("jdbc.queryIterateTimeout")
+    private static Duration queryIterateTimeout;
 
     @Part
     private static OMA oma;
@@ -195,7 +197,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * Deletes all matches using the {@link OMA#delete(SQLEntity)}.
      * <p>
      * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
-     * the results until the timeout ({@link #QUERY_ITERATE_TIMEOUT} is reached). In this case, we abort the
+     * the results until the timeout ({@link #queryIterateTimeout} is reached). In this case, we abort the
      * iteration, execute the query again and continue deleting until all entities are gone.
      *
      * @param entityCallback a callback to be invoked for each entity to be deleted
@@ -209,7 +211,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         TaskContext context = TaskContext.get();
         while (continueDeleting.get() && context.isActive()) {
             continueDeleting.set(false);
-            Timeout timeout = new Timeout(QUERY_ITERATE_TIMEOUT);
+            Timeout timeout = new Timeout(queryIterateTimeout);
             iterate(entity -> {
                 if (entityCallback != null) {
                     entityCallback.accept(entity);
@@ -234,7 +236,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * In contrast to {@link #iterate(Predicate)}, this method is suitable for large result sets or long processing
      * times. As <tt>iterate</tt> keeps the JDBC <tt>ResultSet</tt> open, the underlying server might discard the
      * result at some point in time (e.g. MySQL does this after 30-45min). Therefore, we execute the query and start
-     * processing. If a timeout ({@link #QUERY_ITERATE_TIMEOUT} is reached, we stop iterating, discard the result set
+     * processing. If a timeout ({@link #queryIterateTimeout} is reached, we stop iterating, discard the result set
      * and emit another query which starts just where the previous query stopped.
      * <p>
      * Note however, as we either do this by ID or by setting an appropriate LIMIT range, there is a possibility,
@@ -283,7 +285,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         TaskContext context = TaskContext.get();
         while (keepGoing.get() && context.isActive()) {
             keepGoing.set(false);
-            Timeout timeout = new Timeout(QUERY_ITERATE_TIMEOUT);
+            Timeout timeout = new Timeout(queryIterateTimeout);
 
             // Creates a copy and start processing results just after the results we have processed with the
             // previous query...
@@ -325,7 +327,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         TaskContext context = TaskContext.get();
         while (keepGoing.get() && context.isActive()) {
             keepGoing.set(false);
-            Timeout timeout = new Timeout(QUERY_ITERATE_TIMEOUT);
+            Timeout timeout = new Timeout(queryIterateTimeout);
             // Create a copy of the query an install an appropriate skip value...
             copy().skip(skipCounter.get()).iterate(entity -> {
                 if (!handler.test(entity)) {
