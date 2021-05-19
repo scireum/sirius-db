@@ -287,6 +287,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         if (!areTypesEqual(Types.CHAR, target.getType())) {
             return true;
         }
+        if (target.getLength() == 0) {
+            return true;
+        }
 
         return Strings.areEqual(target.getLength(), current.getLength());
     }
