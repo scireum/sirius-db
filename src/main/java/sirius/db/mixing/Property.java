@@ -610,7 +610,7 @@ public abstract class Property extends Composable {
      * Converts the given value, which is read from an import (e.g. an Excel import) into the target type of this
      * property.
      * <p>
-     * By default, this will use the logic provided by {@link #transformValue(Value)} but cen be overwritten by
+     * By default, this will use the logic provided by {@link #transformValue(Value)} but can be overwritten by
      * properties.
      *
      * @param value the value to convert
