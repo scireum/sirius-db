@@ -367,7 +367,12 @@ public class EntityDescriptor {
     public boolean isChanged(BaseEntity<?> entity,
                              Property property,
                              BiPredicate<? super Object, ? super Object> equalsFunction) {
-        return !equalsFunction.test(entity.persistedData.get(property), property.getValue(entity));
+        Object persistedValue = entity.persistedData.get(property);
+        Object newValue = property.getValue(entity);
+        if (property.isConsideredNull(persistedValue) && property.isConsideredNull(newValue)) {
+            return false;
+        }
+        return !equalsFunction.test(persistedValue, newValue);
     }
 
     /**
