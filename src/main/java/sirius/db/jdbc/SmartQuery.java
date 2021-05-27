@@ -822,11 +822,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void limit(Compiler compiler) {
-        if (limit > 0 && db.hasCapability(Capability.LIMIT)) {
+        //if a skip value is set but no limit, we have to set a limit > 0 to make limit working.
+        int effectiveLimit = limit == 0 && skip > 0 ? Integer.MAX_VALUE : limit;
+        if (effectiveLimit > 0 && db.hasCapability(Capability.LIMIT)) {
             if (skip > 0) {
-                compiler.getWHEREBuilder().append(" LIMIT ").append(skip).append(", ").append(limit);
+                compiler.getWHEREBuilder().append(" LIMIT ").append(skip).append(", ").append(effectiveLimit);
             } else {
-                compiler.getWHEREBuilder().append(" LIMIT ").append(limit);
+                compiler.getWHEREBuilder().append(" LIMIT ").append(effectiveLimit);
             }
         }
     }
