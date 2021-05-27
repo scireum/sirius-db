@@ -66,7 +66,7 @@ public class TableColumn {
     }
 
     /**
-     * Determines whether auto inctement is enabled for this column.
+     * Determines whether auto increment is enabled for this column.
      *
      * @return <tt>true</tt> if this is an auto increment column, <tt>false</tt> otherwise.
      */
@@ -93,7 +93,7 @@ public class TableColumn {
     }
 
     /**
-     * Set the old name of a column. This can be used to rename insted of
+     * Set the old name of a column. This can be used to rename instead of
      * DROP/ADD columns.
      *
      * @param oldName the previous name of the column
@@ -188,7 +188,7 @@ public class TableColumn {
     /**
      * Specifies a precision of the column.
      *
-     * @param precision the total number of digits which can be stored withozt rounding errors.
+     * @param precision the total number of digits which can be stored without rounding errors.
      */
     public void setPrecision(int precision) {
         this.precision = precision;

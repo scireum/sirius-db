@@ -33,7 +33,7 @@ public interface DatabaseDialect {
      * Converts the given class into the JDBC-Value (@see {@link Types}).
      *
      * @param clazz the type to convert
-     * @return the appropiate type from <tt>Types</tt>
+     * @return the appropriate type from <tt>Types</tt>
      */
     int getJDBCType(Class<?> clazz);
 

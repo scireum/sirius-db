@@ -62,7 +62,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     public static final Log LOG = Log.get("es");
 
     /**
-     * Constains the factory used to generate filters for a {@link ElasticQuery}.
+     * Contains the factory used to generate filters for a {@link ElasticQuery}.
      */
     public static final ElasticFilterFactory FILTERS = new ElasticFilterFactory();
 
@@ -185,12 +185,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise strange connection issues might arise.
             if (dockerDetected) {
-                waitForElasticsearchToBecomReady();
+                waitForElasticsearchToBecomeReady();
             }
         }
     }
 
-    private void waitForElasticsearchToBecomReady() {
+    private void waitForElasticsearchToBecomeReady() {
         int retries = 15;
         while (retries-- > 0) {
             try {
@@ -249,7 +249,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         String id = determineId(entity);
         JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         id,
-                                                        determineRouting(entityDescriptor, entity, RoutingAccessMode.WRITE),
+                                                        determineRouting(entityDescriptor,
+                                                                         entity,
+                                                                         RoutingAccessMode.WRITE),
                                                         null,
                                                         null,
                                                         data);
@@ -283,7 +285,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    protected void updateEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
+    protected void updateEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor)
+            throws Exception {
         JSONObject data = new JSONObject();
         boolean changed = toJSON(entityDescriptor, entity, data);
 
@@ -293,7 +296,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
         JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         determineId(entity),
-                                                        determineRouting(entityDescriptor, entity, RoutingAccessMode.WRITE),
+                                                        determineRouting(entityDescriptor,
+                                                                         entity,
+                                                                         RoutingAccessMode.WRITE),
                                                         determinePrimaryTerm(force, entityDescriptor, entity),
                                                         determineSeqNo(force, entityDescriptor, entity),
                                                         data);
@@ -501,7 +506,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor) throws Exception {
+    protected void deleteEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor)
+            throws Exception {
         getLowLevelClient().delete(determineWriteAlias(entityDescriptor),
                                    entity.getId(),
                                    determineRouting(entityDescriptor, entity, RoutingAccessMode.WRITE),
@@ -612,7 +618,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      *
      * @param entityDescriptor the descriptor of the entity to check
      * @param accessMode       the access mode for which the suppression should be checked
-     * @return <tt>true</tt> if routing for this descriptor has been explicitely suppressed, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if routing for this descriptor has been explicitly suppressed, <tt>false</tt> otherwise
      */
     protected boolean isRoutingSuppressed(EntityDescriptor entityDescriptor, RoutingAccessMode accessMode) {
         return suppressedRoutingsMap.getOrDefault(entityDescriptor, NO_SUPPRESSION).contains(accessMode);
@@ -667,7 +673,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * If the execution duration of a query is longer than this threshold, it is logged into
      * {@link sirius.db.DB#SLOW_DB_LOG} for further analysis.
      *
-     * @return the log thresold for queries in milliseconds
+     * @return the log threshold for queries in milliseconds
      */
     protected static long getLogQueryThresholdMillis() {
         if (logQueryThresholdMillis < 0) {

@@ -63,7 +63,7 @@ abstract class GeneratedStatement<S extends GeneratedStatement<S>> {
     }
 
     /**
-     * Appends a strng to the resulting SQL statement.
+     * Appends a string to the resulting SQL statement.
      *
      * @param sqlPart the string to append
      */
