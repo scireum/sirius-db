@@ -206,7 +206,7 @@ class OMASpec extends BaseSpecification {
         notFound == null
     }
 
-    def "unique constaint violations are properly thrown"() {
+    def "unique constraint violations are properly thrown"() {
         setup:
         oma.select(SQLUniqueTestEntity.class).eq(SQLUniqueTestEntity.VALUE, "Test").delete()
         when:

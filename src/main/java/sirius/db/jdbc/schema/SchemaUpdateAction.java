@@ -128,7 +128,7 @@ public class SchemaUpdateAction {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
-                      .withSystemErrorMessage("An error occured while executing the schema change '%s': %s (%s)",
+                      .withSystemErrorMessage("An error occurred while executing the schema change '%s': %s (%s)",
                                               Strings.join(sql, ";") + ";")
                       .handle();
             error = e.getMessage();

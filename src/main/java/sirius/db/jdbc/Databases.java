@@ -169,7 +169,7 @@ public class Databases implements Initializable {
     }
 
     /**
-     * Determines if a databse with the given name is present in the configuration.
+     * Determines if a database with the given name is present in the configuration.
      *
      * @param name the name of the database
      * @return <tt>true</tt> if a configuration <tt>jdbc.database.[name]</tt> does exist, <tt>false</tt> otherwise

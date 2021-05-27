@@ -18,12 +18,12 @@ import javax.annotation.Nullable;
  * Represents a LIKE constraint.
  * <p>
  * This can be used to generate queries like {@code x LIKE 'a%'}. Using the helper methods this can also be used to
- * search for occurrences of serveral words in several fields, this can be used as a general table search.
+ * search for occurrences of several words in several fields, this can be used as a general table search.
  */
 public class Like {
 
     private static final String WILDCARD = "*";
-    private Mapping field;
+    private final Mapping field;
     private String value;
     private boolean ignoreEmpty;
     private boolean ignoreCase;
@@ -35,7 +35,7 @@ public class Like {
     /**
      * Specifies a value to match in the given field.
      * <p>
-     * Note that "*" will be repalced by "%" as this is the wildcard used by SQL.
+     * Note that "*" will be replaced by "%" as this is the wildcard used by SQL.
      *
      * @param value the text to search for
      * @return the constraint itself
@@ -46,12 +46,12 @@ public class Like {
     }
 
     /**
-     * Sepcifies a value which needs to occur anywhere in the target field.
+     * Specifies a value which needs to occur anywhere in the target field.
      * <p>
      * This is roughly the same as calling {@code matches("*"+value+"*")}.
      *
      * @param value the value to search for
-     * @return the constaint itself
+     * @return the constraint itself
      */
     public Like contains(String value) {
         String effectiveValue = value;
@@ -68,12 +68,12 @@ public class Like {
     }
 
     /**
-     * Sepcifies a value with which the target field needs to start.
+     * Specifies a value with which the target field needs to start.
      * <p>
      * This is roughly the same as calling {@code matches(value+"*")}.
      *
      * @param value the value to search for
-     * @return the constaint itself
+     * @return the constraint itself
      */
     public Like startsWith(String value) {
         String effectiveValue = value;

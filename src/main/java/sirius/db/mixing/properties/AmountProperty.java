@@ -68,7 +68,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
                 }
             } catch (Exception e) {
                 Mixing.LOG.WARN(
-                        "An error occured while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
+                        "An error occurred while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
                         field.getName(),
                         field.getDeclaringClass().getName(),
                         e.getMessage(),

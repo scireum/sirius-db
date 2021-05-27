@@ -271,7 +271,7 @@ public class Database {
      * @throws SQLException in case of a database error
      */
     @SuppressWarnings("squid:S2077")
-    @Explain("perpareValues verifies the field names and converts all values into parameters for the prepared statement")
+    @Explain("prepareValues verifies the field names and converts all values into parameters for the prepared statement")
     public Row insertRow(String table, Context ctx) throws SQLException {
         try (Connection c = getConnection()) {
             StringBuilder fields = new StringBuilder();

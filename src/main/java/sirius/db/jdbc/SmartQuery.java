@@ -67,7 +67,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     protected List<Mapping> fields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Mapping, Boolean>> orderBys = new ArrayList<>();
-    protected List<SQLConstraint> constaints = new ArrayList<>();
+    protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
 
     /**
@@ -95,7 +95,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     @Override
     public SmartQuery<E> where(SQLConstraint constraint) {
         if (constraint != null) {
-            this.constaints.add(constraint);
+            this.constraints.add(constraint);
         }
 
         return this;
@@ -320,7 +320,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     private void iterateBlockwiseByPaging(Predicate<E> handler) {
-        // Contains the counter of already processed entities. These have to be skippend when emitting the
+        // Contains the counter of already processed entities. These have to be skipped when emitting the
         // next query...
         AtomicInteger skipCounter = new AtomicInteger(0);
         AtomicBoolean keepGoing = new AtomicBoolean(true);
@@ -383,7 +383,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.forceFail = forceFail;
         copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
-        copy.constaints.addAll(constaints);
+        copy.constraints.addAll(constraints);
 
         return copy;
     }
@@ -794,12 +794,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void where(Compiler compiler) {
-        if (constaints.isEmpty()) {
+        if (constraints.isEmpty()) {
             return;
         }
         compiler.getWHEREBuilder().append(" WHERE ");
         Monoflop mf = Monoflop.create();
-        for (SQLConstraint c : constaints) {
+        for (SQLConstraint c : constraints) {
             if (mf.successiveCall()) {
                 compiler.getWHEREBuilder().append(" AND ");
             }
