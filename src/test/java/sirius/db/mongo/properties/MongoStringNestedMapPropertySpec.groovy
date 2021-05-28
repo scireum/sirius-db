@@ -26,7 +26,7 @@ class MongoStringNestedMapPropertySpec extends BaseSpecification {
     def "reading and writing works"() {
         when:
         def test = new MongoStringNestedMapEntity()
-        def timestamp = LocalDateTime.now().minusDays(2)
+        def timestamp = LocalDateTime.now().minusDays(2).withNano(0)
         test.getMap().put("X", new MongoStringNestedMapEntity.NestedEntity().withValue1("Y").withValue2(timestamp))
         mango.update(test)
         def resolved = mango.refreshOrFail(test)
