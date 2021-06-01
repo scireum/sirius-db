@@ -142,7 +142,7 @@ public class BulkResult {
     /**
      * Returns the failure message for this bulk request.
      *
-     * @return the failure message if errors occured. Otherwise an empty string.
+     * @return the failure message if errors occurred. Otherwise an empty string.
      */
     public String getFailureMessage() {
         if (failureMessage == null) {

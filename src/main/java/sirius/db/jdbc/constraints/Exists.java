@@ -41,7 +41,7 @@ public class Exists extends SQLConstraint {
     /**
      * Adds an additional constraint to further filter the entities which must or must not exist.
      *
-     * @param constraint the constaint on the inner entity type
+     * @param constraint the constraint on the inner entity type
      * @return the exists itself for fluent method calls
      */
     public Exists where(SQLConstraint constraint) {

@@ -123,7 +123,7 @@ class MangoSpec extends BaseSpecification {
         notFound == null
     }
 
-    def "unique constaint violations are properly thrown"() {
+    def "unique constraint violations are properly thrown"() {
         setup:
         mango.select(MongoUniqueTestEntity.class).eq(MongoUniqueTestEntity.VALUE, "Test").delete()
         when:
@@ -189,7 +189,7 @@ class MangoSpec extends BaseSpecification {
         query.exists() == true
         and: "a count after an exists still yields all entities"
         query.count() == 10
-        and: "a list after an exists still yields all entitiies"
+        and: "a list after an exists still yields all entities"
         query.queryList().size() == 10
         and: "a list after an exists still yields all fields"
         query.queryList().get(0).getCounter() == 9

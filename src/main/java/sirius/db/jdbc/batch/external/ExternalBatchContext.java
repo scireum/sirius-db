@@ -98,7 +98,7 @@ public class ExternalBatchContext implements Closeable {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
-                      .withSystemErrorMessage("An exception occured while closing a database connection: %s (%s)")
+                      .withSystemErrorMessage("An exception occurred while closing a database connection: %s (%s)")
                       .handle();
         }
     }

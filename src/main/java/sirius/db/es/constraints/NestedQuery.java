@@ -26,8 +26,8 @@ import java.util.List;
  */
 public class NestedQuery {
 
-    private Mapping path;
-    private List<ElasticConstraint> innerQueries = new ArrayList<>();
+    private final Mapping path;
+    private final List<ElasticConstraint> innerQueries = new ArrayList<>();
 
     /**
      * Creates a new nested query for elements in the given field / list.
@@ -41,7 +41,7 @@ public class NestedQuery {
     /**
      * Appends an inner constraint.
      * <p>
-     * Note that all fields must be fully qualified (e.g. list.valueX instead of simly valueX).
+     * Note that all fields must be fully qualified (e.g. list.valueX instead of simply valueX).
      *
      * @param constraint the filter to add
      * @return the nested query itself for fluent method calls
@@ -67,7 +67,7 @@ public class NestedQuery {
     /**
      * Compiles the query into a constraint.
      *
-     * @return the effective constaint which can be applied on a query
+     * @return the effective constraint which can be applied on a query
      */
     public ElasticConstraint build() {
         BoolQueryBuilder builder = new BoolQueryBuilder();

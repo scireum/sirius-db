@@ -52,7 +52,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     public static final Log LOG = Log.get("oma");
 
     /**
-     * Constains the factory used to generate filters for a {@link SmartQuery}.
+     * Constrains the factory used to generate filters for a {@link SmartQuery}.
      */
     public static final SQLFilterFactory FILTERS = new SQLFilterFactory();
 
@@ -136,7 +136,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     /**
-     * Provides a {@link Future} which is fullfilled once the framework is ready.
+     * Provides a {@link Future} which is fulfilled once the framework is ready.
      *
      * @return a future which can be used to delay startup actions until the framework is fully functional.
      */
@@ -203,7 +203,8 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         }
 
         try {
-            Row keys = getDatabase(entityDescriptor.getRealm()).insertRow(entityDescriptor.getRelationName(), insertData);
+            Row keys =
+                    getDatabase(entityDescriptor.getRealm()).insertRow(entityDescriptor.getRelationName(), insertData);
             loadCreatedId(entity, keys);
             entity.setVersion(1);
         } catch (SQLIntegrityConstraintViolationException e) {
@@ -225,7 +226,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
             // however MySQL reports "GENERATED_KEY"...
             entity.setId(keys.getValue("GENERATED_KEY").asLong(-1));
         } else if (keys.hasValue("INSERT_ID")) {
-            // aaand MariaDB reports "INSERT_ID"...
+            // and MariaDB reports "INSERT_ID"...
             entity.setId(keys.getValue("INSERT_ID").asLong(-1));
         }
     }
@@ -376,7 +377,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     /**
      * Transforms a plain {@link SQLQuery} to directly return entities of the given type.
      *
-     * @param type the type of entites to read from the query result
+     * @param type the type of entities to read from the query result
      * @param qry  the query to transform
      * @param <E>  the generic type of entities to read from the query result
      * @return a transformed query which returns entities instead of result rows.
@@ -390,8 +391,8 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
      * <p>
      * If the columns to read from the result set are aliased, this method can be used to specify the alias to use.
      *
-     * @param type  the type of entites to read from the query result
-     * @param alias the alias which is appended to all column names to readl
+     * @param type  the type of entities to read from the query result
+     * @param alias the alias which is appended to all column names to read
      * @param qry   the query to transform
      * @param <E>   the generic type of entities to read from the query result
      * @return a transformed query which returns entities instead of result rows.
@@ -403,11 +404,11 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     /**
      * Tries to find the entity with the given id
      *
-     * @param id      the id of the entity to find
-     * @param entityDescriptor      the descriptor of the entity to find
-     * @param context the advanced search context which can be populated using
-     *                {@link sirius.db.mixing.ContextInfo context info elements}.
-     * @param <E>     the generic type of the entity tp find
+     * @param id               the id of the entity to find
+     * @param entityDescriptor the descriptor of the entity to find
+     * @param context          the advanced search context which can be populated using
+     *                         {@link sirius.db.mixing.ContextInfo context info elements}.
+     * @param <E>              the generic type of the entity tp find
      * @return the entity wrapped as optional or an empty optional if no entity was found
      * @throws Exception in case of a database or system error
      */
@@ -434,13 +435,13 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
 
                 Set<String> columns = dbs.readColumns(rs);
                 E entity = (E) ed.make(OMA.class, null, key -> {
-                    String effeciveKey = key.toUpperCase();
-                    if (!columns.contains(effeciveKey)) {
+                    String effectiveKey = key.toUpperCase();
+                    if (!columns.contains(effectiveKey)) {
                         return null;
                     }
 
                     try {
-                        return Value.of(rs.getObject(effeciveKey));
+                        return Value.of(rs.getObject(effectiveKey));
                     } catch (SQLException e) {
                         throw Exceptions.handle(OMA.LOG, e);
                     }

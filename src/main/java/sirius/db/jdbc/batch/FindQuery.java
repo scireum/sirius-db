@@ -81,14 +81,14 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage(
-                                    "A database error occured while executing a FindQuery for %s: %s (%s)",
+                                    "A database error occurred while executing a FindQuery for %s: %s (%s)",
                                     type.getName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
-                            .withSystemErrorMessage("An error occured while executing a FindQuery for %s: %s (%s)",
+                            .withSystemErrorMessage("An error occurred while executing a FindQuery for %s: %s (%s)",
                                                     type.getName())
                             .handle();
         }
@@ -106,13 +106,13 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
     private SQLEntity make(ResultSet rs) throws Exception {
         Set<String> columns = dbs.readColumns(rs);
         SQLEntity result = (SQLEntity) descriptor.make(OMA.class, null, key -> {
-            String effeciveKey = key.toUpperCase();
-            if (!columns.contains(effeciveKey)) {
+            String effectiveKey = key.toUpperCase();
+            if (!columns.contains(effectiveKey)) {
                 return null;
             }
 
             try {
-                return Value.of(rs.getObject(effeciveKey));
+                return Value.of(rs.getObject(effectiveKey));
             } catch (SQLException e) {
                 throw Exceptions.handle(OMA.LOG, e);
             }

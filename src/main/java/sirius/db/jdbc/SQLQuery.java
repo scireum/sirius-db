@@ -41,15 +41,15 @@ public class SQLQuery extends BaseSQLQuery {
     /**
      * Specifies the default fetch size (number of rows to fetch at once) for a query.
      * <p>
-     * Note that some databases (MySQL / Maria DB) no not support this. If possible ({@link Capability#STREAMING})
-     * these are set to a minimal fethc size to enable streaming of large results.
+     * Note that some databases (MySQL / Maria DB) does not support this. If possible ({@link Capability#STREAMING})
+     * these are set to a minimal fetch size to enable streaming of large results.
      */
     public static final int DEFAULT_FETCH_SIZE = 1000;
 
     private static final String MICROTIMING_KEY = "SQL";
     private final Database ds;
     private final String sql;
-    private Context params = Context.create();
+    private final Context params = Context.create();
     private boolean longRunning;
 
     /**
@@ -93,7 +93,7 @@ public class SQLQuery extends BaseSQLQuery {
      * <p>
      * These connections and statements won't contribute to the query duration metrics and will not report slow queries.
      * Note however, that each query is still wrapped in an {@link sirius.kernel.async.Operation} which is considered
-     * as hanging after 5mins.
+     * as hanging after 5 minutes.
      *
      * @return the query itself for fluent method calls
      */

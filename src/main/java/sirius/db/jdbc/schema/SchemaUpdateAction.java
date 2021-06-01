@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Represents an action which needs to be perfomed onto a schema to make it
+ * Represents an action which needs to be performed onto a schema to make it
  * match another schema.
  */
 public class SchemaUpdateAction {
@@ -113,7 +113,7 @@ public class SchemaUpdateAction {
     /**
      * Executes the change against the given database.
      *
-     * @param db the datbase to change
+     * @param db the database to change
      */
     public void execute(Database db) {
         error = null;
@@ -128,7 +128,7 @@ public class SchemaUpdateAction {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
-                      .withSystemErrorMessage("An error occured while executing the schema change '%s': %s (%s)",
+                      .withSystemErrorMessage("An error occurred while executing the schema change '%s': %s (%s)",
                                               Strings.join(sql, ";") + ";")
                       .handle();
             error = e.getMessage();

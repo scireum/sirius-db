@@ -113,7 +113,7 @@ public class ExternalBatchQuery extends BaseSQLQuery {
                 throw Exceptions.handle()
                                 .to(OMA.LOG)
                                 .error(e)
-                                .withSystemErrorMessage("An error occured while batch executing a statement: %s (%s)")
+                                .withSystemErrorMessage("An error occurred while batch executing a statement: %s (%s)")
                                 .handle();
             }
         }
@@ -177,7 +177,7 @@ public class ExternalBatchQuery extends BaseSQLQuery {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
-                      .withSystemErrorMessage("An error occured while closing a prepared statement: %s (%s)")
+                      .withSystemErrorMessage("An error occurred while closing a prepared statement: %s (%s)")
                       .handle();
         }
     }

@@ -445,7 +445,7 @@ public class Schema implements Startable, Initializable {
                       .to(OMA.LOG)
                       .error(e)
                       .withSystemErrorMessage(
-                              "An error occured while executing the initial SQL statement for: %s (%s) - %s (%s)",
+                              "An error occurred while executing the initial SQL statement for: %s (%s) - %s (%s)",
                               database.getUrl(),
                               initSql)
                       .handle();

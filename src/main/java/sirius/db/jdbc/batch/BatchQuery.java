@@ -103,7 +103,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
                 throw Exceptions.handle()
                                 .to(OMA.LOG)
                                 .error(e)
-                                .withSystemErrorMessage("An error occured while batch executing a statement: %s (%s)")
+                                .withSystemErrorMessage("An error occurred while batch executing a statement: %s (%s)")
                                 .handle();
             }
         }
@@ -229,7 +229,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
-                      .withSystemErrorMessage("An error occured while closing a prepared statement: %s (%s)")
+                      .withSystemErrorMessage("An error occurred while closing a prepared statement: %s (%s)")
                       .handle();
         } finally {
             stmt = null;
