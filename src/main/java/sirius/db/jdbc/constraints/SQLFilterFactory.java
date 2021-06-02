@@ -32,22 +32,96 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     @Override
     protected SQLConstraint eqValue(Mapping field, Object value) {
-        return new FieldOperator(field, "=", value);
+        return eq(new RowValue(field), new RowValue(value));
+    }
+
+    /**
+     * Represents {@code lhs = rhs} as constraint
+     *
+     * @param lhs the first row value
+     * @param rhs the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint eq(RowValue lhs, RowValue rhs) {
+        return new FieldOperator(lhs, "=", rhs);
     }
 
     @Override
     protected SQLConstraint neValue(Mapping field, Object value) {
-        return new FieldOperator(field, "<>", value);
+        return ne(new RowValue(field), new RowValue(value));
+    }
+
+    /**
+     * Represents {@code lhs <> rhs} as constraint
+     *
+     * @param lhs the first row value
+     * @param rhs the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint ne(RowValue lhs, RowValue rhs) {
+        return new FieldOperator(lhs, "<>", rhs);
     }
 
     @Override
     protected SQLConstraint gtValue(Mapping field, Object value, boolean orEqual) {
-        return new FieldOperator(field, orEqual ? ">=" : ">", value);
+        return gt(new RowValue(field), new RowValue(value), orEqual);
+    }
+
+    /**
+     * Represents {@code lhs > rhs} as constraint
+     *
+     * @param lhs the first row value
+     * @param rhs the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint gt(RowValue lhs, RowValue rhs) {
+        return gt(lhs, rhs, false);
+    }
+
+    /**
+     * Represents {@code lhs >= rhs} as constraint
+     *
+     * @param lhs the first row value
+     * @param rhs the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint gte(RowValue lhs, RowValue rhs) {
+        return gt(lhs, rhs, true);
+    }
+
+    protected SQLConstraint gt(RowValue lhs, RowValue rhs, boolean orEqual) {
+        return new FieldOperator(lhs, orEqual ? ">=" : ">", rhs);
     }
 
     @Override
     protected SQLConstraint ltValue(Mapping field, Object value, boolean orEqual) {
-        return new FieldOperator(field, orEqual ? "<=" : "<", value);
+        return lt(new RowValue(field), new RowValue(value), orEqual);
+    }
+
+    /**
+     * Represents {@code lhs < rhs} as constraint
+     *
+     * @param lhs the first row value
+     * @param rhs the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint lt(RowValue lhs, RowValue rhs) {
+        return lt(lhs, rhs, false);
+    }
+
+    /**
+     * Represents {@code lhs <= rhs} as constraint
+     *
+     * @param lhs the first row value
+     * @param rhs the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint lte(RowValue lhs, RowValue rhs) {
+        return lt(lhs, rhs, true);
+    }
+
+    protected SQLConstraint lt(RowValue lhs, RowValue rhs, boolean orEqual) {
+        return new FieldOperator(lhs, orEqual ? "<=" : "<", rhs);
     }
 
     @Override

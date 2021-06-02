@@ -9,32 +9,37 @@
 package sirius.db.jdbc.constraints;
 
 import sirius.db.jdbc.SmartQuery;
-import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
+
+import java.util.List;
 
 /**
  * Represents a simple field operator as constraint.
  */
 class FieldOperator extends SQLConstraint {
 
-    private Mapping field;
-    private Object value;
-    private String op;
+    private final RowValue lhs;
+    private final RowValue rhs;
+    private final String op;
 
-    protected FieldOperator(Mapping field, String op, Object value) {
-        this.field = field;
+    protected FieldOperator(RowValue lhs, String op, RowValue rhs) {
+        this.lhs = lhs;
         this.op = op;
-        this.value = value;
+        this.rhs = rhs;
     }
 
     @Override
     public void appendSQL(SmartQuery.Compiler compiler) {
-        String columnName = compiler.translateColumnName(field);
-        compiler.getWHEREBuilder().append(columnName).append(op).append(" ?");
-        compiler.addParameter(value);
+        Tuple<String, List<Object>> compiledLhs = lhs.compileExpression(compiler);
+        Tuple<String, List<Object>> compiledRhs = rhs.compileExpression(compiler);
+        compiler.getWHEREBuilder().append(Strings.join(" ", compiledLhs.getFirst(), op, compiledRhs.getFirst()));
+        compiledLhs.getSecond().forEach(compiler::addParameter);
+        compiledRhs.getSecond().forEach(compiler::addParameter);
     }
 
     @Override
     public void asString(StringBuilder builder) {
-        builder.append(field.toString()).append(" ").append(op).append(" ").append(value);
+        builder.append(Strings.join(" ", lhs.toString(), op, rhs.toString()));
     }
 }
