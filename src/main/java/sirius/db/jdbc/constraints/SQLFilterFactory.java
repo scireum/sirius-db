@@ -36,14 +36,14 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
     }
 
     /**
-     * Represents {@code lhs = rhs} as constraint
+     * Represents {@code leftHandSide = rightHandSide} as constraint
      *
-     * @param lhs the first row value
-     * @param rhs the second row value
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint eq(RowValue lhs, RowValue rhs) {
-        return new FieldOperator(lhs, "=", rhs);
+    public SQLConstraint eq(RowValue leftHandSide, RowValue rightHandSide) {
+        return new FieldOperator(leftHandSide, "=", rightHandSide);
     }
 
     @Override
@@ -52,14 +52,14 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
     }
 
     /**
-     * Represents {@code lhs <> rhs} as constraint
+     * Represents {@code leftHandSide <> rightHandSide} as constraint
      *
-     * @param lhs the first row value
-     * @param rhs the second row value
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint ne(RowValue lhs, RowValue rhs) {
-        return new FieldOperator(lhs, "<>", rhs);
+    public SQLConstraint ne(RowValue leftHandSide, RowValue rightHandSide) {
+        return new FieldOperator(leftHandSide, "<>", rightHandSide);
     }
 
     @Override
@@ -68,29 +68,29 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
     }
 
     /**
-     * Represents {@code lhs > rhs} as constraint
+     * Represents {@code leftHandSide > rightHandSide} as constraint
      *
-     * @param lhs the first row value
-     * @param rhs the second row value
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint gt(RowValue lhs, RowValue rhs) {
-        return gt(lhs, rhs, false);
+    public SQLConstraint gt(RowValue leftHandSide, RowValue rightHandSide) {
+        return gt(leftHandSide, rightHandSide, false);
     }
 
     /**
-     * Represents {@code lhs >= rhs} as constraint
+     * Represents {@code leftHandSide >= rightHandSide} as constraint
      *
-     * @param lhs the first row value
-     * @param rhs the second row value
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint gte(RowValue lhs, RowValue rhs) {
-        return gt(lhs, rhs, true);
+    public SQLConstraint gte(RowValue leftHandSide, RowValue rightHandSide) {
+        return gt(leftHandSide, rightHandSide, true);
     }
 
-    protected SQLConstraint gt(RowValue lhs, RowValue rhs, boolean orEqual) {
-        return new FieldOperator(lhs, orEqual ? ">=" : ">", rhs);
+    protected SQLConstraint gt(RowValue leftHandSide, RowValue rightHandSide, boolean orEqual) {
+        return new FieldOperator(leftHandSide, orEqual ? ">=" : ">", rightHandSide);
     }
 
     @Override
@@ -99,29 +99,29 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
     }
 
     /**
-     * Represents {@code lhs < rhs} as constraint
+     * Represents {@code leftHandSide < rightHandSide} as constraint
      *
-     * @param lhs the first row value
-     * @param rhs the second row value
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint lt(RowValue lhs, RowValue rhs) {
-        return lt(lhs, rhs, false);
+    public SQLConstraint lt(RowValue leftHandSide, RowValue rightHandSide) {
+        return lt(leftHandSide, rightHandSide, false);
     }
 
     /**
-     * Represents {@code lhs <= rhs} as constraint
+     * Represents {@code leftHandSide <= rightHandSide} as constraint
      *
-     * @param lhs the first row value
-     * @param rhs the second row value
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint lte(RowValue lhs, RowValue rhs) {
-        return lt(lhs, rhs, true);
+    public SQLConstraint lte(RowValue leftHandSide, RowValue rightHandSide) {
+        return lt(leftHandSide, rightHandSide, true);
     }
 
-    protected SQLConstraint lt(RowValue lhs, RowValue rhs, boolean orEqual) {
-        return new FieldOperator(lhs, orEqual ? "<=" : "<", rhs);
+    protected SQLConstraint lt(RowValue leftHandSide, RowValue rightHandSide, boolean orEqual) {
+        return new FieldOperator(leftHandSide, orEqual ? "<=" : "<", rightHandSide);
     }
 
     @Override

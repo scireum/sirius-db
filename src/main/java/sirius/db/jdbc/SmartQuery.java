@@ -305,22 +305,22 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
 
         // create and install the filter
-        Object[] lhs = new Object[query.orderBys.size()];
-        Object[] rhs = new Object[query.orderBys.size()];
+        Object[] leftHandSide = new Object[query.orderBys.size()];
+        Object[] rightHandSide = new Object[query.orderBys.size()];
         for (int i = 0; i < query.orderBys.size(); i++) {
             Mapping mapping = query.orderBys.get(i).getFirst();
             Object value = lastValue.getDescriptor().getProperty(mapping).getValue(lastValue);
             if (query.orderBys.get(i).getSecond().booleanValue()) {
                 // the order by is ascending -> COLUMN > lastvalue.column
-                lhs[i] = mapping;
-                rhs[i] = value;
+                leftHandSide[i] = mapping;
+                rightHandSide[i] = value;
             } else {
                 // lastvalue.column > COLUMN
-                rhs[i] = mapping;
-                lhs[i] = value;
+                rightHandSide[i] = mapping;
+                leftHandSide[i] = value;
             }
         }
-        return query.where(OMA.FILTERS.gt(new RowValue(lhs), new RowValue(rhs)));
+        return query.where(OMA.FILTERS.gt(new RowValue(leftHandSide), new RowValue(rightHandSide)));
     }
 
     @Override
