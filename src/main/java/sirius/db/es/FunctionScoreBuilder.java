@@ -77,10 +77,7 @@ public class FunctionScoreBuilder {
      * @return the builder itself for fluent method calls
      */
     public FunctionScoreBuilder script(String script) {
-        return function(new JSONObject().fluentPut("script_score",
-                                                   new JSONObject().fluentPut("script",
-                                                                              new JSONObject().fluentPut("source",
-                                                                                                         script))));
+        return function(new ScriptScoreBuilder().source(script).build());
     }
 
     /**

@@ -135,6 +135,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private FunctionScoreBuilder functionScore;
 
+    private ScriptScoreBuilder scriptScore;
+
     private String routing;
     private boolean unrouted;
 
@@ -261,6 +263,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         if (functionScore != null) {
             copy.functionScore = this.functionScore.copy();
+        }
+
+        if (scriptScore != null) {
+            copy.scriptScore = this.scriptScore.copy();
         }
 
         if (suggesters != null) {
@@ -520,6 +526,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public ElasticQuery<E> functionScore(FunctionScoreBuilder functionScore) {
         this.functionScore = functionScore;
+        return this;
+    }
+
+    /**
+     * Adds the given script score to the query.
+     * <p>
+     * Note: This will not have any effect if a {@link #functionScore(FunctionScoreBuilder)} is also provided.
+     *
+     * @param scriptScore the script score builder to use
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> scriptScore(ScriptScoreBuilder scriptScore) {
+        this.scriptScore = scriptScore;
         return this;
     }
 
@@ -809,8 +828,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds the query and the function score query to the payload.
      * <p>
-     * If a function score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
-     * payload. If only a function score builder is set, it is added to the payload without a query.
+     * If a function score builder is set, it is used to wrap the query. If only a function score builder is set,
+     * it is added to the payload without a query.
+     * <p>
+     * If a script score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
+     * payload. If only a script score source is set, it is added to the payload without a query.
      *
      * @param payload the existing payload to add the query to
      */
@@ -821,7 +843,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             } else {
                 payload.put(KEY_QUERY, functionScore.build());
             }
-        } else if (queryBuilder != null) {
+            return;
+        }
+
+        if (scriptScore != null) {
+            if (queryBuilder != null) {
+                payload.put(KEY_QUERY, scriptScore.apply(queryBuilder.build()));
+            } else {
+                payload.put(KEY_QUERY, scriptScore.build());
+            }
+            return;
+        }
+
+        if (queryBuilder != null) {
             payload.put(KEY_QUERY, queryBuilder.build());
         }
     }
