@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc
 
-
+import sirius.db.jdbc.constraints.RowValue
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
@@ -199,7 +199,8 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                                                        .
-                orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                                       SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -209,10 +210,10 @@ class SmartQuerySpec extends BaseSpecification {
     def "automatic joins work when fetching a referenced field"() {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
-                                                       .
-                fields(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
-                                                       .
-                orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                       .fields(SmartQueryTestChildEntity.PARENT.join(
+                                                               SmartQueryTestParentEntity.NAME))
+                                                       .orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                               SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -225,9 +226,10 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                                                        .
-                fields(
-                        SmartQueryTestChildEntity.PARENT,
-                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               fields(
+                                                                       SmartQueryTestChildEntity.PARENT,
+                                                                       SmartQueryTestChildEntity.PARENT.join(
+                                                                               SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -238,10 +240,13 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                                                        .
-                fields(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
-                       SmartQueryTestChildEntity.OTHER_PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               fields(SmartQueryTestChildEntity.PARENT.join(
+                                                                       SmartQueryTestParentEntity.NAME),
+                                                                      SmartQueryTestChildEntity.OTHER_PARENT.join(
+                                                                              SmartQueryTestParentEntity.NAME))
                                                        .
-                orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                                       SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -252,15 +257,12 @@ class SmartQuerySpec extends BaseSpecification {
 
     def "automatic joins work across several tables"() {
         given:
-        SmartQuery<SmartQueryTestChildChildEntity> qry = oma.select(SmartQueryTestChildChildEntity.class)
-                                                            .
-                fields(
-                        SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).
-                                join(SmartQueryTestParentEntity.NAME))
-                                                            .
-                orderAsc(
-                        SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).
-                                join(SmartQueryTestParentEntity.NAME))
+        SmartQuery<SmartQueryTestChildChildEntity> qry = oma.
+                select(SmartQueryTestChildChildEntity.class).
+                fields(SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
+                        SmartQueryTestParentEntity.NAME)).
+                orderAsc(SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
+                        SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -290,7 +292,7 @@ class SmartQuerySpec extends BaseSpecification {
                         SmartQueryTestParentEntity.ID,
                         SmartQueryTestChildEntity.class,
                         SmartQueryTestChildEntity.PARENT).
-                              where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1")))
+                        where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1")))
         when:
         def result = qry.queryList()
         then:
@@ -304,7 +306,7 @@ class SmartQuerySpec extends BaseSpecification {
                         SmartQueryTestParentEntity.ID,
                         SmartQueryTestChildEntity.class,
                         SmartQueryTestChildEntity.PARENT).
-                                              where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))))
+                        where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))))
         when:
         def result = qry.queryList()
         then:
@@ -412,7 +414,7 @@ class SmartQuerySpec extends BaseSpecification {
 
     def "a forcefully failed query does not yield any results"() {
         when:
-        def qry =  oma.select(SmartQueryTestEntity.class).fail()
+        def qry = oma.select(SmartQueryTestEntity.class).fail()
         def flag = false
         then:
         qry.queryList().isEmpty()
@@ -423,5 +425,40 @@ class SmartQuerySpec extends BaseSpecification {
         qry.count() == 0
         and:
         !qry.exists()
+    }
+
+    def "eq with row values works"() {
+        when:
+        def items = oma.select(SmartQueryTestEntity.class).
+                where(OMA.FILTERS.eq(new RowValue(SmartQueryTestEntity.VALUE, SmartQueryTestEntity.TEST_NUMBER),
+                                     new RowValue("Test", 1))).queryList()
+        then:
+        items.size() == 1
+        and:
+        items.get(0).testNumber == 1
+        when:
+        items = oma.select(SmartQueryTestEntity.class).
+                where(OMA.FILTERS.eq(new RowValue("Test", SmartQueryTestEntity.TEST_NUMBER),
+                                     new RowValue(SmartQueryTestEntity.VALUE, 1))).queryList()
+        then:
+        items.size() == 1
+        and:
+        items.get(0).testNumber == 1
+    }
+
+    def "gt with row values works"() {
+        when:
+        def items = oma.
+                select(SmartQueryTestEntity.class).
+                where(OMA.FILTERS.gt(new RowValue(SmartQueryTestEntity.VALUE, 2),
+                                     new RowValue("Test", SmartQueryTestEntity.TEST_NUMBER))).
+                orderAsc(SmartQueryTestEntity.VALUE).
+                queryList()
+        then:
+        items.size() == 2
+        and:
+        items.get(0).testNumber == 1
+        and:
+        items.get(1).testNumber == 3
     }
 }

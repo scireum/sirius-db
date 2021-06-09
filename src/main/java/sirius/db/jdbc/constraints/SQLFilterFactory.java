@@ -32,22 +32,96 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     @Override
     protected SQLConstraint eqValue(Mapping field, Object value) {
-        return new FieldOperator(field, "=", value);
+        return eq(new RowValue(field), new RowValue(value));
+    }
+
+    /**
+     * Represents {@code leftHandSide = rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint eq(RowValue leftHandSide, RowValue rightHandSide) {
+        return new FieldOperator(leftHandSide, "=", rightHandSide);
     }
 
     @Override
     protected SQLConstraint neValue(Mapping field, Object value) {
-        return new FieldOperator(field, "<>", value);
+        return ne(new RowValue(field), new RowValue(value));
+    }
+
+    /**
+     * Represents {@code leftHandSide <> rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint ne(RowValue leftHandSide, RowValue rightHandSide) {
+        return new FieldOperator(leftHandSide, "<>", rightHandSide);
     }
 
     @Override
     protected SQLConstraint gtValue(Mapping field, Object value, boolean orEqual) {
-        return new FieldOperator(field, orEqual ? ">=" : ">", value);
+        return gt(new RowValue(field), new RowValue(value), orEqual);
+    }
+
+    /**
+     * Represents {@code leftHandSide > rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint gt(RowValue leftHandSide, RowValue rightHandSide) {
+        return gt(leftHandSide, rightHandSide, false);
+    }
+
+    /**
+     * Represents {@code leftHandSide >= rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint gte(RowValue leftHandSide, RowValue rightHandSide) {
+        return gt(leftHandSide, rightHandSide, true);
+    }
+
+    protected SQLConstraint gt(RowValue leftHandSide, RowValue rightHandSide, boolean orEqual) {
+        return new FieldOperator(leftHandSide, orEqual ? ">=" : ">", rightHandSide);
     }
 
     @Override
     protected SQLConstraint ltValue(Mapping field, Object value, boolean orEqual) {
-        return new FieldOperator(field, orEqual ? "<=" : "<", value);
+        return lt(new RowValue(field), new RowValue(value), orEqual);
+    }
+
+    /**
+     * Represents {@code leftHandSide < rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint lt(RowValue leftHandSide, RowValue rightHandSide) {
+        return lt(leftHandSide, rightHandSide, false);
+    }
+
+    /**
+     * Represents {@code leftHandSide <= rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint lte(RowValue leftHandSide, RowValue rightHandSide) {
+        return lt(leftHandSide, rightHandSide, true);
+    }
+
+    protected SQLConstraint lt(RowValue leftHandSide, RowValue rightHandSide, boolean orEqual) {
+        return new FieldOperator(leftHandSide, orEqual ? "<=" : "<", rightHandSide);
     }
 
     @Override
