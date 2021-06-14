@@ -307,7 +307,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
             return;
         }
 
-        if (Objects.equals(persistedData.get(property), property)) {
+        if (Objects.equals(persistedData.get(property), propertyValue)) {
             return;
         }
 
