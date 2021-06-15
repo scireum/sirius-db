@@ -151,7 +151,7 @@ public abstract class QueryCompiler<C extends Constraint> {
 
     private boolean skipWhitespace() {
         boolean skipped = false;
-        while (reader.current().isWhitepace()) {
+        while (reader.current().isWhitespace()) {
             reader.consume();
             skipped = true;
         }
@@ -337,7 +337,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             return !reader.current().is('"');
         }
 
-        return !reader.current().is(')', ':') && !reader.current().isWhitepace() && !isAtOperator();
+        return !reader.current().is(')', ':') && !reader.current().isWhitespace() && !isAtOperator();
     }
 
     /**
@@ -611,7 +611,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     private boolean continueValue(AtomicInteger numberOfOpenBrackets) {
-        if (reader.current().isEndOfInput() || reader.current().isWhitepace()) {
+        if (reader.current().isEndOfInput() || reader.current().isWhitespace()) {
             return false;
         }
 
