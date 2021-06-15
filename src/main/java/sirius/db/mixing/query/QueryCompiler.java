@@ -636,20 +636,14 @@ public abstract class QueryCompiler<C extends Constraint> {
      * @return a constraint matching the given parameters
      */
     protected C compileOperation(Mapping field, Property property, String operation, FieldValue value) {
-        switch (operation) {
-            case ">":
-                return factory.gt(field, value.getValue());
-            case ">=":
-                return factory.gte(field, value.getValue());
-            case "<=":
-                return factory.lte(field, value.getValue());
-            case "<":
-                return factory.lt(field, value.getValue());
-            case "<>":
-                return compileNotEquals(field, property, value);
-            default:
-                return compileFieldEquals(field, property, value);
-        }
+        return switch (operation) {
+            case ">" -> factory.gt(field, value.getValue());
+            case ">=" -> factory.gte(field, value.getValue());
+            case "<=" -> factory.lte(field, value.getValue());
+            case "<" -> factory.lt(field, value.getValue());
+            case "<>" -> compileNotEquals(field, property, value);
+            default -> compileFieldEquals(field, property, value);
+        };
     }
 
     /**
