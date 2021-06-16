@@ -44,7 +44,7 @@ class SuggestSpec extends BaseSpecification {
         and:
         elastic.refresh(SuggestTestEntity.class)
         def suggestParts = elastic.select(SuggestTestEntity.class)
-                                  .suggest(new SuggestBuilder(SuggestBuilder.TERM, "test")
+                                  .suggest(new SuggestBuilder(SuggestBuilder.TYPE_TERM, "test")
                                                    .on(SuggestTestEntity.CONTENT, "HSS dril bitt"))
                                   .getSuggestParts("test")
         then:
@@ -73,7 +73,7 @@ class SuggestSpec extends BaseSpecification {
         and:
         elastic.refresh(SuggestTestEntity.class)
         def suggestOptions = elastic.select(SuggestTestEntity.class)
-                                    .suggest(new SuggestBuilder(SuggestBuilder.PHRASE, "test")
+                                    .suggest(new SuggestBuilder(SuggestBuilder.TYPE_PHRASE, "test")
                                                      .on(SuggestTestEntity.CONTENT, "dril potatoes"))
                                     .getSuggestOptions("test")
         then:
@@ -114,7 +114,7 @@ class SuggestSpec extends BaseSpecification {
         and:
         elastic.refresh(SuggestTestEntity.class)
         def suggestOptions = elastic.select(SuggestTestEntity.class)
-                                    .suggest(new SuggestBuilder(SuggestBuilder.PHRASE, "test")
+                                    .suggest(new SuggestBuilder(SuggestBuilder.TYPE_PHRASE, "test")
                                                      .on(SuggestTestEntity.CONTENT, "Sals Kartoffeln")
                                                      .collate(new BoolQueryBuilder().must(matchPhrase)
                                                                                     .must(matchShop), true))
