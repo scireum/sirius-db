@@ -143,7 +143,7 @@ public class SQLQuery extends BaseSQLQuery {
     protected PreparedStatement createPreparedStatement(Connection c) throws SQLException {
         StatementCompiler compiler = new StatementCompiler(c, false);
         compiler.buildParameterizedStatement(sql, params);
-        return compiler.getStmt();
+        return compiler.getStatement();
     }
 
     @Override
@@ -197,7 +197,7 @@ public class SQLQuery extends BaseSQLQuery {
         try (Connection c = ds.getConnection()) {
             StatementCompiler compiler = new StatementCompiler(c, true);
             compiler.buildParameterizedStatement(sql, params);
-            try (PreparedStatement stmt = compiler.getStmt()) {
+            try (PreparedStatement stmt = compiler.getStatement()) {
                 if (stmt == null) {
                     return new Row();
                 }
