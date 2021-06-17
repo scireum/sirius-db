@@ -9,6 +9,7 @@
 package sirius.db.jdbc;
 
 import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Reflection;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -29,33 +30,35 @@ import java.util.List;
  */
 class StatementCompiler {
 
-    private PreparedStatement stmt;
+    private PreparedStatement statement;
     private List<Tuple<Integer, Object>> parameters = new ArrayList<>();
-    private Connection c;
-    private StringBuilder sb;
+    private Connection connection;
+    private StringBuilder effectiveQueryBuilder;
     private boolean retrieveGeneratedKeys;
     private String originalSQL;
     private List<Object> params;
     private Context context;
 
-    protected StatementCompiler(Connection c, boolean retrieveGeneratedKeys) {
-        this.c = c;
+    protected StatementCompiler(Connection connection, boolean retrieveGeneratedKeys) {
+        this.connection = connection;
         this.retrieveGeneratedKeys = retrieveGeneratedKeys;
-        this.sb = new StringBuilder();
+        this.effectiveQueryBuilder = new StringBuilder();
     }
 
-    protected PreparedStatement getStmt() throws SQLException {
-        if (stmt == null) {
+    protected PreparedStatement getStatement() throws SQLException {
+        if (statement == null) {
             if (retrieveGeneratedKeys) {
-                stmt = c.prepareStatement(sb.toString(), Statement.RETURN_GENERATED_KEYS);
+                statement = connection.prepareStatement(effectiveQueryBuilder.toString(), Statement.RETURN_GENERATED_KEYS);
             } else {
-                stmt = c.prepareStatement(sb.toString(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+                statement = connection.prepareStatement(effectiveQueryBuilder.toString(),
+                                                        ResultSet.TYPE_FORWARD_ONLY,
+                                                        ResultSet.CONCUR_READ_ONLY);
             }
             for (Tuple<Integer, Object> t : parameters) {
                 stmt.setObject(t.getFirst(), t.getSecond());
             }
         }
-        return stmt;
+        return statement;
     }
 
     /**
@@ -67,6 +70,11 @@ class StatementCompiler {
      * @param query   the query to compile
      * @param context the context defining the parameters available
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("""
+            For performance reasons, we keep the original context around,
+            as we do not use it outside the scope of this method.
+            """)
     protected void buildParameterizedStatement(String query, Context context) throws SQLException {
         this.params = new ArrayList<>();
         if (query != null) {
@@ -129,7 +137,7 @@ class StatementCompiler {
         boolean appendToStatement = compileSectionPart(sql, tempParams, sqlBuilder, !ignoreIfParametersNull);
 
         if (appendToStatement) {
-            sb.append(sqlBuilder.toString());
+            effectiveQueryBuilder.append(sqlBuilder);
             params.addAll(tempParams);
         }
     }
@@ -249,8 +257,8 @@ class StatementCompiler {
     }
 
     /**
-     * Make <tt>searchString</tt> conform with SQL 92 syntax. Therefore all * are
-     * converted to % and a final % is appended at the end of the string.
+     * Make <tt>searchString</tt> conform with SQL 92 syntax. Therefore, all * are
+     * converted to %, and a final % is appended at the end of the string.
      *
      * @param query        the query to expand
      * @param wildcardLeft determines if a % should be added to the start of the string
