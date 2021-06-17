@@ -198,7 +198,8 @@ class StatementCompiler {
                                            This is very likely an error and thus reported. \
                                            Set unknown parameters to null to suppress this warning!
                                            Query: %s
-                                           Location: %s""",
+                                           Location:
+                                           %s""",
                                    parameterName,
                                    this.originalSQL,
                                    ExecutionPoint.snapshot().toString());
