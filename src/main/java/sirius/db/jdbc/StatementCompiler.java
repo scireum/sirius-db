@@ -54,8 +54,15 @@ class StatementCompiler {
                                                         ResultSet.TYPE_FORWARD_ONLY,
                                                         ResultSet.CONCUR_READ_ONLY);
             }
-            for (Tuple<Integer, Object> t : parameters) {
-                stmt.setObject(t.getFirst(), t.getSecond());
+            for (Tuple<Integer, Object> parameter : parameters) {
+                try {
+                    statement.setObject(parameter.getFirst(), parameter.getSecond());
+                } catch (SQLException error) {
+                    throw new SQLException(Strings.apply("Failed to set parameter %s to '%s': %s",
+                                                         parameter.getFirst(),
+                                                         parameter.getSecond(),
+                                                         error.getMessage()), error);
+                }
             }
         }
         return statement;
