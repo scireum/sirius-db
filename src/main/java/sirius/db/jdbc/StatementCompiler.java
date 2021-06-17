@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc;
 
+import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Reflection;
@@ -191,6 +192,17 @@ class StatementCompiler {
 
         Object paramValue = context.get(parameterName);
         if (accessPath == null || paramValue == null) {
+            if (!context.containsKey(parameterName)) {
+                Databases.LOG.WARN("""
+                                           SQL query references an unknown paramter: %s! \
+                                           This is very likely an error and thus reported. \
+                                           Set unknown parameters to null to suppress this warning!
+                                           Query: %s
+                                           Location: %s""",
+                                   parameterName,
+                                   this.originalSQL,
+                                   ExecutionPoint.snapshot().toString());
+            }
             return paramValue;
         }
 
