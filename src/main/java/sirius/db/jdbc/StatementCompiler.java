@@ -194,7 +194,7 @@ class StatementCompiler {
         if (accessPath == null || paramValue == null) {
             if (!context.containsKey(parameterName)) {
                 Databases.LOG.WARN("""
-                                           SQL query references an unknown paramter: %s! \
+                                           SQL query references an unknown parameter: %s! \
                                            This is very likely an error and thus reported. \
                                            Set unknown parameters to null to suppress this warning!
                                            Query: %s
