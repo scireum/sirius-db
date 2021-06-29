@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Creates a new query against MongoDB.
@@ -139,6 +140,11 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
             return;
         }
         finder.eachIn(descriptor.getRelationName(), doc -> resultHandler.test(Mango.make(descriptor, doc)));
+    }
+
+    @Override
+    public Stream<E> stream() {
+        return finder.stream(descriptor.getRelationName()).map(doc -> Mango.make(descriptor, doc));
     }
 
     @Override

@@ -21,9 +21,11 @@ import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mongo.facets.MongoFacet;
+import sirius.db.util.AutoClosingStream;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
@@ -33,9 +35,14 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Fluent builder to build a find statement.
@@ -300,6 +307,76 @@ public class Finder extends QueryBuilder<Finder> {
         applyBatchSize(cursor);
 
         processCursor(cursor, processor, collection);
+    }
+
+    /**
+     * Executes the query for the given collection.
+     *
+     * @param collection the collection to search in
+     * @return a stream of matching documents
+     * @implNote the documents in the returned stream are batched, and further batches are loaded as required.
+     */
+    public Stream<Doc> stream(String collection) {
+        if (Mongo.LOG.isFINE()) {
+            Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
+        }
+        return stream(() -> {
+            FindIterable<Document> cursor = buildCursor(collection);
+            if (limit > 0) {
+                cursor.limit(limit);
+            }
+            applyBatchSize(cursor);
+            return cursor;
+        }, collection);
+    }
+
+    private Stream<Doc> stream(Supplier<MongoIterable<Document>> cursor, String collection) {
+        var watch = Watch.start();
+        var taskContext = TaskContext.get();
+        var shouldHandleTracing = Monoflop.create();
+
+        // We need to do quite some work to ensure the cursor is closed.
+        // First, we do a late initialization of the cursor, so it is only initialized when a terminal operation on the
+        // stream is called
+        // Then we wrap the Stream with an AutoClosingStream, which calls the close handler of the stream after a termi-
+        // nal operation is called.
+        // If both works, the cursor should always be closed.
+
+        var iterator = ValueHolder.<MongoCursor<Document>>of(null);
+        return new AutoClosingStream<>(StreamSupport.stream(new Spliterator<Document>() {
+            private Spliterator<Document> delegate = null;
+
+            private Spliterator<Document> getDelegate() {
+                if (delegate == null) {
+                    iterator.set(cursor.get().iterator());
+                    delegate = Spliterators.spliteratorUnknownSize(iterator.get(), 0);
+                }
+                return delegate;
+            }
+
+            @Override
+            public boolean tryAdvance(Consumer<? super Document> action) {
+                if (shouldHandleTracing.firstCall()) {
+                    handleTracingAndReporting(collection, watch);
+                }
+                return getDelegate().tryAdvance(action);
+            }
+
+            @Override
+            public Spliterator<Document> trySplit() {
+                return getDelegate().trySplit();
+            }
+
+            @Override
+            public long estimateSize() {
+                return Long.MAX_VALUE;
+            }
+
+            @Override
+            public int characteristics() {
+                return Spliterator.IMMUTABLE | Spliterator.ORDERED;
+            }
+        }, false)).onClose(() -> iterator.get().close()).takeWhile(ignored -> taskContext.isActive()).map(Doc::new);
     }
 
     private void applyBatchSize(MongoIterable<Document> cursor) {
