@@ -18,10 +18,12 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.db.util.AutoClosingStream;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
+import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +47,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides a fluent query API for Elasticsearch.
@@ -461,6 +465,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         });
 
         return this;
+    }
+
+    @Override
+    public Stream<E> stream() {
+        // just in case no absolute ordering is present
+        orderAsc(Mapping.named(KEY_DOC_ID));
+
+        var spliterator = new ElasticScrollingSpliterator();
+        return new AutoClosingStream<>(StreamSupport.stream(spliterator, false)).onClose(() -> Optional.ofNullable(
+                spliterator.getScrollId()).ifPresent(client::closeScroll)).limit(limit);
     }
 
     /**
@@ -1381,5 +1395,76 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @Override
     public String toString() {
         return descriptor.getType() + ": " + buildPayload();
+    }
+
+    private class ElasticScrollingSpliterator extends PullBasedSpliterator<E> {
+        long lastScroll = 0;
+        String scrollId = null;
+
+        @Override
+        public int characteristics() {
+            return 0;
+        }
+
+        @Override
+        protected Iterator<E> pullNextBlock() {
+            var scrollResponse =
+                    scrollId == null ? pullFirstBlock() : client.continueScroll(SCROLL_TTL_SECONDS, scrollId);
+            scrollId = scrollResponse.getString(KEY_SCROLL_ID);
+            lastScroll = performScrollMonitoring(lastScroll);
+            return processResponse(scrollResponse);
+        }
+
+        private JSONObject pullFirstBlock() {
+            var filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
+            return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
+                                       filterRouting,
+                                       skip,
+                                       filterRouting != null ?
+                                       MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
+                                       MAX_SCROLL_RESULTS_PER_SHARD,
+                                       SCROLL_TTL_SECONDS,
+                                       buildPayload());
+        }
+
+        @Nonnull
+        @SuppressWarnings("unchecked")
+        @Explain("We need the unchecked cast when making the (generic) entity")
+        private Iterator<E> processResponse(JSONObject scrollResponse) {
+            return scrollResponse.getJSONObject(KEY_HITS)
+                                 .getJSONArray(KEY_HITS)
+                                 .stream()
+                                 .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
+                                 .iterator();
+        }
+
+        /**
+         * As a scroll cursor can timeout, we monitor the call interval and emit a warning if a timeout might have occurred.
+         *
+         * @param lastScroll the timestamp when the last scoll was executed
+         * @return the next timestamp
+         */
+        private long performScrollMonitoring(long lastScroll) {
+            long now = System.currentTimeMillis();
+            if (lastScroll > 0) {
+                long deltaInSeconds = TimeUnit.SECONDS.convert(now - lastScroll, TimeUnit.MILLISECONDS);
+                // Warn if processing of one scroll took longer thant our keep alive....
+                if (deltaInSeconds > SCROLL_TTL_SECONDS) {
+                    Exceptions.handle()
+                              .withSystemErrorMessage(
+                                      "A scroll query against elasticserach took too long to process its data! "
+                                      + "The result is probably inconsistent! Query: %s\n%s",
+                                      this,
+                                      ExecutionPoint.snapshot())
+                              .to(Elastic.LOG)
+                              .handle();
+                }
+            }
+            return now;
+        }
+
+        private String getScrollId() {
+            return scrollId;
+        }
     }
 }
