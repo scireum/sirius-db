@@ -21,6 +21,7 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -41,14 +42,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides a query DSL which is used to query {@link SQLEntity} instances from the database.
@@ -296,6 +301,29 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             handler.accept(entity);
             return true;
         });
+    }
+
+    /**
+     * @implNote This implementation uses block-wise processing with multiple SQL queries if the result has a reasonable
+     * size. This means that it cannot provide the usual ACID guarantees.
+     */
+    @Override
+    public Stream<E> stream() {
+        return StreamSupport.stream(new PullBasedSpliterator<>() {
+            private final ValueHolder<E> lastValue = ValueHolder.of(null);
+
+            @Override
+            public int characteristics() {
+                return Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.IMMUTABLE;
+            }
+
+            @Override
+            protected Iterator<E> pullNextBlock() {
+                var block = pagingGreaterThanLastValue(lastValue.get(), copy().limit(1000)).queryList();
+                lastValue.set(block.get(block.size() - 1));
+                return block.iterator();
+            }
+        }, false);
     }
 
     private SmartQuery<E> pagingGreaterThanLastValue(E lastValue, SmartQuery<E> query) {
