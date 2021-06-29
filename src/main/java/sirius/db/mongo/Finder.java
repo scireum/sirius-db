@@ -296,17 +296,8 @@ public class Finder extends QueryBuilder<Finder> {
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
     public void eachIn(String collection, Predicate<Doc> processor) {
-        if (Mongo.LOG.isFINE()) {
-            Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
-        }
-
-        FindIterable<Document> cursor = buildCursor(collection);
-        if (limit > 0) {
-            cursor.limit(limit);
-        }
-        applyBatchSize(cursor);
-
-        processCursor(cursor, processor, collection);
+        stream(collection).takeWhile(processor).forEach(ignored -> {
+        });
     }
 
     /**
@@ -385,30 +376,6 @@ public class Finder extends QueryBuilder<Finder> {
         }
     }
 
-    private void processCursor(MongoIterable<Document> cursor, Predicate<Doc> processor, String collection) {
-        Watch watch = Watch.start();
-        TaskContext taskContext = TaskContext.get();
-        Monoflop shouldHandleTracing = Monoflop.create();
-
-        for (Document doc : cursor) {
-            if (shouldHandleTracing.firstCall()) {
-                handleTracingAndReporting(collection, watch);
-            }
-
-            boolean keepGoing = processor.test(new Doc(doc));
-            if (!keepGoing || !taskContext.isActive()) {
-                return;
-            }
-        }
-
-        // If we didn't log any tracing data up until now, the result was completely empty and
-        // we can (and should) safely log now - otherwise some entries might be missing in
-        // the Microtiming...
-        if (shouldHandleTracing.firstCall()) {
-            handleTracingAndReporting(collection, watch);
-        }
-    }
-
     /**
      * Executes the query for the given collection in a random order and calls the given processor for each document as long as it
      * returns <tt>true</tt>.
@@ -422,15 +389,14 @@ public class Finder extends QueryBuilder<Finder> {
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
         }
-
-        MongoIterable<Document> cursor =
-                getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
-                                                                       new BasicDBObject(OPERATOR_SAMPLE,
-                                                                                         new BasicDBObject("size",
-                                                                                                           limit))));
-
-        applyBatchSize(cursor);
-        processCursor(cursor, processor, collection);
+        stream(() -> {
+            MongoIterable<Document> cursor = getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(
+                    OPERATOR_MATCH,
+                    filterObject), new BasicDBObject(OPERATOR_SAMPLE, new BasicDBObject("size", limit))));
+            applyBatchSize(cursor);
+            return cursor;
+        }, collection).takeWhile(processor).forEach(ignored -> {
+        });
     }
 
     private void handleTracingAndReporting(String collection, Watch watch) {
