@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.TreeMap;
@@ -266,17 +267,19 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         orderAsc(BaseEntity.ID);
 
         ValueHolder<E> lastValue = ValueHolder.of(null);
+        var numSeen = new AtomicInteger(0);
 
         var keepGoing = new AtomicBoolean(true);
         var context = TaskContext.get();
         while (keepGoing.get() && context.isActive()) {
             keepGoing.set(false);
             var timeout = new Timeout(queryIterateTimeout);
-            pagingGreaterThanLastValue(lastValue.get(), copy()).iterate(entity -> {
+            pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen.get(), null).iterate(entity -> {
                 if (!handler.test(entity)) {
                     // As soon as the handler returns false, we're done and can abort entirely...
                     return false;
                 }
+                numSeen.incrementAndGet();
 
                 if (timeout.isReached()) {
                     // We abort this result set to avoid a hard timeout, but we keep going with another query
@@ -311,6 +314,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     public Stream<E> stream() {
         return StreamSupport.stream(new PullBasedSpliterator<>() {
             private final ValueHolder<E> lastValue = ValueHolder.of(null);
+            private int numSeen = 0;
 
             @Override
             public int characteristics() {
@@ -319,18 +323,41 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
             @Override
             protected Iterator<E> pullNextBlock() {
-                var block = pagingGreaterThanLastValue(lastValue.get(), copy().limit(1000)).queryList();
+                var block = pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen, 1000).queryList();
+                if (block == null || block.isEmpty()) {
+                    return null;
+                }
                 lastValue.set(block.get(block.size() - 1));
+                numSeen += block.size();
                 return block.iterator();
             }
         }, false);
     }
 
-    private SmartQuery<E> pagingGreaterThanLastValue(E lastValue, SmartQuery<E> query) {
+    private static <E extends SQLEntity> SmartQuery<E> pagingGreaterThanLastValue(E lastValue,
+                                                                                  SmartQuery<E> query,
+                                                                                  int numValuesSeen,
+                                                                                  @Nullable Integer maxItemsInPage) {
+        // adjusting the limit is tricky
+        var limit = Optional.of(query.limit).filter(value -> value != 0);
+        var pageSize = Optional.ofNullable(maxItemsInPage);
+        // adjust the query limit by the number of values we have already seen
+        limit = limit.map(value -> value - numValuesSeen);
+        if (limit.isPresent() || pageSize.isPresent()) {
+            if (limit.map(value -> value <= 0).orElse(false)) {
+                return query.fail();
+            }
+            query = query.limit(Math.min(limit.orElse(Integer.MAX_VALUE), pageSize.orElse(Integer.MAX_VALUE)));
+        } else {
+            query.limit(0);
+        }
+
         // no last value => we query everything
         if (lastValue == null) {
             return query;
         }
+        // we already saw some values, so no need to skip more
+        query.skip = 0;
 
         // create and install the filter
         var leftHandSide = new Object[query.orderBys.size()];
@@ -387,6 +414,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
         copy.constraints.addAll(constraints);
+        copy.limit = limit;
+        copy.skip = skip;
 
         return copy;
     }
@@ -742,9 +771,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         fields.forEach(field -> appendToSELECT(c, applyAliases, mf, field, true, requiredFields));
 
         // make sure that the join fields are always fetched
-        requiredFields.forEach(requiredField -> {
-            appendToSELECT(c, applyAliases, mf, requiredField, false, null);
-        });
+        requiredFields.forEach(requiredField -> appendToSELECT(c, applyAliases, mf, requiredField, false, null));
     }
 
     private void appendToSELECT(Compiler c,
