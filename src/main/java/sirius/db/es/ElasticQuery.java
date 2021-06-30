@@ -471,13 +471,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         orderAsc(Mapping.named(KEY_DOC_ID));
 
         var spliterator = new ElasticScrollingSpliterator();
-        var stream =
-                new AutoClosingStream<>(StreamSupport.stream(spliterator, false)).onClose(() -> Optional.ofNullable(
-                        spliterator.getScrollId()).ifPresent(client::closeScroll));
-        if (limit > 0) {
-            return stream.limit(limit);
-        }
-        return stream;
+        var limit = getLimit();
+        return new AutoClosingStream<>(StreamSupport.stream(spliterator, false)).onClose(() -> Optional.ofNullable(
+                spliterator.getScrollId()).ifPresent(client::closeScroll)).filter(ignored -> limit.nextRow());
     }
 
     /**
@@ -1326,7 +1322,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             var filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
             return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
                                        filterRouting,
-                                       skip,
+                                       0,
                                        filterRouting != null ?
                                        MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
                                        MAX_SCROLL_RESULTS_PER_SHARD,
