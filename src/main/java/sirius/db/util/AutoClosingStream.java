@@ -12,6 +12,7 @@ import sirius.kernel.commons.Explain;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.function.BiConsumer;
@@ -37,7 +38,16 @@ import java.util.stream.Stream;
  *
  * @param <T> the type of the stream elements
  */
-public record AutoClosingStream<T>(Stream<T> delegate) implements Stream<T> {
+public final class AutoClosingStream<T> implements Stream<T> {
+    private final Stream<T> delegate;
+
+    /**
+     * Construct the stream wrapper
+     */
+    public AutoClosingStream(Stream<T> delegate) {
+        this.delegate = delegate;
+    }
+
     @Override
     public Stream<T> filter(Predicate<? super T> predicate) {
         return new AutoClosingStream<>(delegate.filter(predicate));
@@ -285,5 +295,31 @@ public record AutoClosingStream<T>(Stream<T> delegate) implements Stream<T> {
     @Override
     public void close() {
         delegate.close();
+    }
+
+    public Stream<T> delegate() {
+        return delegate;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        var that = (AutoClosingStream) obj;
+        return Objects.equals(this.delegate, that.delegate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(delegate);
+    }
+
+    @Override
+    public String toString() {
+        return "AutoClosingStream[" + "delegate=" + delegate + ']';
     }
 }

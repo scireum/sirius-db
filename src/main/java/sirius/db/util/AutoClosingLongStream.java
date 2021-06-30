@@ -9,6 +9,7 @@
 package sirius.db.util;
 
 import java.util.LongSummaryStatistics;
+import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.PrimitiveIterator;
@@ -32,7 +33,15 @@ import java.util.stream.Stream;
 /**
  * A stream wrapper calling {@link #close()} after any terminal operation.
  */
-public record AutoClosingLongStream(LongStream delegate) implements LongStream {
+public final class AutoClosingLongStream implements LongStream {
+    private final LongStream delegate;
+
+    /**
+     * Construct the stream wrapper
+     */
+    public AutoClosingLongStream(LongStream delegate) {
+        this.delegate = delegate;
+    }
 
     @Override
     public LongStream filter(LongPredicate predicate) {
@@ -256,5 +265,27 @@ public record AutoClosingLongStream(LongStream delegate) implements LongStream {
     @Override
     public void close() {
         delegate.close();
+    }
+
+    public LongStream delegate() {
+        return delegate;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (AutoClosingLongStream) obj;
+        return Objects.equals(this.delegate, that.delegate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(delegate);
+    }
+
+    @Override
+    public String toString() {
+        return "AutoClosingLongStream[" + "delegate=" + delegate + ']';
     }
 }

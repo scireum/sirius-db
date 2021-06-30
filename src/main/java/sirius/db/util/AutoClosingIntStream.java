@@ -9,6 +9,7 @@
 package sirius.db.util;
 
 import java.util.IntSummaryStatistics;
+import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.PrimitiveIterator;
@@ -32,7 +33,15 @@ import java.util.stream.Stream;
 /**
  * A stream wrapper calling {@link #close()} after any terminal operation.
  */
-public record AutoClosingIntStream(IntStream delegate) implements IntStream {
+public final class AutoClosingIntStream implements IntStream {
+    private final IntStream delegate;
+
+    /**
+     * Construct the stream wrapper
+     */
+    public AutoClosingIntStream(IntStream delegate) {
+        this.delegate = delegate;
+    }
 
     @Override
     public IntStream filter(IntPredicate predicate) {
@@ -261,5 +270,27 @@ public record AutoClosingIntStream(IntStream delegate) implements IntStream {
     @Override
     public void close() {
         delegate.close();
+    }
+
+    public IntStream delegate() {
+        return delegate;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (AutoClosingIntStream) obj;
+        return Objects.equals(this.delegate, that.delegate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(delegate);
+    }
+
+    @Override
+    public String toString() {
+        return "AutoClosingIntStream[" + "delegate=" + delegate + ']';
     }
 }
