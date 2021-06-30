@@ -135,7 +135,11 @@ public record AutoClosingStream<T>(Stream<T> delegate) implements Stream<T> {
     }
 
     @SuppressWarnings("SuspiciousToArrayCall")
-    @Explain("False positive")
+    @Explain("""
+            This behavior is intended by the Stream API:
+            `Stream.of(1, 2, 3).toArray(String[]::new)` will compile, but throw a RuntimeException.
+            This design choice is (probably) due to limitations in the generic type system, which does not permit
+            `<A extends B>`, while `Stream.of(1, 2, 3).toArray(Number[]::new)` should be a legal call.""")
     @Override
     public <A> A[] toArray(IntFunction<A[]> generator) {
         try (this) {
