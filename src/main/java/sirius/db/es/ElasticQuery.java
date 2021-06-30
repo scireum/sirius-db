@@ -1301,8 +1301,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     private class ElasticScrollingSpliterator extends PullBasedSpliterator<E> {
-        long lastScroll = 0;
-        String scrollId = null;
+        private long lastScroll = 0;
+        private String scrollId = null;
 
         @Override
         public int characteristics() {
