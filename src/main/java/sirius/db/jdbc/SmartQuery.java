@@ -156,10 +156,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             return 0;
         }
-        var w = Watch.start();
-        var compiler = compileCOUNT();
+        Watch w = Watch.start();
+        Compiler compiler = compileCOUNT();
         try {
-            try (var c = db.getConnection()) {
+            try (Connection c = db.getConnection()) {
                 return execCount(compiler, c);
             } finally {
                 if (Microtiming.isEnabled()) {
@@ -198,7 +198,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             return false;
         }
-        return copy().fields(BaseEntity.ID).first().isPresent();
+        return copy().fields(SQLEntity.ID).first().isPresent();
     }
 
     /**
@@ -215,11 +215,11 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             return;
         }
-        var continueDeleting = new AtomicBoolean(true);
-        var context = TaskContext.get();
+        AtomicBoolean continueDeleting = new AtomicBoolean(true);
+        TaskContext context = TaskContext.get();
         while (continueDeleting.get() && context.isActive()) {
             continueDeleting.set(false);
-            var timeout = new Timeout(queryIterateTimeout);
+            Timeout timeout = new Timeout(queryIterateTimeout);
             iterate(entity -> {
                 if (entityCallback != null) {
                     entityCallback.accept(entity);
@@ -269,11 +269,11 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         ValueHolder<E> lastValue = ValueHolder.of(null);
         var numSeen = new AtomicInteger(0);
 
-        var keepGoing = new AtomicBoolean(true);
-        var context = TaskContext.get();
+        AtomicBoolean keepGoing = new AtomicBoolean(true);
+        TaskContext context = TaskContext.get();
         while (keepGoing.get() && context.isActive()) {
             keepGoing.set(false);
-            var timeout = new Timeout(queryIterateTimeout);
+            Timeout timeout = new Timeout(queryIterateTimeout);
             pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen.get(), null).iterate(entity -> {
                 if (!handler.test(entity)) {
                     // As soon as the handler returns false, we're done and can abort entirely...
@@ -360,10 +360,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         query.skip = 0;
 
         // create and install the filter
-        var leftHandSide = new Object[query.orderBys.size()];
-        var rightHandSide = new Object[query.orderBys.size()];
-        for (var i = 0; i < query.orderBys.size(); i++) {
-            var mapping = query.orderBys.get(i).getFirst();
+        Object[] leftHandSide = new Object[query.orderBys.size()];
+        Object[] rightHandSide = new Object[query.orderBys.size()];
+        for (int i = 0; i < query.orderBys.size(); i++) {
+            Mapping mapping = query.orderBys.get(i).getFirst();
             Object value = lastValue.getDescriptor().getProperty(mapping).getValue(lastValue);
             if (query.orderBys.get(i).getSecond().booleanValue()) {
                 // the order by is ascending -> COLUMN > lastvalue.column
@@ -393,7 +393,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             throw new IllegalStateException("A failed query can not be converted into a SQL query.");
         }
-        var compiler = compileSELECT();
+        Compiler compiler = compileSELECT();
         return new SQLQuery(db, compiler.getQuery()) {
             @Override
             protected PreparedStatement createPreparedStatement(Connection c) throws SQLException {
@@ -408,7 +408,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * @return a copy of this query
      */
     public SmartQuery<E> copy() {
-        var copy = new SmartQuery<E>(descriptor, db);
+        SmartQuery<E> copy = new SmartQuery<>(descriptor, db);
         copy.distinct = distinct;
         copy.forceFail = forceFail;
         copy.fields = new ArrayList<>(fields);
@@ -425,11 +425,11 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             return;
         }
-        var compiler = compileSELECT();
+        Compiler compiler = compileSELECT();
         try {
-            var w = Watch.start();
-            try (var c = db.getConnection(); PreparedStatement stmt = compiler.prepareStatement(c)) {
-                var limit = getLimit();
+            Watch w = Watch.start();
+            try (Connection c = db.getConnection(); PreparedStatement stmt = compiler.prepareStatement(c)) {
+                Limit limit = getLimit();
                 boolean nativeLimit = db.hasCapability(Capability.LIMIT);
                 tuneStatement(stmt, limit, nativeLimit);
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -448,7 +448,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     @SuppressWarnings("unchecked")
     protected void execIterate(Predicate<E> handler, Compiler compiler, Limit limit, boolean nativeLimit, ResultSet rs)
             throws Exception {
-        var tc = TaskContext.get();
+        TaskContext tc = TaskContext.get();
         Set<String> columns = dbs.readColumns(rs);
         while (rs.next() && tc.isActive()) {
             if (nativeLimit || limit.nextRow()) {
@@ -567,7 +567,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
          */
         public TranslationState captureAndReplaceTranslationState(String newDefaultAlias,
                                                                   EntityDescriptor newDefaultDescriptor) {
-            var result = new TranslationState(ed, defaultAlias, joins, joinTable);
+            TranslationState result = new TranslationState(ed, defaultAlias, joins, joinTable);
 
             this.defaultAlias = newDefaultAlias;
             this.ed = newDefaultDescriptor;
@@ -602,7 +602,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             if (parent == null || ed == null) {
                 return Tuple.create(defaultAlias, ed);
             }
-            var path = parent.toString();
+            String path = parent.toString();
             Tuple<String, EntityDescriptor> result = joinTable.get(path);
             if (result != null) {
                 return result;
@@ -714,7 +714,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         private PreparedStatement prepareStatement(Connection c) throws SQLException {
             PreparedStatement stmt =
                     c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-            for (var i = 0; i < parameters.size(); i++) {
+            for (int i = 0; i < parameters.size(); i++) {
                 stmt.setObject(i + 1, parameters.get(i));
             }
             return stmt;
@@ -735,7 +735,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private Compiler compileSELECT() {
-        var compiler = select();
+        Compiler compiler = select();
         from(compiler);
         where(compiler);
         orderBy(compiler);
@@ -744,14 +744,14 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private Compiler compileCOUNT() {
-        var compiler = selectCount();
+        Compiler compiler = selectCount();
         from(compiler);
         where(compiler);
         return compiler;
     }
 
     private Compiler select() {
-        var c = new Compiler(descriptor);
+        Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
         if (fields.isEmpty()) {
             c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
@@ -765,10 +765,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void appendFieldList(Compiler c, boolean applyAliases) {
-        var mf = Monoflop.create();
+        Monoflop mf = Monoflop.create();
         List<Mapping> requiredFields = new ArrayList<>();
 
-        fields.forEach(field -> appendToSELECT(c, applyAliases, mf, field, true, requiredFields));
+        fields.forEach(field -> {
+            appendToSELECT(c, applyAliases, mf, field, true, requiredFields);
+        });
 
         // make sure that the join fields are always fetched
         requiredFields.forEach(requiredField -> appendToSELECT(c, applyAliases, mf, requiredField, false, null));
@@ -803,7 +805,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private Compiler selectCount() {
-        var c = new Compiler(descriptor);
+        Compiler c = new Compiler(descriptor);
         if (!fields.isEmpty()) {
             c.getSELECTBuilder().append("SELECT COUNT(");
             if (distinct) {
@@ -826,7 +828,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return;
         }
         compiler.getWHEREBuilder().append(" WHERE ");
-        var mf = Monoflop.create();
+        Monoflop mf = Monoflop.create();
         for (SQLConstraint c : constraints) {
             if (mf.successiveCall()) {
                 compiler.getWHEREBuilder().append(" AND ");
@@ -838,7 +840,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     private void orderBy(Compiler compiler) {
         if (!orderBys.isEmpty()) {
             compiler.getWHEREBuilder().append(" ORDER BY ");
-            var mf = Monoflop.create();
+            Monoflop mf = Monoflop.create();
             for (Tuple<Mapping, Boolean> e : orderBys) {
                 if (mf.successiveCall()) {
                     compiler.getWHEREBuilder().append(", ");

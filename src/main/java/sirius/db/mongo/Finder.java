@@ -78,7 +78,7 @@ public class Finder extends QueryBuilder<Finder> {
      * therefore modifying the filters of one object will not modify those of the other.
      */
     public Finder copyFilters() {
-        var newFinder = new Finder(mongo, database, readPreference);
+        Finder newFinder = new Finder(mongo, database, readPreference);
         transferFilters(newFinder);
         return newFinder;
     }
@@ -231,11 +231,11 @@ public class Finder extends QueryBuilder<Finder> {
      * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
      */
     public Optional<Doc> singleIn(String collection) {
-        var watch = Watch.start();
+        Watch watch = Watch.start();
         try {
             FindIterable<Document> cur = buildCursor(collection);
 
-            var document = cur.first();
+            Document document = cur.first();
 
             if (document == null) {
                 return Optional.empty();
@@ -471,7 +471,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @return the number of documents found, wrapped in an Optional, or an empty Optional if the query timed out
      */
     public Optional<Long> countIn(String collection, boolean forceAccurate, long maxTimeMS) {
-        var watch = Watch.start();
+        Watch watch = Watch.start();
         try {
             if (filterObject.isEmpty() && !forceAccurate) {
                 return Optional.of(getMongoCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions()
@@ -525,7 +525,7 @@ public class Finder extends QueryBuilder<Finder> {
      * @see <a href="https://docs.mongodb.com/manual/reference/operator/aggregation/group/#accumulator-operator">MongoDB Reference</a>
      */
     public Value aggregateIn(@Nonnull String collection, @Nonnull Mapping field, @Nonnull String operator) {
-        var watch = Watch.start();
+        Watch watch = Watch.start();
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
@@ -572,9 +572,9 @@ public class Finder extends QueryBuilder<Finder> {
             return;
         }
 
-        var watch = Watch.start();
+        Watch watch = Watch.start();
         String collection = descriptor.getRelationName();
-        var facetStage = new BasicDBObject();
+        BasicDBObject facetStage = new BasicDBObject();
         for (MongoFacet facet : facets) {
             facet.emitFacets(descriptor, facetStage::append);
         }
@@ -588,7 +588,7 @@ public class Finder extends QueryBuilder<Finder> {
                                                   .iterator();
 
             if (queryResult.hasNext()) {
-                var doc = new Doc(queryResult.next());
+                Doc doc = new Doc(queryResult.next());
                 for (MongoFacet facet : facets) {
                     facet.digest(doc);
                 }

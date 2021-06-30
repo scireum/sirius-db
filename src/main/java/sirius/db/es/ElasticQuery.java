@@ -233,7 +233,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a copy of this query.
      */
     public ElasticQuery<E> copy() {
-        var copy = new ElasticQuery<E>(descriptor, client);
+        ElasticQuery<E> copy = new ElasticQuery<>(descriptor, client);
         copy.limit = this.limit;
         copy.skip = this.skip;
         copy.forceFail = this.forceFail;
@@ -443,7 +443,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Permits to rewrite the internal filters of a query.
      * <p>
-     * Actually this will iterate over all {@link BoolQueryBuilder#filter(ElasticConstraint)} of the internal query and apply the given
+     * Actually this will iterate over all {@link BoolQueryBuilder#filter} of the internal query and apply the given
      * predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed internally.
      * <p>
      * This can e.g. be used to move internal filters into {@link #postFilter(JSONObject)}.
@@ -783,7 +783,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query as JSON
      */
     private JSONObject buildPayload() {
-        var payload = new JSONObject();
+        JSONObject payload = new JSONObject();
         if (descriptor.isVersioned()) {
             payload.put(KEY_SEQ_NO_PRIMARY_TERM, true);
         }
@@ -799,7 +799,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (aggregations != null) {
-            var aggs = new JSONObject();
+            JSONObject aggs = new JSONObject();
             aggregations.forEach(agg -> aggs.put(agg.getName(), agg.build()));
             payload.put(KEY_AGGS, aggs);
         }
@@ -879,7 +879,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query as JSON
      */
     private JSONObject buildSimplePayload() {
-        var payload = new JSONObject();
+        JSONObject payload = new JSONObject();
 
         if (queryBuilder != null) {
             payload.put(KEY_QUERY, queryBuilder.build());
@@ -1111,7 +1111,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public AggregationResult getAggregation(String name) {
         JSONObject object = getRawAggregations();
         for (String aggregationName : name.split("\\.")) {
-            var child = object.get(aggregationName);
+            Object child = object.get(aggregationName);
             if (!(child instanceof JSONObject)) {
                 return AggregationResult.of(null);
             } else {
@@ -1240,7 +1240,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                           buildPayload());
         }
 
-        var responseSuggestions = response.getJSONObject(KEY_SUGGEST);
+        JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
 
         if (responseSuggestions == null) {
             return Collections.emptyList();
