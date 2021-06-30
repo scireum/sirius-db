@@ -141,7 +141,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     public abstract void iterate(Predicate<E> handler);
 
     /**
-     * Executes the query and returnes the matched entities using the stream interface.
+     * Executes the query and returns the matched entities using the stream interface.
      * <p>
      * Depending on the implementation, this may have two advantages over {@link #iterate} and {@link #queryList}:
      * <ul>
