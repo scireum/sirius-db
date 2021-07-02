@@ -267,7 +267,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         orderAsc(BaseEntity.ID);
 
         ValueHolder<E> lastValue = ValueHolder.of(null);
-        var numSeen = new AtomicInteger(0);
+        AtomicInteger numSeen = new AtomicInteger(0);
 
         AtomicBoolean keepGoing = new AtomicBoolean(true);
         TaskContext context = TaskContext.get();
@@ -323,7 +323,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
             @Override
             protected Iterator<E> pullNextBlock() {
-                var block = pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen, 1000).queryList();
+                List<E> block = pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen, 1000).queryList();
                 if (block == null || block.isEmpty()) {
                     return null;
                 }
@@ -339,8 +339,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                                                                                   int numValuesSeen,
                                                                                   @Nullable Integer maxItemsInPage) {
         // adjusting the limit is tricky
-        var limit = Optional.of(query.limit).filter(value -> value != 0);
-        var pageSize = Optional.ofNullable(maxItemsInPage);
+        Optional<Integer> limit = Optional.of(query.limit).filter(value -> value != 0);
+        Optional<Integer> pageSize = Optional.ofNullable(maxItemsInPage);
         // adjust the query limit by the number of values we have already seen
         limit = limit.map(value -> value - numValuesSeen);
         if (limit.isPresent() || pageSize.isPresent()) {

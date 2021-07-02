@@ -32,6 +32,7 @@ import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -322,52 +323,19 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     private Stream<Doc> stream(Supplier<MongoIterable<Document>> cursor, String collection) {
-        var watch = Watch.start();
-        var taskContext = TaskContext.get();
-        var shouldHandleTracing = Monoflop.create();
+        TaskContext taskContext = TaskContext.get();
 
         // We need to do quite some work to ensure the cursor is closed.
-        // First, we do a late initialization of the cursor, so it is only initialized when a terminal operation on the
-        // stream is called
+        // First, we do a late initialization of the cursor - which is the reason for the supplier and the
+        // MongoCloseableSpliterator -, so it is only initialized when a terminal operation on the stream is called.
         // Then we wrap the Stream with an AutoClosingStream, which calls the close handler of the stream after a termi-
         // nal operation is called.
         // If both works, the cursor should always be closed.
 
-        var iterator = ValueHolder.<MongoCursor<Document>>of(null);
-        return new AutoClosingStream<>(StreamSupport.stream(new Spliterator<Document>() {
-            private Spliterator<Document> delegate = null;
-
-            private Spliterator<Document> getDelegate() {
-                if (delegate == null) {
-                    iterator.set(cursor.get().iterator());
-                    delegate = Spliterators.spliteratorUnknownSize(iterator.get(), 0);
-                }
-                return delegate;
-            }
-
-            @Override
-            public boolean tryAdvance(Consumer<? super Document> action) {
-                if (shouldHandleTracing.firstCall()) {
-                    handleTracingAndReporting(collection, watch);
-                }
-                return getDelegate().tryAdvance(action);
-            }
-
-            @Override
-            public Spliterator<Document> trySplit() {
-                return getDelegate().trySplit();
-            }
-
-            @Override
-            public long estimateSize() {
-                return Long.MAX_VALUE;
-            }
-
-            @Override
-            public int characteristics() {
-                return Spliterator.IMMUTABLE | Spliterator.ORDERED;
-            }
-        }, false)).onClose(() -> iterator.get().close()).takeWhile(ignored -> taskContext.isActive()).map(Doc::new);
+        MongoCloseableSpliterator spliterator = new MongoCloseableSpliterator(cursor, collection);
+        return new AutoClosingStream<>(StreamSupport.stream(spliterator, false)).onClose(spliterator::close)
+                                                                                .takeWhile(ignored -> taskContext.isActive())
+                                                                                .map(Doc::new);
     }
 
     private void applyBatchSize(MongoIterable<Document> cursor) {
@@ -397,18 +365,6 @@ public class Finder extends QueryBuilder<Finder> {
             return cursor;
         }, collection).takeWhile(processor).forEach(ignored -> {
         });
-    }
-
-    private void handleTracingAndReporting(String collection, Watch watch) {
-        long callDuration = watch.elapsedMillis();
-        mongo.callDuration.addValue(callDuration);
-        if (readPreference != null && readPreference.isSlaveOk()) {
-            mongo.secondaryCallDuration.addValue(callDuration);
-        }
-        if (Microtiming.isEnabled()) {
-            watch.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
-        }
-        traceIfRequired(collection, watch);
     }
 
     /**
@@ -603,6 +559,72 @@ public class Finder extends QueryBuilder<Finder> {
                 watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired("facets-" + collection, watch);
+        }
+    }
+
+    private class MongoCloseableSpliterator implements Spliterator<Document>, Closeable {
+        private final ValueHolder<MongoCursor<Document>> iterator;
+        private final Supplier<MongoIterable<Document>> iterableSupplier;
+        private final Monoflop shouldHandleTracing;
+        private final String collection;
+        private final Watch watch;
+        private Spliterator<Document> delegate;
+
+        private MongoCloseableSpliterator(Supplier<MongoIterable<Document>> iterableSupplier, String collection) {
+            this.iterator = new ValueHolder<>(null);
+            this.iterableSupplier = iterableSupplier;
+            this.shouldHandleTracing = Monoflop.create();
+            this.collection = collection;
+            this.watch = Watch.start();
+            delegate = null;
+        }
+
+        private Spliterator<Document> getDelegate() {
+            if (delegate == null) {
+                iterator.set(iterableSupplier.get().iterator());
+                delegate = Spliterators.spliteratorUnknownSize(iterator.get(), 0);
+            }
+            return delegate;
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super Document> action) {
+            if (shouldHandleTracing.firstCall()) {
+                handleTracingAndReporting(collection, watch);
+            }
+            return getDelegate().tryAdvance(action);
+        }
+
+        @Override
+        public Spliterator<Document> trySplit() {
+            return getDelegate().trySplit();
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.IMMUTABLE | Spliterator.ORDERED;
+        }
+
+        @Override
+        public void close() {
+            iterator.get().close();
+        }
+
+        private void handleTracingAndReporting(String collection, Watch watch) {
+            long callDuration = watch.elapsedMillis();
+            mongo.callDuration.addValue(callDuration);
+            if (readPreference != null && readPreference.isSlaveOk()) {
+                mongo.secondaryCallDuration.addValue(callDuration);
+            }
+            if (Microtiming.isEnabled()) {
+                watch.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
+            }
+            traceIfRequired(collection, watch);
         }
     }
 }

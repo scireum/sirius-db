@@ -21,6 +21,7 @@ import sirius.db.util.AutoClosingStream;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
@@ -470,8 +471,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         // just in case no absolute ordering is present
         orderAsc(Mapping.named(KEY_DOC_ID));
 
-        var spliterator = new ElasticScrollingSpliterator();
-        var limit = getLimit();
+        ElasticScrollingSpliterator spliterator = new ElasticScrollingSpliterator();
+        Limit limit = getLimit();
         return new AutoClosingStream<>(StreamSupport.stream(spliterator, false)).onClose(() -> Optional.ofNullable(
                 spliterator.getScrollId()).ifPresent(client::closeScroll)).filter(ignored -> limit.nextRow());
     }
@@ -1260,8 +1261,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param handler the result handler as passed to {@link #iterate(Predicate)}
      */
     private void scroll(Predicate<E> handler) {
-        var ctx = TaskContext.get();
-        var rateLimit = RateLimit.timeInterval(1, TimeUnit.SECONDS);
+        TaskContext ctx = TaskContext.get();
+        RateLimit rateLimit = RateLimit.timeInterval(1, TimeUnit.SECONDS);
         stream().takeWhile(ignored -> !rateLimit.check() || ctx.isActive()).takeWhile(handler).forEach(ignored -> {
         });
     }
@@ -1311,7 +1312,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         @Override
         protected Iterator<E> pullNextBlock() {
-            var scrollResponse =
+            JSONObject scrollResponse =
                     scrollId == null ? pullFirstBlock() : client.continueScroll(SCROLL_TTL_SECONDS, scrollId);
             scrollId = scrollResponse.getString(KEY_SCROLL_ID);
             lastScroll = performScrollMonitoring(lastScroll);
@@ -1319,7 +1320,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         private JSONObject pullFirstBlock() {
-            var filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
+            String filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
             return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
                                        filterRouting,
                                        0,
