@@ -260,26 +260,4 @@ public final class AutoClosingDoubleStream implements DoubleStream {
     public void close() {
         delegate.close();
     }
-
-    public DoubleStream delegate() {
-        return delegate;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (AutoClosingDoubleStream) obj;
-        return Objects.equals(this.delegate, that.delegate);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(delegate);
-    }
-
-    @Override
-    public String toString() {
-        return "AutoClosingDoubleStream[" + "delegate=" + delegate + ']';
-    }
 }

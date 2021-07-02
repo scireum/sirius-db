@@ -266,26 +266,4 @@ public final class AutoClosingLongStream implements LongStream {
     public void close() {
         delegate.close();
     }
-
-    public LongStream delegate() {
-        return delegate;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (AutoClosingLongStream) obj;
-        return Objects.equals(this.delegate, that.delegate);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(delegate);
-    }
-
-    @Override
-    public String toString() {
-        return "AutoClosingLongStream[" + "delegate=" + delegate + ']';
-    }
 }

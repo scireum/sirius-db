@@ -296,30 +296,4 @@ public final class AutoClosingStream<T> implements Stream<T> {
     public void close() {
         delegate.close();
     }
-
-    public Stream<T> delegate() {
-        return delegate;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (obj == null || obj.getClass() != this.getClass()) {
-            return false;
-        }
-        var that = (AutoClosingStream) obj;
-        return Objects.equals(this.delegate, that.delegate);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(delegate);
-    }
-
-    @Override
-    public String toString() {
-        return "AutoClosingStream[" + "delegate=" + delegate + ']';
-    }
 }
