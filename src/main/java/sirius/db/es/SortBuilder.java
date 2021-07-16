@@ -30,7 +30,7 @@ public class SortBuilder {
         /**
          * Descending order
          */
-        DESC;
+        DESC
     }
 
     /**
@@ -61,7 +61,7 @@ public class SortBuilder {
         /**
          * The median of all values
          */
-        MEDIAN;
+        MEDIAN
     }
 
     private String field;

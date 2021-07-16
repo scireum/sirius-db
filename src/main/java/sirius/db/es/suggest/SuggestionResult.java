@@ -35,7 +35,7 @@ public class SuggestionResult {
         suggestionsObject.keySet().forEach(name -> {
             List<TextPartSuggestion> textPartSuggestions = suggestionsObject.getJSONArray(name)
                                                                             .stream()
-                                                                            .map(option -> (JSONObject) option)
+                                                                            .map(JSONObject.class::cast)
                                                                             .map(TextPartSuggestion::new)
                                                                             .collect(Collectors.toList());
             this.suggestions.put(name, textPartSuggestions);

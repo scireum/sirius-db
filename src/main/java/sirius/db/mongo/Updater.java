@@ -51,7 +51,7 @@ public class Updater extends QueryBuilder<Updater> {
      * @return the builder itself for fluent method calls
      * @deprecated use {@link #executeForOne(String)} or {@link #executeForMany(String)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public Updater many() {
         this.many = true;
         return this;
@@ -304,7 +304,7 @@ public class Updater extends QueryBuilder<Updater> {
      * @return the result of the update
      * @deprecated use either {@link #executeForOne(Class)} or {@link #executeForMany(Class)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public UpdateResult executeFor(Class<?> type) {
         return executeFor(getRelationName(type));
     }
@@ -347,7 +347,7 @@ public class Updater extends QueryBuilder<Updater> {
      * @return the result of the update
      * @deprecated use either {@link #executeForOne(String)} or {@link #executeForMany(String)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public UpdateResult executeFor(String collection) {
         return execute(collection, many);
     }

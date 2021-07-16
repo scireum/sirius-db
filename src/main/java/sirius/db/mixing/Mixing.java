@@ -196,7 +196,7 @@ public class Mixing implements Initializable {
      */
     public EntityDescriptor getDescriptor(String aTypeName) {
         Optional<EntityDescriptor> ed = findDescriptor(aTypeName);
-        if (!ed.isPresent()) {
+        if (ed.isEmpty()) {
             throw Exceptions.handle()
                             .to(LOG)
                             .withSystemErrorMessage("The name '%s' is not a known entity!", aTypeName)

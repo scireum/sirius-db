@@ -69,7 +69,6 @@ public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity,
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected MongoRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
@@ -92,7 +91,6 @@ public class MongoRefProperty extends BaseEntityRefProperty<String, MongoEntity,
                        description);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Optional<MongoEntity> find(Class<MongoEntity> type, Value value) {
         return mango.find(type, value.get());

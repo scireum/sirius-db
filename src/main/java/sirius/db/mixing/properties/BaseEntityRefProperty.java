@@ -111,7 +111,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         }
 
         Optional<E> e = find(entityRef.getType(), value);
-        if (!e.isPresent()) {
+        if (e.isEmpty()) {
             throw illegalFieldValue(value);
         }
         return e.get();

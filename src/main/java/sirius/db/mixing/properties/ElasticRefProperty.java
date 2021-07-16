@@ -69,7 +69,6 @@ public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEnt
         }
     }
 
-    @SuppressWarnings("unchecked")
     protected ElasticRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
     }
@@ -92,7 +91,6 @@ public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEnt
                        description);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Optional<ElasticEntity> find(Class<ElasticEntity> type, Value value) {
         return elastic.find(type, value.get());

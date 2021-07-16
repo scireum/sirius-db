@@ -13,6 +13,7 @@ import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.di.std.Part;
 
+import java.io.Serial;
 import java.util.Optional;
 
 /**
@@ -25,6 +26,7 @@ import java.util.Optional;
  */
 public class ElasticRef<E extends ElasticEntity> extends BaseEntityRef<String, E> {
 
+    @Serial
     private static final long serialVersionUID = -2145898365724128406L;
 
     @Part

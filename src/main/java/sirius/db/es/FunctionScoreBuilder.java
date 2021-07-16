@@ -199,7 +199,7 @@ public class FunctionScoreBuilder {
         return new JSONObject().fluentPut(FUNCTION_SCORE,
                                           new JSONObject().fluentPut(FIELD_QUERY, query)
                                                           .fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<Object>(functions)))
+                                                                     new JSONArray(new ArrayList<>(functions)))
                                                           .fluentPutAll(parameters));
     }
 
@@ -211,7 +211,7 @@ public class FunctionScoreBuilder {
     public JSONObject build() {
         return new JSONObject().fluentPut(FUNCTION_SCORE,
                                           new JSONObject().fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<Object>(functions)))
+                                                                     new JSONArray(new ArrayList<>(functions)))
                                                           .fluentPutAll(parameters));
     }
 

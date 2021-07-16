@@ -16,6 +16,7 @@ import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +34,7 @@ import java.util.Optional;
  */
 public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity<I>> implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = -6950811329430896367L;
 
     /**

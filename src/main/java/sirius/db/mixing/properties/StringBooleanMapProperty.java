@@ -96,18 +96,6 @@ public class StringBooleanMapProperty extends BaseMapProperty implements ESPrope
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    protected Object transformFromElastic(Value object) {
-        Map<Object, Object> result = new HashMap<>();
-        Object value = object.get();
-        if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(StringMapProperty.KEY),
-                                                                        entry.get(StringMapProperty.VALUE)));
-        }
-        return result;
-    }
-
-    @Override
     public void describeProperty(JSONObject description) {
         ESOption indexed = Optional.ofNullable(getClass().getAnnotation(IndexMode.class))
                                    .map(IndexMode::indexed)

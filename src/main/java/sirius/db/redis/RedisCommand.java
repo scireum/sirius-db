@@ -50,7 +50,7 @@ public class RedisCommand implements Command {
                          info.name,
                          info.value,
                          info.since != null ? info.since.toString() : "-",
-                         info.ttl != null ? info.ttl.toString() + "s" : "-");
+                         info.ttl != null ? info.ttl + "s" : "-");
         }
     }
 
