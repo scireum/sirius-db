@@ -317,7 +317,7 @@ class WrappedPreparedStatement implements PreparedStatement {
      * @deprecated Use {@code setCharacterStream}
      */
     @Override
-    @Deprecated
+    @Deprecated(forRemoval = true)
     @SuppressWarnings("squid:S1133")
     @Explain("We cannot change a Java core API")
     public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {

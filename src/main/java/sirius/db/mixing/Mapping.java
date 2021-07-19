@@ -161,7 +161,7 @@ public class Mapping {
     @Override
     public String toString() {
         if (parent != null) {
-            return parent.toString() + "." + name;
+            return parent + "." + name;
         } else {
             return name;
         }

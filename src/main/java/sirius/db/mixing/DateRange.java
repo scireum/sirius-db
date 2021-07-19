@@ -184,7 +184,7 @@ public class DateRange {
      * @deprecated use {@link DateRange(String, Supplier, Supplier, Supplier)} instead, as using this constructor in
      * a static context determines the dates at the start of the server
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public DateRange(String key, String name, @Nullable LocalDateTime from, @Nullable LocalDateTime until) {
         this(key, () -> name, () -> from, () -> until);
     }
@@ -214,7 +214,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastFiveMinutes() {
         return LAST_FIVE_MINUTES;
     }
@@ -225,7 +225,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastFiveteenMinutes() {
         return LAST_FIFTEEN_MINUTES;
     }
@@ -236,7 +236,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastHour() {
         return LAST_HOUR;
     }
@@ -247,7 +247,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastTwoHours() {
         return LAST_TWO_HOURS;
     }
@@ -258,7 +258,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange today() {
         return TODAY;
     }
@@ -269,7 +269,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange yesterday() {
         return YESTERDAY;
     }
@@ -280,7 +280,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange thisWeek() {
         return THIS_WEEK;
     }
@@ -291,7 +291,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastWeek() {
         return LAST_WEEK;
     }
@@ -302,7 +302,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange thisMonth() {
         return THIS_MONTH;
     }
@@ -313,7 +313,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastMonth() {
         return LAST_MONTH;
     }
@@ -340,7 +340,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange thisYear() {
         return THIS_YEAR;
     }
@@ -351,7 +351,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange lastYear() {
         return LAST_YEAR;
     }
@@ -362,7 +362,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange beforeThisYear() {
         return BEFORE_THIS_YEAR;
     }
@@ -373,7 +373,7 @@ public class DateRange {
      * @return a date range for the given interval
      * @deprecated use constant instead
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static DateRange beforeLastYear() {
         return BEFORE_LAST_YEAR;
     }

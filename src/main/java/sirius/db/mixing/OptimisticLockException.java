@@ -8,6 +8,8 @@
 
 package sirius.db.mixing;
 
+import java.io.Serial;
+
 /**
  * Signals that a concurrent modification occurred on an versioned entity which supports <tt>optimistic locking</tt>.
  * <p>
@@ -24,6 +26,7 @@ package sirius.db.mixing;
  */
 public class OptimisticLockException extends Exception {
 
+    @Serial
     private static final long serialVersionUID = -834083199170415643L;
 
     /**

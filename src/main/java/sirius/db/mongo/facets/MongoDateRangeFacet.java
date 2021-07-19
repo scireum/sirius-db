@@ -121,8 +121,8 @@ public class MongoDateRangeFacet extends MongoFacet {
         }
 
         return list.stream()
-                   .filter(object -> object instanceof Document)
-                   .map(object -> (Document) object)
+                   .filter(Document.class::isInstance)
+                   .map(Document.class::cast)
                    .filter(document -> !DEFAULT_BUCKET_ID.equals(document.get("_id")))
                    .findFirst();
     }

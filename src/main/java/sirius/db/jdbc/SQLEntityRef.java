@@ -12,6 +12,7 @@ import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
+import java.io.Serial;
 import java.util.Optional;
 
 /**
@@ -24,6 +25,7 @@ import java.util.Optional;
  */
 public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
 
+    @Serial
     private static final long serialVersionUID = 1326527428258744219L;
 
     @Part

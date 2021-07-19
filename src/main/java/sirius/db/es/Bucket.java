@@ -43,7 +43,7 @@ public class Bucket {
      * @return a list of buckets
      * @deprecated use {@link AggregationResult#forEachBucket(Consumer)} etc.
      */
-    @Deprecated
+    @Deprecated(since = "2021/07/01")
     public static List<Bucket> fromAggregation(JSONObject aggregation) {
         List<Bucket> result = new ArrayList<>();
 

@@ -8,6 +8,8 @@
 
 package sirius.db.mixing;
 
+import java.io.Serial;
+
 /**
  * Marker exception to mark which field produced an error.
  * <p>
@@ -18,6 +20,7 @@ package sirius.db.mixing;
  */
 public class InvalidFieldException extends Exception {
 
+    @Serial
     private static final long serialVersionUID = 4954813810676679158L;
     private final String field;
 

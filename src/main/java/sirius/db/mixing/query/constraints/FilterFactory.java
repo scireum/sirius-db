@@ -347,7 +347,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @deprecated use {@link #isEmptyList(Mapping)} - in MongoDB and Elastisearch we commonly
      * refer to lists as "list" rather than array.
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public C isEmptyArray(Mapping field) {
         return isEmptyList(field);
     }

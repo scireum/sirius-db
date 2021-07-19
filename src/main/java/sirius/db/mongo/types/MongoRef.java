@@ -13,6 +13,7 @@ import sirius.db.mongo.Mango;
 import sirius.db.mongo.MongoEntity;
 import sirius.kernel.di.std.Part;
 
+import java.io.Serial;
 import java.util.Optional;
 
 /**
@@ -25,6 +26,7 @@ import java.util.Optional;
  */
 public class MongoRef<E extends MongoEntity> extends BaseEntityRef<String, E> {
 
+    @Serial
     private static final long serialVersionUID = -6313142563678458058L;
 
     @Part
