@@ -21,21 +21,29 @@ import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mongo.facets.MongoFacet;
+import sirius.db.util.AutoClosingStream;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Value;
+import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Fluent builder to build a find statement.
@@ -289,46 +297,50 @@ public class Finder extends QueryBuilder<Finder> {
      * @param processor  the processor to handle matches, which also controls if further results should be processed
      */
     public void eachIn(String collection, Predicate<Doc> processor) {
+        stream(collection).takeWhile(processor).forEach(ignored -> {
+        });
+    }
+
+    /**
+     * Executes the query for the given collection.
+     *
+     * @param collection the collection to search in
+     * @return a stream of matching documents
+     * @implNote the documents in the returned stream are batched, and further batches are loaded as required.
+     */
+    public Stream<Doc> stream(String collection) {
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("FIND: %s\nFilter: %s", collection, filterObject);
         }
+        return stream(() -> {
+            FindIterable<Document> cursor = buildCursor(collection);
+            if (limit > 0) {
+                cursor.limit(limit);
+            }
+            applyBatchSize(cursor);
+            return cursor;
+        }, collection);
+    }
 
-        FindIterable<Document> cursor = buildCursor(collection);
-        if (limit > 0) {
-            cursor.limit(limit);
-        }
-        applyBatchSize(cursor);
+    private Stream<Doc> stream(Supplier<MongoIterable<Document>> cursor, String collection) {
+        TaskContext taskContext = TaskContext.get();
 
-        processCursor(cursor, processor, collection);
+        // We need to do quite some work to ensure the cursor is closed.
+        // First, we do a late initialization of the cursor - which is the reason for the supplier and the
+        // MongoCloseableSpliterator -, so it is only initialized when a terminal operation on the stream is called.
+        // Then we wrap the Stream with an AutoClosingStream, which calls the close handler of the stream after a termi-
+        // nal operation is called.
+        // If both works, the cursor should always be closed.
+
+        MongoCloseableSpliterator spliterator = new MongoCloseableSpliterator(cursor, collection);
+        return new AutoClosingStream<>(StreamSupport.stream(spliterator, false)).onClose(spliterator::close)
+                                                                                .takeWhile(ignored -> taskContext.isActive())
+                                                                                .map(Doc::new);
     }
 
     private void applyBatchSize(MongoIterable<Document> cursor) {
         if (batchSize > 0) {
             cursor.batchSize(batchSize);
-        }
-    }
-
-    private void processCursor(MongoIterable<Document> cursor, Predicate<Doc> processor, String collection) {
-        Watch watch = Watch.start();
-        TaskContext taskContext = TaskContext.get();
-        Monoflop shouldHandleTracing = Monoflop.create();
-
-        for (Document doc : cursor) {
-            if (shouldHandleTracing.firstCall()) {
-                handleTracingAndReporting(collection, watch);
-            }
-
-            boolean keepGoing = processor.test(new Doc(doc));
-            if (!keepGoing || !taskContext.isActive()) {
-                return;
-            }
-        }
-
-        // If we didn't log any tracing data up until now, the result was completely empty and
-        // we can (and should) safely log now - otherwise some entries might be missing in
-        // the Microtiming...
-        if (shouldHandleTracing.firstCall()) {
-            handleTracingAndReporting(collection, watch);
         }
     }
 
@@ -345,27 +357,14 @@ public class Finder extends QueryBuilder<Finder> {
         if (Mongo.LOG.isFINE()) {
             Mongo.LOG.FINE("SAMPLE: %s\nFilter: %s", collection, filterObject);
         }
-
-        MongoIterable<Document> cursor =
-                getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH, filterObject),
-                                                                       new BasicDBObject(OPERATOR_SAMPLE,
-                                                                                         new BasicDBObject("size",
-                                                                                                           limit))));
-
-        applyBatchSize(cursor);
-        processCursor(cursor, processor, collection);
-    }
-
-    private void handleTracingAndReporting(String collection, Watch watch) {
-        long callDuration = watch.elapsedMillis();
-        mongo.callDuration.addValue(callDuration);
-        if (readPreference != null && readPreference.isSlaveOk()) {
-            mongo.secondaryCallDuration.addValue(callDuration);
-        }
-        if (Microtiming.isEnabled()) {
-            watch.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
-        }
-        traceIfRequired(collection, watch);
+        stream(() -> {
+            MongoIterable<Document> cursor = getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(
+                    OPERATOR_MATCH,
+                    filterObject), new BasicDBObject(OPERATOR_SAMPLE, new BasicDBObject("size", limit))));
+            applyBatchSize(cursor);
+            return cursor;
+        }, collection).takeWhile(processor).forEach(ignored -> {
+        });
     }
 
     /**
@@ -560,6 +559,72 @@ public class Finder extends QueryBuilder<Finder> {
                 watch.submitMicroTiming(KEY_MONGO, "FACETS - " + collection + ": " + filterObject.keySet());
             }
             traceIfRequired("facets-" + collection, watch);
+        }
+    }
+
+    private class MongoCloseableSpliterator implements Spliterator<Document>, Closeable {
+        private final ValueHolder<MongoCursor<Document>> iterator;
+        private final Supplier<MongoIterable<Document>> iterableSupplier;
+        private final Monoflop shouldHandleTracing;
+        private final String collection;
+        private final Watch watch;
+        private Spliterator<Document> delegate;
+
+        private MongoCloseableSpliterator(Supplier<MongoIterable<Document>> iterableSupplier, String collection) {
+            this.iterator = new ValueHolder<>(null);
+            this.iterableSupplier = iterableSupplier;
+            this.shouldHandleTracing = Monoflop.create();
+            this.collection = collection;
+            this.watch = Watch.start();
+            delegate = null;
+        }
+
+        private Spliterator<Document> getDelegate() {
+            if (delegate == null) {
+                iterator.set(iterableSupplier.get().iterator());
+                delegate = Spliterators.spliteratorUnknownSize(iterator.get(), 0);
+            }
+            return delegate;
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super Document> action) {
+            if (shouldHandleTracing.firstCall()) {
+                handleTracingAndReporting(collection, watch);
+            }
+            return getDelegate().tryAdvance(action);
+        }
+
+        @Override
+        public Spliterator<Document> trySplit() {
+            return getDelegate().trySplit();
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.IMMUTABLE | Spliterator.ORDERED;
+        }
+
+        @Override
+        public void close() {
+            iterator.get().close();
+        }
+
+        private void handleTracingAndReporting(String collection, Watch watch) {
+            long callDuration = watch.elapsedMillis();
+            mongo.callDuration.addValue(callDuration);
+            if (readPreference != null && readPreference.isSlaveOk()) {
+                mongo.secondaryCallDuration.addValue(callDuration);
+            }
+            if (Microtiming.isEnabled()) {
+                watch.submitMicroTiming(KEY_MONGO, "FIND ALL - " + collection + ": " + filterObject.keySet());
+            }
+            traceIfRequired(collection, watch);
         }
     }
 }

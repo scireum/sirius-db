@@ -70,6 +70,22 @@ class ElasticQuerySpec extends BaseSpecification {
         entities.get(9).getCounter() == 19
     }
 
+    def "stream works"() {
+        when:
+        for (int i = 0; i < 10; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("STREAM")
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        elastic.refresh(QueryTestEntity.class)
+        then:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").stream().count() == 10
+        and:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").skip(5).limit(6).stream().count() == 5
+
+    }
+
     def "sorting works"() {
         when:
         for (int i = 0; i < 100; i++) {

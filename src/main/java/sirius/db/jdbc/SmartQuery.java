@@ -21,6 +21,7 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -41,14 +42,19 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides a query DSL which is used to query {@link SQLEntity} instances from the database.
@@ -261,17 +267,19 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         orderAsc(BaseEntity.ID);
 
         ValueHolder<E> lastValue = ValueHolder.of(null);
+        AtomicInteger numSeen = new AtomicInteger(0);
 
         AtomicBoolean keepGoing = new AtomicBoolean(true);
         TaskContext context = TaskContext.get();
         while (keepGoing.get() && context.isActive()) {
             keepGoing.set(false);
             Timeout timeout = new Timeout(queryIterateTimeout);
-            pagingGreaterThanLastValue(lastValue.get(), copy()).iterate(entity -> {
+            pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen.get(), null).iterate(entity -> {
                 if (!handler.test(entity)) {
                     // As soon as the handler returns false, we're done and can abort entirely...
                     return false;
                 }
+                numSeen.incrementAndGet();
 
                 if (timeout.isReached()) {
                     // We abort this result set to avoid a hard timeout, but we keep going with another query
@@ -298,11 +306,58 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         });
     }
 
-    private SmartQuery<E> pagingGreaterThanLastValue(E lastValue, SmartQuery<E> query) {
+    /**
+     * @implNote This implementation uses block-wise processing with multiple SQL queries if the result has a reasonable
+     * size. This means that it cannot provide the usual ACID guarantees.
+     */
+    @Override
+    public Stream<E> stream() {
+        return StreamSupport.stream(new PullBasedSpliterator<>() {
+            private final ValueHolder<E> lastValue = ValueHolder.of(null);
+            private int numSeen = 0;
+
+            @Override
+            public int characteristics() {
+                return Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.IMMUTABLE;
+            }
+
+            @Override
+            protected Iterator<E> pullNextBlock() {
+                List<E> block = pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen, 1000).queryList();
+                if (block == null || block.isEmpty()) {
+                    return null;
+                }
+                lastValue.set(block.get(block.size() - 1));
+                numSeen += block.size();
+                return block.iterator();
+            }
+        }, false);
+    }
+
+    private static <E extends SQLEntity> SmartQuery<E> pagingGreaterThanLastValue(E lastValue,
+                                                                                  SmartQuery<E> query,
+                                                                                  int numValuesSeen,
+                                                                                  @Nullable Integer maxItemsInPage) {
+        // adjusting the limit is tricky
+        Optional<Integer> limit = Optional.of(query.limit).filter(value -> value != 0);
+        Optional<Integer> pageSize = Optional.ofNullable(maxItemsInPage);
+        // adjust the query limit by the number of values we have already seen
+        limit = limit.map(value -> value - numValuesSeen);
+        if (limit.isPresent() || pageSize.isPresent()) {
+            if (limit.map(value -> value <= 0).orElse(false)) {
+                return query.fail();
+            }
+            query = query.limit(Math.min(limit.orElse(Integer.MAX_VALUE), pageSize.orElse(Integer.MAX_VALUE)));
+        } else {
+            query.limit(0);
+        }
+
         // no last value => we query everything
         if (lastValue == null) {
             return query;
         }
+        // we already saw some values, so no need to skip more
+        query.skip = 0;
 
         // create and install the filter
         Object[] leftHandSide = new Object[query.orderBys.size()];
@@ -359,6 +414,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
         copy.constraints.addAll(constraints);
+        copy.limit = limit;
+        copy.skip = skip;
 
         return copy;
     }
@@ -716,9 +773,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         });
 
         // make sure that the join fields are always fetched
-        requiredFields.forEach(requiredField -> {
-            appendToSELECT(c, applyAliases, mf, requiredField, false, null);
-        });
+        requiredFields.forEach(requiredField -> appendToSELECT(c, applyAliases, mf, requiredField, false, null));
     }
 
     private void appendToSELECT(Compiler c,
