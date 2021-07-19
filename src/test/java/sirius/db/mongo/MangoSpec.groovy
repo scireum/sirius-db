@@ -199,6 +199,29 @@ class MangoSpec extends BaseSpecification {
         mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 50).exists() == false
     }
 
+    def "MongoQuery.stream() works in mango"() {
+        when:
+        mango.select(MangoListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 10; i++) {
+            def entityToCreate = new MangoListTestEntity()
+            entityToCreate.setCounter(i)
+            mango.update(entityToCreate)
+        }
+        and:
+        MongoQuery<MangoListTestEntity> query = mango.
+                select(MangoListTestEntity.class).
+                orderDesc(MangoListTestEntity.COUNTER)
+        then:
+        query.stream().count() == 10
+        and:
+        query.skip(3).limit(0).stream().count() == 7
+        and:
+        query.skip(0).limit(9).stream().count() == 9
+        and:
+        query.skip(4).limit(1).stream().allMatch({ it.counter == 5 });
+    }
+
     def "wasCreated() works in mango"() {
         given:
         MangoWasCreatedTestEntity e = new MangoWasCreatedTestEntity()

@@ -33,6 +33,7 @@ class SmartQuerySpec extends BaseSpecification {
 
         fillSmartQueryTestEntity()
         fillSmartQueryTestChildAndParentEntity()
+        fillSmartQueryTestLargeTableEntity()
     }
 
     private void fillSmartQueryTestEntity() {
@@ -75,7 +76,14 @@ class SmartQuerySpec extends BaseSpecification {
         c.getParent().setId(p2.getId())
         c.getOtherParent().setId(p1.getId())
         oma.update(c)
+    }
 
+    private void fillSmartQueryTestLargeTableEntity() {
+        for (int i = 0; i < 1100; i++) {
+            SmartQueryTestLargeTableEntity e = new SmartQueryTestLargeTableEntity()
+            e.setTestNumber(i)
+            oma.update(e)
+        }
     }
 
     def "queryList returns all entities"() {
@@ -88,6 +96,42 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().
                 map({ x -> x.getValue() } as Function).
                 collect(Collectors.toList()) == ["Test", "Hello", "World"]
+    }
+
+    def "stream() works"() {
+        when:
+        SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                                                  .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+        then:
+        qry.stream().
+                map({ it.getValue() }).
+                collect(Collectors.toList()) == ["Test", "Hello", "World"]
+        and:
+        qry.skip(1).limit(1).stream().allMatch({ it.getValue() == "Hello" })
+
+        when:
+        SmartQuery<SmartQueryTestLargeTableEntity> query = oma.select(SmartQueryTestLargeTableEntity.class)
+                                                              .orderAsc(SmartQueryTestLargeTableEntity.TEST_NUMBER)
+        then:
+        query.skip(1).limit(0).stream().count() == 1099
+        and:
+        query.skip(1).limit(1098).stream().count() == 1098
+    }
+
+    def "blockwise iteration works"() {
+        given:
+        SmartQuery<SmartQueryTestLargeTableEntity> qry = oma.select(SmartQueryTestLargeTableEntity.class)
+                                                            .skip(1)
+                                                            .orderAsc(SmartQueryTestLargeTableEntity.TEST_NUMBER)
+        and:
+        List<SmartQueryTestEntity> result = new ArrayList<>()
+        when:
+        qry.iterateBlockwiseAll({
+            Thread.sleep(5)
+            result.add(it)
+        })
+        then:
+        result.size() == 1099
     }
 
     def "count returns the number of entity"() {

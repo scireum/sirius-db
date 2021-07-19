@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Base class for queries within mixing.
@@ -138,6 +139,20 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     public abstract void iterate(Predicate<E> handler);
+
+    /**
+     * Executes the query and returns the matched entities using the stream interface.
+     * <p>
+     * Depending on the implementation, this may have two advantages over {@link #iterate} and {@link #queryList}:
+     * <ul>
+     *     <li>There is no need to hold all matched items in memory</li>
+     *     <li>It is widely supported in the Java world</li>
+     * </ul>
+     * However, the implementation may use a block-wise processing, voiding guarantees about atomicity.
+     *
+     * @return the stream of matched entities
+     */
+    public abstract Stream<E> stream();
 
     /**
      * Calls the given consumer on all items in the result.
