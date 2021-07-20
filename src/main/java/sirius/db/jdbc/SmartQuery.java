@@ -806,16 +806,18 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private Compiler selectCount() {
         Compiler c = new Compiler(descriptor);
-        if (!fields.isEmpty()) {
-            c.getSELECTBuilder().append("SELECT COUNT(");
-            if (distinct) {
-                c.getSELECTBuilder().append("DISTINCT");
-            }
+        c.getSELECTBuilder().append("SELECT COUNT(");
+
+        if (!fields.isEmpty() && distinct) {
+            c.getSELECTBuilder().append("DISTINCT ");
             appendFieldList(c, false);
-            c.getSELECTBuilder().append(")");
+        } else if (fields.stream().count() == 1) {
+            appendFieldList(c, false);
         } else {
-            c.getSELECTBuilder().append("SELECT COUNT(*)");
+            c.getSELECTBuilder().append("*");
         }
+
+        c.getSELECTBuilder().append(")");
         return c;
     }
 
