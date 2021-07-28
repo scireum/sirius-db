@@ -806,16 +806,25 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private Compiler selectCount() {
         Compiler c = new Compiler(descriptor);
-        if (!fields.isEmpty()) {
-            c.getSELECTBuilder().append("SELECT COUNT(");
+        c.getSELECTBuilder().append("SELECT COUNT(");
+
+        if (fields.size() > 1) {
             if (distinct) {
-                c.getSELECTBuilder().append("DISTINCT");
+                c.getSELECTBuilder().append("DISTINCT ");
+                appendFieldList(c, false);
+            } else {
+                throw Exceptions.createHandled()
+                                .to(OMA.LOG)
+                                .withSystemErrorMessage(
+                                        "Only use multiple arguments in 'fields' and 'count' in "
+                                        + "combination with the 'distinct' statement")
+                                .handle();
             }
-            appendFieldList(c, false);
-            c.getSELECTBuilder().append(")");
         } else {
-            c.getSELECTBuilder().append("SELECT COUNT(*)");
+            c.getSELECTBuilder().append("*");
         }
+
+        c.getSELECTBuilder().append(")");
         return c;
     }
 
