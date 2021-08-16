@@ -78,7 +78,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
             return object;
         }
 
-        if (data.is(String.class) ) {
+        if (data.is(String.class)) {
             return data.asBoolean();
         }
 
@@ -95,10 +95,9 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
 
     @Override
     protected void determineDefaultValue() {
-        if (field.getType().isPrimitive()) {
-            this.defaultValue = "0";
-        } else {
-            super.determineDefaultValue();
+        super.determineDefaultValue();
+        if (defaultValue == null && field.getType().isPrimitive()) {
+            this.defaultValue = "false";
         }
     }
 
