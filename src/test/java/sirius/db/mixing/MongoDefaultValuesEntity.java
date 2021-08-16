@@ -20,6 +20,10 @@ public class MongoDefaultValuesEntity extends MongoEntity {
     public static final Mapping PRIMITIVE_INT = Mapping.named("primitiveint");
     private int primitiveInt;
 
+    public static final Mapping PRIMITIVE_INT_WITH_DEFAULT = Mapping.named("primitiveintWithDefault");
+    @DefaultValue("50")
+    private int primitiveIntWithDefault = 50;
+
     public boolean isPrimitiveBoolean() {
         return primitiveBoolean;
     }
@@ -34,5 +38,13 @@ public class MongoDefaultValuesEntity extends MongoEntity {
 
     public void setPrimitiveInt(int primitiveInt) {
         this.primitiveInt = primitiveInt;
+    }
+
+    public int getPrimitiveIntWithDefault() {
+        return primitiveIntWithDefault;
+    }
+
+    public void setPrimitiveIntWithDefault(int primitiveIntWithDefault) {
+        this.primitiveIntWithDefault = primitiveIntWithDefault;
     }
 }

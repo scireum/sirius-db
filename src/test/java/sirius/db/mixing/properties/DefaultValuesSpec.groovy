@@ -41,4 +41,16 @@ class DefaultValuesSpec extends BaseSpecification {
         then:
         entity.getPrimitiveInt() == 0
     }
+
+    def "primitive number fields default value annotation works"() {
+        given:
+        def property = mixing.getDescriptor(MongoDefaultValuesEntity.class).findProperty("primitiveIntWithDefault")
+        and:
+        MongoDefaultValuesEntity entity = new MongoDefaultValuesEntity()
+        entity.setPrimitiveIntWithDefault(12)
+        when: // an empty value is given, its default (50) should be applied
+        property.parseValueFromImport(entity, Value.EMPTY)
+        then:
+        entity.getPrimitiveIntWithDefault() == 50
+    }
 }
