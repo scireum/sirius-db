@@ -17,11 +17,22 @@ public class MongoDefaultValuesEntity extends MongoEntity {
     @DefaultValue("true")
     private boolean primitiveBoolean = true;
 
+    public static final Mapping PRIMITIVE_INT = Mapping.named("primitiveint");
+    private int primitiveInt;
+
     public boolean isPrimitiveBoolean() {
         return primitiveBoolean;
     }
 
     public void setPrimitiveBoolean(boolean primitiveBoolean) {
         this.primitiveBoolean = primitiveBoolean;
+    }
+
+    public int getPrimitiveInt() {
+        return primitiveInt;
+    }
+
+    public void setPrimitiveInt(int primitiveInt) {
+        this.primitiveInt = primitiveInt;
     }
 }

@@ -25,8 +25,20 @@ class DefaultValuesSpec extends BaseSpecification {
         and:
         MongoDefaultValuesEntity entity = new MongoDefaultValuesEntity()
         when: // an empty value is given, its default (true) should be applied
-        property.parseValueFromImport(entity, Value.of(""))
+        property.parseValueFromImport(entity, Value.EMPTY)
         then:
         entity.isPrimitiveBoolean()
+    }
+
+    def "primitive number fields get an automatic default value"() {
+        given:
+        def property = mixing.getDescriptor(MongoDefaultValuesEntity.class).findProperty("primitiveInt")
+        and:
+        MongoDefaultValuesEntity entity = new MongoDefaultValuesEntity()
+        entity.setPrimitiveInt(12)
+        when: // an empty value is given, its default (0) should be applied
+        property.parseValueFromImport(entity, Value.EMPTY)
+        then:
+        entity.getPrimitiveInt() == 0
     }
 }
