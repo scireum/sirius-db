@@ -114,4 +114,12 @@ public abstract class NumberProperty extends Property {
         super.onBeforeSaveChecks(entity);
         assertValueIsInRange(Value.of(getValue(entity)).getAmount());
     }
+
+    @Override
+    protected void determineDefaultValue() {
+        super.determineDefaultValue();
+        if (defaultValue == null && field.getType().isPrimitive()) {
+            this.defaultValue = "0";
+        }
+    }
 }
