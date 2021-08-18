@@ -162,6 +162,11 @@ public abstract class Property extends Composable {
         DefaultValue dv = field.getAnnotation(DefaultValue.class);
         if (dv != null) {
             this.defaultValue = dv.value();
+        } else {
+            Object initalValue = getValue(getDescriptor().getReferenceInstance());
+            if (!isConsideredNull(initalValue)) {
+                this.defaultValue = Value.of(initalValue).asString();
+            }
         }
     }
 
