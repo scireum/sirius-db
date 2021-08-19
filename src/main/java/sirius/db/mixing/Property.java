@@ -112,9 +112,11 @@ public abstract class Property extends Composable {
     protected Field field;
 
     /**
-     * Contains a string representation of the default value for the column
+     * Contains the default value of this property
+     * <p>
+     * For the string representation that can be used in JDBC statements see {@link #getColumnDefaultValue()}
      */
-    protected String defaultValue;
+    protected Value defaultValue = Value.EMPTY;
 
     /**
      * Contains the length of this property
@@ -156,16 +158,16 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Determines the default value of the column by checking for a {@link DefaultValue} annotation on the field.
+     * Determines the default value of the property by checking for a {@link DefaultValue} annotation on the field, or its inital value.
      */
     protected void determineDefaultValue() {
         DefaultValue dv = field.getAnnotation(DefaultValue.class);
         if (dv != null) {
-            this.defaultValue = dv.value();
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
         } else {
             Object initalValue = getValue(getDescriptor().getReferenceInstance());
             if (!isConsideredNull(initalValue)) {
-                this.defaultValue = Value.of(initalValue).asString();
+                this.defaultValue = Value.of(initalValue);
             }
         }
     }
@@ -781,8 +783,21 @@ public abstract class Property extends Composable {
      *
      * @return the default value of this property
      */
-    public String getDefaultValue() {
+    public Value getDefaultValue() {
         return defaultValue;
+    }
+
+    /**
+     * Returns the default value to use as String to be used as column default value.
+     *
+     * @return the default value to use as column default
+     */
+    public String getColumnDefaultValue() {
+        if (defaultValue.isNull()) {
+            return null;
+        }
+        Object defaultData = transformToDatasource(OMA.class, defaultValue.get());
+        return defaultData == null ? null : NLS.toMachineString(defaultData);
     }
 
     @Override

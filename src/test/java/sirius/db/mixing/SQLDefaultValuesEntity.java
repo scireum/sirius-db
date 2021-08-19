@@ -9,10 +9,10 @@
 package sirius.db.mixing;
 
 import sirius.db.jdbc.DataTypesEntity;
-import sirius.db.mongo.MongoEntity;
+import sirius.db.jdbc.SQLEntity;
 import sirius.kernel.commons.Amount;
 
-public class MongoDefaultValuesEntity extends MongoEntity {
+public class SQLDefaultValuesEntity extends SQLEntity {
 
     public static final Mapping PRIMITIVE_BOOLEAN = Mapping.named("primitiveBoolean");
     private boolean primitiveBoolean;

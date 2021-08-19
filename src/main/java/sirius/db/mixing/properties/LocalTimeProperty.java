@@ -57,6 +57,17 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(LocalTime.class)) {
+            return value.get();
+        }
+        if (value.is(LocalDateTime.class)) {
+            return value.get(LocalDateTime.class, null).toLocalTime();
+        }
+        return NLS.parseMachineString(LocalTime.class, value.asString());
+    }
+
+    @Override
     public Object transformValue(Value value) {
         if (value.is(LocalTime.class)) {
             return value.get();

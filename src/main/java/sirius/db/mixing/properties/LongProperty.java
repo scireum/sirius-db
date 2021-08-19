@@ -67,10 +67,10 @@ public class LongProperty extends NumberProperty implements SQLPropertyInfo, ESP
             }
             return result;
         }
-        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+        if (this.isNullable() || defaultValue.isEmptyString()) {
             return null;
         }
-        return Value.of(defaultValue).getLong();
+        return defaultValue.getLong();
     }
 
     @Override

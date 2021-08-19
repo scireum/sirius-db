@@ -60,7 +60,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
 
     @Override
     public Object transformValue(Value value) {
-        if (defaultValue == null) {
+        if (defaultValue.isEmptyString()) {
             if (value.isNull() || value.isEmptyString()) {
                 return null;
             } else {
@@ -68,7 +68,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
             }
         }
 
-        return value.asBoolean(NLS.parseMachineString(Boolean.class, defaultValue));
+        return value.asBoolean(defaultValue.asBoolean());
     }
 
     @Override

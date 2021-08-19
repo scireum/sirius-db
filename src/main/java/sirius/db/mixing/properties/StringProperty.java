@@ -122,10 +122,10 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         if (value.isFilled()) {
             return value.asString();
         }
-        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+        if (this.isNullable() || defaultValue.isEmptyString()) {
             return null;
         }
-        return defaultValue;
+        return defaultValue.asString();
     }
 
     @Override
