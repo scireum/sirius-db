@@ -158,16 +158,16 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Determines the default value of the property by checking for a {@link DefaultValue} annotation on the field, or its inital value.
+     * Determines the default value of the property by checking for a {@link DefaultValue} annotation on the field, or its initial value.
      */
     protected void determineDefaultValue() {
         DefaultValue dv = field.getAnnotation(DefaultValue.class);
         if (dv != null) {
             this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
         } else {
-            Object initalValue = getValue(getDescriptor().getReferenceInstance());
-            if (!isConsideredNull(initalValue)) {
-                this.defaultValue = Value.of(initalValue);
+            Object initialValue = getValue(getDescriptor().getReferenceInstance());
+            if (!isConsideredNull(initialValue)) {
+                this.defaultValue = Value.of(initialValue);
             }
         }
     }

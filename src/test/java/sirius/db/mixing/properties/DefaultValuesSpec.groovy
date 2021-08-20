@@ -24,10 +24,10 @@ class DefaultValuesSpec extends BaseSpecification {
     def "the default values are properly initialized"() {
         expect:
         mixing.getDescriptor(SQLDefaultValuesEntity.class).findProperty(propertyName).getDefaultValue() ==
-                excpectedDefault
+                expectedDefault
 
         where:
-        propertyName            | excpectedDefault
+        propertyName            | expectedDefault
         "primitiveBoolean"      | Value.of(false)
         "primitiveBooleanTrue"  | Value.of(true)
         "booleanObject"         | Value.EMPTY
@@ -45,10 +45,10 @@ class DefaultValuesSpec extends BaseSpecification {
     def "column default values are properly transformed"() {
         expect:
         mixing.getDescriptor(SQLDefaultValuesEntity.class).findProperty(propertyName).getColumnDefaultValue() ==
-                excpectedDefault
+                expectedDefault
 
         where:
-        propertyName            | excpectedDefault
+        propertyName            | expectedDefault
         "primitiveBoolean"      | "0"
         "primitiveBooleanTrue"  | "1"
         "booleanObject"         | null
