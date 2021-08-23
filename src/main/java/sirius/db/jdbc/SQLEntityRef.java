@@ -30,6 +30,7 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
 
     @Part
     private static OMA oma;
+    protected transient boolean isWeak;
 
     protected SQLEntityRef(Class<E> type, OnDelete deleteHandler, boolean writeOnce) {
         super(type, deleteHandler, writeOnce);
@@ -62,6 +63,20 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
         return new SQLEntityRef<>(type, deleteHandler, true);
     }
 
+    /**
+     * Makes this reference "weak".
+     * <p>
+     * A "weak" reference does not create any constraints in the database. Thus, the referenced entity may not exist.
+     * Handling weak references does require extra care, but will avoid DB index updates, which improves performance on
+     * many writes.
+     *
+     * @return this EntityRef
+     */
+    public SQLEntityRef<E> weak() {
+        this.isWeak = true;
+        return this;
+    }
+
     @Override
     protected Optional<E> find(Class<E> type, Long id) {
         return oma.find(type, id);
@@ -78,5 +93,15 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
             Exceptions.ignore(e);
             return SQLEntity.NON_PERSISTENT_ENTITY_ID;
         }
+    }
+
+    /**
+     * Weather this reference is a weak reference
+     *
+     * @return whether this reference is weak
+     * @see #weak()
+     */
+    public boolean isWeak() {
+        return isWeak;
     }
 }

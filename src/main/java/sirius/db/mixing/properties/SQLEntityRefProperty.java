@@ -81,8 +81,10 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.BIGINT));
 
-        if (SQLEntity.class.isAssignableFrom(getReferencedType()) && Strings.areEqual(getDescriptor().getRealm(),
-                                                                                      getReferencedDescriptor().getRealm())) {
+        boolean createFkConstraint = SQLEntity.class.isAssignableFrom(getReferencedType()) && Strings.areEqual(
+                getDescriptor().getRealm(),
+                getReferencedDescriptor().getRealm()) && !entityRef.isWeak();
+        if (createFkConstraint) {
             ForeignKey fk = new ForeignKey();
             fk.setName(computeForeignKeyName());
             fk.setForeignTable(getReferencedDescriptor().getRelationName());
