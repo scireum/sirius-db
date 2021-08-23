@@ -69,10 +69,10 @@ public class EnumProperty extends Property implements SQLPropertyInfo, ESPropert
         if (value.isFilled()) {
             return value.asEnum((Class<Enum>) field.getType());
         }
-        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+        if (this.isNullable() || defaultValue.isEmptyString()) {
             return null;
         }
-        return Value.of(defaultValue).asEnum((Class<Enum>) field.getType());
+        return defaultValue.asEnum((Class<Enum>) field.getType());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

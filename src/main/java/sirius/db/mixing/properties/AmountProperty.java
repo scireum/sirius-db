@@ -90,10 +90,10 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (value.isFilled()) {
             return NLS.parseUserString(Amount.class, value.asString());
         }
-        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+        if (this.isNullable() || defaultValue.isEmptyString()) {
             return Amount.NOTHING;
         }
-        return Value.of(defaultValue).getAmount();
+        return defaultValue.getAmount();
     }
 
     @Override

@@ -46,7 +46,7 @@ public class TableColumn {
         this.name = property.getPropertyName();
         this.nullable = property.isNullable();
         this.length = property.getLength();
-        this.defaultValue = property.getDefaultValue();
+        this.defaultValue = property.getColumnDefaultValue();
         this.type = sqlType;
 
         property.getAnnotation(Numeric.class).ifPresent(numeric -> {

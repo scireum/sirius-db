@@ -253,4 +253,10 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
             table.getColumns().add(new TableColumn(this, Types.CHAR));
         }
     }
+
+    @Override
+    public String getColumnDefaultValue() {
+        // not yet supported
+        return null;
+    }
 }
