@@ -894,9 +894,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (forceFail) {
             return 0;
         }
-        if (skip > 0 || limit > 0) {
-            Elastic.LOG.WARN("COUNT queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
-        }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
@@ -958,9 +955,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public boolean exists() {
         if (forceFail) {
             return false;
-        }
-        if (skip > 0 || limit > 0) {
-            Elastic.LOG.WARN("EXISTS queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);

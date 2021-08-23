@@ -422,7 +422,9 @@ public class Finder extends QueryBuilder<Finder> {
      * If there are no filters in this query and forceAccurate is false, a pre-counted estimate is returned instead.
      *
      * @param collection    the collection to search in
-     * @param forceAccurate if set to <tt>true</tt> we'll never use <b>estimatedDocumentCount</b> which is way more efficient but might return wrong values in case a cluster is active which had experienced an unclean shutdown.
+     * @param forceAccurate if set to <tt>true</tt> we'll never use <b>estimatedDocumentCount</b> which is way more
+     *                      efficient but might return wrong values in case a cluster is active which had experienced
+     *                      an unclean shutdown.
      * @param maxTimeMS     the maximum process time for this cursor in milliseconds, 0 for unlimited
      * @return the number of documents found, wrapped in an Optional, or an empty Optional if the query timed out
      */
