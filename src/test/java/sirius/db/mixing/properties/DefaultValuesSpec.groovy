@@ -55,8 +55,8 @@ class DefaultValuesSpec extends BaseSpecification {
         "primitiveInt"          | "0"
         "primitiveIntWithValue" | "50"
         "amount"                | null
-        "amountWithValue"       | "100.00000"
-        "amountZero"            | "0.00000"
+        "amountWithValue"       | "100.000"
+        "amountZero"            | "0.000"
         "amountNothing"         | null
     }
 

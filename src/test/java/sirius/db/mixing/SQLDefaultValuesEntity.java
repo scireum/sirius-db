@@ -10,6 +10,7 @@ package sirius.db.mixing;
 
 import sirius.db.jdbc.DataTypesEntity;
 import sirius.db.jdbc.SQLEntity;
+import sirius.db.mixing.annotations.Numeric;
 import sirius.kernel.commons.Amount;
 
 public class SQLDefaultValuesEntity extends SQLEntity {
@@ -30,15 +31,19 @@ public class SQLDefaultValuesEntity extends SQLEntity {
     private int primitiveIntWithValue = 50;
 
     public static final Mapping AMOUNT = Mapping.named("amount");
+    @Numeric(precision = 15, scale = 3)
     private Amount amount;
 
     public static final Mapping AMOUNT_WITH_VALUE = Mapping.named("amountWithValue");
+    @Numeric(precision = 15, scale = 3)
     private Amount amountWithValue = Amount.ONE_HUNDRED;
 
     public static final Mapping AMOUNT_ZERO = Mapping.named("amountZero");
+    @Numeric(precision = 15, scale = 3)
     private Amount amountZero = Amount.ZERO;
 
     public static final Mapping AMOUNT_NOTHING = Mapping.named("amountNothing");
+    @Numeric(precision = 15, scale = 3)
     private Amount amountNothing = Amount.NOTHING;
 
     public static final Mapping STRING = Mapping.named("string");
