@@ -113,15 +113,25 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
     }
 
     @Override
-    protected Object transformToJDBC(Object object) {
-        Amount amount = (Amount) object;
-        if (amount == null || amount.isEmpty()) {
+    protected BigDecimal transformToJDBC(Object object) {
+        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
+    }
+
+    @Override
+    public String getColumnDefaultValue() {
+        if (defaultValue.isNull()) {
             return null;
         }
+        Object defaultData = transformToDatasource(OMA.class, defaultValue.get());
+        if (defaultData == null) {
+            return null;
+        }
+        // the resulting string needs to match the string representation in the DB exactly,
+        // else a schema change will be issued.
         NumberFormat format = getAnnotation(Numeric.class).map(numeric -> {
             return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
         }).orElse(NumberFormat.MACHINE_THREE_DECIMAL_PLACES);
-        return amount.toString(format);
+        return Amount.of((BigDecimal) defaultData).toString(format).asString();
     }
 
     @Override
