@@ -48,7 +48,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     @Override
     public Table completeTableInfos(Table table) {
         for (TableColumn col : table.getColumns()) {
-            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col)) {
+            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col) && !isQuoted(col.getDefaultValue())) {
                 col.setDefaultValue("'" + col.getDefaultValue() + "'");
             }
         }
@@ -58,6 +58,13 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
             table.getKeys().remove(key);
         }
         return table;
+    }
+
+    private boolean isQuoted(String value) {
+        if (Strings.isEmpty(value)) {
+            return false;
+        }
+        return value.matches("^'([^'].*)?'$");
     }
 
     @SuppressWarnings("squid:S1067")
