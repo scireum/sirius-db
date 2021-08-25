@@ -24,7 +24,9 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.Numeric;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.NumberFormat;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
@@ -33,6 +35,7 @@ import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Types;
 import java.util.function.Consumer;
 
@@ -111,14 +114,21 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     @Override
     protected Object transformToJDBC(Object object) {
-        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
+        Amount amount = (Amount) object;
+        if (amount == null || amount.isEmpty()) {
+            return null;
+        }
+        NumberFormat format = getAnnotation(Numeric.class).map(numeric -> {
+            return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
+        }).orElse(NumberFormat.MACHINE_THREE_DECIMAL_PLACES);
+        return amount.toString(format);
     }
 
     @Override
     protected Object transformToElastic(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
     }
-    
+
     @Override
     protected Object transformToMongo(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
