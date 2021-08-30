@@ -33,7 +33,6 @@ class DefaultValuesSpec extends BaseSpecification {
         "booleanObject"         | Value.EMPTY
         "primitiveInt"          | Value.of(0)
         "primitiveIntWithValue" | Value.of(50)
-        "amount"                | Value.EMPTY
         "amountWithValue"       | Value.of(Amount.ONE_HUNDRED)
         "amountZero"            | Value.of(Amount.ZERO)
         "amountNothing"         | Value.EMPTY //Amount.NOTHING should be considered null and therefore have no default
@@ -54,10 +53,14 @@ class DefaultValuesSpec extends BaseSpecification {
         "booleanObject"         | null
         "primitiveInt"          | "0"
         "primitiveIntWithValue" | "50"
-        "amount"                | null
         "amountWithValue"       | "100.000"
         "amountZero"            | "0.000"
         "amountNothing"         | null
+        "string"                | null
+        "emptyString"           | ""
+        "filledString"          | "STRING"
+        "enumTest"              | null
+        "enumWithValue"         | "Test2"
     }
 
     def "a primitive boolean with no default value annotation does not throw an error"() {
@@ -117,18 +120,6 @@ class DefaultValuesSpec extends BaseSpecification {
         property.parseValueFromImport(entity, Value.EMPTY)
         then:
         entity.getPrimitiveIntWithValue() == 50
-    }
-
-    def "amount fields which are not initialized should reset to Amount.NOTHING"() {
-        given:
-        def property = mixing.getDescriptor(SQLDefaultValuesEntity.class).findProperty("amount")
-        and:
-        SQLDefaultValuesEntity entity = new SQLDefaultValuesEntity()
-        entity.setAmount(Amount.of(12))
-        when:
-        property.parseValueFromImport(entity, Value.EMPTY)
-        then:
-        entity.getAmount() == Amount.NOTHING
     }
 
     def "amount fields which are initialized with Amount.NOTHING should reset to Amount.NOTHING"() {

@@ -252,7 +252,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         }
 
         // TIMESTAMP values cannot be null -> we gracefully ignore this
-        // here, sice the alter statement would be ignored anyway.
+        // here, since the alter statement would be ignored anyway.
         return target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null;
     }
 
