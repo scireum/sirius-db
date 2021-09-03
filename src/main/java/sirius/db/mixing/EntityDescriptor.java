@@ -316,6 +316,17 @@ public class EntityDescriptor {
     }
 
     /**
+     * Provides the i18n key used to translate the plural of this entity.
+     * <p>
+     * This can be passed into {@link NLS#get(String)} to retrieve the actual translation.
+     *
+     * @return the effective property key used to get the plural name of this entity
+     */
+    public String getPluralLabelKey() {
+        return getLabelKey() + ".plural";
+    }
+
+    /**
      * Returns the "end user-friendly" plural of the entity.
      * <p>
      * The i18n keys tried are the same as for {@link #getLabel()} with ".plural" appended.
@@ -323,7 +334,7 @@ public class EntityDescriptor {
      * @return a translated plural which can be shown to the end user
      */
     public String getPluralLabel() {
-        return NLS.get(translationSource.getSimpleName() + ".plural");
+        return NLS.get(getPluralLabelKey());
     }
 
     /**
