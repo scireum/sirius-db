@@ -316,7 +316,7 @@ public class EntityDescriptor {
     }
 
     /**
-     * Returns the "end user friendly" plural of the entity.
+     * Returns the "end user-friendly" plural of the entity.
      * <p>
      * The i18n keys tried are the same as for {@link #getLabel()} with ".plural" appended.
      *
@@ -327,7 +327,7 @@ public class EntityDescriptor {
     }
 
     /**
-     * Links all properties to setup foreign keys and delete constraints.
+     * Links all properties to set up foreign keys and delete constraints.
      */
     protected void link() {
         for (Property p : properties.values()) {
