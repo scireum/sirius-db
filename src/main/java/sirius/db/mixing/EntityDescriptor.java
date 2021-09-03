@@ -323,7 +323,7 @@ public class EntityDescriptor {
      * @return the effective property key used to get the plural name of this entity
      */
     public String getPluralLabelKey() {
-        return getLabelKey() + ".plural";
+        return translationSource.getSimpleName() + ".plural";
     }
 
     /**
