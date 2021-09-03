@@ -282,10 +282,37 @@ public class EntityDescriptor {
         String className = translationSource.getSimpleName();
         String currentLang = NLS.getCurrentLang();
         return NLS.getIfExists(className, currentLang)
-                  .orElseGet(() -> NLS.getIfExists("Model."
-                                                   + Character.toLowerCase(className.charAt(0))
-                                                   + className.substring(1), currentLang)
-                                      .orElseGet(() -> NLS.get("Model." + className)));
+                  .orElseGet(() -> NLS.getIfExists(determineLowercasedPropertyKey(className), currentLang)
+                                      .orElseGet(() -> NLS.get(determineModelPropertyKey(className))));
+    }
+
+    private String determineLowercasedPropertyKey(String className) {
+        return "Model." + Character.toLowerCase(className.charAt(0)) + className.substring(1);
+    }
+
+    private String determineModelPropertyKey(String className) {
+        return "Model." + className;
+    }
+
+    /**
+     * Provides the i18n key used to translate this entity.
+     * <p>
+     * This can be passed into {@link NLS#get(String)} to retrieve the actual translation.
+     *
+     * @return the effective property key used to get the singular name of this entity
+     */
+    public String getLabelKey() {
+        String className = translationSource.getSimpleName();
+        if (NLS.exists(className, null)) {
+            return className;
+        }
+
+        String propertyWithLowercase = determineLowercasedPropertyKey(className);
+        if (NLS.exists(propertyWithLowercase, null)) {
+            return propertyWithLowercase;
+        }
+
+        return determineModelPropertyKey(className);
     }
 
     /**
