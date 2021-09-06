@@ -33,6 +33,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.ValueSupplier;
 import sirius.kernel.di.Injector;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.PriorityParts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -68,6 +69,9 @@ import java.util.stream.Stream;
  * These entities and be stored and loaded from various databases using an appropriate {@link BaseMapper mapper}.
  */
 public class EntityDescriptor {
+
+    @Part
+    protected static Mixing mixing;
 
     /**
      * Contains the effective / technical to use in the datasource
@@ -213,6 +217,39 @@ public class EntityDescriptor {
         }
 
         return type;
+    }
+
+    /**
+     * Builds a standard message that the given entity cannot be saved.
+     * <p>
+     * This message is mostly used as a consequence describing why an error happened.
+     * For instance, when an entity's required field is not populated, a standard message like this will be logged:
+     * {@code Field 'MyField' is required.}
+     * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
+     * {@code MyEntity cannot be saved: Field 'MyField' is required.}
+     *
+     * @param clazz the entity class to extract its label
+     * @return the formatted message
+     */
+    public static String createCannotSaveMessage(@Nonnull Class<?> clazz) {
+        return NLS.fmtr("EntityDescriptor.cannotSaveEntity")
+                  .set("entity", mixing.getDescriptor(clazz).getLabel())
+                  .format();
+    }
+
+    /**
+     * Builds a standard message that the given entity cannot be saved.
+     * <p>
+     * This message is mostly used as a consequence describing why an error happened.
+     * For instance, when an entity's required field is not populated, a standard message like this will be logged:
+     * {@code Field 'MyField' is required.}
+     * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
+     * {@code MyEntity cannot be saved: Field 'MyField' is required.}
+     *
+     * @return the formatted message
+     */
+    public String createCannotSaveMessage() {
+        return NLS.fmtr("EntityDescriptor.cannotSaveEntity").set("entity", getLabel()).format();
     }
 
     private void loadLegacyInfo(Class<?> type) {
