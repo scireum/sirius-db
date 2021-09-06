@@ -222,11 +222,9 @@ public class EntityDescriptor {
     /**
      * Builds a standard message that the given entity cannot be saved.
      * <p>
-     * This message is mostly used as a consequence describing why an error happened.
-     * For instance, when an entity's required field is not populated, a standard message like this will be logged:
-     * {@code Field 'MyField' is required.}
-     * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
-     * {@code MyEntity cannot be saved: Field 'MyField' is required.}
+     * This message is mostly used as a consequence for describing why an error happened. Therefore, this will create
+     * a message such as <tt>Entity cannot be saved: Field-Error</tt> instead of logging an arbitrary looking field
+     * error alone.
      *
      * @param clazz        the entity class to extract its label
      * @param errorMessage the error message thrown by the entity
