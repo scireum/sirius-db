@@ -73,6 +73,37 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
     }
 
     /**
+     * Builds a standard message that the given entity cannot be saved.
+     * <p>
+     * This message is mostly used as a consequence describing why an error happened.
+     * For instance, when an entity's required field is not populated, a standard message like this will be logged:
+     * {@code Field 'MyField' is required.}
+     * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
+     * {@code MyEntity cannot be saved. Field 'MyField' is required.}
+     *
+     * @param clazz the entity class to extract its label
+     * @return the formatted message
+     */
+    public static String createCannotSaveMessage(@Nonnull Class<?> clazz) {
+        return NLS.fmtr("BaseEntity.cannotSaveEntity").set("entity", mixing.getDescriptor(clazz).getLabel()).format();
+    }
+
+    /**
+     * Builds a standard message that the entity cannot be saved.
+     * <p>
+     * This message is mostly used as a consequence describing why an error happened.
+     * For instance, when an entity's required field is not populated, a standard message like this will be logged:
+     * {@code Field 'MyField' is required.}
+     * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
+     * {@code MyEntity cannot be saved. Field 'MyField' is required.}
+     *
+     * @return the formatted message
+     */
+    public String createCannotSaveMessage() {
+        return createCannotSaveMessage(this.getClass());
+    }
+
+    /**
      * Returns the id of the entity.
      *
      * @return the id of the entity
