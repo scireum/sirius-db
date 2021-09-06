@@ -228,12 +228,14 @@ public class EntityDescriptor {
      * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
      * {@code MyEntity cannot be saved: Field 'MyField' is required.}
      *
-     * @param clazz the entity class to extract its label
+     * @param clazz        the entity class to extract its label
+     * @param errorMessage the error message thrown by the entity
      * @return the formatted message
      */
-    public static String createCannotSaveMessage(@Nonnull Class<?> clazz) {
+    public static String createCannotSaveMessage(@Nonnull Class<?> clazz, String errorMessage) {
         return NLS.fmtr("EntityDescriptor.cannotSaveEntity")
                   .set("entity", mixing.getDescriptor(clazz).getLabel())
+                  .set("message", errorMessage)
                   .format();
     }
 
