@@ -239,21 +239,6 @@ public class EntityDescriptor {
                   .format();
     }
 
-    /**
-     * Builds a standard message that the given entity cannot be saved.
-     * <p>
-     * This message is mostly used as a consequence describing why an error happened.
-     * For instance, when an entity's required field is not populated, a standard message like this will be logged:
-     * {@code Field 'MyField' is required.}
-     * As to would be rather nice to tell the end user that an entity couldn't be saved due to the error.
-     * {@code MyEntity cannot be saved: Field 'MyField' is required.}
-     *
-     * @return the formatted message
-     */
-    public String createCannotSaveMessage() {
-        return NLS.fmtr("EntityDescriptor.cannotSaveEntity").set("entity", getLabel()).format();
-    }
-
     private void loadLegacyInfo(Class<?> type) {
         String configKey = "mixing.legacy." + type.getSimpleName();
         this.legacyInfo = Sirius.getSettings().getConfig().hasPath(configKey) ?
