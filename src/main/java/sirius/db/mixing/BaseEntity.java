@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * result in the equivalent properties required to store the fields declared there. Still inheritance might be
  * useful and is fully supported for both, entities and composites.
  * <p>
- * What is not supported, is merging distinct subclasses into one table or other weired inheritance methods. Therefore,
+ * What is not supported, is merging distinct subclasses into one table or other weird inheritance methods. Therefore,
  * all superclasses should be abstract.
  * <p>
  * Additionally all <tt>Mixins</tt> {@link sirius.db.mixing.annotations.Mixin} will be used to add properties to the
