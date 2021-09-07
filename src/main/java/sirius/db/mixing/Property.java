@@ -161,9 +161,9 @@ public abstract class Property extends Composable {
      * Determines the default value of the property by checking for a {@link DefaultValue} annotation on the field, or its initial value.
      */
     protected void determineDefaultValue() {
-        DefaultValue dv = field.getAnnotation(DefaultValue.class);
-        if (dv != null) {
-            this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
         } else {
             Object initialValue = getValue(getDescriptor().getReferenceInstance());
             if (!isConsideredNull(initialValue)) {
@@ -176,9 +176,9 @@ public abstract class Property extends Composable {
      * Determines the column length by checking for a {@link Length} annotation on the field.
      */
     protected void determineLengths() {
-        Length len = field.getAnnotation(Length.class);
-        if (len != null) {
-            this.length = len.value();
+        Length lengthAnnotation = field.getAnnotation(Length.class);
+        if (lengthAnnotation != null) {
+            this.length = lengthAnnotation.value();
         }
     }
 
@@ -193,7 +193,7 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Returns the anotation of the given type.
+     * Returns the annotation of the given type.
      *
      * @param type the type of the annotation to fetch
      * @param <A>  the annotation to fetch
@@ -205,7 +205,7 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Determines if an anotation of the given type is present.
+     * Determines if an annotation of the given type is present.
      *
      * @param type the type of the annotation to fetch
      * @return <tt>true</tt> if an annotation of the given type is present, <tt>false</tt> otherwise
@@ -266,7 +266,7 @@ public abstract class Property extends Composable {
      * names of a per-entity basis.
      * </li>
      * <li>
-     * Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaingClass].[field]</tt>.
+     * Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaringClass].[field]</tt>.
      * So for <tt>com.acme.model.Address.street</tt> this would be <tt>Address.street</tt>
      * </li>
      * <li>
@@ -295,7 +295,7 @@ public abstract class Property extends Composable {
      * Returns the full label or nme of the property which is shown in error messages etc.
      * <p>
      * This will only differ from {@link #getLabel()} for field in composites or mixins. In this case,
-     * we try to lookup the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
+     * we try to look up the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
      * to this field. If a property is available for this and none is present for the fully qualified name
      * (<tt>[entityClass].[compositeName]_[field]</tt>), a label in the form of <tt>getLabel() (NLS.get(parent))</tt>
      * is shown.
@@ -373,7 +373,7 @@ public abstract class Property extends Composable {
      * The internal access path will be used to find the target object which contains the field.
      * <p>
      * If the underlying field of this property is primitive, but the given value is <tt>null</tt> or transformed to
-     * <tt>null</tt>, this will be ignored. An scenario like this might happen, if we join-fetch a value, which is not
+     * <tt>null</tt>, this will be ignored. A scenario like this might happen, if we join-fetch a value, which is not
      * present.
      *
      * @param mapperType the mapper which is currently active. This can be used to determine which kind of database is
@@ -456,11 +456,11 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * For modifyable datatypes like collections, this returns the value as copy so that further modifications
+     * For modifiable datatypes like collections, this returns the value as copy so that further modifications
      * will not change the returned value.
      *
      * @param entity the entity to fetch the value from
-     * @return the as compy of the value which is currently stored in the field
+     * @return the as copy of the value which is currently stored in the field
      */
     public Object getValueAsCopy(Object entity) {
         return getValue(entity);
@@ -645,7 +645,7 @@ public abstract class Property extends Composable {
     /**
      * Returns the entity descriptor to which this property belongs
      *
-     * @return the descriptor which owns this propery
+     * @return the descriptor which owns this property
      */
     public EntityDescriptor getDescriptor() {
         return descriptor;
