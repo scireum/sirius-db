@@ -161,9 +161,9 @@ public abstract class Property extends Composable {
      * Determines the default value of the property by checking for a {@link DefaultValue} annotation on the field, or its initial value.
      */
     protected void determineDefaultValue() {
-        DefaultValue dv = field.getAnnotation(DefaultValue.class);
-        if (dv != null) {
-            this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
         } else {
             Object initialValue = getValue(getDescriptor().getReferenceInstance());
             if (!isConsideredNull(initialValue)) {
@@ -176,9 +176,9 @@ public abstract class Property extends Composable {
      * Determines the column length by checking for a {@link Length} annotation on the field.
      */
     protected void determineLengths() {
-        Length len = field.getAnnotation(Length.class);
-        if (len != null) {
-            this.length = len.value();
+        Length lengthAnnotation = field.getAnnotation(Length.class);
+        if (lengthAnnotation != null) {
+            this.length = lengthAnnotation.value();
         }
     }
 

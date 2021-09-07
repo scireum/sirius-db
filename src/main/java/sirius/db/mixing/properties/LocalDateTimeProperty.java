@@ -155,9 +155,9 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
      */
     @Override
     protected void determineDefaultValue() {
-        DefaultValue dv = field.getAnnotation(DefaultValue.class);
-        if (dv != null) {
-            this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
         }
     }
 }
