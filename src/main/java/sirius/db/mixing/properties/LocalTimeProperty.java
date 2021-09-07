@@ -16,6 +16,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
@@ -98,9 +99,17 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
         table.getColumns().add(new TableColumn(this, Types.TIME));
     }
 
+    /**
+     * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
+     * <p>
+     * The initial value will commonly be a temporal value and thus not a constant.
+     * Therefore we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     */
     @Override
-    public String getColumnDefaultValue() {
-        // not supported
-        return null;
+    protected void determineDefaultValue() {
+        DefaultValue dv = field.getAnnotation(DefaultValue.class);
+        if (dv != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
+        }
     }
 }

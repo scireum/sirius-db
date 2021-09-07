@@ -19,6 +19,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mongo.QueryBuilder;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -142,9 +143,17 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
                        description);
     }
 
+    /**
+     * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
+     * <p>
+     * The initial value will commonly be a temporal value and thus not a constant.
+     * Therefore we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     */
     @Override
-    public String getColumnDefaultValue() {
-        // not supported
-        return null;
+    protected void determineDefaultValue() {
+        DefaultValue dv = field.getAnnotation(DefaultValue.class);
+        if (dv != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(dv.value())));
+        }
     }
 }
