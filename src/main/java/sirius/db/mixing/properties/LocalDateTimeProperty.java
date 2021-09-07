@@ -36,7 +36,7 @@ import java.time.format.DateTimeParseException;
 import java.util.function.Consumer;
 
 /**
- * Represents a timestamp property which contains a date along with a time value. This is used to represents fields of
+ * Represents a timestamp property which contains a date along with a time value. This is used to represent fields of
  * type {@link LocalDateTime}.
  */
 public class LocalDateTimeProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
@@ -144,5 +144,11 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
     @Override
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.BIGINT));
+    }
+
+    @Override
+    public String getColumnDefaultValue() {
+        // not supported
+        return null;
     }
 }

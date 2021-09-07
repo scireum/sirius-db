@@ -35,7 +35,7 @@ import java.time.format.DateTimeParseException;
 import java.util.function.Consumer;
 
 /**
- * Represents a date property which contains no associated time value. This is used to represents fields of type
+ * Represents a date property which contains no associated time value. This is used to represent fields of type
  * {@link LocalDate}.
  */
 public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
@@ -140,5 +140,11 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    @Override
+    public String getColumnDefaultValue() {
+        // not supported
+        return null;
     }
 }

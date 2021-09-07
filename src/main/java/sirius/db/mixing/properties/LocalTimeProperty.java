@@ -97,4 +97,10 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.TIME));
     }
+
+    @Override
+    public String getColumnDefaultValue() {
+        // not supported
+        return null;
+    }
 }
