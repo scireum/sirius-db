@@ -226,13 +226,12 @@ public class EntityDescriptor {
      * a message such as <tt>Entity cannot be saved: Field-Error</tt> instead of logging an arbitrary looking field
      * error alone.
      *
-     * @param clazz        the entity class to extract its label
      * @param errorMessage the error message thrown by the entity
      * @return the formatted message
      */
-    public static String createCannotSaveMessage(@Nonnull Class<?> clazz, String errorMessage) {
+    public String createCannotSaveMessage(String errorMessage) {
         return NLS.fmtr("EntityDescriptor.cannotSaveEntity")
-                  .set("entity", mixing.getDescriptor(clazz).getLabel())
+                  .set("entity", getLabel())
                   .set("message", errorMessage)
                   .format();
     }
