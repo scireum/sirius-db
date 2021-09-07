@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * result in the equivalent properties required to store the fields declared there. Still inheritance might be
  * useful and is fully supported for both, entities and composites.
  * <p>
- * What is not supported, is merging distinct subclasses into one table or other weired inheritance methods. Therefore
+ * What is not supported, is merging distinct subclasses into one table or other weird inheritance methods. Therefore,
  * all superclasses should be abstract.
  * <p>
  * Additionally all <tt>Mixins</tt> {@link sirius.db.mixing.annotations.Mixin} will be used to add properties to the
@@ -66,7 +66,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
     /**
      * Returns the descriptor which maps the entity to the database table.
      *
-     * @return the ddescriptor which is in charge of checking and mapping the entity to the database
+     * @return the descriptor which is in charge of checking and mapping the entity to the database
      */
     public EntityDescriptor getDescriptor() {
         return mixing.getDescriptor(getClass());
@@ -83,7 +83,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
     /**
      * Determines if the entity is new (not yet written to the database).
      * <p>
-     * This wont work in {@link sirius.db.mixing.annotations.AfterSave} handlers - use {@link #wasCreated()} instead.
+     * This won't work in {@link sirius.db.mixing.annotations.AfterSave} handlers - use {@link #wasCreated()} instead.
      *
      * @return <tt>true</tt> if the entity has not been written to the database yet, <tt>false</tt> otherwise
      */

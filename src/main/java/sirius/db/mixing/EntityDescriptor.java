@@ -33,6 +33,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.ValueSupplier;
 import sirius.kernel.di.Injector;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.PriorityParts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -68,6 +69,9 @@ import java.util.stream.Stream;
  * These entities and be stored and loaded from various databases using an appropriate {@link BaseMapper mapper}.
  */
 public class EntityDescriptor {
+
+    @Part
+    protected static Mixing mixing;
 
     /**
      * Contains the effective / technical to use in the datasource
@@ -213,6 +217,24 @@ public class EntityDescriptor {
         }
 
         return type;
+    }
+
+    /**
+     * Builds a standard message that the given entity cannot be saved.
+     * <p>
+     * This message is mostly used as a consequence for describing why an error happened. Therefore, this will create
+     * a message such as <tt>Entity cannot be saved: Field-Error</tt> instead of logging an arbitrary looking field
+     * error alone.
+     *
+     * @param clazz        the entity class to extract its label
+     * @param errorMessage the error message thrown by the entity
+     * @return the formatted message
+     */
+    public static String createCannotSaveMessage(@Nonnull Class<?> clazz, String errorMessage) {
+        return NLS.fmtr("EntityDescriptor.cannotSaveEntity")
+                  .set("entity", mixing.getDescriptor(clazz).getLabel())
+                  .set("message", errorMessage)
+                  .format();
     }
 
     private void loadLegacyInfo(Class<?> type) {
