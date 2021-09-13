@@ -565,7 +565,7 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     private class MongoCloseableSpliterator implements Spliterator<Document>, Closeable {
-        private final ValueHolder<MongoCursor<Document>> iterator;
+        private final ValueHolder<MongoCursor<Document>> cursorHolder;
         private final Supplier<MongoIterable<Document>> iterableSupplier;
         private final Monoflop shouldHandleTracing;
         private final String collection;
@@ -573,7 +573,7 @@ public class Finder extends QueryBuilder<Finder> {
         private Spliterator<Document> delegate;
 
         private MongoCloseableSpliterator(Supplier<MongoIterable<Document>> iterableSupplier, String collection) {
-            this.iterator = new ValueHolder<>(null);
+            this.cursorHolder = new ValueHolder<>(null);
             this.iterableSupplier = iterableSupplier;
             this.shouldHandleTracing = Monoflop.create();
             this.collection = collection;
@@ -582,9 +582,10 @@ public class Finder extends QueryBuilder<Finder> {
 
         private Spliterator<Document> getDelegate() {
             if (delegate == null) {
-                iterator.set(iterableSupplier.get().iterator());
-                delegate = Spliterators.spliteratorUnknownSize(iterator.get(), 0);
+                cursorHolder.set(iterableSupplier.get().iterator());
+                delegate = Spliterators.spliteratorUnknownSize(cursorHolder.get(), 0);
             }
+
             return delegate;
         }
 
