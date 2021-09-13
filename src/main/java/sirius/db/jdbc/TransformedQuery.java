@@ -52,8 +52,8 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     }
 
     @Override
-    public Stream<E> stream() {
-        throw new UnsupportedOperationException("`.stream()` does not support arbitrary queries.");
+    public Stream<E> streamBlockwise() {
+        throw new UnsupportedOperationException("`.streamBlockwise()` does not support arbitrary queries.");
     }
 
     @SuppressWarnings("unchecked")

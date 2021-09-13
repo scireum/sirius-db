@@ -70,7 +70,7 @@ class ElasticQuerySpec extends BaseSpecification {
         entities.get(9).getCounter() == 19
     }
 
-    def "stream works"() {
+    def "streamBlockwise works"() {
         when:
         for (int i = 0; i < 10; i++) {
             QueryTestEntity entity = new QueryTestEntity()
@@ -80,9 +80,11 @@ class ElasticQuerySpec extends BaseSpecification {
         }
         elastic.refresh(QueryTestEntity.class)
         then:
-        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").stream().count() == 10
-        and:
-        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").skip(5).limit(6).stream().count() == 5
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").streamBlockwise().count() == 10
+        when:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").skip(5).limit(6).streamBlockwise().count()
+        then:
+        thrown(UnsupportedOperationException)
 
     }
 
@@ -248,7 +250,7 @@ class ElasticQuerySpec extends BaseSpecification {
     }
 
     @Scope(Scope.SCOPE_NIGHTLY)
-    def "scroll query works"() {
+    def "scroll query / large streamBlockwise work"() {
         when:
         for (int i = 1; i <= 1500; i++) {
             QueryTestEntity entity = new QueryTestEntity()
@@ -264,6 +266,11 @@ class ElasticQuerySpec extends BaseSpecification {
                 iterateAll({ e -> sum += e.getCounter() })
         then:
         sum == (1500 * 1501) / 2
+        and:
+        elastic.select(QueryTestEntity.class).
+                eq(QueryTestEntity.VALUE, "SCROLL").
+                streamBlockwise().
+                mapToInt({ e -> e.getCounter() }).sum() == sum
     }
 
     def "queries with multiple occurences of the same constraint works"() {

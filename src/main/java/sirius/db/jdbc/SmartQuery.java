@@ -306,76 +306,77 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         });
     }
 
-    /**
-     * @implNote This implementation uses block-wise processing with multiple SQL queries if the result has a reasonable
-     * size. This means that it cannot provide the usual ACID guarantees.
-     */
     @Override
-    public Stream<E> stream() {
-        return StreamSupport.stream(new PullBasedSpliterator<>() {
-            private final ValueHolder<E> lastValue = ValueHolder.of(null);
-            private int numSeen = 0;
+    public Stream<E> streamBlockwise() {
+        if (forceFail) {
+            return Stream.empty();
+        }
 
-            @Override
-            public int characteristics() {
-                return Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.IMMUTABLE;
-            }
+        if (limit > 0) {
+            throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
+        }
+        if (skip > 0) {
+            throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
+        }
 
-            @Override
-            protected Iterator<E> pullNextBlock() {
-                List<E> block = pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen, 1000).queryList();
-                if (block == null || block.isEmpty()) {
-                    return null;
-                }
-                lastValue.set(block.get(block.size() - 1));
-                numSeen += block.size();
-                return block.iterator();
-            }
-        }, false);
+        return StreamSupport.stream(new SmartQuerySpliterator(), false);
     }
 
-    private static <E extends SQLEntity> SmartQuery<E> pagingGreaterThanLastValue(E lastValue,
-                                                                                  SmartQuery<E> query,
-                                                                                  int numValuesSeen,
-                                                                                  @Nullable Integer maxItemsInPage) {
-        // adjusting the limit is tricky
-        Optional<Integer> limit = Optional.of(query.limit).filter(value -> value != 0);
-        Optional<Integer> pageSize = Optional.ofNullable(maxItemsInPage);
-        // adjust the query limit by the number of values we have already seen
-        limit = limit.map(value -> value - numValuesSeen);
-        if (limit.isPresent() || pageSize.isPresent()) {
-            if (limit.map(value -> value <= 0).orElse(false)) {
-                return query.fail();
-            }
-            query = query.limit(Math.min(limit.orElse(Integer.MAX_VALUE), pageSize.orElse(Integer.MAX_VALUE)));
-        } else {
-            query.limit(0);
+    private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
+        private E lastValue = null;
+        private TaskContext taskContext = TaskContext.get();
+
+        @Override
+        public int characteristics() {
+            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
         }
 
-        // no last value => we query everything
-        if (lastValue == null) {
-            return query;
-        }
-        // we already saw some values, so no need to skip more
-        query.skip = 0;
-
-        // create and install the filter
-        Object[] leftHandSide = new Object[query.orderBys.size()];
-        Object[] rightHandSide = new Object[query.orderBys.size()];
-        for (int i = 0; i < query.orderBys.size(); i++) {
-            Mapping mapping = query.orderBys.get(i).getFirst();
-            Object value = lastValue.getDescriptor().getProperty(mapping).getValue(lastValue);
-            if (query.orderBys.get(i).getSecond().booleanValue()) {
-                // the order by is ascending -> COLUMN > lastvalue.column
-                leftHandSide[i] = mapping;
-                rightHandSide[i] = value;
-            } else {
-                // lastvalue.column > COLUMN
-                rightHandSide[i] = mapping;
-                leftHandSide[i] = value;
+        @Override
+        protected Iterator<E> pullNextBlock() {
+            if (!taskContext.isActive()) {
+                return null;
             }
+
+            List<E> block = queryNextBlock();
+            if (!block.isEmpty()) {
+                lastValue = block.get(block.size() - 1);
+            }
+            return block.iterator();
         }
-        return query.where(OMA.FILTERS.gt(new RowValue(leftHandSide), new RowValue(rightHandSide)));
+
+        private List<E> queryNextBlock() {
+            SmartQuery<E> effectiveQuery = copy().limit(MAX_LIST_SIZE);
+
+            if (lastValue == null) {
+                return effectiveQuery.queryList();
+            }
+            CompoundValue leftHandSide = new CompoundValue();
+            CompoundValue rightHandSide = new CompoundValue();
+
+            boolean idColumnSeen = false;
+            for (Tuple<Mapping, Boolean> sorting : orderBys) {
+                Mapping sortColumn = sorting.getFirst();
+                boolean sortAscending = sorting.getSecond().booleanValue();
+                Object value = lastValue.getDescriptor().getProperty(sortColumn).getValue(lastValue);
+                idColumnSeen |= BaseEntity.ID.equals(sortColumn);
+                if (sortAscending) {
+                    // the order by is ascending -> COLUMN > lastvalue.column
+                    leftHandSide.addComponent(sortColumn);
+                    rightHandSide.addComponent(value);
+                } else {
+                    // the order by is descending -> lastvalue.column > COLUMN
+                    leftHandSide.addComponent(value);
+                    rightHandSide.addComponent(sortColumn);
+                }
+            }
+
+            if (!idColumnSeen) {
+                leftHandSide.addComponent(BaseEntity.ID);
+                rightHandSide.addComponent(lastValue.getId());
+            }
+
+            return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
+        }
     }
 
     @Override
