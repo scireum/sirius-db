@@ -614,7 +614,10 @@ public class Finder extends QueryBuilder<Finder> {
 
         @Override
         public void close() {
-            iterator.get().close();
+            MongoCursor<Document> mongoCursor = cursorHolder.get();
+            if (mongoCursor != null) {
+                mongoCursor.close();
+            }
         }
 
         private void handleTracingAndReporting(String collection, Watch watch) {
