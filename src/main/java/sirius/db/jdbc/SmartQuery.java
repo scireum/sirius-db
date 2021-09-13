@@ -257,40 +257,16 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *
      * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
+     * @deprecated Use {@link #streamBlockwise()} instead.
      */
+    @Deprecated
     public void iterateBlockwise(Predicate<E> handler) {
         if (forceFail) {
             return;
         }
 
-        // make sure we got a total order
-        orderAsc(BaseEntity.ID);
-
-        ValueHolder<E> lastValue = ValueHolder.of(null);
-        AtomicInteger numSeen = new AtomicInteger(0);
-
-        AtomicBoolean keepGoing = new AtomicBoolean(true);
-        TaskContext context = TaskContext.get();
-        while (keepGoing.get() && context.isActive()) {
-            keepGoing.set(false);
-            Timeout timeout = new Timeout(queryIterateTimeout);
-            pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen.get(), null).iterate(entity -> {
-                if (!handler.test(entity)) {
-                    // As soon as the handler returns false, we're done and can abort entirely...
-                    return false;
-                }
-                numSeen.incrementAndGet();
-
-                if (timeout.isReached()) {
-                    // We abort this result set to avoid a hard timeout, but we keep going with another query
-                    lastValue.set(entity);
-                    keepGoing.set(true);
-                    return false;
-                }
-
-                return true;
-            });
-        }
+        streamBlockwise().takeWhile(handler).forEach(ignored -> {
+        });
     }
 
     /**
@@ -298,7 +274,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *
      * @param handler the handler to be invoked for each item in the result
      * @see #iterateBlockwise(Predicate)
+     * @deprecated Use {@link #streamBlockwise()} instead.
      */
+    @Deprecated
     public void iterateBlockwiseAll(Consumer<E> handler) {
         iterateBlockwise(entity -> {
             handler.accept(entity);
