@@ -25,7 +25,6 @@ import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
-import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
@@ -45,7 +44,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.TreeMap;
@@ -794,9 +792,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             } else {
                 throw Exceptions.createHandled()
                                 .to(OMA.LOG)
-                                .withSystemErrorMessage(
-                                        "Only use multiple arguments in 'fields' and 'count' in "
-                                        + "combination with the 'distinct' statement")
+                                .withSystemErrorMessage("Only use multiple arguments in 'fields' and 'count' in "
+                                                        + "combination with the 'distinct' statement")
                                 .handle();
             }
         } else {
