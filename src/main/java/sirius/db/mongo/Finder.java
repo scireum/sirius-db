@@ -578,7 +578,6 @@ public class Finder extends QueryBuilder<Finder> {
             this.shouldHandleTracing = Monoflop.create();
             this.collection = collection;
             this.watch = Watch.start();
-            delegate = null;
         }
 
         private Spliterator<Document> getDelegate() {
