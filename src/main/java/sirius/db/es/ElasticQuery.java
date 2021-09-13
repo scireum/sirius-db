@@ -82,6 +82,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * {@link #SCROLL_TTL_SECONDS}.
      */
     private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
+
     private static final String KEY_SCROLL_ID = "_scroll_id";
     private static final String KEY_DOC_ID = "_doc";
 
@@ -151,7 +152,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private JSONObject response;
 
     /**
-     * Used to describe inner hits which are determine for field collapsing.
+     * Used to describe inner hits which are determined for field collapsing.
      * <p>
      * Note that there is no <tt>build()</tt> method, as the constructor already applies the object to the query.
      */
@@ -225,7 +226,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * Note that this query will inherit all filters, constraints, sorts and aggregations. After
      * the copy has been performed, both queries can be used and modified independently. However,
-     * note that we perform a shallow copy. Therefore if a query is e.g. supplier with an inner hits
+     * note that we perform a shallow copy. Therefore, if a query is e.g. supplier with an inner hits
      * builder (via {@link #addCollapsedInnerHits(String, int)} and then copied, the builder will
      * be shared internally and modifying it, will affect both queries - therefore modifications like
      * this have to happen after a copy.
@@ -925,15 +926,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (elastic.isRouted(descriptor, accessMode)) {
             if (Strings.isEmpty(filteredRouting) && !unrouted) {
                 Elastic.LOG.WARN("""
-                                         Trying query an entity of type '%s' without providing a routing! \
-                                         This will most probably return an invalid result!
+                                         Trying query an entity of type '%s' without providing a routing! This will most probably return an invalid result!
                                          %s
                                          """, descriptor.getType().getName(), this, ExecutionPoint.snapshot());
             }
         } else if (Strings.isFilled(filteredRouting)) {
             Elastic.LOG.WARN("""
-                                     Trying query an entity of type '%s' while providing a routing! \
-                                     This entity is unrouted! This will most probably return an invalid result!
+                                     Trying query an entity of type '%s' while providing a routing! This entity is unrouted! This will most probably return an invalid result!
                                      %s
                                      """, descriptor.getType().getName(), this, ExecutionPoint.snapshot());
         }
