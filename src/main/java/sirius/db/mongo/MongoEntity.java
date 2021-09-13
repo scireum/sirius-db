@@ -54,7 +54,7 @@ public abstract class MongoEntity extends BaseEntity<String> {
         for (Mapping withinField : within) {
             finder.where(withinField, getDescriptor().getProperty(withinField).getValueForDatasource(Mango.class,this));
         }
-        return finder.countIn(getDescriptor().getRelationName()) == 0;
+        return finder.singleIn(getDescriptor().getRelationName()).isEmpty();
     }
 
     @SuppressWarnings("unchecked")
