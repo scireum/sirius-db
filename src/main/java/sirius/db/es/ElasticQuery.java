@@ -69,7 +69,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * This essentially instructs ES to keep a scroll response open for the given timeout
      */
-    private static final int SCROLL_TTL_SECONDS = 60 * 15;
+    private static final int SCROLL_TTL_SECONDS = 60 * 60;
 
     /**
      * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD} entities at once and hope to
