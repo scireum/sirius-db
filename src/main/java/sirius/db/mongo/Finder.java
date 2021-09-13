@@ -618,6 +618,8 @@ public class Finder extends QueryBuilder<Finder> {
             if (mongoCursor != null) {
                 mongoCursor.close();
             }
+
+            cursorHolder.set(null);
         }
 
         private void handleTracingAndReporting(String collection, Watch watch) {
