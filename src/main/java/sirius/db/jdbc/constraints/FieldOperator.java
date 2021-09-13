@@ -19,11 +19,11 @@ import java.util.List;
  */
 class FieldOperator extends SQLConstraint {
 
-    private final RowValue leftHandSide;
-    private final RowValue rightHandSide;
+    private final CompoundValue leftHandSide;
+    private final CompoundValue rightHandSide;
     private final String operator;
 
-    protected FieldOperator(RowValue leftHandSide, String operator, RowValue rightHandSide) {
+    protected FieldOperator(CompoundValue leftHandSide, String operator, CompoundValue rightHandSide) {
         this.leftHandSide = leftHandSide;
         this.operator = operator;
         this.rightHandSide = rightHandSide;

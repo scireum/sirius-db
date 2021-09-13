@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc;
 
-import sirius.db.jdbc.constraints.RowValue;
+import sirius.db.jdbc.constraints.CompoundValue;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
