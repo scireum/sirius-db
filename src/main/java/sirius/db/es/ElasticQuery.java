@@ -1362,8 +1362,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         // Note we use this "hack" of a stream of streams + flatMap so that our spliterator is guaranteed to
         // be closed once the stream is terminated. Note that Stream actually implements AutoClosable - however,
-        // almost no stream is wrapped in a proper ty-with-resources - and even IntelliJ doesn't care if the
-        // stream remains open. However, Stream.flatMap has this nice quarantee of closing any incoming stream
+        // almost no stream is wrapped in a proper try-with-resources - and even IntelliJ doesn't care if the
+        // stream remains open. However, Stream.flatMap has this nice guarantee of closing any incoming stream
         // automatically...
         ElasticScrollingSpliterator spliterator = new ElasticScrollingSpliterator();
         return Stream.of(StreamSupport.stream(spliterator, false).onClose(spliterator::close))

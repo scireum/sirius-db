@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 /**
  * Base class for queries within mixing.
  * <p>
- * Note that next to obtaining single row results our checking the existence or an entity or performing counts,
+ * Note that next to obtaining single row results or checking the existence or an entity or performing counts,
  * this provides three main APIs of obtaining multiple entities.
  * <p>
  * <ul>
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * </li>
  * <li>
  *     For very large result sets use {@link #streamBlockwise()}, but be aware, that this might come with less
- *     quarantees, as the result is fetched and processed in blocks (hence its name).
+ *     guarantees, as the result is fetched and processed in blocks (hence its name).
  * </li>
  * </ul>
  *
@@ -149,7 +149,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      * <p>
      * Note that this method must only be used for results with a known size which is smaller than
      * {@link #MAX_LIST_SIZE}. Larger results should be processed using {@link #iterate(Predicate)} or
-     * {@link #iterateAll(Consumer)} or even with {@link #streamBlockwise()} which is virtually capable or processing
+     * {@link #iterateAll(Consumer)} or even with {@link #streamBlockwise()} which is virtually capable of processing
      * results of any size.
      *
      * @return a list of items in the query or an empty list if the query did not match any items
@@ -189,11 +189,11 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     }
 
     /**
-     * Returns a stream containing of all items in the result.
+     * Returns a stream containing all items in the result.
      * <p>
      * Note that this method must only be used for results with a known size which is smaller than
      * {@link #MAX_LIST_SIZE}. Larger results should be processed using {@link #iterate(Predicate)} or
-     * {@link #iterateAll(Consumer)} or even with {@link #streamBlockwise()} which is virtually capable or processing
+     * {@link #iterateAll(Consumer)} or even with {@link #streamBlockwise()} which is virtually capable of processing
      * results of any size.
      *
      * @return a stream of items in the query
