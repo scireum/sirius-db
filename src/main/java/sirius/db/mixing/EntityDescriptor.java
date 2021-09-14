@@ -151,7 +151,7 @@ public class EntityDescriptor {
     protected PriorityCollector<Consumer<Object>> beforeSaveHandlerCollector = PriorityCollector.create();
 
     /**
-     * A list of all additional handlers to be executed once an entity is was saved
+     * A list of all additional handlers to be executed once an entity is saved
      */
     protected final List<Consumer<Object>> afterSaveHandlers = new ArrayList<>();
 
@@ -292,10 +292,10 @@ public class EntityDescriptor {
     }
 
     /**
-     * Returns the "end user friendly" name of the entity.
+     * Returns the "end-user friendly" name of the entity.
      * <p>
      * This is determined by calling <tt>NLS.get()</tt>
-     * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore
+     * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore,
      * the property keys for "org.acme.model.Customer" would be the class name and "Model.customer". The fallback
      * key will be the same which is tried for a property named "customer" and can therefore be reused.
      *
@@ -438,7 +438,7 @@ public class EntityDescriptor {
     }
 
     /**
-     * Executes all <tt>beforedSaveHandlers</tt> known to the descriptor.
+     * Executes all <tt>beforeSaveHandlers</tt> known to the descriptor.
      *
      * @param entity the entity to perform the handlers on
      */
@@ -1136,7 +1136,7 @@ public class EntityDescriptor {
      * with a {@link ComplexDelete} annotation. This way even a <b>Mixin</b> can mark an entity
      * as complex.
      * <p>
-     * If an entity has cascade delete actions but should not be considered complex, an annotation with
+     * If an entity has cascaded delete actions but should not be considered complex, an annotation with
      * <tt>value</tt> set to <tt>false</tt> can be placed on the entity class.
      *
      * @return <tt>true</tt> if entities of this descriptor are complex to delete, <tt>false</tt>

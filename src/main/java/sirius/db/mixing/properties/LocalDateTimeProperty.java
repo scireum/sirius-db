@@ -151,7 +151,7 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
      * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
      * <p>
      * The initial value will commonly be a temporal value and thus not a constant.
-     * Therefore we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     * Therefore, we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
      */
     @Override
     protected void determineDefaultValue() {
