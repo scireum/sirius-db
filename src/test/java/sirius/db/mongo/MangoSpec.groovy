@@ -199,7 +199,7 @@ class MangoSpec extends BaseSpecification {
         mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 50).exists() == false
     }
 
-    def "MongoQuery.stream() works in mango"() {
+    def "MongoQuery.streamBlockwise() works in mango"() {
         when:
         mango.select(MangoListTestEntity.class).delete()
         and:
@@ -209,17 +209,13 @@ class MangoSpec extends BaseSpecification {
             mango.update(entityToCreate)
         }
         and:
-        MongoQuery<MangoListTestEntity> query = mango.
-                select(MangoListTestEntity.class).
-                orderDesc(MangoListTestEntity.COUNTER)
+        MongoQuery<MangoListTestEntity> query = mango.select(MangoListTestEntity.class)
         then:
-        query.stream().count() == 10
-        and:
-        query.skip(3).limit(0).stream().count() == 7
-        and:
-        query.skip(0).limit(9).stream().count() == 9
-        and:
-        query.skip(4).limit(1).stream().allMatch({ it.counter == 5 });
+        query.streamBlockwise().count() == 10
+        when:
+        query.skip(3).limit(0).streamBlockwise().count() == 7
+        then:
+        thrown(UnsupportedOperationException)
     }
 
     def "wasCreated() works in mango"() {

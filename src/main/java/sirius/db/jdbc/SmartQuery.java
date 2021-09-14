@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc;
 
-import sirius.db.jdbc.constraints.RowValue;
+import sirius.db.jdbc.constraints.CompoundValue;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
@@ -25,7 +25,6 @@ import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
-import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
@@ -45,7 +44,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.TreeMap;
@@ -257,40 +255,16 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *
      * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
+     * @deprecated Use {@link #streamBlockwise()} instead.
      */
+    @Deprecated
     public void iterateBlockwise(Predicate<E> handler) {
         if (forceFail) {
             return;
         }
 
-        // make sure we got a total order
-        orderAsc(BaseEntity.ID);
-
-        ValueHolder<E> lastValue = ValueHolder.of(null);
-        AtomicInteger numSeen = new AtomicInteger(0);
-
-        AtomicBoolean keepGoing = new AtomicBoolean(true);
-        TaskContext context = TaskContext.get();
-        while (keepGoing.get() && context.isActive()) {
-            keepGoing.set(false);
-            Timeout timeout = new Timeout(queryIterateTimeout);
-            pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen.get(), null).iterate(entity -> {
-                if (!handler.test(entity)) {
-                    // As soon as the handler returns false, we're done and can abort entirely...
-                    return false;
-                }
-                numSeen.incrementAndGet();
-
-                if (timeout.isReached()) {
-                    // We abort this result set to avoid a hard timeout, but we keep going with another query
-                    lastValue.set(entity);
-                    keepGoing.set(true);
-                    return false;
-                }
-
-                return true;
-            });
-        }
+        streamBlockwise().takeWhile(handler).forEach(ignored -> {
+        });
     }
 
     /**
@@ -298,7 +272,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *
      * @param handler the handler to be invoked for each item in the result
      * @see #iterateBlockwise(Predicate)
+     * @deprecated Use {@link #streamBlockwise()} instead.
      */
+    @Deprecated
     public void iterateBlockwiseAll(Consumer<E> handler) {
         iterateBlockwise(entity -> {
             handler.accept(entity);
@@ -306,76 +282,77 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         });
     }
 
-    /**
-     * @implNote This implementation uses block-wise processing with multiple SQL queries if the result has a reasonable
-     * size. This means that it cannot provide the usual ACID guarantees.
-     */
     @Override
-    public Stream<E> stream() {
-        return StreamSupport.stream(new PullBasedSpliterator<>() {
-            private final ValueHolder<E> lastValue = ValueHolder.of(null);
-            private int numSeen = 0;
+    public Stream<E> streamBlockwise() {
+        if (forceFail) {
+            return Stream.empty();
+        }
 
-            @Override
-            public int characteristics() {
-                return Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.IMMUTABLE;
-            }
+        if (limit > 0) {
+            throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
+        }
+        if (skip > 0) {
+            throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
+        }
 
-            @Override
-            protected Iterator<E> pullNextBlock() {
-                List<E> block = pagingGreaterThanLastValue(lastValue.get(), copy(), numSeen, 1000).queryList();
-                if (block == null || block.isEmpty()) {
-                    return null;
-                }
-                lastValue.set(block.get(block.size() - 1));
-                numSeen += block.size();
-                return block.iterator();
-            }
-        }, false);
+        return StreamSupport.stream(new SmartQuerySpliterator(), false);
     }
 
-    private static <E extends SQLEntity> SmartQuery<E> pagingGreaterThanLastValue(E lastValue,
-                                                                                  SmartQuery<E> query,
-                                                                                  int numValuesSeen,
-                                                                                  @Nullable Integer maxItemsInPage) {
-        // adjusting the limit is tricky
-        Optional<Integer> limit = Optional.of(query.limit).filter(value -> value != 0);
-        Optional<Integer> pageSize = Optional.ofNullable(maxItemsInPage);
-        // adjust the query limit by the number of values we have already seen
-        limit = limit.map(value -> value - numValuesSeen);
-        if (limit.isPresent() || pageSize.isPresent()) {
-            if (limit.map(value -> value <= 0).orElse(false)) {
-                return query.fail();
-            }
-            query = query.limit(Math.min(limit.orElse(Integer.MAX_VALUE), pageSize.orElse(Integer.MAX_VALUE)));
-        } else {
-            query.limit(0);
+    private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
+        private E lastValue = null;
+        private TaskContext taskContext = TaskContext.get();
+
+        @Override
+        public int characteristics() {
+            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
         }
 
-        // no last value => we query everything
-        if (lastValue == null) {
-            return query;
-        }
-        // we already saw some values, so no need to skip more
-        query.skip = 0;
-
-        // create and install the filter
-        Object[] leftHandSide = new Object[query.orderBys.size()];
-        Object[] rightHandSide = new Object[query.orderBys.size()];
-        for (int i = 0; i < query.orderBys.size(); i++) {
-            Mapping mapping = query.orderBys.get(i).getFirst();
-            Object value = lastValue.getDescriptor().getProperty(mapping).getValue(lastValue);
-            if (query.orderBys.get(i).getSecond().booleanValue()) {
-                // the order by is ascending -> COLUMN > lastvalue.column
-                leftHandSide[i] = mapping;
-                rightHandSide[i] = value;
-            } else {
-                // lastvalue.column > COLUMN
-                rightHandSide[i] = mapping;
-                leftHandSide[i] = value;
+        @Override
+        protected Iterator<E> pullNextBlock() {
+            if (!taskContext.isActive()) {
+                return null;
             }
+
+            List<E> block = queryNextBlock();
+            if (!block.isEmpty()) {
+                lastValue = block.get(block.size() - 1);
+            }
+            return block.iterator();
         }
-        return query.where(OMA.FILTERS.gt(new RowValue(leftHandSide), new RowValue(rightHandSide)));
+
+        private List<E> queryNextBlock() {
+            SmartQuery<E> effectiveQuery = copy().limit(MAX_LIST_SIZE);
+
+            if (lastValue == null) {
+                return effectiveQuery.queryList();
+            }
+            CompoundValue leftHandSide = new CompoundValue();
+            CompoundValue rightHandSide = new CompoundValue();
+
+            boolean idColumnSeen = false;
+            for (Tuple<Mapping, Boolean> sorting : orderBys) {
+                Mapping sortColumn = sorting.getFirst();
+                boolean sortAscending = sorting.getSecond().booleanValue();
+                Object value = lastValue.getDescriptor().getProperty(sortColumn).getValue(lastValue);
+                idColumnSeen |= BaseEntity.ID.equals(sortColumn);
+                if (sortAscending) {
+                    // the order by is ascending -> COLUMN > lastvalue.column
+                    leftHandSide.addComponent(sortColumn);
+                    rightHandSide.addComponent(value);
+                } else {
+                    // the order by is descending -> lastvalue.column > COLUMN
+                    leftHandSide.addComponent(value);
+                    rightHandSide.addComponent(sortColumn);
+                }
+            }
+
+            if (!idColumnSeen) {
+                leftHandSide.addComponent(BaseEntity.ID);
+                rightHandSide.addComponent(lastValue.getId());
+            }
+
+            return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
+        }
     }
 
     @Override
@@ -815,9 +792,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             } else {
                 throw Exceptions.createHandled()
                                 .to(OMA.LOG)
-                                .withSystemErrorMessage(
-                                        "Only use multiple arguments in 'fields' and 'count' in "
-                                        + "combination with the 'distinct' statement")
+                                .withSystemErrorMessage("Only use multiple arguments in 'fields' and 'count' in "
+                                                        + "combination with the 'distinct' statement")
                                 .handle();
             }
         } else {

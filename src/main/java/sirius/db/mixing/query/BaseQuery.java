@@ -25,6 +25,21 @@ import java.util.stream.Stream;
 
 /**
  * Base class for queries within mixing.
+ * <p>
+ * Note that next to obtaining single row results or checking the existence or an entity or performing counts,
+ * this provides three main APIs of obtaining multiple entities.
+ * <p>
+ * <ul>
+ * <li>For smaller result sets (less than 1000 results), use {@link #queryList()} or {@link #streamList()}</li>
+ * <li>
+ *     For medium sized results, which can be processed quickly, without hitting any database timeouts
+ *     (e.g. in less than one hour) use {@link #iterate(Predicate)} or {@link #iterateAll(Consumer)}.
+ * </li>
+ * <li>
+ *     For very large result sets use {@link #streamBlockwise()}, but be aware, that this might come with less
+ *     guarantees, as the result is fetched and processed in blocks (hence its name).
+ * </li>
+ * </ul>
  *
  * @param <Q> the generic parameter of the effective query class
  * @param <E> the generic type of the entity being queried
@@ -130,50 +145,12 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     }
 
     /**
-     * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
-     * <p>
-     * Note that this method is intended for large results as not all items in the result need to be
-     * kept in memory when iterating through them.
-     *
-     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
-     *                to continue processing or <tt>false</tt> to abort processing of the result set.
-     */
-    public abstract void iterate(Predicate<E> handler);
-
-    /**
-     * Executes the query and returns the matched entities using the stream interface.
-     * <p>
-     * Depending on the implementation, this may have two advantages over {@link #iterate} and {@link #queryList}:
-     * <ul>
-     *     <li>There is no need to hold all matched items in memory</li>
-     *     <li>It is widely supported in the Java world</li>
-     * </ul>
-     * However, the implementation may use a block-wise processing, voiding guarantees about atomicity.
-     *
-     * @return the stream of matched entities
-     */
-    public abstract Stream<E> stream();
-
-    /**
-     * Calls the given consumer on all items in the result.
-     * <p>
-     * Note that this method is intended for large results as not all items in the result need to be
-     * kept in memory when iterating through them.
-     *
-     * @param consumer the handler to be invoked for each item in the result
-     */
-    public void iterateAll(Consumer<E> consumer) {
-        iterate(r -> {
-            consumer.accept(r);
-            return true;
-        });
-    }
-
-    /**
      * Returns a list of all items in the result.
      * <p>
-     * Note that large results should be processed using {@link #iterate(Predicate)} or
-     * {@link #iterateAll(Consumer)} as they are more memory efficient.
+     * Note that this method must only be used for results with a known size which is smaller than
+     * {@link #MAX_LIST_SIZE}. Larger results should be processed using {@link #iterate(Predicate)} or
+     * {@link #iterateAll(Consumer)} or even with {@link #streamBlockwise()} which is virtually capable of processing
+     * results of any size.
      *
      * @return a list of items in the query or an empty list if the query did not match any items
      */
@@ -210,6 +187,66 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
 
         return result;
     }
+
+    /**
+     * Returns a stream containing all items in the result.
+     * <p>
+     * Note that this method must only be used for results with a known size which is smaller than
+     * {@link #MAX_LIST_SIZE}. Larger results should be processed using {@link #iterate(Predicate)} or
+     * {@link #iterateAll(Consumer)} or even with {@link #streamBlockwise()} which is virtually capable of processing
+     * results of any size.
+     *
+     * @return a stream of items in the query
+     */
+    public Stream<E> streamList() {
+        return queryList().stream();
+    }
+
+    /**
+     * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
+     * <p>
+     * Note that this method is intended for medium-sized results as not all items in the result need to be
+     * kept in memory when iterating through them. Note however, that for verly large result sets, a method
+     * like {@link #streamBlockwise()} might be more appropriate, as it ensures that underlying resources
+     * like <tt>cursors</tt> or <tt>database connections</tt> cannot run into a timeout.
+     *
+     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
+     *                to continue processing or <tt>false</tt> to abort processing of the result set.
+     */
+    public abstract void iterate(Predicate<E> handler);
+
+    /**
+     * Calls the given consumer on all items in the result.
+     * <p>
+     * Note that this method is intended for medium-sized results just like {@link #iterate(Predicate)}.
+     *
+     * @param consumer the handler to be invoked for each item in the result
+     */
+    public void iterateAll(Consumer<E> consumer) {
+        iterate(r -> {
+            consumer.accept(r);
+            return true;
+        });
+    }
+
+    /**
+     * Fetches the effective result in a blockwise manner.
+     * <p>
+     * Adapts the underlying query, so that the underlying database only fetches and provides a block of matching
+     * entities. Once these are processed, the next block will be fetched.
+     * <p>
+     * This has the benefit, that results of virtually any size can be processed in a safe manner, without locking
+     * any database resources and also without the risk of running into a timout of an underlying resource.
+     * <p>
+     * While we try hard to keep the result consistent, there is no way to guarantee this. There is a possibility,
+     * that we either miss an entity or even process an entity twice if a concurrent modification happens. Basically,
+     * you might get <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Non-repeatable_reads">
+     * non-repeatable reads</a> or <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Phantom_reads">
+     * phantom reads</a>.
+     *
+     * @return the stream of matched entities
+     */
+    public abstract Stream<E> streamBlockwise();
 
     protected void failOnOverflow(List<E> result) {
         if (result.size() > MAX_LIST_SIZE) {

@@ -32,7 +32,7 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     @Override
     protected SQLConstraint eqValue(Mapping field, Object value) {
-        return eq(new RowValue(field), new RowValue(value));
+        return eq(new CompoundValue(field), new CompoundValue(value));
     }
 
     /**
@@ -42,13 +42,13 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint eq(RowValue leftHandSide, RowValue rightHandSide) {
+    public SQLConstraint eq(CompoundValue leftHandSide, CompoundValue rightHandSide) {
         return new FieldOperator(leftHandSide, "=", rightHandSide);
     }
 
     @Override
     protected SQLConstraint neValue(Mapping field, Object value) {
-        return ne(new RowValue(field), new RowValue(value));
+        return ne(new CompoundValue(field), new CompoundValue(value));
     }
 
     /**
@@ -58,13 +58,13 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint ne(RowValue leftHandSide, RowValue rightHandSide) {
+    public SQLConstraint ne(CompoundValue leftHandSide, CompoundValue rightHandSide) {
         return new FieldOperator(leftHandSide, "<>", rightHandSide);
     }
 
     @Override
     protected SQLConstraint gtValue(Mapping field, Object value, boolean orEqual) {
-        return gt(new RowValue(field), new RowValue(value), orEqual);
+        return gt(new CompoundValue(field), new CompoundValue(value), orEqual);
     }
 
     /**
@@ -74,7 +74,7 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint gt(RowValue leftHandSide, RowValue rightHandSide) {
+    public SQLConstraint gt(CompoundValue leftHandSide, CompoundValue rightHandSide) {
         return gt(leftHandSide, rightHandSide, false);
     }
 
@@ -85,17 +85,17 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint gte(RowValue leftHandSide, RowValue rightHandSide) {
+    public SQLConstraint gte(CompoundValue leftHandSide, CompoundValue rightHandSide) {
         return gt(leftHandSide, rightHandSide, true);
     }
 
-    protected SQLConstraint gt(RowValue leftHandSide, RowValue rightHandSide, boolean orEqual) {
+    protected SQLConstraint gt(CompoundValue leftHandSide, CompoundValue rightHandSide, boolean orEqual) {
         return new FieldOperator(leftHandSide, orEqual ? ">=" : ">", rightHandSide);
     }
 
     @Override
     protected SQLConstraint ltValue(Mapping field, Object value, boolean orEqual) {
-        return lt(new RowValue(field), new RowValue(value), orEqual);
+        return lt(new CompoundValue(field), new CompoundValue(value), orEqual);
     }
 
     /**
@@ -105,7 +105,7 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint lt(RowValue leftHandSide, RowValue rightHandSide) {
+    public SQLConstraint lt(CompoundValue leftHandSide, CompoundValue rightHandSide) {
         return lt(leftHandSide, rightHandSide, false);
     }
 
@@ -116,11 +116,11 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @param rightHandSide the second row value
      * @return the generated constraint
      */
-    public SQLConstraint lte(RowValue leftHandSide, RowValue rightHandSide) {
+    public SQLConstraint lte(CompoundValue leftHandSide, CompoundValue rightHandSide) {
         return lt(leftHandSide, rightHandSide, true);
     }
 
-    protected SQLConstraint lt(RowValue leftHandSide, RowValue rightHandSide, boolean orEqual) {
+    protected SQLConstraint lt(CompoundValue leftHandSide, CompoundValue rightHandSide, boolean orEqual) {
         return new FieldOperator(leftHandSide, orEqual ? "<=" : "<", rightHandSide);
     }
 

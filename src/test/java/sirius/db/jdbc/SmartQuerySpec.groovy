@@ -8,7 +8,7 @@
 
 package sirius.db.jdbc
 
-import sirius.db.jdbc.constraints.RowValue
+import sirius.db.jdbc.constraints.CompoundValue
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
@@ -98,40 +98,18 @@ class SmartQuerySpec extends BaseSpecification {
                 collect(Collectors.toList()) == ["Test", "Hello", "World"]
     }
 
-    def "stream() works"() {
+    def "streamBlockwise() works"() {
         when:
         SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
                                                   .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         then:
-        qry.stream().
+        qry.streamBlockwise().
                 map({ it.getValue() }).
                 collect(Collectors.toList()) == ["Test", "Hello", "World"]
-        and:
-        qry.skip(1).limit(1).stream().allMatch({ it.getValue() == "Hello" })
-
         when:
-        SmartQuery<SmartQueryTestLargeTableEntity> query = oma.select(SmartQueryTestLargeTableEntity.class)
-                                                              .orderAsc(SmartQueryTestLargeTableEntity.TEST_NUMBER)
+        qry.skip(1).limit(1).streamBlockwise().count()
         then:
-        query.skip(1).limit(0).stream().count() == 1099
-        and:
-        query.skip(1).limit(1098).stream().count() == 1098
-    }
-
-    def "blockwise iteration works"() {
-        given:
-        SmartQuery<SmartQueryTestLargeTableEntity> qry = oma.select(SmartQueryTestLargeTableEntity.class)
-                                                            .skip(1)
-                                                            .orderAsc(SmartQueryTestLargeTableEntity.TEST_NUMBER)
-        and:
-        List<SmartQueryTestEntity> result = new ArrayList<>()
-        when:
-        qry.iterateBlockwiseAll({
-            Thread.sleep(5)
-            result.add(it)
-        })
-        then:
-        result.size() == 1099
+        thrown(UnsupportedOperationException)
     }
 
     def "count returns the number of entity"() {
@@ -474,16 +452,16 @@ class SmartQuerySpec extends BaseSpecification {
     def "eq with row values works"() {
         when:
         def items = oma.select(SmartQueryTestEntity.class).
-                where(OMA.FILTERS.eq(new RowValue(SmartQueryTestEntity.VALUE, SmartQueryTestEntity.TEST_NUMBER),
-                                     new RowValue("Test", 1))).queryList()
+                where(OMA.FILTERS.eq(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                                     new CompoundValue("Test").addComponent(1))).queryList()
         then:
         items.size() == 1
         and:
         items.get(0).testNumber == 1
         when:
         items = oma.select(SmartQueryTestEntity.class).
-                where(OMA.FILTERS.eq(new RowValue("Test", SmartQueryTestEntity.TEST_NUMBER),
-                                     new RowValue(SmartQueryTestEntity.VALUE, 1))).queryList()
+                where(OMA.FILTERS.eq(new CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                                     new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(1))).queryList()
         then:
         items.size() == 1
         and:
@@ -494,8 +472,8 @@ class SmartQuerySpec extends BaseSpecification {
         when:
         def items = oma.
                 select(SmartQueryTestEntity.class).
-                where(OMA.FILTERS.gt(new RowValue(SmartQueryTestEntity.VALUE, 2),
-                                     new RowValue("Test", SmartQueryTestEntity.TEST_NUMBER))).
+                where(OMA.FILTERS.gt(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(2),
+                                     new CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER))).
                 orderAsc(SmartQueryTestEntity.VALUE).
                 queryList()
         then:
