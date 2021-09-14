@@ -22,6 +22,7 @@ import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.Sirius;
@@ -46,6 +47,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -401,12 +403,18 @@ public class EntityDescriptor {
 
     /**
      * Determines if the value for the property was changed since it was last fetched from the database.
+     * <p>
+     * For {@link LocalDateTimeProperty}, we consider seconds as the smallest unit for comparison,
+     * fully ignoring milliseconds.
      *
      * @param entity   the entity to check
      * @param property the property to check for
      * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
+        if (property instanceof LocalDateTimeProperty) {
+            return isChanged(entity, property, this::isLocalDateTimeEqual);
+        }
         return isChanged(entity, property, Objects::equals);
     }
 
@@ -456,6 +464,24 @@ public class EntityDescriptor {
         }
 
         return sortedBeforeSaveHandlers;
+    }
+
+    private boolean isLocalDateTimeEqual(Object source, Object target) {
+        if (source == null && target == null) {
+            return true;
+        }
+
+        if (source instanceof LocalDateTime sourceDateTime && target instanceof LocalDateTime targetDateTime) {
+            if (sourceDateTime == null && targetDateTime != null) {
+                return false;
+            }
+            if (sourceDateTime != null && targetDateTime == null) {
+                return false;
+            }
+            return sourceDateTime.withNano(0).equals(targetDateTime.withNano(0));
+        }
+
+        return false;
     }
 
     /**
