@@ -46,19 +46,20 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected Object customTransform(Object value) {
-        if (value instanceof LocalDate) {
-            return Date.from(((LocalDate) value).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+        if (value instanceof LocalDate localDate) {
+            return Date.from(localDate.atStartOfDay().withNano(0).atZone(ZoneId.systemDefault()).toInstant());
         }
-        if (value instanceof LocalDateTime) {
-            return Date.from(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant());
+        if (value instanceof LocalDateTime localDateTime) {
+            return Date.from(localDateTime.withNano(0).atZone(ZoneId.systemDefault()).toInstant());
         }
-        if (value instanceof LocalTime) {
-            return Date.from(((LocalTime) value).atDate(LocalDate.now(ZoneId.systemDefault()))
-                                                .atZone(ZoneId.systemDefault())
-                                                .toInstant());
+        if (value instanceof LocalTime localTime) {
+            return Date.from(localTime.atDate(LocalDate.now(ZoneId.systemDefault()))
+                                      .withNano(0)
+                                      .atZone(ZoneId.systemDefault())
+                                      .toInstant());
         }
-        if (value instanceof Instant) {
-            return Date.from((Instant) value);
+        if (value instanceof Instant instant) {
+            return Date.from(Instant.ofEpochSecond(instant.getEpochSecond()));
         }
 
         return value;

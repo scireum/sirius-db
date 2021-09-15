@@ -125,10 +125,11 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
 
     @Override
     protected Object transformToMongo(Object object) {
-        if (object instanceof LocalDateTime localDateTime) {
-            return QueryBuilder.FILTERS.transform(localDateTime == null ? null : localDateTime.withNano(0));
+        if (!(object instanceof LocalDateTime)) {
+            return null;
         }
-        return null;
+
+        return QueryBuilder.FILTERS.transform(object);
     }
 
     @Override
