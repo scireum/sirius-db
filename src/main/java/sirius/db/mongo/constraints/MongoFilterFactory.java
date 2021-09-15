@@ -160,7 +160,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     /**
-     * Creates a constraint which ensures that the given field contains all of the given values.
+     * Creates a constraint which ensures that the given field contains all the given values.
      *
      * @param field  the field to filter on
      * @param values the values to check
@@ -188,7 +188,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      *
      * @param key        the name of the field to check
      * @param expression the regular expression to apply
-     * @param options    the options to apply like "i" to match case insensitive
+     * @param options    the options to apply like "i" to match case-insensitive
      * @return a filter representing the given operation
      */
     public MongoConstraint regex(Mapping key, Object expression, String options) {
@@ -253,7 +253,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      * <p>
      * If the given value is empty, no constraint will be generated.
      * <p>
-     * Due to the nature of the MongoDB implementation on full token matches are successfull. To provide a
+     * Due to the nature of the MongoDB implementation on full token matches are successful. To provide a
      * prefix search use {@link #prefix(Mapping, String)} and ensure that a proper index is present.
      *
      * @param value the token to search for
