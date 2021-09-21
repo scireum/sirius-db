@@ -16,6 +16,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.health.Exceptions;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Optional;
 
@@ -126,9 +127,20 @@ public abstract class BaseEntityCache<I extends Serializable, E extends BaseEnti
      *
      * @param entity the entity to purge
      */
-    public void remove(E entity) {
+    public void remove(@Nullable E entity) {
         if (entity != null && !entity.isNew()) {
             entityByIdCache.remove(entity.getIdAsString());
+        }
+    }
+
+    /**
+     * Purges the entity specified by its id from the cache.
+     *
+     * @param entityId the id of the entity to purge
+     */
+    public void removeById(@Nullable String entityId) {
+        if (Strings.isFilled(entityId)) {
+            entityByIdCache.remove(entityId);
         }
     }
 }
