@@ -138,7 +138,7 @@ public abstract class BaseEntityCache<I extends Serializable, E extends BaseEnti
      *
      * @param entityId the id of the entity to purge
      */
-    public void remove(@Nullable String entityId) {
+    public void removeById(@Nullable String entityId) {
         if (Strings.isFilled(entityId)) {
             entityByIdCache.remove(entityId);
         }
