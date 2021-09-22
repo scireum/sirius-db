@@ -196,6 +196,17 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     /**
+     * Builds a filter which represents an 'elemMatch' filter for the given array field and query.
+     *
+     * @param arrayField the array field to query for
+     * @param query      the query that at least one value in the array should match
+     * @return a filter representing the 'elemMatch' operation
+     */
+    public MongoConstraint elemMatch(Mapping arrayField, Document query) {
+        return new MongoConstraint(arrayField.toString(), new Document("$elemMatch", query));
+    }
+
+    /**
      * Builds a filter which represents a geospatial query.
      *
      * @param key               the name of the field to check
