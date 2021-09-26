@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Provides the {@link BaseMapper mapper} used to communicate with <tt>MongoDB</tt>.
@@ -186,14 +187,21 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             if (versioned) {
                 throw new OptimisticLockException();
             } else {
+                String changedProperties = entity.getDescriptor()
+                                                 .getProperties()
+                                                 .stream()
+                                                 .filter(property -> entity.getDescriptor().isChanged(entity, property))
+                                                 .map(Property::getName)
+                                                 .collect(Collectors.joining(", "));
                 throw Exceptions.handle()
                                 .to(Mongo.LOG)
                                 .withSystemErrorMessage("Tried to update the changed entity %s (%s),"
                                                         + " but actually nothing was changed in the database!"
                                                         + " There might be an error in one of its properties' transform or equals methods,"
-                                                        + " as the framework indicated a changed property.",
+                                                        + " as the framework indicated a changed property. The following properties are considered changed: %s",
                                                         entity,
-                                                        entity.getId())
+                                                        entity.getId(),
+                                                        changedProperties)
                                 .handle();
             }
         } else {
