@@ -26,6 +26,7 @@ import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.Sirius;
+import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.PriorityCollector;
@@ -557,16 +558,21 @@ public class EntityDescriptor {
      * @param entity the entity which is about to be deleted
      */
     public void beforeDelete(Object entity) {
+        TaskContext context = TaskContext.get();
         for (Property property : properties.values()) {
-            property.onBeforeDelete(entity);
+            if (context.isActive()) {
+                property.onBeforeDelete(entity);
+            }
         }
         for (Consumer<Object> handler : beforeDeleteHandlers) {
-            if (handler != null) {
+            if (handler != null && context.isActive()) {
                 handler.accept(entity);
             }
         }
         for (Consumer<Object> handler : cascadeDeleteHandlers) {
-            handler.accept(entity);
+            if (context.isActive()) {
+                handler.accept(entity);
+            }
         }
     }
 
