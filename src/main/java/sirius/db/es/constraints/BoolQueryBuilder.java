@@ -171,8 +171,8 @@ public class BoolQueryBuilder {
      *
      * @return the query as constraint
      */
-    @SuppressWarnings("squid:MethodCyclomaticComplexity")
-    @Explain("Splitting this method would most probably increase the complexity")
+    @SuppressWarnings({"squid:MethodCyclomaticComplexity","java:S1168"})
+    @Explain("Splitting this method would most probably increase the complexity. Also, we return null to indicate that no filter has been generated.")
     public JSONObject build() {
         int filters = filter == null ? 0 : filter.size();
         int musts = must == null ? 0 : must.size();
