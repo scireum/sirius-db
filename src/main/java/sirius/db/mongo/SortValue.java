@@ -15,6 +15,9 @@ import java.lang.annotation.Target;
 
 /**
  * Marks all properties to be included in {@link SortField#SORT_FIELD} to build a normalized sort field for MongoDB.
+ * <p>
+ * Note that if a <tt>SortValue</tt> cannot be used (e.g. in a shared composite), {@link CustomSortValues} can be
+ * used instead.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

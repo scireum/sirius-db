@@ -14,10 +14,14 @@ import sirius.db.mixing.annotations.BeforeSave;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.nls.NLS;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +55,14 @@ public class SortField extends Composite {
 
     @BeforeSave
     protected void fillSortField() {
+        if (owner.is(CustomSortValues.class)) {
+            fillUsingCustomSortValues();
+        } else {
+            fillUsingAnnotations();
+        }
+    }
+
+    private void fillUsingAnnotations() {
         String sortFieldContents = owner.getDescriptor()
                                         .getProperties()
                                         .stream()
@@ -60,8 +72,24 @@ public class SortField extends Composite {
                                                                                          .orElse(99)))
                                         .map(property -> property.getValue(owner))
                                         .map(NLS::toUserString)
-                                        .collect(Collectors.joining(""));
+                                        .collect(Collectors.joining(" "));
 
         this.sortField = Strings.reduceCharacters(sortFieldContents).toLowerCase();
+    }
+
+    private void fillUsingCustomSortValues() {
+       StringBuilder sortFieldContents = new StringBuilder();
+        Monoflop monoflop = Monoflop.create();
+        owner.as(CustomSortValues.class).emitSortValues(value -> {
+            if (monoflop.successiveCall()) {
+                sortFieldContents.append(" ");
+            }
+
+            if (value != null) {
+                sortFieldContents.append(NLS.toUserString(value));
+            }
+        });
+
+        this.sortField = Strings.reduceCharacters(sortFieldContents.toString()).toLowerCase();
     }
 }
