@@ -34,27 +34,9 @@ public class Updater extends QueryBuilder<Updater> {
     private BasicDBObject pullAllObject;
     private BasicDBObject pullObject;
     private boolean upsert = false;
-    private boolean many = false;
 
     protected Updater(Mongo mongo, String database) {
         super(mongo, database);
-    }
-
-    /**
-     * Specifies that multiple documents should be updated.
-     * <p>
-     * By default only one document is updated.
-     * <p>
-     * Note that this is a legacy flag and will not be honored by neither {@link #executeForOne(String)} nor
-     * {@link #executeForMany(String)}.
-     *
-     * @return the builder itself for fluent method calls
-     * @deprecated use {@link #executeForOne(String)} or {@link #executeForMany(String)}
-     */
-    @Deprecated(forRemoval = true)
-    public Updater many() {
-        this.many = true;
-        return this;
     }
 
     /**
@@ -298,18 +280,6 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
-     * Executes the update on the given collection.
-     *
-     * @param type the type of entities to update
-     * @return the result of the update
-     * @deprecated use either {@link #executeForOne(Class)} or {@link #executeForMany(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public UpdateResult executeFor(Class<?> type) {
-        return executeFor(getRelationName(type));
-    }
-
-    /**
      * Executes the update on the given collection for a single document.
      *
      * @param type the type of entities to update
@@ -338,18 +308,6 @@ public class Updater extends QueryBuilder<Updater> {
     public UpdateResult executeFor(MongoEntity entity) {
         where(MongoEntity.ID, entity.getId());
         return executeForOne(entity.getDescriptor().getRelationName());
-    }
-
-    /**
-     * Executes the update on the given collection.
-     *
-     * @param collection the collection to update
-     * @return the result of the update
-     * @deprecated use either {@link #executeForOne(String)} or {@link #executeForMany(String)}
-     */
-    @Deprecated(forRemoval = true)
-    public UpdateResult executeFor(String collection) {
-        return execute(collection, many);
     }
 
     /**

@@ -407,12 +407,10 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     private void createIndex(EntityDescriptor descriptor, MongoDatabase client, Index index) {
         try {
-            boolean textColumnSeen = false;
             Document document = new Document();
             for (int i = 0; i < index.columns().length; i++) {
                 Value setting = Value.of(index.columnSettings()[i]);
                 document.append(index.columns()[i], setting.isNumeric() ? setting.asInt(1) : setting.asString());
-                textColumnSeen |= Mango.INDEX_AS_FULLTEXT.equals(setting.getString());
             }
 
             Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), descriptor.getRelationName());
