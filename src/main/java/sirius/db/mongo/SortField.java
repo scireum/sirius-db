@@ -34,7 +34,7 @@ public class SortField extends Composite {
     public static final Mapping SORT_FIELD = Mapping.named("sortField");
     @NullAllowed
     @SuppressWarnings("java:S1700")
-    @Explain("We actually to want the same name here.")
+    @Explain("We actually do want the same name here.")
     private String sortField;
 
     @Transient
