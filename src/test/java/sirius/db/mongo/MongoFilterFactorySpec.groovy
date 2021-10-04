@@ -246,7 +246,7 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .countIn(MangoTestEntity.class) == 1
     }
 
-    def "isEmptyArray works on List fields"() {
+    def "isEmptyList works on List fields"() {
         setup:
         mango.select(MangoTestEntity.class).delete()
         when:
@@ -261,7 +261,7 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mango.update(e2)
         then:
         mango.select(MangoTestEntity.class)
-             .where(QueryBuilder.FILTERS.isEmptyArray(MangoTestEntity.SUPER_POWERS)).count() == 1
+             .where(QueryBuilder.FILTERS.isEmptyList(MangoTestEntity.SUPER_POWERS)).count() == 1
     }
 
     def "forceEmpty works on List fields"() {
