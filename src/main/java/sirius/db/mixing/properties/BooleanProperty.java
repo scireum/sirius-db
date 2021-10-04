@@ -23,7 +23,6 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.sql.Types;

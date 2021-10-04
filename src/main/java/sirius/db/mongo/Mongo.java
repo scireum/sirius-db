@@ -15,16 +15,13 @@ import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Collation;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
 import sirius.kernel.async.CallContext;
 import sirius.kernel.commons.Explain;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
-import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.ConfigValue;
@@ -64,10 +61,6 @@ public class Mongo implements Startable, Stoppable {
     @ConfigValue("mongo.logQueryThreshold")
     private Duration logQueryThreshold;
     private long logQueryThresholdMillis = -1;
-
-    @ConfigValue("mongo.collationLocale")
-    private static String collationLocale;
-    private ValueHolder<Collation> collationHolder = null;
 
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
@@ -319,28 +312,6 @@ public class Mongo implements Startable, Stoppable {
      */
     public Deleter delete() {
         return delete(Mixing.DEFAULT_REALM);
-    }
-
-    /**
-     * Tries to determine which collation should be used for queries.
-     *
-     * @return the collation to be used or <tt>null</tt> to indicate that no collation should be used.
-     */
-    @Nullable
-    public Collation determineCollation() {
-        if (collationHolder == null) {
-            initializeCollation();
-        }
-
-        return collationHolder.get();
-    }
-
-    private void initializeCollation() {
-        if (Strings.isFilled(collationLocale)) {
-            collationHolder = new ValueHolder<>(Collation.builder().locale(collationLocale).build());
-        } else {
-            collationHolder = new ValueHolder<>(null);
-        }
     }
 
     /**

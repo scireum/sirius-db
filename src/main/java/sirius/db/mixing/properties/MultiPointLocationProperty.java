@@ -17,7 +17,6 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mongo.Mango;
 import sirius.db.mongo.types.MultiPointLocation;
-import sirius.kernel.commons.Lambdas;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -101,18 +100,16 @@ public class MultiPointLocationProperty extends Property {
                     "MultiPointLocationProperty currently only supports Mango as mapper!");
         }
 
-        List<Tuple<Double, Double>> locations = new ArrayList<>();
-
         if (!object.isNull()) {
             Object coordinates = ((Document) object.get()).get("coordinates");
             if (coordinates instanceof List<?>) {
-                ((List<List<Double>>) coordinates).stream()
-                                                  .map(entry -> Tuple.create(entry.get(0), entry.get(1)))
-                                                  .collect(Lambdas.into(locations));
+                return ((List<List<Double>>) coordinates).stream()
+                                                         .map(entry -> Tuple.create(entry.get(0), entry.get(1)))
+                                                         .collect(Collectors.toList());
             }
         }
 
-        return locations;
+        return new ArrayList<>();
     }
 
     @Override
