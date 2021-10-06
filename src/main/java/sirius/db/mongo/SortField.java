@@ -16,12 +16,9 @@ import sirius.db.mixing.annotations.Transient;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Tuple;
 import sirius.kernel.nls.NLS;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +39,7 @@ public class SortField extends Composite {
     private String sortField;
 
     @Transient
-    private MongoEntity owner;
+    private final MongoEntity owner;
 
     /**
      * Creates a sort field for the given entity.
@@ -78,7 +75,7 @@ public class SortField extends Composite {
     }
 
     private void fillUsingCustomSortValues() {
-       StringBuilder sortFieldContents = new StringBuilder();
+        StringBuilder sortFieldContents = new StringBuilder();
         Monoflop monoflop = Monoflop.create();
         owner.as(CustomSortValues.class).emitSortValues(value -> {
             if (monoflop.successiveCall()) {
