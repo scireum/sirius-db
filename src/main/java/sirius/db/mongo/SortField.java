@@ -50,6 +50,16 @@ public class SortField extends Composite {
         this.owner = owner;
     }
 
+    /**
+     * Normalizes the given text using {@link Strings#reduceCharacters(String)}, lower-casing it after.
+     *
+     * @param text the text to normalize
+     * @return the normalized text
+     */
+    public static String normalizeText(String text) {
+        return Strings.reduceCharacters(text).toLowerCase();
+    }
+
     @BeforeSave
     protected void fillSortField() {
         if (owner.is(CustomSortValues.class)) {
@@ -87,6 +97,6 @@ public class SortField extends Composite {
             }
         });
 
-        this.sortField = Strings.reduceCharacters(sortFieldContents.toString()).toLowerCase();
+        this.sortField = normalizeText(sortFieldContents.toString());
     }
 }
