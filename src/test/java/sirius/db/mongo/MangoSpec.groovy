@@ -12,7 +12,7 @@ package sirius.db.mongo
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
+import org.junit.jupiter.api.Tag
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
@@ -139,7 +139,7 @@ class MangoSpec extends BaseSpecification {
         thrown(IntegrityConstraintFailedException)
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
+    @Tag("nightly")
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
         mango.select(MangoListTestEntity.class).delete()
@@ -155,7 +155,7 @@ class MangoSpec extends BaseSpecification {
         thrown(HandledException)
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
+    @Tag("nightly")
     def "a timed out mongo count returns an empty optional"() {
         when:
         mango.select(MangoListTestEntity.class).delete()

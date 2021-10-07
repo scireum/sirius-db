@@ -12,7 +12,7 @@ import sirius.db.jdbc.constraints.CompoundValue
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
+import org.junit.jupiter.api.Tag
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
@@ -418,7 +418,7 @@ class SmartQuerySpec extends BaseSpecification {
         mixinEntity.getId() == entity.getId()
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
+    @Tag("nightly")
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
         oma.select(ListTestEntity.class).delete()

@@ -12,14 +12,14 @@ import com.alibaba.fastjson.JSONObject
 import sirius.db.es.constraints.BoolQueryBuilder
 import sirius.db.es.suggest.SuggestBuilder
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
+import org.junit.jupiter.api.Tag
 import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
 import java.util.function.Predicate
 
-@Scope(Scope.SCOPE_NIGHTLY)
+@Tag("nightly")
 class SuggestSpec extends BaseSpecification {
 
     @Part

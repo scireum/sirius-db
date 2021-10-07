@@ -15,7 +15,7 @@ import sirius.db.mixing.properties.StringMapProperty
 import sirius.db.mongo.Mango
 import sirius.db.mongo.MangoTestEntity
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
+import org.junit.jupiter.api.Tag
 import sirius.kernel.commons.Doubles
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Value
@@ -249,7 +249,7 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "EXISTS").exists()
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
+    @Tag("nightly")
     def "scroll query / large streamBlockwise work"() {
         when:
         for (int i = 1; i <= 1500; i++) {
@@ -432,7 +432,7 @@ class ElasticQuerySpec extends BaseSpecification {
         Doubles.areEqual(entities.get(29).getScore(), 10d)
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
+    @Tag("nightly")
     def "selecting over 1000 entities in queryList throws an exception"() {
         given:
         elastic.select(ESListTestEntity.class).delete()
