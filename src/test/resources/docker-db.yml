@@ -14,7 +14,7 @@ services:
     hostname: mongo
 
   mariadb:
-    image: mariadb:10.3.14-bionic
+    image: mariadb:10.3.30-focal
     ports:
     - "3306"
     environment:
