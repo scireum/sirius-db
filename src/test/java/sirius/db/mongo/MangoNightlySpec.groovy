@@ -10,10 +10,11 @@ package sirius.db.mongo
 
 import org.junit.jupiter.api.Tag
 import sirius.kernel.BaseSpecification
+import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
-@Tag("nightly")
+@Tag(Tags.NIGHTLY)
 class MangoNightlySpec extends BaseSpecification {
 
     @Part

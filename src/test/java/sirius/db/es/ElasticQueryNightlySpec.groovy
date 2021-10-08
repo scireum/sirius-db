@@ -10,12 +10,13 @@ package sirius.db.es
 
 import org.junit.jupiter.api.Tag
 import sirius.kernel.BaseSpecification
+import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
 import java.time.Duration
 
-@Tag("nightly")
+@Tag(Tags.NIGHTLY)
 class ElasticQueryNightlySpec extends BaseSpecification {
 
     @Part

@@ -9,17 +9,17 @@
 package sirius.db.es
 
 import com.alibaba.fastjson.JSONObject
+import org.junit.jupiter.api.Tag
 import sirius.db.es.constraints.BoolQueryBuilder
 import sirius.db.es.suggest.SuggestBuilder
 import sirius.kernel.BaseSpecification
-import org.junit.jupiter.api.Tag
-import sirius.kernel.commons.Wait
+import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
 import java.util.function.Predicate
 
-@Tag("nightly")
+@Tag(Tags.NIGHTLY)
 class SuggestSpec extends BaseSpecification {
 
     @Part
@@ -53,8 +53,12 @@ class SuggestSpec extends BaseSpecification {
         suggestParts.get(1).getOptions().size() == 2
         suggestParts.get(2).getOptions().size() == 1
         and:
-        suggestParts.get(1).getOptions().stream().anyMatch({ option -> option.getText().equalsIgnoreCase("drill") } as Predicate)
-        suggestParts.get(1).getOptions().stream().anyMatch({ option -> option.getText().equalsIgnoreCase("dill") } as Predicate)
+        suggestParts
+                .get(1)
+                .getOptions().stream().anyMatch({ option -> option.getText().equalsIgnoreCase("drill") } as Predicate)
+        suggestParts
+                .get(1)
+                .getOptions().stream().anyMatch({ option -> option.getText().equalsIgnoreCase("dill") } as Predicate)
         suggestParts.get(2).getOptions().get(0).getText().equalsIgnoreCase("bit")
     }
 
@@ -105,8 +109,10 @@ class SuggestSpec extends BaseSpecification {
         and:
         def matchPhrase = new JSONObject().fluentPut("match",
                                                      new JSONObject().fluentPut(SuggestTestEntity.CONTENT.getName(),
-                                                                                new JSONObject().fluentPut("query", "{{suggestion}}")
-                                                                                                .fluentPut("operator", "and")))
+                                                                                new JSONObject().fluentPut("query",
+                                                                                                           "{{suggestion}}")
+                                                                                                .fluentPut("operator",
+                                                                                                           "and")))
 
         def matchShop = Elastic.FILTERS.eq(SuggestTestEntity.SHOP, 1)
 
