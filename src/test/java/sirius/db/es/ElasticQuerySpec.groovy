@@ -15,12 +15,10 @@ import sirius.db.mixing.properties.StringMapProperty
 import sirius.db.mongo.Mango
 import sirius.db.mongo.MangoTestEntity
 import sirius.kernel.BaseSpecification
-import org.junit.jupiter.api.Tag
 import sirius.kernel.commons.Doubles
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
-import sirius.kernel.health.HandledException
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -82,7 +80,8 @@ class ElasticQuerySpec extends BaseSpecification {
         then:
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").streamBlockwise().count() == 10
         when:
-        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").skip(5).limit(6).streamBlockwise().count()
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM")
+               .skip(5).limit(6).streamBlockwise().count()
         then:
         thrown(UnsupportedOperationException)
 
@@ -249,29 +248,6 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "EXISTS").exists()
     }
 
-    @Tag("nightly")
-    def "scroll query / large streamBlockwise work"() {
-        when:
-        for (int i = 1; i <= 1500; i++) {
-            QueryTestEntity entity = new QueryTestEntity()
-            entity.setValue("SCROLL")
-            entity.setCounter(i)
-            elastic.update(entity)
-        }
-        elastic.refresh(QueryTestEntity.class)
-        and:
-        int sum = 0
-        elastic.select(QueryTestEntity.class).
-                eq(QueryTestEntity.VALUE, "SCROLL").
-                iterateAll({ e -> sum += e.getCounter() })
-        then:
-        sum == (1500 * 1501) / 2
-        and:
-        elastic.select(QueryTestEntity.class).
-                eq(QueryTestEntity.VALUE, "SCROLL").
-                streamBlockwise().
-                mapToInt({ e -> e.getCounter() }).sum() == sum
-    }
 
     def "queries with multiple occurences of the same constraint works"() {
         when:
@@ -430,23 +406,6 @@ class ElasticQuerySpec extends BaseSpecification {
         Doubles.areEqual(entities.get(19).getScore(), 110d)
         and:
         Doubles.areEqual(entities.get(29).getScore(), 10d)
-    }
-
-    @Tag("nightly")
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        elastic.select(ESListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new ESListTestEntity()
-            entityToCreate.setCounter(i)
-            elastic.update(entityToCreate)
-        }
-        elastic.refresh(ESListTestEntity.class)
-        when:
-        elastic.select(ESListTestEntity.class).queryList()
-        then:
-        thrown(HandledException)
     }
 
     def "a forcefully failed query does not yield any results"() {

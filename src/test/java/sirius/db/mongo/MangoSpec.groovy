@@ -8,11 +8,9 @@
 
 package sirius.db.mongo
 
-
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
-import org.junit.jupiter.api.Tag
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
@@ -137,39 +135,6 @@ class MangoSpec extends BaseSpecification {
         mango.tryUpdate(conflictingEntity)
         then:
         thrown(IntegrityConstraintFailedException)
-    }
-
-    @Tag("nightly")
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        mango.select(MangoListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new MangoListTestEntity()
-            entityToCreate.setCounter(i)
-            mango.update(entityToCreate)
-        }
-        when:
-        mango.select(MangoListTestEntity.class).queryList()
-        then:
-        thrown(HandledException)
-    }
-
-    @Tag("nightly")
-    def "a timed out mongo count returns an empty optional"() {
-        when:
-        mango.select(MangoListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 100_000; i++) {
-            def entityToCreate = new MangoListTestEntity()
-            entityToCreate.setCounter(i)
-            mango.update(entityToCreate)
-        }
-        and:
-        MongoQuery<MangoListTestEntity> query = mango
-                .select(MangoListTestEntity.class)
-        then:
-        query.count(true, 1) == Optional.empty()
     }
 
     def "MongoQuery.exists works as expected and leaves the query intact"() {

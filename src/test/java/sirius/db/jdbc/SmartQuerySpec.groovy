@@ -418,22 +418,6 @@ class SmartQuerySpec extends BaseSpecification {
         mixinEntity.getId() == entity.getId()
     }
 
-    @Tag("nightly")
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        oma.select(ListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new ListTestEntity()
-            entityToCreate.setCounter(i)
-            oma.update(entityToCreate)
-        }
-        when:
-        oma.select(ListTestEntity.class).queryList()
-        then:
-        thrown(HandledException)
-    }
-
     def "a forcefully failed query does not yield any results"() {
         when:
         def qry = oma.select(SmartQueryTestEntity.class).fail()
