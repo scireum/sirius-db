@@ -278,4 +278,18 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
         return new MongoConstraint("$text", new Document("$search", value));
     }
+
+    /**
+     * Builds a constraint regarding the {@code $size} of a (list) mapping.
+     * <p>
+     * See <a href="https://docs.mongodb.com/manual/reference/operator/query/size/">the manual</a> for usage information
+     * and restrictions concerning the operator.
+     *
+     * @param mapping the mapping to filter
+     * @param value the target size to compare against
+     * @return the generated constraint
+     */
+    public MongoConstraint size(Mapping mapping, Integer value) {
+        return new MongoConstraint(mapping.toString(), new Document("$size", value));
+    }
 }
