@@ -289,7 +289,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      * @param value the target size to compare against
      * @return the generated constraint
      */
-    public MongoConstraint size(Mapping mapping, Integer value) {
+    public MongoConstraint hasListSize(Mapping mapping, int value) {
         return new MongoConstraint(mapping.toString(), new Document("$size", value));
     }
 }
