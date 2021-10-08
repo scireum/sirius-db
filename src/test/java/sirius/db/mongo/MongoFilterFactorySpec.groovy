@@ -281,4 +281,38 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mango.select(MangoTestEntity.class)
              .where(QueryBuilder.FILTERS.oneInField(MangoTestEntity.SUPER_POWERS, Collections.emptyList()).forceEmpty().build()).count() == 1
     }
+
+    def "hasListSize works on List fields"() {
+        setup:
+        mango.select(MangoTestEntity.class).delete()
+        when:
+        MangoTestEntity e1 = new MangoTestEntity()
+        e1.setFirstname("Peter")
+        e1.setLastname("Parker")
+        e1.getSuperPowers().add("Häkeln");
+        e1.getSuperPowers().add("Stricken");
+        e1.getSuperPowers().add("Klöppeln");
+        mango.update(e1)
+        MangoTestEntity e2 = new MangoTestEntity()
+        e2.setFirstname("Spider")
+        e2.setLastname("Man")
+        e2.getSuperPowers().add("Wallcrawling")
+        e2.getSuperPowers().add("Unkrautjäten");
+        e2.getSuperPowers().add("Rasenmähen");
+        e2.getSuperPowers().add("Fensterputzen");
+        mango.update(e2)
+        then:
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 0)).count() == 0
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 1)).count() == 0
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 2)).count() == 0
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 3)).count() == 1
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 4)).count() == 1
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 5)).count() == 0
+    }
 }
