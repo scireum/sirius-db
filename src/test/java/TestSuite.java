@@ -8,9 +8,7 @@
 
 import com.googlecode.junittoolbox.SuiteClasses;
 import org.junit.runner.RunWith;
-import sirius.kernel.Scenario;
 import sirius.kernel.ScenarioSuite;
-import sirius.kernel.Scope;
 
 @RunWith(ScenarioSuite.class)
 @SuiteClasses({"**/*Test.class", "**/*Spec.class"})
