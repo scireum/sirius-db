@@ -293,7 +293,7 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Returns the full label or nme of the property which is shown in error messages etc.
+     * Returns the full label or name of the property which is shown in error messages etc.
      * <p>
      * This will only differ from {@link #getLabel()} for field in composites or mixins. In this case,
      * we try to look up the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
