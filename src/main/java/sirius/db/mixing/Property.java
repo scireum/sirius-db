@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Maps a field, which is either defined in an entity, a composite or a mixin to a mapped property.
@@ -292,7 +293,7 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Returns the full label or nme of the property which is shown in error messages etc.
+     * Returns the full label or name of the property which is shown in error messages etc.
      * <p>
      * This will only differ from {@link #getLabel()} for field in composites or mixins. In this case,
      * we try to look up the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
@@ -671,6 +672,18 @@ public abstract class Property extends Composable {
     }
 
     /**
+     * Invoked during validation of an entity.
+     * <p>
+     * This method is intended to be overwritten with custom logic.
+     *
+     * @param entity             the entity to check
+     * @param validationConsumer the consumer collecting the validation messages
+     */
+    protected void onValidate(Object entity, Consumer<String> validationConsumer) {
+        // this method does nothing by default
+    }
+
+    /**
      * Invoked before an entity is written to the database.
      * <p>
      * This method is intended to be overwritten with custom logic.
@@ -678,6 +691,7 @@ public abstract class Property extends Composable {
      * @param entity the entity to check
      */
     protected void onBeforeSaveChecks(Object entity) {
+        // this method does nothing by default
     }
 
     /**
