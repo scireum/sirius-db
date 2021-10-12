@@ -531,6 +531,10 @@ public class EntityDescriptor {
             }
         }
 
+        for (Property property : properties.values()) {
+            property.onValidate(entity, warnings::add);
+        }
+
         return warnings;
     }
 

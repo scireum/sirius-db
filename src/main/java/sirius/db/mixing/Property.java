@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Maps a field, which is either defined in an entity, a composite or a mixin to a mapped property.
@@ -668,6 +669,17 @@ public abstract class Property extends Composable {
             // Only enforce uniqueness if the value actually changed...
             checkUniqueness(entity, propertyValue);
         }
+    }
+
+    /**
+     * Invoked during validation of an entity.
+     * <p>
+     * This method is intended to be overwritten with custom logic.
+     *
+     * @param entity             the entity to check
+     * @param validationConsumer the consumer collecting the validation messages
+     */
+    protected void onValidate(Object entity, Consumer<String> validationConsumer) {
     }
 
     /**
