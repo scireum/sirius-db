@@ -680,6 +680,7 @@ public abstract class Property extends Composable {
      * @param validationConsumer the consumer collecting the validation messages
      */
     protected void onValidate(Object entity, Consumer<String> validationConsumer) {
+        // this method does nothing by default
     }
 
     /**
@@ -690,6 +691,7 @@ public abstract class Property extends Composable {
      * @param entity the entity to check
      */
     protected void onBeforeSaveChecks(Object entity) {
+        // this method does nothing by default
     }
 
     /**
