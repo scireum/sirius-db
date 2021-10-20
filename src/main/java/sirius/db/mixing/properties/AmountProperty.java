@@ -102,6 +102,9 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
     @Override
     protected Object transformValueFromImport(Value value) {
         if (value.is(Amount.class)) {
+            if (value.getAmount().isEmpty() && !this.isNullable()) {
+                return defaultValue.getAmount();
+            }
             return value.get();
         }
 

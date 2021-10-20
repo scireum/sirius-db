@@ -133,4 +133,22 @@ class DefaultValuesSpec extends BaseSpecification {
         then:
         entity.getAmountNothing() == Amount.NOTHING
     }
+
+    def "amount fields initialized with a non-empty Amount should persist the default when emptied"() {
+        given:
+        def property = mixing.getDescriptor(SQLDefaultValuesEntity.class).findProperty("amountZero")
+
+        expect:
+        SQLDefaultValuesEntity entity = new SQLDefaultValuesEntity()
+        entity.setAmountZero(Amount.of(77))
+        property.parseValueFromImport(entity, input)
+        entity.getAmountZero() == output
+
+        where:
+        input                     | output
+        Value.EMPTY               | Amount.ZERO
+        Value.of(5)               | Amount.of(5)
+        Value.of(Amount.NOTHING)  | Amount.ZERO
+        Value.of(Amount.of(44.1)) | Amount.of(44.1)
+    }
 }
