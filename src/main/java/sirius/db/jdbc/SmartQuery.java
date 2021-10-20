@@ -321,7 +321,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
 
         private List<E> queryNextBlock() {
-            SmartQuery<E> effectiveQuery = copy().limit(MAX_LIST_SIZE);
+            SmartQuery<E> effectiveQuery = copy().orderAsc(BaseEntity.ID).limit(MAX_LIST_SIZE);
 
             if (lastValue == null) {
                 return effectiveQuery.queryList();
@@ -329,12 +329,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             CompoundValue leftHandSide = new CompoundValue();
             CompoundValue rightHandSide = new CompoundValue();
 
-            boolean idColumnSeen = false;
-            for (Tuple<Mapping, Boolean> sorting : orderBys) {
+            for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
                 Object value = lastValue.getDescriptor().getProperty(sortColumn).getValue(lastValue);
-                idColumnSeen |= BaseEntity.ID.equals(sortColumn);
                 if (sortAscending) {
                     // the order by is ascending -> COLUMN > lastvalue.column
                     leftHandSide.addComponent(sortColumn);
@@ -344,11 +342,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                     leftHandSide.addComponent(value);
                     rightHandSide.addComponent(sortColumn);
                 }
-            }
-
-            if (!idColumnSeen) {
-                leftHandSide.addComponent(BaseEntity.ID);
-                rightHandSide.addComponent(lastValue.getId());
             }
 
             return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
