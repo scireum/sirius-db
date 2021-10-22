@@ -139,6 +139,17 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         return this;
     }
 
+    /**
+     * Marks the query as potentially long-running.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public MongoQuery<E> markLongRunning() {
+        finder.markLongRunning();
+
+        return this;
+    }
+
     @Override
     public void iterate(Predicate<E> resultHandler) {
         if (forceFail) {
