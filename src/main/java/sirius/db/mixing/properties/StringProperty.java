@@ -24,12 +24,15 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Lob;
+import sirius.db.mixing.annotations.LowerCase;
 import sirius.db.mixing.annotations.Trim;
+import sirius.db.mixing.annotations.UpperCase;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.sql.Clob;
 import java.sql.Types;
@@ -41,6 +44,8 @@ import java.util.function.Consumer;
 public class StringProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
 
     private final boolean trim;
+    private final boolean lowerCase;
+    private final boolean upperCase;
     private final boolean lob;
 
     /**
@@ -66,6 +71,8 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     protected StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.trim = field.isAnnotationPresent(Trim.class);
+        this.lowerCase = field.isAnnotationPresent(LowerCase.class);
+        this.upperCase = field.isAnnotationPresent(UpperCase.class);
         this.lob = field.isAnnotationPresent(Lob.class);
     }
 
