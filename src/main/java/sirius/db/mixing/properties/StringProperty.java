@@ -131,13 +131,8 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (trim && value != null) {
-            value = value.trim();
-            if (value.isEmpty()) {
-                value = null;
-            }
-            setValue(entity, value);
-        }
+        value = applyAnnotationModifications(entity, value);
+
         super.onBeforeSaveChecks(entity);
 
         if (length > 0 && value != null && value.length() > length) {
@@ -149,6 +144,19 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
                             .set("maxLength", length)
                             .handle();
         }
+    }
+
+    @Nullable
+    private String applyAnnotationModifications(Object entity, String value) {
+        String modifiedValue = value;
+        if (trim && modifiedValue != null) {
+            modifiedValue = modifiedValue.trim();
+            if (modifiedValue.isEmpty()) {
+                modifiedValue = null;
+            }
+            setValue(entity, modifiedValue);
+        }
+        return modifiedValue;
     }
 
     @Override
