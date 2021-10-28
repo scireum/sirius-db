@@ -138,7 +138,9 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        value = applyAnnotationModifications(entity, value);
+        if (value != null) {
+            value = applyAnnotationModifications(entity, value);
+        }
 
         super.onBeforeSaveChecks(entity);
 
@@ -155,14 +157,19 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
     @Nullable
     private String applyAnnotationModifications(Object entity, String value) {
-        String modifiedValue = value;
-        if (trim && modifiedValue != null) {
-            modifiedValue = modifiedValue.trim();
-            if (modifiedValue.isEmpty()) {
-                modifiedValue = null;
-            }
-            setValue(entity, modifiedValue);
+        if (!trim) {
+            // Trimming is not enabled for this property.
+            return value;
         }
+
+        String modifiedValue = value;
+
+        modifiedValue = modifiedValue.trim();
+        if (modifiedValue.isEmpty()) {
+            modifiedValue = null;
+        }
+        setValue(entity, modifiedValue);
+
         return modifiedValue;
     }
 
