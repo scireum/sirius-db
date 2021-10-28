@@ -157,17 +157,24 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
     @Nullable
     private String applyAnnotationModifications(Object entity, String value) {
-        if (!trim) {
-            // Trimming is not enabled for this property.
+        if (!trim && !lowerCase && !upperCase) {
+            // No modification annotations are present, so we don't alter the value in any way.
             return value;
         }
 
         String modifiedValue = value;
 
-        modifiedValue = modifiedValue.trim();
+        if (trim) {
+            modifiedValue = modifiedValue.trim();
+        }
         if (modifiedValue.isEmpty()) {
             modifiedValue = null;
+        } else if (lowerCase) {
+            modifiedValue = modifiedValue.toLowerCase();
+        } else if (upperCase) {
+            modifiedValue = modifiedValue.toUpperCase();
         }
+
         setValue(entity, modifiedValue);
 
         return modifiedValue;
