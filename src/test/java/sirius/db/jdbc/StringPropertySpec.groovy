@@ -36,5 +36,43 @@ class StringPropertySpec extends BaseSpecification {
         then:
         test.getLargeValue() == "This is a test"
     }
+    
+    def "modification annotations are applied correctly"() {
+        given:
+        schema.getReadyFuture().await(Duration.ofSeconds(45))
+        and:
+        StringManipulationTestEntity test = new StringManipulationTestEntity()
+        when:
+        test.setTrimmed(" Test ")
+        test.setLower(" TEST ")
+        test.setUpper(" test ")
+        test.setTrimmedLower(" TEST ")
+        test.setTrimmedUpper(" test ")
+        and:
+        oma.update(test)
+        and:
+        test = oma.refreshOrFail(test)
+        then:
+        test.getTrimmed() == "Test"
+        test.getLower() == " test "
+        test.getUpper() == " TEST "
+        test.getTrimmedLower() == "test"
+        test.getTrimmedUpper() == "TEST"
+    }
+    
+    def "modification annotations handle null correctly"() {
+        given:
+        schema.getReadyFuture().await(Duration.ofSeconds(45))
+        and:
+        StringManipulationTestEntity test = new StringManipulationTestEntity()
+        when:
+        oma.update(test)
+        and:
+        test = oma.refreshOrFail(test)
+        then:
+        test.getTrimmed() == null
+        test.getLower() == null
+        test.getTrimmedLower() == null
+    }
 
 }

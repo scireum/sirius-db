@@ -11,6 +11,9 @@ package sirius.db.jdbc;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Length;
+import sirius.db.mixing.annotations.LowerCase;
+import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.annotations.UpperCase;
 
 @Index(name = "lastname", columns = "lastname")
 public class TestEntity extends SQLEntity {
