@@ -336,7 +336,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Specifies a tuple of "last sort values" to continue a previous query.
+     * Specifies a list of "last sort values" to continue a previous query.
      * <p>
      * Use {@link #getLastSortValues()} to obtain the proper values.
      *
