@@ -138,8 +138,9 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (value != null) {
+        if (value != null && (trim  || lowerCase || upperCase)) {
             value = applyAnnotationModifications(entity, value);
+            setValue(entity, value);
         }
 
         super.onBeforeSaveChecks(entity);
@@ -157,11 +158,6 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
     @Nullable
     private String applyAnnotationModifications(Object entity, String value) {
-        if (!trim && !lowerCase && !upperCase) {
-            // No modification annotations are present, so we don't alter the value in any way.
-            return value;
-        }
-
         String modifiedValue = value;
 
         if (trim) {
@@ -175,7 +171,6 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
             modifiedValue = modifiedValue.toUpperCase();
         }
 
-        setValue(entity, modifiedValue);
 
         return modifiedValue;
     }
