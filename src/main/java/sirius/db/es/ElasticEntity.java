@@ -95,6 +95,14 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         this.id = id;
     }
 
+    @Override
+    public boolean isAnyMappingChanged() {
+        return getDescriptor().getProperties()
+                              .stream()
+                              .filter(property -> !ElasticEntity.ID.getName().equals(property.getName()))
+                              .anyMatch(property -> getDescriptor().isChanged(this, property));
+    }
+
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("We only pass the result JSON along internally and want to avoid an extra copy.")
     protected void setSearchHit(JSONObject searchHit) {
