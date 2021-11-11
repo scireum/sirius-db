@@ -37,8 +37,8 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -55,8 +55,8 @@ public class Mongo implements Startable, Stoppable {
 
     private static final int MONGO_PORT = 27017;
 
-    private final Map<String, Tuple<MongoClient, String>> mongoClients = new HashMap<>();
-    private final Map<String, Boolean> mongoClientConfigured = new HashMap<>();
+    private final Map<String, Tuple<MongoClient, String>> mongoClients = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> mongoClientConfigured = new ConcurrentHashMap<>();
 
     @ConfigValue("mongo.logQueryThreshold")
     private Duration logQueryThreshold;
