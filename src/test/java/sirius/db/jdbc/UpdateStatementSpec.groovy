@@ -14,7 +14,7 @@ import sirius.kernel.di.std.Part
 class UpdateStatementSpec extends BaseSpecification {
 
     @Part
-    private static OMA oma;
+    private static OMA oma
 
     def "an update statement updates the expected entities"() {
         given:

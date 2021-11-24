@@ -9,7 +9,6 @@
 package sirius.db.jdbc;
 
 import sirius.db.mixing.Mapping;
-import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.LowerCase;
 import sirius.db.mixing.annotations.NullAllowed;
@@ -19,27 +18,32 @@ import sirius.db.mixing.annotations.UpperCase;
 public class StringManipulationTestEntity extends SQLEntity {
 
     public static final Mapping TRIMMED = Mapping.named("trimmed");
+    @Length(100)
     @NullAllowed
     @Trim
     private String trimmed;
 
     public static final Mapping LOWER = Mapping.named("lower");
+    @Length(100)
     @NullAllowed
     @LowerCase
     private String lower;
 
     public static final Mapping UPPER = Mapping.named("upper");
+    @Length(100)
     @NullAllowed
     @UpperCase
     private String upper;
 
     public static final Mapping TRIMMED_LOWER = Mapping.named("trimmedLower");
+    @Length(100)
     @NullAllowed
     @LowerCase
     @Trim
     private String trimmedLower;
 
     public static final Mapping TRIMMED_UPPER = Mapping.named("trimmedUpper");
+    @Length(100)
     @NullAllowed
     @UpperCase
     @Trim
