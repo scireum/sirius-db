@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -47,19 +48,22 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     @Override
     protected Object customTransform(Object value) {
         if (value instanceof LocalDate localDate) {
-            return Date.from(localDate.atStartOfDay().withNano(0).atZone(ZoneId.systemDefault()).toInstant());
+            return Date.from(localDate.atStartOfDay()
+                                      .truncatedTo(ChronoUnit.MILLIS)
+                                      .atZone(ZoneId.systemDefault())
+                                      .toInstant());
         }
         if (value instanceof LocalDateTime localDateTime) {
-            return Date.from(localDateTime.withNano(0).atZone(ZoneId.systemDefault()).toInstant());
+            return Date.from(localDateTime.truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
         }
         if (value instanceof LocalTime localTime) {
             return Date.from(localTime.atDate(LocalDate.now(ZoneId.systemDefault()))
-                                      .withNano(0)
+                                      .truncatedTo(ChronoUnit.MILLIS)
                                       .atZone(ZoneId.systemDefault())
                                       .toInstant());
         }
         if (value instanceof Instant instant) {
-            return Date.from(Instant.ofEpochSecond(instant.getEpochSecond()));
+            return Date.from(instant.truncatedTo(ChronoUnit.MILLIS));
         }
 
         return value;
@@ -286,7 +290,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      * and restrictions concerning the operator.
      *
      * @param mapping the mapping to filter
-     * @param value the target size to compare against
+     * @param value   the target size to compare against
      * @return the generated constraint
      */
     public MongoConstraint hasListSize(Mapping mapping, int value) {

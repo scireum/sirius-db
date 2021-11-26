@@ -49,6 +49,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -405,8 +406,8 @@ public class EntityDescriptor {
     /**
      * Determines if the value for the property was changed since it was last fetched from the database.
      * <p>
-     * For {@link LocalDateTimeProperty}, we consider seconds as the smallest unit for comparison,
-     * fully ignoring milliseconds.
+     * For {@link LocalDateTimeProperty}, we consider milliseconds as the smallest unit for comparison,
+     * ignoring micro- and nanoseconds.
      *
      * @param entity   the entity to check
      * @param property the property to check for
@@ -479,7 +480,7 @@ public class EntityDescriptor {
             if (sourceDateTime != null && targetDateTime == null) {
                 return false;
             }
-            return sourceDateTime.withNano(0).equals(targetDateTime.withNano(0));
+            return sourceDateTime.truncatedTo(ChronoUnit.MILLIS).equals(targetDateTime.truncatedTo(ChronoUnit.MILLIS));
         }
 
         return false;

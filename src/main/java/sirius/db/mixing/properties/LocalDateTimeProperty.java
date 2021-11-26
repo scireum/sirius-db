@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
 
 /**
@@ -69,7 +70,7 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
     @Override
     public Object transformValue(Value value) {
         if (value.is(LocalDateTime.class)) {
-            return value.get();
+            return ((LocalDateTime) (value.get())).truncatedTo(ChronoUnit.MILLIS);
         }
         if (value.is(LocalDate.class)) {
             return value.get(LocalDate.class, null).atStartOfDay();
@@ -94,16 +95,18 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
         }
 
         try {
-            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString));
+            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString))
+                                .truncatedTo(ChronoUnit.MILLIS);
         } catch (DateTimeParseException e) {
-            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString));
+            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString))
+                                .truncatedTo(ChronoUnit.MILLIS);
         }
     }
 
     @Override
     protected Object transformFromMongo(Value object) {
         LocalDateTime localDateTime = object.asLocalDateTime(null);
-        return localDateTime == null ? null : localDateTime.withNano(0);
+        return localDateTime == null ? null : localDateTime.truncatedTo(ChronoUnit.MILLIS);
     }
 
     @Override

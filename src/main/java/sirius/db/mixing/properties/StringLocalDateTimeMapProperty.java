@@ -34,6 +34,7 @@ import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -92,7 +93,8 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
         if (obj instanceof Document) {
             for (Map.Entry<String, Object> entry : ((Document) obj).entrySet()) {
                 try {
-                    result.put(entry.getKey(), Value.of(entry.getValue()).asLocalDateTime(null));
+                    result.put(entry.getKey(),
+                               Value.of(entry.getValue()).asLocalDateTime(null).truncatedTo(ChronoUnit.MILLIS));
                 } catch (Exception e) {
                     throw Exceptions.handle(Mongo.LOG, e);
                 }
@@ -118,9 +120,10 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
         }
 
         try {
-            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(date));
+            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(date))
+                                .truncatedTo(ChronoUnit.MILLIS);
         } catch (DateTimeParseException e) {
-            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(date));
+            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(date)).truncatedTo(ChronoUnit.MILLIS);
         }
     }
 
