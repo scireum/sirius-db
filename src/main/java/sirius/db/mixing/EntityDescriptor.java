@@ -10,6 +10,7 @@ package sirius.db.mixing;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
@@ -415,7 +416,11 @@ public class EntityDescriptor {
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
         if (property instanceof LocalDateTimeProperty) {
-            return isChanged(entity, property, this::isLocalDateTimeEqual);
+            if (entity instanceof SQLEntity) {
+                return isChanged(entity, property, (a, b) -> isLocalDateTimeEqual(a, b, ChronoUnit.SECONDS));
+            } else {
+                return isChanged(entity, property, (a, b) -> isLocalDateTimeEqual(a, b, ChronoUnit.MILLIS));
+            }
         }
         return isChanged(entity, property, Objects::equals);
     }
@@ -468,14 +473,14 @@ public class EntityDescriptor {
         return sortedBeforeSaveHandlers;
     }
 
-    private boolean isLocalDateTimeEqual(Object source, Object target) {
+    private boolean isLocalDateTimeEqual(Object source, Object target, ChronoUnit precision) {
         if (source == null && target == null) {
             return true;
         }
 
         // `null instanceof LocalDateTime` is always `false`, and we processed the case of both `null` before
         if (source instanceof LocalDateTime sourceDateTime && target instanceof LocalDateTime targetDateTime) {
-            return sourceDateTime.truncatedTo(ChronoUnit.MILLIS).equals(targetDateTime.truncatedTo(ChronoUnit.MILLIS));
+            return sourceDateTime.truncatedTo(precision).equals(targetDateTime.truncatedTo(precision));
         }
 
         return false;
