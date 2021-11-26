@@ -15,6 +15,7 @@ import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 class ESStringLocalDateTimePropertySpec extends BaseSpecification {
     @Part
@@ -32,7 +33,7 @@ class ESStringLocalDateTimePropertySpec extends BaseSpecification {
         then:
         resolved.getMap().size() == 1
         and:
-        resolved.getMap().get("a").isPresent() && resolved.getMap().get("a").get() == now
+        resolved.getMap().get("a").isPresent() && resolved.getMap().get("a").get() == now.truncatedTo(ChronoUnit.MILLIS)
 
         when:
         resolved.getMap().modify().remove("a")
