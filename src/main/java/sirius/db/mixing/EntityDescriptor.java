@@ -473,13 +473,8 @@ public class EntityDescriptor {
             return true;
         }
 
+        // `null instanceof LocalDateTime` is always `false`, and we processed the case of both `null` before
         if (source instanceof LocalDateTime sourceDateTime && target instanceof LocalDateTime targetDateTime) {
-            if (sourceDateTime == null && targetDateTime != null) {
-                return false;
-            }
-            if (sourceDateTime != null && targetDateTime == null) {
-                return false;
-            }
             return sourceDateTime.truncatedTo(ChronoUnit.MILLIS).equals(targetDateTime.truncatedTo(ChronoUnit.MILLIS));
         }
 
