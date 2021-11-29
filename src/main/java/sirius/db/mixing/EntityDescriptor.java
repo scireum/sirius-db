@@ -10,6 +10,7 @@ package sirius.db.mixing;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
@@ -49,6 +50,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -405,8 +407,8 @@ public class EntityDescriptor {
     /**
      * Determines if the value for the property was changed since it was last fetched from the database.
      * <p>
-     * For {@link LocalDateTimeProperty}, we consider seconds as the smallest unit for comparison,
-     * fully ignoring milliseconds.
+     * For {@link LocalDateTimeProperty}, we consider milliseconds as the smallest unit for comparison,
+     * ignoring micro- and nanoseconds.
      *
      * @param entity   the entity to check
      * @param property the property to check for
@@ -414,7 +416,11 @@ public class EntityDescriptor {
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
         if (property instanceof LocalDateTimeProperty) {
-            return isChanged(entity, property, this::isLocalDateTimeEqual);
+            if (entity instanceof SQLEntity) {
+                return isChanged(entity, property, (a, b) -> isLocalDateTimeEqual(a, b, ChronoUnit.SECONDS));
+            } else {
+                return isChanged(entity, property, (a, b) -> isLocalDateTimeEqual(a, b, ChronoUnit.MILLIS));
+            }
         }
         return isChanged(entity, property, Objects::equals);
     }
@@ -467,19 +473,14 @@ public class EntityDescriptor {
         return sortedBeforeSaveHandlers;
     }
 
-    private boolean isLocalDateTimeEqual(Object source, Object target) {
+    private boolean isLocalDateTimeEqual(Object source, Object target, ChronoUnit precision) {
         if (source == null && target == null) {
             return true;
         }
 
+        // `null instanceof LocalDateTime` is always `false`, and we processed the case of both `null` before
         if (source instanceof LocalDateTime sourceDateTime && target instanceof LocalDateTime targetDateTime) {
-            if (sourceDateTime == null && targetDateTime != null) {
-                return false;
-            }
-            if (sourceDateTime != null && targetDateTime == null) {
-                return false;
-            }
-            return sourceDateTime.withNano(0).equals(targetDateTime.withNano(0));
+            return sourceDateTime.truncatedTo(precision).equals(targetDateTime.truncatedTo(precision));
         }
 
         return false;
