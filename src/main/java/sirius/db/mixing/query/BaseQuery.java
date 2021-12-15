@@ -12,6 +12,7 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.commons.Limit;
+import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -114,6 +115,27 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     @SuppressWarnings("unchecked")
     public Q limit(int limit) {
         this.limit = limit;
+        return (Q) this;
+    }
+
+    /**
+     * Sets the limit just like {@link #limit(int)} but performs additional checks (like limit
+     * must always be less or equal to maxLimit and can't be zero or less).
+     *
+     * @param userLimit    the max. number of items to return
+     * @param defaultLimit the default limit to use when userLimit is empty or zero
+     * @param maxLimit     the maximum value allowed for userLimit
+     * @return the query itself for fluent method calls
+     */
+    @SuppressWarnings("unchecked")
+    public Q userLimit(Value userLimit, int defaultLimit, int maxLimit) {
+        int effectiveLimit = userLimit.asInt(defaultLimit);
+        if (effectiveLimit < 1) {
+            effectiveLimit = defaultLimit;
+        } else if (effectiveLimit > maxLimit) {
+            effectiveLimit = maxLimit;
+        }
+        limit(effectiveLimit);
         return (Q) this;
     }
 
