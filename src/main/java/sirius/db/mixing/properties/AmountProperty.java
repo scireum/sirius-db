@@ -33,6 +33,7 @@ import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -109,10 +110,22 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         }
 
         if (value.isFilled()) {
-            return Amount.ofMachineString(value.asString());
+            return parseWithNLS(value);
         }
 
         return transformValue(value);
+    }
+
+    private Amount parseWithNLS(@Nonnull Value value) {
+        try {
+            return Amount.ofMachineString(value.asString());
+        } catch (IllegalArgumentException originalFormatException) {
+            try {
+                return Amount.ofUserString(value.asString());
+            } catch (Exception ignored) {
+                throw originalFormatException;
+            }
+        }
     }
 
     @Override
