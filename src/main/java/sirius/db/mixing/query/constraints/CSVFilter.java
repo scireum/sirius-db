@@ -122,9 +122,7 @@ public class CSVFilter<C extends Constraint> {
         C orEmptyConstraint = orEmpty ? factory.isEmptyList(field) : null;
 
         if (mode == Mode.CONTAINS_ANY) {
-            if (orEmpty) {
-                constraints.add(factory.isEmptyList(field));
-            }
+            constraints.add(orEmptyConstraint);
             return factory.or(constraints);
         }
 
