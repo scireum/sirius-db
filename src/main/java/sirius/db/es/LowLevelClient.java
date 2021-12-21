@@ -438,11 +438,32 @@ public class LowLevelClient {
      * @param numberOfShards   the number of shards to use
      * @param numberOfReplicas the number of replicas per shard
      * @return the response of the call
+     * @deprecated use {@link #createIndex(String, int, int, Consumer)} instead
      */
+    @Deprecated
     public JSONObject createIndex(String index, int numberOfShards, int numberOfReplicas) {
+        return createIndex(index, numberOfShards, numberOfReplicas, null);
+    }
+
+    /**
+     * Creates the given index.
+     *
+     * @param index              the name of the index
+     * @param numberOfShards     the number of shards to use
+     * @param numberOfReplicas   the number of replicas per shard
+     * @param settingsCustomizer a callback which may further extend the settings object passed to Elasticsearch
+     * @return the response of the call
+     */
+    public JSONObject createIndex(String index,
+                                  int numberOfShards,
+                                  int numberOfReplicas,
+                                  @Nullable Consumer<JSONObject> settingsCustomizer) {
         JSONObject indexObj = new JSONObject().fluentPut("number_of_shards", numberOfShards)
                                               .fluentPut("number_of_replicas", numberOfReplicas);
         JSONObject settingsObj = new JSONObject().fluentPut(PARAM_INDEX, indexObj);
+        if (settingsCustomizer != null) {
+            settingsCustomizer.accept(settingsObj);
+        }
         JSONObject input = new JSONObject().fluentPut("settings", settingsObj);
         return performPut().data(input).execute(index).response();
     }
@@ -509,7 +530,6 @@ public class LowLevelClient {
     public JSONObject indexSettings(String index) {
         return performGet().execute(index + API_SETTINGS).response();
     }
-
 
     /**
      * Fetches the cluster health.
