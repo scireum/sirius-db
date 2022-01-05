@@ -28,7 +28,6 @@ import sirius.kernel.settings.Extension;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -286,8 +285,11 @@ public class IndexMappings implements Startable {
                                 realmConfig.getInt("numberOfReplicas"),
                                 settingsObject -> {
                                     entityDescriptor.getAnnotation(CustomSettings.class)
-                                                    .flatMap(customSettings -> Optional.ofNullable(globalContext.getPart(
-                                                            customSettings.value())))
+                                                    .flatMap(customSettings -> globalContext.getParts(SettingsCustomizer.class)
+                                                                                            .stream()
+                                                                                            .filter(settings -> customSettings.value()
+                                                                                                                              .equals(settings.getClass()))
+                                                                                            .findFirst())
                                                     .ifPresent(customizer -> customizer.customizeSettings(
                                                             entityDescriptor,
                                                             settingsObject));
