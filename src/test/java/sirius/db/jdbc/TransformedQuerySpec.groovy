@@ -11,7 +11,6 @@ package sirius.db.jdbc
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
-import spock.lang.Stepwise
 
 import java.time.Duration
 import java.util.function.Function
