@@ -9,6 +9,12 @@
 package sirius.db.es.annotations;
 
 import sirius.db.es.SettingsCustomizer;
+import sirius.kernel.di.std.Register;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Specifies a {@link SettingsCustomizer} to use for a given {@link sirius.db.es.ElasticEntity}.
@@ -16,6 +22,8 @@ import sirius.db.es.SettingsCustomizer;
  * This annotation needs to be placed on an entity class and will then invoke the given customizer during index
  * creation. This can be used to add additional settings when creating an index within Elasticsearh.
  */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
 public @interface CustomSettings {
 
     /**
@@ -23,5 +31,5 @@ public @interface CustomSettings {
      *
      * @return the type of customizer to use
      */
-    Class<SettingsCustomizer> value();
+    Class<? extends SettingsCustomizer> value();
 }
