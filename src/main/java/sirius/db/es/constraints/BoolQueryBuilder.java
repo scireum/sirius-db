@@ -194,7 +194,7 @@ public class BoolQueryBuilder {
             query.put("must", must);
         }
         if (mustNots > 0) {
-            query.put("mustNot", mustNot);
+            query.put("must_not", mustNot);
         }
         if (shoulds > 0) {
             query.put("should", should);
