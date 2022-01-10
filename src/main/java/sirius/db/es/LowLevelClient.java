@@ -24,6 +24,8 @@ import sirius.kernel.health.HandledException;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +40,9 @@ import java.util.stream.Collectors;
  */
 public class LowLevelClient {
 
-    private static final String API_REINDEX = "/_reindex?pretty";
+    private static final String API_REINDEX_ASYNC = "/_reindex?pretty";
+    private static final String API_REINDEX = "/_reindex?wait_for_completion=false";
+    private static final String API_TASK_INFO = "/_tasks/";
     private static final String API_ALIAS = "/_alias";
     private static final String API_ALIASES = "/_aliases";
     private static final String API_SEARCH = "/_search";
@@ -221,7 +225,10 @@ public class LowLevelClient {
      * @param destinationIndexName the name of the index in which the documents shoulds be reindexed
      * @param onSuccess            is called if the request is successfully finished
      * @param onFailure            is called if a exception occurs while performing the request
+     * @deprecated Use {@link #startReindex(String, String)} and {@link #checkTaskActivity(String)} instead. As this
+     * approach frequently runs into HTTP timeouts.
      */
+    @Deprecated
     public void reindex(String sourceIndexName,
                         String destinationIndexName,
                         @Nullable Consumer<Response> onSuccess,
@@ -230,7 +237,52 @@ public class LowLevelClient {
                                                       new JSONObject().fluentPut(PARAM_INDEX, sourceIndexName))
                                            .fluentPut("dest",
                                                       new JSONObject().fluentPut(PARAM_INDEX, destinationIndexName)))
-                     .executeAsync(API_REINDEX, onSuccess, onFailure);
+                     .executeAsync(API_REINDEX_ASYNC, onSuccess, onFailure);
+    }
+
+    /**
+     * Executes a reindex request.
+     * <p>
+     * Note that this starts a re-index request and returns the created task id.
+     *
+     * @param sourceIndexName      the source index to read from
+     * @param destinationIndexName the name of the index in which the documents shoulds be reindexed
+     * @return the ID of the background task within Elasticsearch
+     */
+    public String startReindex(String sourceIndexName, String destinationIndexName) {
+        JSONObject response = performPost().data(new JSONObject().fluentPut("source",
+                                                                            new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                                       sourceIndexName))
+                                                                 .fluentPut("dest",
+                                                                            new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                                       destinationIndexName)))
+                                           .execute(API_REINDEX)
+                                           .response();
+
+        return response.getString("task");
+    }
+
+    /**
+     * Determines if the task with the given ID is still active.
+     *
+     * @param taskId the task ID to check
+     * @return <tt>true</tt> if the task is alive and active, <tt>false</tt> otherwise
+     */
+    public boolean checkTaskActivity(String taskId) {
+        JSONObject response =
+                performGet().execute(API_TASK_INFO + Strings.urlEncode(taskId)).withCustomErrorHandler(ex -> {
+                    try {
+                        if (ex.getResponse().getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                            return new StringEntity("{ notFound: true }");
+                        } else {
+                            return null;
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        throw Exceptions.handle(e);
+                    }
+                }).response();
+
+        return !response.containsKey("notFound") && !response.getBooleanValue("completed");
     }
 
     /**
