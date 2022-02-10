@@ -379,35 +379,6 @@ class ElasticQuerySpec extends BaseSpecification {
         Doubles.areEqual(entities.get(29).getScore(), 0d)
     }
 
-    def "script score works"() {
-        when:
-        for (int i = 1; i <= 30; i++) {
-            QueryTestEntity entity = new QueryTestEntity()
-            entity.setValue("SCRIPTSCORE")
-            entity.setCounter(i)
-            elastic.update(entity)
-        }
-        elastic.refresh(QueryTestEntity.class)
-        def scriptScore = new ScriptScoreBuilder().source("doc['counter'].value * 10")
-        and:
-        def query = elastic.select(QueryTestEntity.class)
-                           .eq(QueryTestEntity.VALUE, "SCRIPTSCORE")
-                           .scriptScore(scriptScore)
-                           .orderByScoreDesc()
-        and:
-        def entities = query.queryList()
-        then:
-        entities.size() == 30
-        and:
-        Doubles.areEqual(entities.get(0).getScore(), 300d)
-        and:
-        Doubles.areEqual(entities.get(9).getScore(), 210d)
-        and:
-        Doubles.areEqual(entities.get(19).getScore(), 110d)
-        and:
-        Doubles.areEqual(entities.get(29).getScore(), 10d)
-    }
-
     def "a forcefully failed query does not yield any results"() {
         given:
         elastic.select(ESListTestEntity.class).delete()
