@@ -145,8 +145,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private FunctionScoreBuilder functionScore;
 
-    private ScriptScoreBuilder scriptScore;
-
     private String routing;
     private boolean unrouted;
 
@@ -279,15 +277,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             copy.functionScore = this.functionScore.copy();
         }
 
-        if (scriptScore != null) {
-            copy.scriptScore = this.scriptScore.copy();
-        }
-
         if (suggesters != null) {
             copy.suggesters = this.suggesters.entrySet()
                                              .stream()
                                              .collect(Collectors.toMap(Map.Entry::getKey,
-                                                                       entry -> (JSONObject) entry.getValue().clone()));
+                                                                       entry -> entry.getValue().clone()));
         }
 
         copy.additionalDescriptors = additionalDescriptors;
@@ -621,19 +615,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Adds the given script score to the query.
-     * <p>
-     * Note: This will not have any effect if a {@link #functionScore(FunctionScoreBuilder)} is also provided.
-     *
-     * @param scriptScore the script score builder to use
-     * @return the query itself for fluent method calls
-     */
-    public ElasticQuery<E> scriptScore(ScriptScoreBuilder scriptScore) {
-        this.scriptScore = scriptScore;
-        return this;
-    }
-
-    /**
      * Adds an order by clause which sorts by <tt>_score</tt> ascending.
      *
      * @return the query itself for fluent method calls
@@ -649,6 +630,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public ElasticQuery<E> orderByScoreDesc() {
         return orderDesc(SCORE);
+    }
+
+    /**
+     * Computes a random score and sorts by this.
+     * <p>
+     * Note that this will replace all other scorings.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderRandomly() {
+        return functionScore(FunctionScoreBuilder.RANDOM_SCORE).orderByScoreDesc();
     }
 
     /**
@@ -923,11 +915,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds the query and the function score query to the payload.
      * <p>
-     * If a function score builder is set, it is used to wrap the query. If only a function score builder is set,
-     * it is added to the payload without a query.
-     * <p>
-     * If a script score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
-     * payload. If only a script score source is set, it is added to the payload without a query.
+     * If a function score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
+     * payload. If only a function score builder is set, it is added to the payload without a query.
      *
      * @param payload the existing payload to add the query to
      */
@@ -938,19 +927,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             } else {
                 payload.put(KEY_QUERY, functionScore.build());
             }
-            return;
-        }
-
-        if (scriptScore != null) {
-            if (queryBuilder != null) {
-                payload.put(KEY_QUERY, scriptScore.apply(queryBuilder.build()));
-            } else {
-                payload.put(KEY_QUERY, scriptScore.build());
-            }
-            return;
-        }
-
-        if (queryBuilder != null) {
+        } else if (queryBuilder != null) {
             payload.put(KEY_QUERY, queryBuilder.build());
         }
     }
