@@ -17,7 +17,6 @@ import sirius.db.mixing.IntegrityConstraintFailedException;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
-import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
@@ -370,7 +369,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
     }
 
     @Override
-    public FilterFactory<SQLConstraint> filters() {
+    public SQLFilterFactory filters() {
         return FILTERS;
     }
 

@@ -22,8 +22,8 @@ import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.SkipDefaultValue;
-import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
+import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.Startable;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -298,7 +298,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    public FilterFactory<MongoConstraint> filters() {
+    public MongoFilterFactory filters() {
         return QueryBuilder.FILTERS;
     }
 
