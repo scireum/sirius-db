@@ -102,6 +102,18 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @return an exists constraint which can be filtered with additional constraints
      */
     public Exists existsIn(Mapping outerColumn, Class<? extends SQLEntity> other, Mapping innerColumn) {
+        return existsIn(new CompoundValue(outerColumn), other, new CompoundValue(innerColumn));
+    }
+
+    /**
+     * Generates an EXISTS clause: <tt>EXISTS(SELECT * FROM other WHERE e.outerColumn = other.innerColumn</tt>.
+     *
+     * @param outerColumn the column of the entities being queried to match
+     * @param other       the entity type to search in (which must exist)
+     * @param innerColumn the column within that inner entity type which must match the outer column
+     * @return an exists constraint which can be filtered with additional constraints
+     */
+    public Exists existsIn(CompoundValue outerColumn, Class<? extends SQLEntity> other, CompoundValue innerColumn) {
         return new Exists(outerColumn, other, innerColumn);
     }
 
