@@ -22,7 +22,6 @@ import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
-import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Strings;
@@ -701,7 +700,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     @Override
-    public FilterFactory<ElasticConstraint> filters() {
+    public ElasticFilterFactory filters() {
         return FILTERS;
     }
 
@@ -726,6 +725,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return null;
         }
 
-        return (JSONObject) json.clone();
+        return json.clone();
     }
 }
