@@ -59,7 +59,7 @@ public class LowLevelClient {
     private static final String ACTON_ADD = "add";
     private static final String ACTION_REMOVE = "remove";
 
-    private RestClient restClient;
+    private final RestClient restClient;
 
     /**
      * Creates a new client based on the given REST client which handles load balancing and connection management.
@@ -164,8 +164,8 @@ public class LowLevelClient {
      * @param index       the target index
      * @param id          the ID to use
      * @param routing     the routing to use
-     * @param primaryTerm the primaryTerm to use for optimistic locking during the delete
-     * @param seqNo       the seqNo to use for optimistic locking during the delete
+     * @param primaryTerm the primaryTerm to use for optimistic locking during the deletion
+     * @param seqNo       the seqNo to use for optimistic locking during the deletion
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
@@ -224,9 +224,9 @@ public class LowLevelClient {
      * Executes a async reindex request.
      *
      * @param sourceIndexName      the source index to read from
-     * @param destinationIndexName the name of the index in which the documents shoulds be reindexed
+     * @param destinationIndexName the name of the index in which the documents should be re-indexed
      * @param onSuccess            is called if the request is successfully finished
-     * @param onFailure            is called if a exception occurs while performing the request
+     * @param onFailure            is called if an exception occurs while performing the request
      * @deprecated Use {@link #startReindex(String, String)} and {@link #checkTaskActivity(String)} instead. As this
      * approach frequently runs into HTTP timeouts.
      */
@@ -248,7 +248,7 @@ public class LowLevelClient {
      * Note that this starts a re-index request and returns the created task id.
      *
      * @param sourceIndexName      the source index to read from
-     * @param destinationIndexName the name of the index in which the documents shoulds be reindexed
+     * @param destinationIndexName the name of the index in which the documents should be re-indexed
      * @return the ID of the background task within Elasticsearch
      */
     public String startReindex(String sourceIndexName, String destinationIndexName) {
@@ -368,7 +368,7 @@ public class LowLevelClient {
      *
      * @param alias       the alias to create or update
      * @param destination the index to which the alias should point
-     * @return the reponse of the call
+     * @return the response of the call
      */
     public JSONObject createOrMoveAlias(String alias, String destination) {
         if (!indexExists(destination)) {
