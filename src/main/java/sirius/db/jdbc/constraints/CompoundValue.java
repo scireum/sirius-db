@@ -72,8 +72,8 @@ public class CompoundValue {
         List<String> sqlRepresentation = new ArrayList<>(components.size());
         List<Object> parameters = new ArrayList<>(components.size());
         for (Object component : components) {
-            if (component instanceof Mapping mapping) {
-                sqlRepresentation.add(compiler.translateColumnName(mapping));
+            if (component instanceof Mapping) {
+                sqlRepresentation.add(compiler.translateColumnName((Mapping) component));
             } else {
                 sqlRepresentation.add("?");
                 parameters.add(component);
