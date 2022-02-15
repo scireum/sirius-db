@@ -194,9 +194,11 @@ public class LowLevelClient {
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
+     * @throws OptimisticLockException if one of the documents was modified during the runtime of the deletion query
      */
-    public JSONObject deleteByQuery(String alias, @Nullable String routing, JSONObject query) {
-        return performPost().routing(routing).data(query).execute(alias + API_DELETE_BY_QUERY).response();
+    public JSONObject deleteByQuery(String alias, @Nullable String routing, JSONObject query)
+            throws OptimisticLockException {
+        return performPost().routing(routing).data(query).tryExecute(alias + API_DELETE_BY_QUERY).response();
     }
 
     /**
