@@ -107,14 +107,16 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     /**
      * Generates an EXISTS clause: <tt>EXISTS(SELECT * FROM other WHERE e.outerColumn = other.innerColumn</tt>.
+     * <p>
+     * In contrast to {@link #existsIn(Mapping, Class, Mapping)} you can specify multiple join-columns
      *
-     * @param outerColumn the column of the entities being queried to match
-     * @param other       the entity type to search in (which must exist)
-     * @param innerColumn the column within that inner entity type which must match the outer column
+     * @param outerColumns the columns of the entities being queried to match
+     * @param other        the entity type to search in (which must exist)
+     * @param innerColumns the columns within that inner entity type which must match the outer columns
      * @return an exists constraint which can be filtered with additional constraints
      */
-    public Exists existsIn(CompoundValue outerColumn, Class<? extends SQLEntity> other, CompoundValue innerColumn) {
-        return new Exists(outerColumn, other, innerColumn);
+    public Exists existsIn(CompoundValue outerColumns, Class<? extends SQLEntity> other, CompoundValue innerColumns) {
+        return new Exists(outerColumns, other, innerColumns);
     }
 
     /**
