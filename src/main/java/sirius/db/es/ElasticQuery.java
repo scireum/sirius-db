@@ -16,6 +16,7 @@ import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
+import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
@@ -1497,6 +1498,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void truncate() {
+        elastic.retry(this::tryTruncate);
+    }
+
+    /**
+     * Deletes all matches using the capabilities of the underlying database.
+     * <p>
+     * Therefore <b>no checks</b> or anything will be invoked for the deleted entities.
+     * <p>
+     * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
+     *
+     * @throws OptimisticLockException if one of the documents was modified during the runtime of the truncate
+     */
+    public void tryTruncate() throws OptimisticLockException {
         if (forceFail) {
             return;
         }
