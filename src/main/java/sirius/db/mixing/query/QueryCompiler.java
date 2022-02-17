@@ -373,13 +373,15 @@ public abstract class QueryCompiler<C extends Constraint> {
             return Tuple.create(effectiveMapping, property);
         }
 
-        if (!(property instanceof BaseEntityRefProperty)) {
-            return null;
+        // properly resolve reference properties
+        if (property instanceof BaseEntityRefProperty<?, ?, ?> baseEntityRefProperty) {
+            return resolveProperty(baseEntityRefProperty.getReferencedDescriptor(), splitPath.getSecond(), effectiveMapping);
         }
 
-        return resolveProperty(((BaseEntityRefProperty<?, ?, ?>) property).getReferencedDescriptor(),
-                               splitPath.getSecond(),
-                               effectiveMapping);
+        // reaching this point, we likely have steampunk database access with most complicated structures; just add the
+        // stuff to the mapping and hope for the best
+        effectiveMapping = effectiveMapping.join(Mapping.named(splitPath.getSecond()));
+        return Tuple.create(effectiveMapping, property);
     }
 
     /**
