@@ -123,8 +123,8 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
         NestedList<?> list = getNestedList(accessPath.apply(entity));
         list.forEach(value -> getNestedDescriptor().beforeSave(value));
     }
-
-    protected EntityDescriptor getNestedDescriptor() {
+    
+    public EntityDescriptor getNestedDescriptor() {
         if (nestedDescriptor == null) {
             nestedDescriptor = mixing.getDescriptor(getNestedList(accessPath.apply(descriptor.getReferenceInstance())).getNestedType());
         }
