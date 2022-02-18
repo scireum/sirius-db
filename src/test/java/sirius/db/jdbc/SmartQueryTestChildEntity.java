@@ -11,6 +11,7 @@ package sirius.db.jdbc;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.annotations.Length;
+import sirius.db.mixing.annotations.NullAllowed;
 
 /**
  * Testentity for SmartQuerySpec
@@ -30,6 +31,11 @@ public class SmartQueryTestChildEntity extends SQLEntity {
             SQLEntityRef.on(SmartQueryTestParentEntity.class, SQLEntityRef.OnDelete.CASCADE);
     public static final Mapping OTHER_PARENT = Mapping.named("otherParent");
 
+    @Length(50)
+    @NullAllowed
+    private String parentName;
+    public static final Mapping PARENT_NAME = Mapping.named("parentName");
+
     public String getName() {
         return name;
     }
@@ -44,5 +50,13 @@ public class SmartQueryTestChildEntity extends SQLEntity {
 
     public SQLEntityRef<SmartQueryTestParentEntity> getOtherParent() {
         return otherParent;
+    }
+
+    public String getParentName() {
+        return parentName;
+    }
+
+    public void setParentName(String parentName) {
+        this.parentName = parentName;
     }
 }
