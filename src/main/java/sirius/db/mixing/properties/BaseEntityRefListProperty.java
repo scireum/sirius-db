@@ -182,7 +182,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
      *
      * @return the referenced entity drescriptor
      */
-    protected EntityDescriptor getReferencedDescriptor() {
+    public EntityDescriptor getReferencedDescriptor() {
         if (referencedDescriptor == null) {
             referencedDescriptor = mixing.getDescriptor(getReferenceEntityRefList().getType());
         }

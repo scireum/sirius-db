@@ -12,10 +12,8 @@ import sirius.db.jdbc.constraints.CompoundValue
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
-import org.junit.jupiter.api.Tag
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
-import sirius.kernel.health.HandledException
 
 import java.util.function.Function
 import java.util.stream.Collectors
@@ -64,6 +62,7 @@ class SmartQuerySpec extends BaseSpecification {
         c.setName("Child 1")
         c.getParent().setId(p1.getId())
         c.getOtherParent().setId(p2.getId())
+        c.setParentName(p1.name)
         oma.update(c)
 
         SmartQueryTestChildChildEntity cc = new SmartQueryTestChildChildEntity()
@@ -75,6 +74,7 @@ class SmartQuerySpec extends BaseSpecification {
         c.setName("Child 2")
         c.getParent().setId(p2.getId())
         c.getOtherParent().setId(p1.getId())
+        c.setParentName(p2.name)
         oma.update(c)
     }
 
@@ -333,6 +333,21 @@ class SmartQuerySpec extends BaseSpecification {
         def result = qry.queryList()
         then:
         result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 2"]
+    }
+
+    def "exists works with complicated columns"() {
+        given:
+        SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestParentEntity.class).
+                where(OMA.FILTERS.existsIn(
+                        new CompoundValue(SmartQueryTestParentEntity.ID).addComponent(SmartQueryTestParentEntity.NAME),
+                        SmartQueryTestChildEntity.class,
+                        new CompoundValue(SmartQueryTestChildEntity.PARENT).addComponent(SmartQueryTestChildEntity
+                                                                                                 .PARENT_NAME)).
+                        where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1")))
+        when:
+        def result = qry.queryList()
+        then:
+        result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 1"]
     }
 
     def "copy of query does also copy fields"() {
