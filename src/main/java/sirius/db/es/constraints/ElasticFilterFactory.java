@@ -89,9 +89,6 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint eqValue(Mapping field, Object value) {
-        if (field.getParent() != null && value instanceof String stringValue) {
-            return nestedMapContains(field.getParent(), field.getName(), stringValue);
-        }
         return wrap(new JSONObject().fluentPut("term", new JSONObject().fluentPut(determineFilterField(field), value)));
     }
 
