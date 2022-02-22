@@ -355,9 +355,9 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     @Nullable
-    private Tuple<Mapping, Property> resolveProperty(EntityDescriptor effectiveDescriptor,
-                                                     String propertyPath,
-                                                     Mapping path) {
+    protected Tuple<Mapping, Property> resolveProperty(EntityDescriptor effectiveDescriptor,
+                                                       String propertyPath,
+                                                       Mapping path) {
         Tuple<String, String> splitPath = Strings.split(propertyPath, ".");
         Property property = effectiveDescriptor.findProperty(splitPath.getFirst());
         if (property == null) {
@@ -373,13 +373,21 @@ public abstract class QueryCompiler<C extends Constraint> {
             return Tuple.create(effectiveMapping, property);
         }
 
-        if (!(property instanceof BaseEntityRefProperty)) {
-            return null;
-        }
+        return resolvedNestedProperty(property, effectiveMapping, splitPath.getSecond());
+    }
 
-        return resolveProperty(((BaseEntityRefProperty<?, ?, ?>) property).getReferencedDescriptor(),
-                               splitPath.getSecond(),
-                               effectiveMapping);
+    /**
+     * Translates a nested property (e.g. "foo.bar") into a proper mapping understood by
+     * {@link #compileConstraint(Tuple, FieldValue, boolean)}.
+     *
+     * @param property   the root property being queried on
+     * @param mapping    the mapping to obtain the root property
+     * @param nestedPath the nested path within the root property
+     * @return a tuple of the effective mapping and the resulting property to access or <tt>null</tt> if the
+     * path could not be resolved
+     */
+    protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
+        return null;
     }
 
     /**
