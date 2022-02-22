@@ -64,7 +64,7 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint compileFieldEquals(Mapping field, Property property, FieldValue value) {
-        if (value.getValue() instanceof String stringValue && (property instanceof BaseMapProperty)) {
+        if ((value.getValue() instanceof String stringValue) && (property instanceof BaseMapProperty)) {
             return Elastic.FILTERS.nestedMapContains(Mapping.named(property.getName()), field.getName(), stringValue);
         }
 
