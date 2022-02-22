@@ -12,8 +12,7 @@ import sirius.db.es.Elastic;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
-import sirius.db.mixing.properties.StringListMapProperty;
-import sirius.db.mixing.properties.StringMapProperty;
+import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mixing.query.QueryCompiler;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
@@ -56,7 +55,7 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
 
     @Override
     protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
-        if (property instanceof StringMapProperty || property instanceof StringListMapProperty) {
+        if (property instanceof BaseMapProperty) {
             return Tuple.create(Mapping.named(nestedPath), property);
         }
 
@@ -65,8 +64,7 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint compileFieldEquals(Mapping field, Property property, FieldValue value) {
-        if (value.getValue() instanceof String stringValue && (property instanceof StringMapProperty
-                                                               || property instanceof StringListMapProperty)) {
+        if (value.getValue() instanceof String stringValue && (property instanceof BaseMapProperty)) {
             return Elastic.FILTERS.nestedMapContains(Mapping.named(property.getName()), field.getName(), stringValue);
         }
 
