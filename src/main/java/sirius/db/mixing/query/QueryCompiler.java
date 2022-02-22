@@ -9,6 +9,7 @@
 package sirius.db.mixing.query;
 
 import parsii.tokenizer.LookaheadReader;
+import sirius.db.es.constraints.ElasticFilterFactory;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
@@ -17,8 +18,11 @@ import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.LocalDateProperty;
 import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.properties.LocalTimeProperty;
+import sirius.db.mixing.properties.StringListMapProperty;
+import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -668,7 +672,14 @@ public abstract class QueryCompiler<C extends Constraint> {
      * @param value    the value to query with
      * @return a constraint matching the given parameters
      */
+    @SuppressWarnings("unchecked")
+    @Explain("We securely cast a FilterFactory<C> to special implementations where we are sure about the identity of C.")
     protected C compileFieldEquals(Mapping field, Property property, FieldValue value) {
+        if (factory instanceof ElasticFilterFactory elasticFilterFactory
+            && value.getValue() instanceof String stringValue
+            && (property instanceof StringMapProperty || property instanceof StringListMapProperty)) {
+            return (C) elasticFilterFactory.nestedMapContains(field.getParent(), field.getName(), stringValue);
+        }
         return factory.eq(field, value.getValue());
     }
 
