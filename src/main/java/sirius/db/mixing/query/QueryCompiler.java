@@ -359,9 +359,9 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     @Nullable
-    private Tuple<Mapping, Property> resolveProperty(EntityDescriptor effectiveDescriptor,
-                                                     String propertyPath,
-                                                     Mapping path) {
+    protected Tuple<Mapping, Property> resolveProperty(EntityDescriptor effectiveDescriptor,
+                                                       String propertyPath,
+                                                       Mapping path) {
         Tuple<String, String> splitPath = Strings.split(propertyPath, ".");
         Property property = effectiveDescriptor.findProperty(splitPath.getFirst());
         if (property == null) {
@@ -377,17 +377,21 @@ public abstract class QueryCompiler<C extends Constraint> {
             return Tuple.create(effectiveMapping, property);
         }
 
-        // properly resolve reference properties
-        if (property instanceof BaseEntityRefProperty<?, ?, ?> baseEntityRefProperty) {
-            return resolveProperty(baseEntityRefProperty.getReferencedDescriptor(),
-                                   splitPath.getSecond(),
-                                   effectiveMapping);
-        }
+        return resolvedNestedProperty(property, effectiveMapping, splitPath.getSecond());
+    }
 
-        // reaching this point, we likely have steampunk database access with most complicated structures; just add the
-        // stuff to the mapping and hope for the best
-        effectiveMapping = effectiveMapping.join(Mapping.named(splitPath.getSecond()));
-        return Tuple.create(effectiveMapping, property);
+    /**
+     * Translates a nested property (e.g. "foo.bar") into a proper mapping understood by
+     * {@link #compileConstraint(Tuple, FieldValue, boolean)}.
+     *
+     * @param property   the root property being queried on
+     * @param mapping    the mapping to obtain the root property
+     * @param nestedPath the nested path within the root property
+     * @return a tuple of the effective mapping and the resulting property to access or <tt>null</tt> if the
+     * path could not be resolved
+     */
+    protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
+        return null;
     }
 
     /**
