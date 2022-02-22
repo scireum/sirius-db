@@ -678,14 +678,7 @@ public abstract class QueryCompiler<C extends Constraint> {
      * @param value    the value to query with
      * @return a constraint matching the given parameters
      */
-    @SuppressWarnings("unchecked")
-    @Explain("We securely cast a FilterFactory<C> to special implementations where we are sure about the identity of C.")
     protected C compileFieldEquals(Mapping field, Property property, FieldValue value) {
-        if (factory instanceof ElasticFilterFactory elasticFilterFactory
-            && value.getValue() instanceof String stringValue
-            && (property instanceof StringMapProperty || property instanceof StringListMapProperty)) {
-            return (C) elasticFilterFactory.nestedMapContains(field.getParent(), field.getName(), stringValue);
-        }
         return factory.eq(field, value.getValue());
     }
 
