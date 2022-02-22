@@ -379,7 +379,9 @@ public abstract class QueryCompiler<C extends Constraint> {
 
         // properly resolve reference properties
         if (property instanceof BaseEntityRefProperty<?, ?, ?> baseEntityRefProperty) {
-            return resolveProperty(baseEntityRefProperty.getReferencedDescriptor(), splitPath.getSecond(), effectiveMapping);
+            return resolveProperty(baseEntityRefProperty.getReferencedDescriptor(),
+                                   splitPath.getSecond(),
+                                   effectiveMapping);
         }
 
         // reaching this point, we likely have steampunk database access with most complicated structures; just add the

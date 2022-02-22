@@ -379,7 +379,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value)
-                                              .fluentPut(PARAM_FUZZINESS, fuzziness == null ? FUZZINESS_AUTO : fuzziness)
+                                              .fluentPut(PARAM_FUZZINESS,
+                                                         fuzziness == null ? FUZZINESS_AUTO : fuzziness)
                                               .fluentPut(PARAM_MAX_EXPANSIONS, maxExpansions)
                                               .fluentPut(PARAM_PREFIX_LENGTH, prefixLength)
                                               .fluentPut(PARAM_TRANSPOSITIONS, transpositions)
