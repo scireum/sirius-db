@@ -171,7 +171,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
-         * Adds a sort criteria for the given field, sorting ascending
+         * Adds a sort criteria for the given field, sorting ascending.
          *
          * @param field the field to sort by
          * @return the builder itself for fluent method calls
@@ -183,6 +183,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             }
             this.sorts.add(new JSONObject().fluentPut(field, KEY_ASC));
             return this;
+        }
+
+        /**
+         * Adds a sort criteria for the given field, sorting ascending.
+         *
+         * @param field the field to sort by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByAsc(Mapping field) {
+            return orderByAsc(field.getName());
         }
 
         /**
@@ -649,6 +659,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param field the field to collapse results by.
      * @return the query itself for fluent method calls
+     * @see #addCollapsedInnerHits(String, int)
      */
     public ElasticQuery<E> collapse(Mapping field) {
         this.collapseBy = field.toString();
@@ -660,6 +671,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param field the field to collapse results by.
      * @return the query itself for fluent method calls
+     * @see #addCollapsedInnerHits(String, int)
      */
     public ElasticQuery<E> collapse(String field) {
         this.collapseBy = field;
@@ -675,6 +687,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public InnerHitsBuilder addCollapsedInnerHits(String name, int size) {
         return new InnerHitsBuilder(name, size);
+    }
+
+    /**
+     * Adds a description to obtain a sublist of collapsed results.
+     *
+     * @param size the number of results
+     * @return the builder which can be used to control sorting
+     */
+    public InnerHitsBuilder addCollapsedInnerHits(int size) {
+        return new InnerHitsBuilder(ElasticEntity.DEFAULT_INNER_HITS, size);
     }
 
     /**
