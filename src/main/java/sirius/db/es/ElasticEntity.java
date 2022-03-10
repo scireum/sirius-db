@@ -153,6 +153,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * Determines the total number of the named inner hits as requested via
      * {@link ElasticQuery#addCollapsedInnerHits(String, int)}.
      *
+     * @param name the name of the inner hits as passed into <tt>ElasticQuery.addCollapsedInnerHits</tt>
      * @return the total number of inner hits
      */
     public int getTotalInnerHits(String name) {
