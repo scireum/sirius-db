@@ -208,7 +208,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     /**
      * Obtains the list of inner hits requested via {@link ElasticQuery#addCollapsedInnerHits(int)}.
      *
-     * @param type the type of expected entities (this has to be the same class as this entity).
+     * @param type the type of expected entities, required to be the same class as this entity
      * @param <E>  the generic type of the expected entities
      * @return a list of inner hits which haven been collapsed
      */
