@@ -186,7 +186,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
-         * Adds a sort criteria for the given field, sorting ascending.
+         * Adds a sorting criterion for the given field, in ascending order.
          *
          * @param field the field to sort by
          * @return the builder itself for fluent method calls
