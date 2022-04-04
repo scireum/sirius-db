@@ -179,6 +179,9 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         if (in(type, other, Types.VARCHAR, Types.CHAR)) {
             return true;
         }
+        if (in(type, other, Types.INTEGER, Types.SMALLINT, Types.TINYINT)) {
+            return true;
+        }
 
         return in(type, other, Types.NUMERIC, Types.DECIMAL);
     }
