@@ -173,10 +173,13 @@ public class ClickhouseDatabaseDialect extends BasicDatabaseDialect {
         if (type == other) {
             return true;
         }
-        if (in(type, other, Types.BOOLEAN, Types.INTEGER)) {
+        if (in(type, other, Types.BOOLEAN, Types.TINYINT)) {
             return true;
         }
         if (in(type, other, Types.VARCHAR, Types.CHAR)) {
+            return true;
+        }
+        if (in(type, other, Types.INTEGER, Types.SMALLINT, Types.TINYINT)) {
             return true;
         }
 
