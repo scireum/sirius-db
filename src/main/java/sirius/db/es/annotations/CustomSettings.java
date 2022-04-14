@@ -9,7 +9,6 @@
 package sirius.db.es.annotations;
 
 import sirius.db.es.SettingsCustomizer;
-import sirius.kernel.di.std.Register;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
