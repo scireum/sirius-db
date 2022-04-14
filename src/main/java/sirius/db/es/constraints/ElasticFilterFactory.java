@@ -144,7 +144,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #filled(Mapping)} instead
      */
+    @Deprecated
     public ElasticConstraint exists(Mapping field) {
         return filled(field);
     }
@@ -154,7 +156,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #notFilled(Mapping)} instead
      */
+    @Deprecated
     public ElasticConstraint notExists(Mapping field) {
         return notFilled(field);
     }

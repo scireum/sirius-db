@@ -10,7 +10,6 @@ package sirius.db.es.properties
 
 import sirius.db.es.Elastic
 import sirius.kernel.BaseSpecification
-import sirius.kernel.commons.Wait
 import sirius.kernel.di.std.Part
 
 class ESFilledSpec extends BaseSpecification {
@@ -45,14 +44,6 @@ class ESFilledSpec extends BaseSpecification {
                .count() == 1
 
         elastic.select(ESFilledEntity.class)
-               .where(Elastic.FILTERS.notExists(ESFilledEntity.TEST_FIELD))
-               .queryFirst()
-               .getIdAsString() == fieldNotFilled.getIdAsString()
-        elastic.select(ESFilledEntity.class)
-               .where(Elastic.FILTERS.notExists(ESFilledEntity.TEST_FIELD))
-               .count() == 1
-
-        elastic.select(ESFilledEntity.class)
                .ne(ESFilledEntity.TEST_FIELD, null)
                .queryFirst()
                .getIdAsString() == fieldFilled.getIdAsString()
@@ -66,14 +57,6 @@ class ESFilledSpec extends BaseSpecification {
                .getIdAsString() == fieldFilled.getIdAsString()
         elastic.select(ESFilledEntity.class)
                .where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
-               .count() == 1
-
-        elastic.select(ESFilledEntity.class)
-               .where(Elastic.FILTERS.exists(ESFilledEntity.TEST_FIELD))
-               .queryFirst()
-               .getIdAsString() == fieldFilled.getIdAsString()
-        elastic.select(ESFilledEntity.class)
-               .where(Elastic.FILTERS.exists(ESFilledEntity.TEST_FIELD))
                .count() == 1
     }
 }
