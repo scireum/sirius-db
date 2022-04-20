@@ -327,10 +327,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected boolean toJSON(EntityDescriptor ed, ElasticEntity entity, JSONObject data) {
         boolean changed = false;
         for (Property p : ed.getProperties()) {
-            if (!ElasticEntity.ID.getName().equals(p.getName())) {
-                data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
-                changed |= ed.isChanged(entity, p);
-            }
+            data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
+            changed |= ed.isChanged(entity, p);
         }
         return changed;
     }
