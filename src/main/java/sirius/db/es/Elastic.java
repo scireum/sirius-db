@@ -24,6 +24,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -125,7 +126,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     @ConfigValue("elasticsearch.suppressedRoutings")
     private List<String> suppressedRoutings;
-    private Map<EntityDescriptor, EnumSet<RoutingAccessMode>> suppressedRoutingsMap = new HashMap<>();
+    private final Map<EntityDescriptor, EnumSet<RoutingAccessMode>> suppressedRoutingsMap = new HashMap<>();
     private static final EnumSet<RoutingAccessMode> NO_SUPPRESSION = EnumSet.noneOf(RoutingAccessMode.class);
 
     private LowLevelClient client;
@@ -134,8 +135,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected Average callDuration = new Average();
     protected Counter numSlowQueries = new Counter();
 
-    private Map<EntityDescriptor, Property> routeTable = new HashMap<>();
-    private Map<EntityDescriptor, String> writeIndexTable = new ConcurrentHashMap<>();
+    private final Map<EntityDescriptor, Property> routeTable = new HashMap<>();
+    private final Map<EntityDescriptor, String> writeIndexTable = new ConcurrentHashMap<>();
     private boolean dockerDetected = false;
 
     protected void updateRouteTable(EntityDescriptor ed, Property p) {
@@ -738,6 +739,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @param json the object to copy
      * @return a shallow copy of the given JSON object
      */
+    @SuppressWarnings("java:S1168")
+    @Explain("We don't really return a map or collection here, so null is more expected than an empty json object")
     public static JSONObject copyJSON(JSONObject json) {
         if (json == null) {
             return null;
