@@ -181,6 +181,24 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
     }
 
     /**
+     * Asserts that the given field remains unchanged.
+     * <p>
+     * This can be used for conditions where a field cannot be updated after creation.
+     *
+     * @param field the field to check
+     */
+    public void assertFieldUnchanged(Mapping field) {
+        if (!isNew() && isChanged(field)) {
+            Property property = getDescriptor().getProperty(field);
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(field.toString()))
+                            .withNLSKey("Property.fieldNotUpdatable")
+                            .set(PARAM_FIELD, property.getFullLabel())
+                            .handle();
+        }
+    }
+
+    /**
      * Emits a validation warning if the given field is considered <tt>null</tt>.
      *
      * @param field                     the field to check
