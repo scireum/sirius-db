@@ -187,7 +187,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
      *
      * @param field the field to check
      */
-    public void assertFieldChanged(Mapping field) {
+    public void assertFieldUnchanged(Mapping field) {
         if (!isNew() && isChanged(field)) {
             Property property = getDescriptor().getProperty(field);
             throw Exceptions.createHandled()
