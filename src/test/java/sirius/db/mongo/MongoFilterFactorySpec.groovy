@@ -8,6 +8,7 @@
 
 package sirius.db.mongo
 
+import sirius.db.mixing.Mapping
 import sirius.db.mongo.properties.MongoStringListEntity
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Value
@@ -132,6 +133,7 @@ class MongoFilterFactorySpec extends BaseSpecification {
         MongoStringListEntity entity = new MongoStringListEntity()
         entity.getList().modify().addAll(["1", "2", "3", "4"])
         MongoStringListEntity entityEmpty = new MongoStringListEntity()
+        Mapping fakeField = Mapping.named("fakeField")
         when:
         mango.update(entity)
         mango.update(entityEmpty)
@@ -147,6 +149,25 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
                                                                               Value.of("4,5,6")).build()))
              .queryOne().getId() == entityEmpty.getId()
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
+                                                                              Value.of("4,5,6")).orEmpty().build()))
+             .count() == 0
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.or(QueryBuilder.FILTERS.eq(fakeField, "someValue"),
+                                                                     QueryBuilder.FILTERS.eq(fakeField, "otherValue"))))
+             .queryOne().getId() == entityEmpty.getId()
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.or(QueryBuilder.FILTERS.eq(fakeField, "someValue"),
+                                                                     QueryBuilder.FILTERS.eq(fakeField, "otherValue"),
+                                                                     QueryBuilder.FILTERS.notExists(fakeField))))
+             .count() == 0
     }
 
     def "complex AND-constraint cannot be inverted"() {
