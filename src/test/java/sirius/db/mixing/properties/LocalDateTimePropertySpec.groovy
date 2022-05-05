@@ -18,6 +18,7 @@ import sirius.kernel.di.std.Part
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 
 class LocalDateTimePropertySpec extends BaseSpecification {
 
@@ -30,7 +31,7 @@ class LocalDateTimePropertySpec extends BaseSpecification {
         LocalDateTime localDateTime = LocalDateTime.now()
         LocalDate localDate = localDateTime.toLocalDate()
         then:
-        dateTimeProperty.transformValue(Value.of(localDateTime)) == localDateTime
+        dateTimeProperty.transformValue(Value.of(localDateTime)) == localDateTime.truncatedTo(ChronoUnit.MILLIS)
         and:
         dateTimeProperty.transformValue(Value.of(localDate)) == LocalDateTime.of(localDate, LocalTime.MIDNIGHT)
     }

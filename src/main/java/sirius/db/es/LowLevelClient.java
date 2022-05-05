@@ -24,6 +24,8 @@ import sirius.kernel.health.HandledException;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +40,9 @@ import java.util.stream.Collectors;
  */
 public class LowLevelClient {
 
-    private static final String API_REINDEX = "/_reindex?pretty";
+    private static final String API_REINDEX_ASYNC = "/_reindex?pretty";
+    private static final String API_REINDEX = "/_reindex?wait_for_completion=false";
+    private static final String API_TASK_INFO = "/_tasks/";
     private static final String API_ALIAS = "/_alias";
     private static final String API_ALIASES = "/_aliases";
     private static final String API_SEARCH = "/_search";
@@ -55,7 +59,7 @@ public class LowLevelClient {
     private static final String ACTON_ADD = "add";
     private static final String ACTION_REMOVE = "remove";
 
-    private RestClient restClient;
+    private final RestClient restClient;
 
     /**
      * Creates a new client based on the given REST client which handles load balancing and connection management.
@@ -160,8 +164,8 @@ public class LowLevelClient {
      * @param index       the target index
      * @param id          the ID to use
      * @param routing     the routing to use
-     * @param primaryTerm the primaryTerm to use for optimistic locking during the delete
-     * @param seqNo       the seqNo to use for optimistic locking during the delete
+     * @param primaryTerm the primaryTerm to use for optimistic locking during the deletion
+     * @param seqNo       the seqNo to use for optimistic locking during the deletion
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
@@ -190,9 +194,11 @@ public class LowLevelClient {
      * @param routing the routing to use
      * @param query   the query to execute
      * @return the response of the call
+     * @throws OptimisticLockException if one of the documents was modified during the runtime of the deletion query
      */
-    public JSONObject deleteByQuery(String alias, @Nullable String routing, JSONObject query) {
-        return performPost().routing(routing).data(query).execute(alias + API_DELETE_BY_QUERY).response();
+    public JSONObject deleteByQuery(String alias, @Nullable String routing, JSONObject query)
+            throws OptimisticLockException {
+        return performPost().routing(routing).data(query).tryExecute(alias + API_DELETE_BY_QUERY).response();
     }
 
     /**
@@ -218,10 +224,13 @@ public class LowLevelClient {
      * Executes a async reindex request.
      *
      * @param sourceIndexName      the source index to read from
-     * @param destinationIndexName the name of the index in which the documents shoulds be reindexed
+     * @param destinationIndexName the name of the index in which the documents should be re-indexed
      * @param onSuccess            is called if the request is successfully finished
-     * @param onFailure            is called if a exception occurs while performing the request
+     * @param onFailure            is called if an exception occurs while performing the request
+     * @deprecated Use {@link #startReindex(String, String)} and {@link #checkTaskActivity(String)} instead. As this
+     * approach frequently runs into HTTP timeouts.
      */
+    @Deprecated
     public void reindex(String sourceIndexName,
                         String destinationIndexName,
                         @Nullable Consumer<Response> onSuccess,
@@ -230,7 +239,52 @@ public class LowLevelClient {
                                                       new JSONObject().fluentPut(PARAM_INDEX, sourceIndexName))
                                            .fluentPut("dest",
                                                       new JSONObject().fluentPut(PARAM_INDEX, destinationIndexName)))
-                     .executeAsync(API_REINDEX, onSuccess, onFailure);
+                     .executeAsync(API_REINDEX_ASYNC, onSuccess, onFailure);
+    }
+
+    /**
+     * Executes a reindex request.
+     * <p>
+     * Note that this starts a re-index request and returns the created task id.
+     *
+     * @param sourceIndexName      the source index to read from
+     * @param destinationIndexName the name of the index in which the documents should be re-indexed
+     * @return the ID of the background task within Elasticsearch
+     */
+    public String startReindex(String sourceIndexName, String destinationIndexName) {
+        JSONObject response = performPost().data(new JSONObject().fluentPut("source",
+                                                                            new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                                       sourceIndexName))
+                                                                 .fluentPut("dest",
+                                                                            new JSONObject().fluentPut(PARAM_INDEX,
+                                                                                                       destinationIndexName)))
+                                           .execute(API_REINDEX)
+                                           .response();
+
+        return response.getString("task");
+    }
+
+    /**
+     * Determines if the task with the given ID is still active.
+     *
+     * @param taskId the task ID to check
+     * @return <tt>true</tt> if the task is alive and active, <tt>false</tt> otherwise
+     */
+    public boolean checkTaskActivity(String taskId) {
+        JSONObject response =
+                performGet().execute(API_TASK_INFO + Strings.urlEncode(taskId)).withCustomErrorHandler(ex -> {
+                    try {
+                        if (ex.getResponse().getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                            return new StringEntity("{ notFound: true }");
+                        } else {
+                            return null;
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        throw Exceptions.handle(e);
+                    }
+                }).response();
+
+        return !response.containsKey("notFound") && !response.getBooleanValue("completed");
     }
 
     /**
@@ -314,7 +368,7 @@ public class LowLevelClient {
      *
      * @param alias       the alias to create or update
      * @param destination the index to which the alias should point
-     * @return the reponse of the call
+     * @return the response of the call
      */
     public JSONObject createOrMoveAlias(String alias, String destination) {
         if (!indexExists(destination)) {
@@ -438,11 +492,32 @@ public class LowLevelClient {
      * @param numberOfShards   the number of shards to use
      * @param numberOfReplicas the number of replicas per shard
      * @return the response of the call
+     * @deprecated use {@link #createIndex(String, int, int, Consumer)} instead
      */
+    @Deprecated
     public JSONObject createIndex(String index, int numberOfShards, int numberOfReplicas) {
+        return createIndex(index, numberOfShards, numberOfReplicas, null);
+    }
+
+    /**
+     * Creates the given index.
+     *
+     * @param index              the name of the index
+     * @param numberOfShards     the number of shards to use
+     * @param numberOfReplicas   the number of replicas per shard
+     * @param settingsCustomizer a callback which may further extend the settings object passed to Elasticsearch
+     * @return the response of the call
+     */
+    public JSONObject createIndex(String index,
+                                  int numberOfShards,
+                                  int numberOfReplicas,
+                                  @Nullable Consumer<JSONObject> settingsCustomizer) {
         JSONObject indexObj = new JSONObject().fluentPut("number_of_shards", numberOfShards)
                                               .fluentPut("number_of_replicas", numberOfReplicas);
         JSONObject settingsObj = new JSONObject().fluentPut(PARAM_INDEX, indexObj);
+        if (settingsCustomizer != null) {
+            settingsCustomizer.accept(settingsObj);
+        }
         JSONObject input = new JSONObject().fluentPut("settings", settingsObj);
         return performPut().data(input).execute(index).response();
     }
@@ -509,7 +584,6 @@ public class LowLevelClient {
     public JSONObject indexSettings(String index) {
         return performGet().execute(index + API_SETTINGS).response();
     }
-
 
     /**
      * Fetches the cluster health.

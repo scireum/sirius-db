@@ -22,6 +22,7 @@ import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
  * <p>
- * If possible, it is highly recommended to mark a field to use as routing for this entity to increase performance
+ * If possible, it is highly recommended marking a field to be useed as routing for this entity to increase performance
  * noticeably. This is done by annotating the field with {@link sirius.db.es.annotations.RoutedBy}.
  * <p>
  * For more info on why its a good idea to use custom routing, visit:
@@ -39,6 +40,17 @@ public abstract class ElasticEntity extends BaseEntity<String> {
 
     private static final String MATCHED_QUERIES = "matched_queries";
     private static final String FIELD_SCORE = "_score";
+
+    private static final String INNER_HITS = "inner_hits";
+
+    /**
+     * Provides a default name used to request some inner hits when collapsing a query result.
+     *
+     * @see #getTotalInnerHits()
+     * @see #getInnerHits(Class)
+     * @see ElasticQuery#addCollapsedInnerHits(int)
+     */
+    public static final String DEFAULT_INNER_HITS = "default_inner_hits";
 
     @Part
     protected static Elastic elastic;
@@ -95,6 +107,14 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         this.id = id;
     }
 
+    @Override
+    public boolean isAnyMappingChanged() {
+        return getDescriptor().getProperties()
+                              .stream()
+                              .filter(property -> !ElasticEntity.ID.getName().equals(property.getName()))
+                              .anyMatch(property -> getDescriptor().isChanged(this, property));
+    }
+
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("We only pass the result JSON along internally and want to avoid an extra copy.")
     protected void setSearchHit(JSONObject searchHit) {
@@ -127,6 +147,74 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         }
 
         return matchedQueriesArray.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toSet());
+    }
+
+    /**
+     * Determines the total number of the named inner hits as requested via
+     * {@link ElasticQuery#addCollapsedInnerHits(String, int)}.
+     *
+     * @param name the name of the inner hits as passed into <tt>ElasticQuery.addCollapsedInnerHits</tt>
+     * @return the total number of inner hits
+     */
+    public int getTotalInnerHits(String name) {
+        JSONObject innerHits = getSearchHit().getJSONObject(INNER_HITS);
+        if (innerHits == null) {
+            return 0;
+        }
+
+        innerHits = innerHits.getJSONObject(name);
+        if (innerHits == null) {
+            return 0;
+        }
+
+        return innerHits.getJSONObject("hits").getJSONObject("total").getIntValue("value");
+    }
+
+    /**
+     * Determines the total number of inner hits as requested via {@link ElasticQuery#addCollapsedInnerHits(int)}.
+     *
+     * @return the total number of inner hits
+     */
+    public int getTotalInnerHits() {
+        return getTotalInnerHits(DEFAULT_INNER_HITS);
+    }
+
+    /**
+     * Obtains the named list of inner hits requested via {@link ElasticQuery#addCollapsedInnerHits(String, int)}.
+     *
+     * @param type the type of expected entities (this has to be the same class as this entity).
+     * @param name the name of the list as defined in the query
+     * @param <E>  the generic type of the expected entities
+     * @return a list of inner hits which haven been collapsed
+     */
+    @SuppressWarnings("unchecked")
+    public <E extends ElasticEntity> List<E> getInnerHits(Class<E> type, String name) {
+        JSONObject innerHits = getSearchHit().getJSONObject(INNER_HITS);
+        if (innerHits == null) {
+            return Collections.emptyList();
+        }
+
+        innerHits = innerHits.getJSONObject(name);
+        if (innerHits == null) {
+            return Collections.emptyList();
+        }
+
+        return (List<E>) innerHits.getJSONObject("hits")
+                                  .getJSONArray("hits")
+                                  .stream()
+                                  .map(innerHit -> Elastic.make(getDescriptor(), (JSONObject) innerHit))
+                                  .toList();
+    }
+
+    /**
+     * Obtains the list of inner hits requested via {@link ElasticQuery#addCollapsedInnerHits(int)}.
+     *
+     * @param type the type of expected entities, required to be the same class as this entity
+     * @param <E>  the generic type of the expected entities
+     * @return a list of inner hits which haven been collapsed
+     */
+    public <E extends ElasticEntity> List<E> getInnerHits(Class<E> type) {
+        return getInnerHits(type, DEFAULT_INNER_HITS);
     }
 
     /**

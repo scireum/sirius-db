@@ -111,6 +111,8 @@ public abstract class Query<Q, E extends BaseEntity<?>, C extends Constraint> ex
 
     /**
      * Executes the query and counts the number of results.
+     * <p>
+     * Note that this will ignore any {@link #skip(int) skip} or {@link #limit(int) limit} settings on the query.
      *
      * @return the number of matched result entries
      */
@@ -118,6 +120,8 @@ public abstract class Query<Q, E extends BaseEntity<?>, C extends Constraint> ex
 
     /**
      * Determines if the query would have at least one matching entity.
+     * <p>
+     * Note that this will ignore any {@link #skip(int) skip} or {@link #limit(int) limit} settings on the query.
      *
      * @return <tt>true</tt> if at least one entity matches the query, <tt>false</tt> otherwise.
      */

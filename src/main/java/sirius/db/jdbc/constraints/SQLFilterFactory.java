@@ -32,22 +32,96 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     @Override
     protected SQLConstraint eqValue(Mapping field, Object value) {
-        return new FieldOperator(field, "=", value);
+        return eq(new CompoundValue(field), new CompoundValue(value));
+    }
+
+    /**
+     * Represents {@code leftHandSide = rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint eq(CompoundValue leftHandSide, CompoundValue rightHandSide) {
+        return new FieldOperator(leftHandSide, "=", rightHandSide);
     }
 
     @Override
     protected SQLConstraint neValue(Mapping field, Object value) {
-        return new FieldOperator(field, "<>", value);
+        return ne(new CompoundValue(field), new CompoundValue(value));
+    }
+
+    /**
+     * Represents {@code leftHandSide <> rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint ne(CompoundValue leftHandSide, CompoundValue rightHandSide) {
+        return new FieldOperator(leftHandSide, "<>", rightHandSide);
     }
 
     @Override
     protected SQLConstraint gtValue(Mapping field, Object value, boolean orEqual) {
-        return new FieldOperator(field, orEqual ? ">=" : ">", value);
+        return gt(new CompoundValue(field), new CompoundValue(value), orEqual);
+    }
+
+    /**
+     * Represents {@code leftHandSide > rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint gt(CompoundValue leftHandSide, CompoundValue rightHandSide) {
+        return gt(leftHandSide, rightHandSide, false);
+    }
+
+    /**
+     * Represents {@code leftHandSide >= rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint gte(CompoundValue leftHandSide, CompoundValue rightHandSide) {
+        return gt(leftHandSide, rightHandSide, true);
+    }
+
+    protected SQLConstraint gt(CompoundValue leftHandSide, CompoundValue rightHandSide, boolean orEqual) {
+        return new FieldOperator(leftHandSide, orEqual ? ">=" : ">", rightHandSide);
     }
 
     @Override
     protected SQLConstraint ltValue(Mapping field, Object value, boolean orEqual) {
-        return new FieldOperator(field, orEqual ? "<=" : "<", value);
+        return lt(new CompoundValue(field), new CompoundValue(value), orEqual);
+    }
+
+    /**
+     * Represents {@code leftHandSide < rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint lt(CompoundValue leftHandSide, CompoundValue rightHandSide) {
+        return lt(leftHandSide, rightHandSide, false);
+    }
+
+    /**
+     * Represents {@code leftHandSide <= rightHandSide} as constraint
+     *
+     * @param leftHandSide  the first row value
+     * @param rightHandSide the second row value
+     * @return the generated constraint
+     */
+    public SQLConstraint lte(CompoundValue leftHandSide, CompoundValue rightHandSide) {
+        return lt(leftHandSide, rightHandSide, true);
+    }
+
+    protected SQLConstraint lt(CompoundValue leftHandSide, CompoundValue rightHandSide, boolean orEqual) {
+        return new FieldOperator(leftHandSide, orEqual ? "<=" : "<", rightHandSide);
     }
 
     @Override
@@ -102,7 +176,21 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
      * @return an exists constraint which can be filtered with additional constraints
      */
     public Exists existsIn(Mapping outerColumn, Class<? extends SQLEntity> other, Mapping innerColumn) {
-        return new Exists(outerColumn, other, innerColumn);
+        return existsIn(new CompoundValue(outerColumn), other, new CompoundValue(innerColumn));
+    }
+
+    /**
+     * Generates an EXISTS clause: <tt>EXISTS(SELECT * FROM other WHERE e.outerColumn = other.innerColumn</tt>.
+     * <p>
+     * In contrast to {@link #existsIn(Mapping, Class, Mapping)} you can specify multiple join-columns
+     *
+     * @param outerColumns the columns of the entities being queried to match
+     * @param other        the entity type to search in (which must exist)
+     * @param innerColumns the columns within that inner entity type which must match the outer columns
+     * @return an exists constraint which can be filtered with additional constraints
+     */
+    public Exists existsIn(CompoundValue outerColumns, Class<? extends SQLEntity> other, CompoundValue innerColumns) {
+        return new Exists(outerColumns, other, innerColumns);
     }
 
     /**

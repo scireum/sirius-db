@@ -8,7 +8,9 @@
 
 package sirius.db.jdbc;
 
+import sirius.db.jdbc.constraints.CompoundValue;
 import sirius.db.jdbc.constraints.SQLConstraint;
+import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -19,6 +21,7 @@ import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
+import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -38,15 +41,18 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides a query DSL which is used to query {@link SQLEntity} instances from the database.
@@ -67,7 +73,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     protected List<Mapping> fields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Mapping, Boolean>> orderBys = new ArrayList<>();
-    protected List<SQLConstraint> constaints = new ArrayList<>();
+    protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
 
     /**
@@ -95,7 +101,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     @Override
     public SmartQuery<E> where(SQLConstraint constraint) {
         if (constraint != null) {
-            this.constaints.add(constraint);
+            this.constraints.add(constraint);
         }
 
         return this;
@@ -239,22 +245,26 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * processing. If a timeout ({@link #queryIterateTimeout} is reached, we stop iterating, discard the result set
      * and emit another query which starts just where the previous query stopped.
      * <p>
-     * Note however, as we either do this by ID or by setting an appropriate LIMIT range, there is a possibility,
-     * that we either miss an entity or even process an entity twice if a concurrent modification happens, which
-     * then changes the result set of this query.
+     * While we try hard to keep the result consistent, there is no way to guarantee this. There is a possibility,
+     * that we either miss an entity or even process an entity twice if a concurrent modification happens. Basically,
+     * you might get <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Non-repeatable_reads">
+     * non-repeatable reads</a> or <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Phantom_reads">
+     * phantom reads</a>.
+     * <p>
+     * Performance wise, it helps a lot if there are indices on any fields used for {@link #orderAsc(Mapping) ordering}.
      *
      * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
+     * @deprecated Use {@link #streamBlockwise()} instead.
      */
+    @Deprecated
     public void iterateBlockwise(Predicate<E> handler) {
         if (forceFail) {
             return;
         }
-        if (orderBys.isEmpty()) {
-            iterateBlockwiseById(handler);
-        } else {
-            iterateBlockwiseByPaging(handler);
-        }
+
+        streamBlockwise().takeWhile(handler).forEach(ignored -> {
+        });
     }
 
     /**
@@ -262,7 +272,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *
      * @param handler the handler to be invoked for each item in the result
      * @see #iterateBlockwise(Predicate)
+     * @deprecated Use {@link #streamBlockwise()} instead.
      */
+    @Deprecated
     public void iterateBlockwiseAll(Consumer<E> handler) {
         iterateBlockwise(entity -> {
             handler.accept(entity);
@@ -270,81 +282,69 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         });
     }
 
-    /**
-     * Provides a blockwise strategy based on the {@link SQLEntity#ID} of the entities.
-     * <p>
-     * If there are no ORDER BY clauses present, we can sort by ID and remember the last processed ID before
-     * attempting another query.
-     *
-     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
-     *                to continue processing or <tt>false</tt> to abort processing of the result set.
-     */
-    private void iterateBlockwiseById(Predicate<E> handler) {
-        AtomicLong lastId = new AtomicLong(-1);
-        AtomicBoolean keepGoing = new AtomicBoolean(true);
-        TaskContext context = TaskContext.get();
-        while (keepGoing.get() && context.isActive()) {
-            keepGoing.set(false);
-            Timeout timeout = new Timeout(queryIterateTimeout);
-
-            // Creates a copy and start processing results just after the results we have processed with the
-            // previous query...
-            copy().orderAsc(SQLEntity.ID).where(OMA.FILTERS.gt(SQLEntity.ID, lastId.get())).iterate(entity -> {
-                if (!handler.test(entity)) {
-                    // As soon as the handler returns false, we're done and can abort entirely...
-                    return false;
-                }
-
-                if (timeout.isReached()) {
-                    // If the timeout is reached, we set a flag so that another query will be attempted....
-                    keepGoing.set(true);
-                    // We remember the ID of the last processed entity, so that the query starts right after
-                    // this one...
-                    lastId.set(entity.getId());
-                    // Abort local processing so that another result set is opened.
-                    return false;
-                }
-
-                // Timeout not reached yet, continue processing results...
-                return true;
-            });
+    @Override
+    public Stream<E> streamBlockwise() {
+        if (forceFail) {
+            return Stream.empty();
         }
+
+        if (limit > 0) {
+            throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
+        }
+        if (skip > 0) {
+            throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
+        }
+
+        return StreamSupport.stream(new SmartQuerySpliterator(), false);
     }
 
-    /**
-     * Provides a blockwise strategy based on the LIMIT range.
-     * <p>
-     * If ORDER BY clauses are present, we have to employ a sliding window technique.
-     *
-     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
-     *                to continue processing or <tt>false</tt> to abort processing of the result set.
-     */
-    private void iterateBlockwiseByPaging(Predicate<E> handler) {
-        // Contains the counter of already processed entities. These have to be skippend when emitting the
-        // next query...
-        AtomicInteger skipCounter = new AtomicInteger(0);
-        AtomicBoolean keepGoing = new AtomicBoolean(true);
-        TaskContext context = TaskContext.get();
-        while (keepGoing.get() && context.isActive()) {
-            keepGoing.set(false);
-            Timeout timeout = new Timeout(queryIterateTimeout);
-            // Create a copy of the query an install an appropriate skip value...
-            copy().skip(skipCounter.get()).iterate(entity -> {
-                if (!handler.test(entity)) {
-                    // As soon as the handler returns false, we're done and can abort entirely...
-                    return false;
+    private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
+        private E lastValue = null;
+        private TaskContext taskContext = TaskContext.get();
+
+        @Override
+        public int characteristics() {
+            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
+        }
+
+        @Override
+        protected Iterator<E> pullNextBlock() {
+            if (!taskContext.isActive()) {
+                return null;
+            }
+
+            List<E> block = queryNextBlock();
+            if (!block.isEmpty()) {
+                lastValue = block.get(block.size() - 1);
+            }
+            return block.iterator();
+        }
+
+        private List<E> queryNextBlock() {
+            SmartQuery<E> effectiveQuery = copy().orderAsc(BaseEntity.ID).limit(MAX_LIST_SIZE);
+
+            if (lastValue == null) {
+                return effectiveQuery.queryList();
+            }
+            CompoundValue leftHandSide = new CompoundValue();
+            CompoundValue rightHandSide = new CompoundValue();
+
+            for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
+                Mapping sortColumn = sorting.getFirst();
+                boolean sortAscending = sorting.getSecond().booleanValue();
+                Object value = lastValue.getDescriptor().getProperty(sortColumn).getValue(lastValue);
+                if (sortAscending) {
+                    // the order by is ascending -> COLUMN > lastvalue.column
+                    leftHandSide.addComponent(sortColumn);
+                    rightHandSide.addComponent(value);
+                } else {
+                    // the order by is descending -> lastvalue.column > COLUMN
+                    leftHandSide.addComponent(value);
+                    rightHandSide.addComponent(sortColumn);
                 }
+            }
 
-                // Remember the processed entity...
-                skipCounter.incrementAndGet();
-
-                if (timeout.isReached()) {
-                    keepGoing.set(true);
-                    return false;
-                }
-
-                return true;
-            });
+            return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
         }
     }
 
@@ -383,7 +383,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.forceFail = forceFail;
         copy.fields = new ArrayList<>(fields);
         copy.orderBys.addAll(orderBys);
-        copy.constaints.addAll(constaints);
+        copy.constraints.addAll(constraints);
+        copy.limit = limit;
+        copy.skip = skip;
 
         return copy;
     }
@@ -741,9 +743,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         });
 
         // make sure that the join fields are always fetched
-        requiredFields.forEach(requiredField -> {
-            appendToSELECT(c, applyAliases, mf, requiredField, false, null);
-        });
+        requiredFields.forEach(requiredField -> appendToSELECT(c, applyAliases, mf, requiredField, false, null));
     }
 
     private void appendToSELECT(Compiler c,
@@ -776,16 +776,24 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private Compiler selectCount() {
         Compiler c = new Compiler(descriptor);
-        if (!fields.isEmpty()) {
-            c.getSELECTBuilder().append("SELECT COUNT(");
+        c.getSELECTBuilder().append("SELECT COUNT(");
+
+        if (fields.size() > 1) {
             if (distinct) {
-                c.getSELECTBuilder().append("DISTINCT");
+                c.getSELECTBuilder().append("DISTINCT ");
+                appendFieldList(c, false);
+            } else {
+                throw Exceptions.createHandled()
+                                .to(OMA.LOG)
+                                .withSystemErrorMessage("Only use multiple arguments in 'fields' and 'count' in "
+                                                        + "combination with the 'distinct' statement")
+                                .handle();
             }
-            appendFieldList(c, false);
-            c.getSELECTBuilder().append(")");
         } else {
-            c.getSELECTBuilder().append("SELECT COUNT(*)");
+            c.getSELECTBuilder().append("*");
         }
+
+        c.getSELECTBuilder().append(")");
         return c;
     }
 
@@ -794,12 +802,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void where(Compiler compiler) {
-        if (constaints.isEmpty()) {
+        if (constraints.isEmpty()) {
             return;
         }
         compiler.getWHEREBuilder().append(" WHERE ");
         Monoflop mf = Monoflop.create();
-        for (SQLConstraint c : constaints) {
+        for (SQLConstraint c : constraints) {
             if (mf.successiveCall()) {
                 compiler.getWHEREBuilder().append(" AND ");
             }
@@ -822,11 +830,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void limit(Compiler compiler) {
-        if (limit > 0 && db.hasCapability(Capability.LIMIT)) {
+        //if a skip value is set but no limit, we have to set a limit > 0 to make limit working.
+        int effectiveLimit = limit == 0 && skip > 0 ? Integer.MAX_VALUE : limit;
+        if (effectiveLimit > 0 && db.hasCapability(Capability.LIMIT)) {
             if (skip > 0) {
-                compiler.getWHEREBuilder().append(" LIMIT ").append(skip).append(", ").append(limit);
+                compiler.getWHEREBuilder().append(" LIMIT ").append(skip).append(", ").append(effectiveLimit);
             } else {
-                compiler.getWHEREBuilder().append(" LIMIT ").append(limit);
+                compiler.getWHEREBuilder().append(" LIMIT ").append(effectiveLimit);
             }
         }
     }

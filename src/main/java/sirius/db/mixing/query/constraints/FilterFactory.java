@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Defines a factory to create common filters or constraints to be used in a {@link sirius.db.mixing.query.Query}.
@@ -340,19 +341,6 @@ public abstract class FilterFactory<C extends Constraint> {
     public abstract C notFilled(Mapping field);
 
     /**
-     * Generates a constraint which ensures that the given list field is not filled (empty)
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #isEmptyList(Mapping)} - in MongoDB and Elastisearch we commonly
-     * refer to lists as "list" rather than array.
-     */
-    @Deprecated
-    public C isEmptyArray(Mapping field) {
-        return isEmptyList(field);
-    }
-
-    /**
      * Generates a constraint which ensures that the given list field is not filled (empty).
      * <p>
      * This can be overwritten if a database specific handling is required.
@@ -476,7 +464,14 @@ public abstract class FilterFactory<C extends Constraint> {
      * @return a filter builder used to generate a constraint
      */
     public OneInField<C> containsOne(Mapping field, Object... values) {
-        return new OneInField<>(this, field, Arrays.asList(values));
+        if (values.length > 0 && (values[0] instanceof Collection
+                                  || values[0] instanceof Iterable
+                                  || values[0] instanceof Stream)) {
+            throw new IllegalArgumentException(
+                    "FilterFactory#containsOne will produce wrong/unexpected behaviour when passing a Collection, Iterable or Stream!"
+                    + " This is most probably a mistake, use FilterFactory#oneInField instead.");
+        }
+        return oneInField(field, Arrays.asList(values));
     }
 
     /**
@@ -498,6 +493,13 @@ public abstract class FilterFactory<C extends Constraint> {
      * @return the generated constraint
      */
     public C containsNone(Mapping field, Object... values) {
+        if (values.length > 0 && (values[0] instanceof Collection
+                                  || values[0] instanceof Iterable
+                                  || values[0] instanceof Stream)) {
+            throw new IllegalArgumentException(
+                    "FilterFactory#containsNone will produce wrong/unexpected behaviour when passing a Collection, Iterable or Stream!"
+                    + " This is most probably a mistake, use FilterFactory#noneInField instead.");
+        }
         return noneInField(field, Arrays.asList(values));
     }
 

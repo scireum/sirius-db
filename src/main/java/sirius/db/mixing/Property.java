@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Maps a field, which is either defined in an entity, a composite or a mixin to a mapped property.
@@ -112,9 +113,11 @@ public abstract class Property extends Composable {
     protected Field field;
 
     /**
-     * Contains a string representation of the default value for the column
+     * Contains the default value of this property
+     * <p>
+     * For the string representation that can be used in JDBC statements see {@link #getColumnDefaultValue()}
      */
-    protected String defaultValue;
+    protected Value defaultValue = Value.EMPTY;
 
     /**
      * Contains the length of this property
@@ -156,12 +159,17 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Determines the default value of the column by checking for a {@link DefaultValue} annotation on the field.
+     * Determines the default value of the property by checking for a {@link DefaultValue} annotation on the field, or its initial value.
      */
     protected void determineDefaultValue() {
-        DefaultValue dv = field.getAnnotation(DefaultValue.class);
-        if (dv != null) {
-            this.defaultValue = dv.value();
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
+        } else {
+            Object initialValue = getValue(getDescriptor().getReferenceInstance());
+            if (!isConsideredNull(initialValue)) {
+                this.defaultValue = Value.of(initialValue);
+            }
         }
     }
 
@@ -169,9 +177,9 @@ public abstract class Property extends Composable {
      * Determines the column length by checking for a {@link Length} annotation on the field.
      */
     protected void determineLengths() {
-        Length len = field.getAnnotation(Length.class);
-        if (len != null) {
-            this.length = len.value();
+        Length lengthAnnotation = field.getAnnotation(Length.class);
+        if (lengthAnnotation != null) {
+            this.length = lengthAnnotation.value();
         }
     }
 
@@ -186,7 +194,7 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Returns the anotation of the given type.
+     * Returns the annotation of the given type.
      *
      * @param type the type of the annotation to fetch
      * @param <A>  the annotation to fetch
@@ -198,7 +206,7 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Determines if an anotation of the given type is present.
+     * Determines if an annotation of the given type is present.
      *
      * @param type the type of the annotation to fetch
      * @return <tt>true</tt> if an annotation of the given type is present, <tt>false</tt> otherwise
@@ -259,7 +267,7 @@ public abstract class Property extends Composable {
      * names of a per-entity basis.
      * </li>
      * <li>
-     * Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaingClass].[field]</tt>.
+     * Define an i18n value for <tt>propertyKey</tt>, which is normally <tt>[declaringClass].[field]</tt>.
      * So for <tt>com.acme.model.Address.street</tt> this would be <tt>Address.street</tt>
      * </li>
      * <li>
@@ -285,10 +293,10 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Returns the full label or nme of the property which is shown in error messages etc.
+     * Returns the full label or name of the property which is shown in error messages etc.
      * <p>
      * This will only differ from {@link #getLabel()} for field in composites or mixins. In this case,
-     * we try to lookup the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
+     * we try to look up the "parent" name (<tt>[entityClass].[compositeName]</tt>), that is the access path leading
      * to this field. If a property is available for this and none is present for the fully qualified name
      * (<tt>[entityClass].[compositeName]_[field]</tt>), a label in the form of <tt>getLabel() (NLS.get(parent))</tt>
      * is shown.
@@ -366,7 +374,7 @@ public abstract class Property extends Composable {
      * The internal access path will be used to find the target object which contains the field.
      * <p>
      * If the underlying field of this property is primitive, but the given value is <tt>null</tt> or transformed to
-     * <tt>null</tt>, this will be ignored. An scenario like this might happen, if we join-fetch a value, which is not
+     * <tt>null</tt>, this will be ignored. A scenario like this might happen, if we join-fetch a value, which is not
      * present.
      *
      * @param mapperType the mapper which is currently active. This can be used to determine which kind of database is
@@ -449,11 +457,11 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * For modifyable datatypes like collections, this returns the value as copy so that further modifications
+     * For modifiable datatypes like collections, this returns the value as copy so that further modifications
      * will not change the returned value.
      *
      * @param entity the entity to fetch the value from
-     * @return the as compy of the value which is currently stored in the field
+     * @return the as copy of the value which is currently stored in the field
      */
     public Object getValueAsCopy(Object entity) {
         return getValue(entity);
@@ -610,7 +618,7 @@ public abstract class Property extends Composable {
      * Converts the given value, which is read from an import (e.g. an Excel import) into the target type of this
      * property.
      * <p>
-     * By default, this will use the logic provided by {@link #transformValue(Value)} but cen be overwritten by
+     * By default, this will use the logic provided by {@link #transformValue(Value)} but can be overwritten by
      * properties.
      *
      * @param value the value to convert
@@ -638,7 +646,7 @@ public abstract class Property extends Composable {
     /**
      * Returns the entity descriptor to which this property belongs
      *
-     * @return the descriptor which owns this propery
+     * @return the descriptor which owns this property
      */
     public EntityDescriptor getDescriptor() {
         return descriptor;
@@ -664,6 +672,18 @@ public abstract class Property extends Composable {
     }
 
     /**
+     * Invoked during validation of an entity.
+     * <p>
+     * This method is intended to be overwritten with custom logic.
+     *
+     * @param entity             the entity to check
+     * @param validationConsumer the consumer collecting the validation messages
+     */
+    protected void onValidate(Object entity, Consumer<String> validationConsumer) {
+        // this method does nothing by default
+    }
+
+    /**
      * Invoked before an entity is written to the database.
      * <p>
      * This method is intended to be overwritten with custom logic.
@@ -671,6 +691,7 @@ public abstract class Property extends Composable {
      * @param entity the entity to check
      */
     protected void onBeforeSaveChecks(Object entity) {
+        // this method does nothing by default
     }
 
     /**
@@ -776,8 +797,21 @@ public abstract class Property extends Composable {
      *
      * @return the default value of this property
      */
-    public String getDefaultValue() {
+    public Value getDefaultValue() {
         return defaultValue;
+    }
+
+    /**
+     * Returns the default value to use as String to be used as column default value.
+     *
+     * @return the default value to use as column default
+     */
+    public String getColumnDefaultValue() {
+        if (defaultValue.isNull()) {
+            return null;
+        }
+        Object defaultData = transformToDatasource(OMA.class, defaultValue.get());
+        return defaultData == null ? null : NLS.toMachineString(defaultData);
     }
 
     @Override

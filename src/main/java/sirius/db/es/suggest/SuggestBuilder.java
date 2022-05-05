@@ -19,7 +19,7 @@ import sirius.db.mixing.Mapping;
  *
  * @deprecated use {@link SuggestionQuery}
  */
-@Deprecated
+@Deprecated(since = "2021/07/01")
 public class SuggestBuilder {
 
     public static final String TYPE_TERM = "term";

@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.scireum</groupId>
         <artifactId>sirius-parent</artifactId>
-        <version>7.1</version>
+        <version>10.0.0</version>
     </parent>
     <artifactId>sirius-db</artifactId>
     <version>DEVELOPMENT-SNAPSHOT</version>
@@ -19,7 +19,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>ga-2.0.0</sirius.kernel>
+        <sirius.kernel>dev-30.0.0</sirius.kernel>
     </properties>
 
     <repositories>
@@ -45,22 +45,22 @@
         <dependency>
             <groupId>com.scireum</groupId>
             <artifactId>parsii</artifactId>
-            <version>4.0</version>
+            <version>5.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
-            <version>2.7.0</version>
+            <version>2.9.0</version>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-            <version>3.12.7</version>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>4.3.4</version>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>3.1.0</version>
+            <version>3.7.1</version>
         </dependency>
 
         <dependency>
@@ -71,19 +71,19 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.62</version>
+            <version>1.2.78</version>
         </dependency>
 
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>2.5.0</version>
+            <version>2.7.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ru.yandex.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.1.40</version>
+            <version>0.2.6</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

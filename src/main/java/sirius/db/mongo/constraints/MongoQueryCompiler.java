@@ -12,10 +12,14 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.properties.BaseEntityRefListProperty;
+import sirius.db.mixing.properties.BaseMapProperty;
+import sirius.db.mixing.properties.StringListMapProperty;
 import sirius.db.mixing.properties.StringListProperty;
+import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.query.QueryCompiler;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mongo.QueryBuilder;
+import sirius.kernel.commons.Tuple;
 
 import java.util.List;
 
@@ -64,9 +68,19 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
     }
 
     @Override
+    protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
+        if (property instanceof StringMapProperty || property instanceof StringListMapProperty) {
+            return Tuple.create(mapping.join(Mapping.named(nestedPath)), property);
+        }
+
+        return null;
+    }
+
+    @Override
     protected MongoConstraint compileFieldEquals(Mapping field, Property property, FieldValue value) {
-        if (value.getValue() == null && (property instanceof StringListProperty
-                                         || property instanceof BaseEntityRefListProperty)) {
+        if (value.getValue() == null && (property instanceof BaseMapProperty
+                                         || property instanceof BaseEntityRefListProperty
+                                         || property instanceof StringListProperty)) {
             return QueryBuilder.FILTERS.isEmptyList(field);
         }
 

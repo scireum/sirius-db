@@ -151,7 +151,7 @@ public abstract class QueryCompiler<C extends Constraint> {
 
     private boolean skipWhitespace() {
         boolean skipped = false;
-        while (reader.current().isWhitepace()) {
+        while (reader.current().isWhitespace()) {
             reader.consume();
             skipped = true;
         }
@@ -337,7 +337,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             return !reader.current().is('"');
         }
 
-        return !reader.current().is(')', ':') && !reader.current().isWhitepace() && !isAtOperator();
+        return !reader.current().is(')', ':') && !reader.current().isWhitespace() && !isAtOperator();
     }
 
     /**
@@ -355,9 +355,9 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     @Nullable
-    private Tuple<Mapping, Property> resolveProperty(EntityDescriptor effectiveDescriptor,
-                                                     String propertyPath,
-                                                     Mapping path) {
+    protected Tuple<Mapping, Property> resolveProperty(EntityDescriptor effectiveDescriptor,
+                                                       String propertyPath,
+                                                       Mapping path) {
         Tuple<String, String> splitPath = Strings.split(propertyPath, ".");
         Property property = effectiveDescriptor.findProperty(splitPath.getFirst());
         if (property == null) {
@@ -373,13 +373,21 @@ public abstract class QueryCompiler<C extends Constraint> {
             return Tuple.create(effectiveMapping, property);
         }
 
-        if (!(property instanceof BaseEntityRefProperty)) {
-            return null;
-        }
+        return resolvedNestedProperty(property, effectiveMapping, splitPath.getSecond());
+    }
 
-        return resolveProperty(((BaseEntityRefProperty<?, ?, ?>) property).getReferencedDescriptor(),
-                               splitPath.getSecond(),
-                               effectiveMapping);
+    /**
+     * Translates a nested property (e.g. "foo.bar") into a proper mapping understood by
+     * {@link #compileConstraint(Tuple, FieldValue, boolean)}.
+     *
+     * @param property   the root property being queried on
+     * @param mapping    the mapping to obtain the root property
+     * @param nestedPath the nested path within the root property
+     * @return a tuple of the effective mapping and the resulting property to access or <tt>null</tt> if the
+     * path could not be resolved
+     */
+    protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
+        return null;
     }
 
     /**
@@ -611,7 +619,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     private boolean continueValue(AtomicInteger numberOfOpenBrackets) {
-        if (reader.current().isEndOfInput() || reader.current().isWhitepace()) {
+        if (reader.current().isEndOfInput() || reader.current().isWhitespace()) {
             return false;
         }
 
@@ -636,20 +644,14 @@ public abstract class QueryCompiler<C extends Constraint> {
      * @return a constraint matching the given parameters
      */
     protected C compileOperation(Mapping field, Property property, String operation, FieldValue value) {
-        switch (operation) {
-            case ">":
-                return factory.gt(field, value.getValue());
-            case ">=":
-                return factory.gte(field, value.getValue());
-            case "<=":
-                return factory.lte(field, value.getValue());
-            case "<":
-                return factory.lt(field, value.getValue());
-            case "<>":
-                return compileNotEquals(field, property, value);
-            default:
-                return compileFieldEquals(field, property, value);
-        }
+        return switch (operation) {
+            case ">" -> factory.gt(field, value.getValue());
+            case ">=" -> factory.gte(field, value.getValue());
+            case "<=" -> factory.lte(field, value.getValue());
+            case "<" -> factory.lt(field, value.getValue());
+            case "<>" -> compileNotEquals(field, property, value);
+            default -> compileFieldEquals(field, property, value);
+        };
     }
 
     /**

@@ -144,7 +144,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #filled(Mapping)} instead
      */
+    @Deprecated
     public ElasticConstraint exists(Mapping field) {
         return filled(field);
     }
@@ -154,7 +156,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #notFilled(Mapping)} instead
      */
+    @Deprecated
     public ElasticConstraint notExists(Mapping field) {
         return notFilled(field);
     }
@@ -257,7 +261,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * if there are several objects nested in a list, an entity would also match, if the filtered properties match
      * against any of the nested objects instead of all in a single one - which is most commonly wanted.
      * <p>
-     * See: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-nested-query.html
+     * See: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-nested-query.html">Nested Query Documentation</a>
      *
      * @param field the list or inner map to query
      * @return a nested query which can be populated with constraints
@@ -379,7 +383,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value)
-                                              .fluentPut(PARAM_FUZZINESS, fuzziness == null ? FUZZINESS_AUTO : fuzziness)
+                                              .fluentPut(PARAM_FUZZINESS,
+                                                         fuzziness == null ? FUZZINESS_AUTO : fuzziness)
                                               .fluentPut(PARAM_MAX_EXPANSIONS, maxExpansions)
                                               .fluentPut(PARAM_PREFIX_LENGTH, prefixLength)
                                               .fluentPut(PARAM_TRANSPOSITIONS, transpositions)

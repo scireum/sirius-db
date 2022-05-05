@@ -11,6 +11,7 @@ package sirius.db.mongo;
 import org.bson.Document;
 
 import javax.annotation.Nullable;
+import java.io.Serial;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,7 @@ class ReadonlyObject extends Document {
 
     protected static final Document EMPTY_OBJECT = new ReadonlyObject();
 
+    @Serial
     private static final long serialVersionUID = -1079350674050338133L;
 
     private ReadonlyObject() {
@@ -92,7 +94,6 @@ class ReadonlyObject extends Document {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public void putAll(Map map) {
         throw new UnsupportedOperationException();
     }

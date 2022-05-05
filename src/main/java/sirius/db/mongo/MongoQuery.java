@@ -16,6 +16,8 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
 import sirius.db.mongo.facets.MongoFacet;
+import sirius.kernel.async.TaskContext;
+import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -23,10 +25,14 @@ import sirius.kernel.health.Exceptions;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Creates a new query against MongoDB.
@@ -133,12 +139,81 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         return this;
     }
 
+    /**
+     * Marks the query as potentially long-running.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public MongoQuery<E> markLongRunning() {
+        finder.markLongRunning();
+
+        return this;
+    }
+
     @Override
     public void iterate(Predicate<E> resultHandler) {
         if (forceFail) {
             return;
         }
         finder.eachIn(descriptor.getRelationName(), doc -> resultHandler.test(Mango.make(descriptor, doc)));
+    }
+
+    @Override
+    public Stream<E> streamBlockwise() {
+        if (forceFail) {
+            return Stream.empty();
+        }
+
+        String relation = descriptor.getRelationName();
+        if (limit > 0) {
+            throw new UnsupportedOperationException("MongoQuery doesn't allow 'limit' in streamBlockwise");
+        }
+        if (skip > 0) {
+            throw new UnsupportedOperationException("MongoQuery doesn't allow 'skip' in streamBlockwise");
+        }
+        if (finder.orderBy != null && !finder.orderBy.isEmpty()) {
+            throw new UnsupportedOperationException("MongoQuery doesn't allow any explicit ordering in streamBlockwise");
+        }
+
+        return StreamSupport.stream(new MongoQuerySpliterator(relation), false);
+    }
+
+    private class MongoQuerySpliterator extends PullBasedSpliterator<E> {
+
+        private final String relation;
+        private String lastId = null;
+        private TaskContext taskContext = TaskContext.get();
+
+        protected MongoQuerySpliterator(String relation) {
+            this.relation = relation;
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
+        }
+
+        @Nullable
+        @Override
+        protected Iterator<E> pullNextBlock() {
+            if (!taskContext.isActive()) {
+                return null;
+            }
+
+            List<E> buffer = new ArrayList<>(MAX_LIST_SIZE);
+
+            Finder query = finder.copyFilters().orderByAsc(MongoEntity.ID).limit(MAX_LIST_SIZE);
+            if (lastId != null) {
+                query.where(QueryBuilder.FILTERS.gt(MongoEntity.ID, lastId));
+            }
+            query.allIn(relation, doc -> buffer.add(Mango.make(descriptor, doc)));
+
+            if (!buffer.isEmpty()) {
+                lastId = buffer.get(buffer.size() - 1).getId();
+            }
+
+            return buffer.iterator();
+        }
     }
 
     @Override

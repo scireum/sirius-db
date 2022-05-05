@@ -12,8 +12,8 @@ import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.SmartQuery;
 import sirius.db.jdbc.TranslationState;
 import sirius.db.mixing.EntityDescriptor;
-import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
+import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 
 import java.util.ArrayList;
@@ -24,15 +24,15 @@ import java.util.List;
  */
 public class Exists extends SQLConstraint {
 
-    private Mapping outerColumn;
-    private Mapping innerColumn;
-    private List<SQLConstraint> constraints = new ArrayList<>();
-    private Class<? extends SQLEntity> other;
+    private final CompoundValue outerColumn;
+    private final CompoundValue innerColumn;
+    private final List<SQLConstraint> constraints = new ArrayList<>();
+    private final Class<? extends SQLEntity> other;
 
     @Part
     private static Mixing mixing;
 
-    protected Exists(Mapping outerColumn, Class<? extends SQLEntity> other, Mapping innerColumn) {
+    protected Exists(CompoundValue outerColumn, Class<? extends SQLEntity> other, CompoundValue innerColumn) {
         this.outerColumn = outerColumn;
         this.other = other;
         this.innerColumn = innerColumn;
@@ -41,7 +41,7 @@ public class Exists extends SQLConstraint {
     /**
      * Adds an additional constraint to further filter the entities which must or must not exist.
      *
-     * @param constraint the constaint on the inner entity type
+     * @param constraint the constraint on the inner entity type
      * @return the exists itself for fluent method calls
      */
     public Exists where(SQLConstraint constraint) {
@@ -63,9 +63,13 @@ public class Exists extends SQLConstraint {
         compiler.setWHEREBuilder(new StringBuilder());
 
         // Applies the main constraint and switches the underlying JOIN state just in time.
-        compiler.getWHEREBuilder().append(" WHERE ").append(compiler.translateColumnName(outerColumn)).append(" = ");
+        Tuple<String, List<Object>> compiledOuterColumn = outerColumn.compileExpression(compiler);
+        compiler.getWHEREBuilder().append(" WHERE ").append(compiledOuterColumn.getFirst()).append(" = ");
+        compiledOuterColumn.getSecond().forEach(compiler::addParameter);
         TranslationState state = compiler.captureAndReplaceTranslationState(newAlias, ed);
-        compiler.getWHEREBuilder().append(compiler.translateColumnName(innerColumn));
+        Tuple<String, List<Object>> compiledInnerColumn = innerColumn.compileExpression(compiler);
+        compiler.getWHEREBuilder().append(compiledInnerColumn.getFirst());
+        compiledInnerColumn.getSecond().forEach(compiler::addParameter);
 
         // Applies additional constraints...
         for (SQLConstraint c : constraints) {

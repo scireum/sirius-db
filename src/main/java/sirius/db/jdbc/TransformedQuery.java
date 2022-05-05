@@ -15,6 +15,7 @@ import sirius.kernel.health.Exceptions;
 
 import java.sql.SQLException;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * A transformed query converts a plain {@link SQLQuery} into one that returns entities rather than rows.
@@ -38,9 +39,7 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     @Override
     public void iterate(Predicate<E> handler) {
         try {
-            qry.iterate(row -> {
-                return invokeHandlerForRow(handler, row);
-            }, getLimit());
+            qry.iterate(row -> handler.test(mapToEntity(row)), getLimit());
         } catch (SQLException e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
@@ -52,15 +51,20 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
         }
     }
 
+    @Override
+    public Stream<E> streamBlockwise() {
+        throw new UnsupportedOperationException("`.streamBlockwise()` does not support arbitrary queries.");
+    }
+
     @SuppressWarnings("unchecked")
-    protected Boolean invokeHandlerForRow(Predicate<E> handler, Row row) {
+    private E mapToEntity(Row row) {
         try {
             E entity = (E) descriptor.make(OMA.class, alias, key -> row.hasValue(key) ? row.getValue(key) : null);
             if (descriptor.isVersioned()) {
                 entity.setVersion(row.getValue(BaseMapper.VERSION).asInt(0));
             }
             entity.fetchRow = row;
-            return handler.test(entity);
+            return entity;
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)

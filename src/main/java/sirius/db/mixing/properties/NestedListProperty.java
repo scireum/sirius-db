@@ -124,9 +124,10 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
         list.forEach(value -> getNestedDescriptor().beforeSave(value));
     }
 
-    protected EntityDescriptor getNestedDescriptor() {
+    public EntityDescriptor getNestedDescriptor() {
         if (nestedDescriptor == null) {
-            nestedDescriptor = mixing.getDescriptor(getNestedList(accessPath.apply(descriptor.getReferenceInstance())).getNestedType());
+            nestedDescriptor =
+                    mixing.getDescriptor(getNestedList(accessPath.apply(descriptor.getReferenceInstance())).getNestedType());
         }
 
         return nestedDescriptor;

@@ -48,7 +48,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     @Override
     public Table completeTableInfos(Table table) {
         for (TableColumn col : table.getColumns()) {
-            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col)) {
+            if (col.getDefaultValue() != null && hasEscapedDefaultValue(col) && !isQuoted(col.getDefaultValue())) {
                 col.setDefaultValue("'" + col.getDefaultValue() + "'");
             }
         }
@@ -58,6 +58,13 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
             table.getKeys().remove(key);
         }
         return table;
+    }
+
+    private boolean isQuoted(String value) {
+        if (Strings.isEmpty(value)) {
+            return false;
+        }
+        return value.matches("^'([^'].*)?'$");
     }
 
     @SuppressWarnings("squid:S1067")
@@ -245,7 +252,7 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
         }
 
         // TIMESTAMP values cannot be null -> we gracefully ignore this
-        // here, sice the alter statement would be ignored anyway.
+        // here, since the alter statement would be ignored anyway.
         return target.getType() != Types.TIMESTAMP || target.getDefaultValue() != null;
     }
 
@@ -285,6 +292,9 @@ public abstract class BasicDatabaseDialect implements DatabaseDialect {
     protected boolean areColumnLengthsEqual(TableColumn target, TableColumn current) {
         // The length is only enforced for CHAR fields by default...
         if (!areTypesEqual(Types.CHAR, target.getType())) {
+            return true;
+        }
+        if (target.getLength() == 0) {
             return true;
         }
 

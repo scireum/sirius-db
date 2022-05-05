@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -46,19 +47,23 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected Object customTransform(Object value) {
-        if (value instanceof LocalDate) {
-            return Date.from(((LocalDate) value).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+        if (value instanceof LocalDate localDate) {
+            return Date.from(localDate.atStartOfDay()
+                                      .truncatedTo(ChronoUnit.MILLIS)
+                                      .atZone(ZoneId.systemDefault())
+                                      .toInstant());
         }
-        if (value instanceof LocalDateTime) {
-            return Date.from(((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant());
+        if (value instanceof LocalDateTime localDateTime) {
+            return Date.from(localDateTime.truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
         }
-        if (value instanceof LocalTime) {
-            return Date.from(((LocalTime) value).atDate(LocalDate.now(ZoneId.systemDefault()))
-                                                .atZone(ZoneId.systemDefault())
-                                                .toInstant());
+        if (value instanceof LocalTime localTime) {
+            return Date.from(localTime.atDate(LocalDate.now(ZoneId.systemDefault()))
+                                      .truncatedTo(ChronoUnit.MILLIS)
+                                      .atZone(ZoneId.systemDefault())
+                                      .toInstant());
         }
-        if (value instanceof Instant) {
-            return Date.from((Instant) value);
+        if (value instanceof Instant instant) {
+            return Date.from(instant.truncatedTo(ChronoUnit.MILLIS));
         }
 
         return value;
@@ -121,6 +126,9 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
 
     @Override
     protected MongoConstraint invert(MongoConstraint constraint) {
+        if ("$or".equals(constraint.getKey())) {
+            return new MongoConstraint("$nor", constraint.getObject());
+        }
         if (constraint.getKey().startsWith("$")) {
             throw new IllegalArgumentException(Strings.apply("The %s constraint can't be easily inverted!",
                                                              constraint.getKey()));
@@ -159,7 +167,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     /**
-     * Creates a constraint which ensures that the given field contains all of the given values.
+     * Creates a constraint which ensures that the given field contains all the given values.
      *
      * @param field  the field to filter on
      * @param values the values to check
@@ -187,11 +195,22 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      *
      * @param key        the name of the field to check
      * @param expression the regular expression to apply
-     * @param options    the options to apply like "i" to match case insensitive
+     * @param options    the options to apply like "i" to match case-insensitive
      * @return a filter representing the given operation
      */
     public MongoConstraint regex(Mapping key, Object expression, String options) {
         return new MongoConstraint(key.toString(), new Document("$regex", expression).append("$options", options));
+    }
+
+    /**
+     * Builds a filter which represents an 'elemMatch' filter for the given array field and query.
+     *
+     * @param arrayField the array field to query for
+     * @param query      the query that at least one value in the array should match
+     * @return a filter representing the 'elemMatch' operation
+     */
+    public MongoConstraint elemMatch(Mapping arrayField, Document query) {
+        return new MongoConstraint(arrayField.toString(), new Document("$elemMatch", query));
     }
 
     /**
@@ -252,7 +271,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
      * <p>
      * If the given value is empty, no constraint will be generated.
      * <p>
-     * Due to the nature of the MongoDB implementation on full token matches are successfull. To provide a
+     * Due to the nature of the MongoDB implementation on full token matches are successful. To provide a
      * prefix search use {@link #prefix(Mapping, String)} and ensure that a proper index is present.
      *
      * @param value the token to search for
@@ -265,5 +284,19 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         }
 
         return new MongoConstraint("$text", new Document("$search", value));
+    }
+
+    /**
+     * Builds a constraint regarding the {@code $size} of a (list) mapping.
+     * <p>
+     * See <a href="https://docs.mongodb.com/manual/reference/operator/query/size/">the manual</a> for usage information
+     * and restrictions concerning the operator.
+     *
+     * @param mapping the mapping to filter
+     * @param value   the target size to compare against
+     * @return the generated constraint
+     */
+    public MongoConstraint hasListSize(Mapping mapping, int value) {
+        return new MongoConstraint(mapping.toString(), new Document("$size", value));
     }
 }

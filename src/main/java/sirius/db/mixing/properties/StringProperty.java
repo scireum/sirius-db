@@ -24,12 +24,15 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Lob;
+import sirius.db.mixing.annotations.LowerCase;
 import sirius.db.mixing.annotations.Trim;
+import sirius.db.mixing.annotations.UpperCase;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.sql.Clob;
 import java.sql.Types;
@@ -41,6 +44,8 @@ import java.util.function.Consumer;
 public class StringProperty extends Property implements SQLPropertyInfo, ESPropertyInfo {
 
     private final boolean trim;
+    private final boolean lowerCase;
+    private final boolean upperCase;
     private final boolean lob;
 
     /**
@@ -66,6 +71,8 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     protected StringProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
         this.trim = field.isAnnotationPresent(Trim.class);
+        this.lowerCase = field.isAnnotationPresent(LowerCase.class);
+        this.upperCase = field.isAnnotationPresent(UpperCase.class);
         this.lob = field.isAnnotationPresent(Lob.class);
     }
 
@@ -122,22 +129,20 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         if (value.isFilled()) {
             return value.asString();
         }
-        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+        if (this.isNullable() || defaultValue.isEmptyString()) {
             return null;
         }
-        return defaultValue;
+        return defaultValue.asString();
     }
 
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (trim && value != null) {
-            value = value.trim();
-            if (value.isEmpty()) {
-                value = null;
-            }
+        if (value != null && (trim  || lowerCase || upperCase)) {
+            value = applyAnnotationModifications(entity, value);
             setValue(entity, value);
         }
+
         super.onBeforeSaveChecks(entity);
 
         if (length > 0 && value != null && value.length() > length) {
@@ -149,6 +154,25 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
                             .set("maxLength", length)
                             .handle();
         }
+    }
+
+    @Nullable
+    private String applyAnnotationModifications(Object entity, String value) {
+        String modifiedValue = value;
+
+        if (trim) {
+            modifiedValue = modifiedValue.trim();
+        }
+        if (modifiedValue.isEmpty()) {
+            modifiedValue = null;
+        } else if (lowerCase) {
+            modifiedValue = modifiedValue.toLowerCase();
+        } else if (upperCase) {
+            modifiedValue = modifiedValue.toUpperCase();
+        }
+
+
+        return modifiedValue;
     }
 
     @Override

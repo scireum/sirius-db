@@ -95,14 +95,14 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage(
-                                    "A database error occured while executing a DeleteQuery for %s: %s (%s)",
+                                    "A database error occurred while executing a DeleteQuery for %s: %s (%s)",
                                     type.getName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
-                            .withSystemErrorMessage("An error occured while executing a DeleteQuery for %s: %s (%s)",
+                            .withSystemErrorMessage("An error occurred while executing a DeleteQuery for %s: %s (%s)",
                                                     type.getName())
                             .handle();
         }

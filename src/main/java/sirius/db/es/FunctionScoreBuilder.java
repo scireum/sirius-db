@@ -44,6 +44,13 @@ public class FunctionScoreBuilder {
     private static final String DECAY_TYPE_EXP = "exp";
     private static final String SUFFIX_SECONDS = "s";
 
+    /**
+     * Provides a re-usable function score builder to generate a random score.
+     * <p>
+     * Note that this isn't public, as these builders are inherently mutable and this very dangerous to share.
+     */
+    protected static final FunctionScoreBuilder RANDOM_SCORE = new FunctionScoreBuilder().random().replaceScore();
+
     private Map<String, Object> parameters = new HashMap<>();
     private List<JSONObject> functions = new ArrayList<>();
 
@@ -67,6 +74,27 @@ public class FunctionScoreBuilder {
      */
     public FunctionScoreBuilder function(JSONObject function) {
         functions.add(function);
+        return this;
+    }
+
+    /**
+     * Replaces the score of each document by the score computed by this function score.
+     * <p>
+     * The default is to multiply them. However, if no other score is applied, the document score is always 0.0
+     *
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder replaceScore() {
+        return parameter("boost_mode", "replace");
+    }
+
+    /**
+     * Computes a random score.
+     *
+     * @return the builder itself for fluent method calls
+     */
+    public FunctionScoreBuilder random() {
+        functions.add(new JSONObject().fluentPut("random_score", new JSONObject()));
         return this;
     }
 
@@ -202,7 +230,7 @@ public class FunctionScoreBuilder {
         return new JSONObject().fluentPut(FUNCTION_SCORE,
                                           new JSONObject().fluentPut(FIELD_QUERY, query)
                                                           .fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<Object>(functions)))
+                                                                     new JSONArray(new ArrayList<>(functions)))
                                                           .fluentPutAll(parameters));
     }
 
@@ -214,7 +242,7 @@ public class FunctionScoreBuilder {
     public JSONObject build() {
         return new JSONObject().fluentPut(FUNCTION_SCORE,
                                           new JSONObject().fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<Object>(functions)))
+                                                                     new JSONArray(new ArrayList<>(functions)))
                                                           .fluentPutAll(parameters));
     }
 

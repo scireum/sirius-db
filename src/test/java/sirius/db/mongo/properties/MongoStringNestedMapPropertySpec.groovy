@@ -14,6 +14,7 @@ import sirius.kernel.BaseSpecification
 import sirius.kernel.di.std.Part
 
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 class MongoStringNestedMapPropertySpec extends BaseSpecification {
 
@@ -35,7 +36,7 @@ class MongoStringNestedMapPropertySpec extends BaseSpecification {
         and:
         resolved.getMap().containsKey("X")
         resolved.getMap().get("X").get().getValue1() == "Y"
-        resolved.getMap().get("X").get().getValue2() == timestamp
+        resolved.getMap().get("X").get().getValue2() == timestamp.truncatedTo(ChronoUnit.MILLIS)
 
         when:
         resolved.getMap().modify().get("X").withValue1("ZZZ")

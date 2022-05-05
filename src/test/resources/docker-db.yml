@@ -2,19 +2,19 @@ version: "2"
 
 services:
   redis:
-    image: redis:3.2
+    image: redis:6.2.6-alpine
     ports:
     - "6379"
     hostname: redis
 
   mongo:
-    image: mongo:4.4.3
+    image: mongo:4.4.8
     ports:
     - "27017"
     hostname: mongo
 
   mariadb:
-    image: mariadb:10.3.14-bionic
+    image: mariadb:10.3.30-focal
     ports:
     - "3306"
     environment:

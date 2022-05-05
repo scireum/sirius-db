@@ -108,10 +108,10 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      *                          lock error.
      */
     public <E extends B> void retryUpdate(E entity, Callback<E> preSaveModifier) {
-        Monoflop retryOccured = Monoflop.create();
+        Monoflop retryOccurred = Monoflop.create();
         retry(() -> {
             E entityToUpdate = entity;
-            if (retryOccured.successiveCall()) {
+            if (retryOccurred.successiveCall()) {
                 entityToUpdate = tryRefresh(entity);
             }
 
@@ -233,15 +233,15 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         try {
             entityDescriptor.afterSave(entity);
         } finally {
-            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "AferSave - " + entityDescriptor.getName());
+            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "AfterSave - " + entityDescriptor.getName());
         }
     }
 
     /**
      * Creates a new entity in the underlying database.
      *
-     * @param entity the entity to create
-     * @param entityDescriptor     the descriptor of the entity
+     * @param entity           the entity to create
+     * @param entityDescriptor the descriptor of the entity
      * @throws Exception in case of an database error
      */
     protected abstract void createEntity(B entity, EntityDescriptor entityDescriptor) throws Exception;
@@ -249,9 +249,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     /**
      * Updates an existing entity in the underlying database.
      *
-     * @param entity the entity to update
-     * @param force  <tt>ture</tt> if the update is forced and optimistic locking must be disabled
-     * @param entityDescriptor     the descriptor of the entity
+     * @param entity           the entity to update
+     * @param force            <tt>ture</tt> if the update is forced and optimistic locking must be disabled
+     * @param entityDescriptor the descriptor of the entity
      * @throws Exception in case of an database error
      */
     protected abstract void updateEntity(B entity, boolean force, EntityDescriptor entityDescriptor) throws Exception;
@@ -349,9 +349,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     /**
      * Deletes the give entity from the database.
      *
-     * @param entity the entity to delete
-     * @param force  <tt>true</tt> if the delete is forced and optimistic locking must be disabled
-     * @param entityDescriptor     the descriptor of the entity
+     * @param entity           the entity to delete
+     * @param force            <tt>true</tt> if the delete is forced and optimistic locking must be disabled
+     * @param entityDescriptor the descriptor of the entity
      * @throws Exception in case of an database error
      */
     protected abstract void deleteEntity(B entity, boolean force, EntityDescriptor entityDescriptor) throws Exception;
@@ -453,11 +453,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     /**
      * Tries to find the entity with the given id.
      *
-     * @param id      the id of the entity to find
-     * @param entityDescriptor      the descriptor of the entity to find
-     * @param context the advanced search context which can be populated using {@link ContextInfo} in
-     *                {@link #find(Class, Object, ContextInfo...)}
-     * @param <E>     the effective type of the entity
+     * @param id               the id of the entity to find
+     * @param entityDescriptor the descriptor of the entity to find
+     * @param context          the advanced search context which can be populated using {@link ContextInfo} in
+     *                         {@link #find(Class, Object, ContextInfo...)}
+     * @param <E>              the effective type of the entity
      * @return the entity wrapped as optional or an empty optional if the entity was not found
      * @throws Exception in case of a database error
      */

@@ -26,8 +26,6 @@ import sirius.kernel.di.std.Register;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -93,18 +91,6 @@ public class StringBooleanMapProperty extends BaseMapProperty implements ESPrope
     @Override
     protected Object transformFromMongo(Value object) {
         return object.get();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    protected Object transformFromElastic(Value object) {
-        Map<Object, Object> result = new HashMap<>();
-        Object value = object.get();
-        if (value instanceof Collection) {
-            ((Collection<Map<?, ?>>) value).forEach(entry -> result.put(entry.get(StringMapProperty.KEY),
-                                                                        entry.get(StringMapProperty.VALUE)));
-        }
-        return result;
     }
 
     @Override

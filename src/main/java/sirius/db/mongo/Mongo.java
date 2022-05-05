@@ -8,21 +8,20 @@
 
 package sirius.db.mongo;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
 import com.mongodb.ReadPreference;
-import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Collation;
 import sirius.db.mixing.Mixing;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
+import sirius.kernel.async.CallContext;
 import sirius.kernel.commons.Explain;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
-import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.PartCollection;
 import sirius.kernel.di.std.ConfigValue;
@@ -38,10 +37,8 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -58,16 +55,12 @@ public class Mongo implements Startable, Stoppable {
 
     private static final int MONGO_PORT = 27017;
 
-    private final Map<String, Tuple<MongoClient, String>> mongoClients = new HashMap<>();
-    private final Map<String, Boolean> mongoClientConfigured = new HashMap<>();
+    private final Map<String, Tuple<MongoClient, String>> mongoClients = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> mongoClientConfigured = new ConcurrentHashMap<>();
 
     @ConfigValue("mongo.logQueryThreshold")
     private Duration logQueryThreshold;
     private long logQueryThresholdMillis = -1;
-
-    @ConfigValue("mongo.collationLocale")
-    private static String collationLocale;
-    private ValueHolder<Collation> collationHolder = null;
 
     @Parts(IndexDescription.class)
     private PartCollection<IndexDescription> indexDescriptions;
@@ -124,18 +117,21 @@ public class Mongo implements Startable, Stoppable {
     @Explain("We cannot close the client here as it is part of the return value.")
     protected synchronized Tuple<MongoClient, String> setupClient(String database) {
         Extension config = Sirius.getSettings().getExtension("mongo.databases", database);
-        List<ServerAddress> hosts = Arrays.stream(config.get("hosts").asString().split(","))
-                                          .map(String::trim)
-                                          .map(hostname -> PortMapper.mapPort(SERVICE_NAME, hostname, MONGO_PORT))
-                                          .map(hostAndPort -> new ServerAddress(hostAndPort.getFirst(),
-                                                                                hostAndPort.getSecond()))
-                                          .filter(Objects::nonNull)
-                                          .collect(Collectors.toList());
+        String connectionString = Arrays.stream(config.get("hosts").asString().split(","))
+                                        .map(String::trim)
+                                        .map(hostname -> PortMapper.mapPort(SERVICE_NAME, hostname, MONGO_PORT))
+                                        .map(hostAndPort -> hostAndPort.getFirst() + ":" + hostAndPort.getSecond())
+                                        .collect(Collectors.joining(","));
+        MongoClientSettings.Builder settingsBuilder = MongoClientSettings.builder()
+                                                                         .applyConnectionString(new ConnectionString(
+                                                                                 "mongodb://" + connectionString))
+                                                                         .applicationName(CallContext.getNodeName());
         MongoCredential credentials = determineCredentials(config);
-        MongoClientOptions options = MongoClientOptions.builder().build();
-        MongoClient mongoClient =
-                credentials == null ? new MongoClient(hosts, options) : new MongoClient(hosts, credentials, options);
+        if (credentials != null) {
+            settingsBuilder.credential(credentials);
+        }
 
+        MongoClient mongoClient = MongoClients.create(settingsBuilder.build());
         createIndices(database, mongoClient.getDatabase(config.get("db").asString()));
         return Tuple.create(mongoClient, config.get("db").asString());
     }
@@ -316,28 +312,6 @@ public class Mongo implements Startable, Stoppable {
      */
     public Deleter delete() {
         return delete(Mixing.DEFAULT_REALM);
-    }
-
-    /**
-     * Tries to determine which collation should be used for queries.
-     *
-     * @return the collation to be used or <tt>null</tt> to indicate that no collation should be used.
-     */
-    @Nullable
-    public Collation determineCollation() {
-        if (collationHolder == null) {
-            initializeCollation();
-        }
-
-        return collationHolder.get();
-    }
-
-    private void initializeCollation() {
-        if (Strings.isFilled(collationLocale)) {
-            collationHolder = new ValueHolder<>(Collation.builder().locale(collationLocale).build());
-        } else {
-            collationHolder = new ValueHolder<>(null);
-        }
     }
 
     /**

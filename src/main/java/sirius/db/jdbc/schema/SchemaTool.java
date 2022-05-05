@@ -50,7 +50,7 @@ public class SchemaTool {
      * Creates a new instance for the given dialect.
      *
      * @param realm   the realm this schema is for
-     * @param dialect the dialect to use when generatic schema change actions.
+     * @param dialect the dialect to use when generating schema change actions.
      */
     public SchemaTool(String realm, DatabaseDialect dialect) {
         this.realm = realm;

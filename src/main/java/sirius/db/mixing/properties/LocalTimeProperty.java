@@ -16,6 +16,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
@@ -57,6 +58,17 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
     }
 
     @Override
+    protected Object transformValueFromImport(Value value) {
+        if (value.is(LocalTime.class)) {
+            return value.get();
+        }
+        if (value.is(LocalDateTime.class)) {
+            return value.get(LocalDateTime.class, null).toLocalTime();
+        }
+        return NLS.parseMachineString(LocalTime.class, value.asString());
+    }
+
+    @Override
     public Object transformValue(Value value) {
         if (value.is(LocalTime.class)) {
             return value.get();
@@ -85,5 +97,19 @@ public class LocalTimeProperty extends Property implements SQLPropertyInfo {
     @Override
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.TIME));
+    }
+
+    /**
+     * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
+     * <p>
+     * The initial value will commonly be a temporal value and thus not a constant.
+     * Therefore we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     */
+    @Override
+    protected void determineDefaultValue() {
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
+        }
     }
 }

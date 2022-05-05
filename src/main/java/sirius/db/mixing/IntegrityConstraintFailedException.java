@@ -8,6 +8,8 @@
 
 package sirius.db.mixing;
 
+import java.io.Serial;
+
 /**
  * Wraps all database specific exceptions to signal that an integrity constraint was violated.
  * <p>
@@ -18,6 +20,7 @@ package sirius.db.mixing;
  */
 public class IntegrityConstraintFailedException extends Exception {
 
+    @Serial
     private static final long serialVersionUID = -3178562817868475776L;
 
     /**

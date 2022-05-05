@@ -15,12 +15,10 @@ import sirius.db.mixing.properties.StringMapProperty
 import sirius.db.mongo.Mango
 import sirius.db.mongo.MangoTestEntity
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
 import sirius.kernel.commons.Doubles
 import sirius.kernel.commons.Strings
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
-import sirius.kernel.health.HandledException
 
 import java.time.Duration
 import java.time.LocalDateTime
@@ -68,6 +66,25 @@ class ElasticQuerySpec extends BaseSpecification {
         entities.get(0).getCounter() == 10
         and:
         entities.get(9).getCounter() == 19
+    }
+
+    def "streamBlockwise works"() {
+        when:
+        for (int i = 0; i < 10; i++) {
+            QueryTestEntity entity = new QueryTestEntity()
+            entity.setValue("STREAM")
+            entity.setCounter(i)
+            elastic.update(entity)
+        }
+        elastic.refresh(QueryTestEntity.class)
+        then:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM").streamBlockwise().count() == 10
+        when:
+        elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "STREAM")
+               .skip(5).limit(6).streamBlockwise().count()
+        then:
+        thrown(UnsupportedOperationException)
+
     }
 
     def "sorting works"() {
@@ -231,24 +248,6 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.select(QueryTestEntity.class).eq(QueryTestEntity.VALUE, "EXISTS").exists()
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
-    def "scroll query works"() {
-        when:
-        for (int i = 1; i <= 1500; i++) {
-            QueryTestEntity entity = new QueryTestEntity()
-            entity.setValue("SCROLL")
-            entity.setCounter(i)
-            elastic.update(entity)
-        }
-        elastic.refresh(QueryTestEntity.class)
-        and:
-        int sum = 0
-        elastic.select(QueryTestEntity.class).
-                eq(QueryTestEntity.VALUE, "SCROLL").
-                iterateAll({ e -> sum += e.getCounter() })
-        then:
-        sum == (1500 * 1501) / 2
-    }
 
     def "queries with multiple occurences of the same constraint works"() {
         when:
@@ -378,23 +377,6 @@ class ElasticQuerySpec extends BaseSpecification {
         Doubles.areEqual(entities.get(19).getScore(), 0.5d)
         and:
         Doubles.areEqual(entities.get(29).getScore(), 0d)
-    }
-
-    @Scope(Scope.SCOPE_NIGHTLY)
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        elastic.select(ESListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new ESListTestEntity()
-            entityToCreate.setCounter(i)
-            elastic.update(entityToCreate)
-        }
-        elastic.refresh(ESListTestEntity.class)
-        when:
-        elastic.select(ESListTestEntity.class).queryList()
-        then:
-        thrown(HandledException)
     }
 
     def "a forcefully failed query does not yield any results"() {

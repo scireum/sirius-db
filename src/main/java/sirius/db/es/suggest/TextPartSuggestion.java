@@ -40,7 +40,7 @@ public class TextPartSuggestion {
         this.length = json.getIntValue(PARAM_LENGTH);
         this.termSuggestions = json.getJSONArray(PARAM_OPTIONS)
                                    .stream()
-                                   .map(option -> (JSONObject) option)
+                                   .map(JSONObject.class::cast)
                                    .map(TermSuggestion::new)
                                    .collect(Collectors.toList());
     }

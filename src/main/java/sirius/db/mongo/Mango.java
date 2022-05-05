@@ -22,8 +22,8 @@ import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.SkipDefaultValue;
-import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mongo.constraints.MongoConstraint;
+import sirius.db.mongo.constraints.MongoFilterFactory;
 import sirius.kernel.Startable;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Provides the {@link BaseMapper mapper} used to communicate with <tt>MongoDB</tt>.
@@ -186,14 +187,21 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             if (versioned) {
                 throw new OptimisticLockException();
             } else {
+                String changedProperties = entity.getDescriptor()
+                                                 .getProperties()
+                                                 .stream()
+                                                 .filter(property -> entity.getDescriptor().isChanged(entity, property))
+                                                 .map(Property::getName)
+                                                 .collect(Collectors.joining(", "));
                 throw Exceptions.handle()
                                 .to(Mongo.LOG)
                                 .withSystemErrorMessage("Tried to update the changed entity %s (%s),"
                                                         + " but actually nothing was changed in the database!"
                                                         + " There might be an error in one of its properties' transform or equals methods,"
-                                                        + " as the framework indicated a changed property.",
+                                                        + " as the framework indicated a changed property. The following properties are considered changed: %s",
                                                         entity,
-                                                        entity.getId())
+                                                        entity.getId(),
+                                                        changedProperties)
                                 .handle();
             }
         } else {
@@ -290,7 +298,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     }
 
     @Override
-    public FilterFactory<MongoConstraint> filters() {
+    public MongoFilterFactory filters() {
         return QueryBuilder.FILTERS;
     }
 
@@ -399,21 +407,15 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     private void createIndex(EntityDescriptor descriptor, MongoDatabase client, Index index) {
         try {
-            boolean textColumnSeen = false;
             Document document = new Document();
             for (int i = 0; i < index.columns().length; i++) {
                 Value setting = Value.of(index.columnSettings()[i]);
                 document.append(index.columns()[i], setting.isNumeric() ? setting.asInt(1) : setting.asString());
-                textColumnSeen |= Mango.INDEX_AS_FULLTEXT.equals(setting.getString());
-            }
-
-            IndexOptions indexOptions = new IndexOptions().name(index.name()).unique(index.unique());
-            if (!textColumnSeen) {
-                indexOptions.collation(mongo.determineCollation());
             }
 
             Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), descriptor.getRelationName());
-            client.getCollection(descriptor.getRelationName()).createIndex(document, indexOptions);
+            client.getCollection(descriptor.getRelationName())
+                  .createIndex(document, new IndexOptions().name(index.name()).unique(index.unique()));
         } catch (Exception e) {
             Exceptions.handle()
                       .error(e)

@@ -20,6 +20,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mongo.QueryBuilder;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -33,10 +34,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
 
 /**
- * Represents a timestamp property which contains a date along with a time value. This is used to represents fields of
+ * Represents a timestamp property which contains a date along with a time value. This is used to represent fields of
  * type {@link LocalDateTime}.
  */
 public class LocalDateTimeProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
@@ -68,7 +70,7 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
     @Override
     public Object transformValue(Value value) {
         if (value.is(LocalDateTime.class)) {
-            return value.get();
+            return ((LocalDateTime) (value.get())).truncatedTo(ChronoUnit.MILLIS);
         }
         if (value.is(LocalDate.class)) {
             return value.get(LocalDate.class, null).atStartOfDay();
@@ -93,15 +95,18 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
         }
 
         try {
-            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString));
+            return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString))
+                                .truncatedTo(ChronoUnit.MILLIS);
         } catch (DateTimeParseException e) {
-            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString));
+            return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString))
+                                .truncatedTo(ChronoUnit.MILLIS);
         }
     }
 
     @Override
     protected Object transformFromMongo(Value object) {
-        return object.asLocalDateTime(null);
+        LocalDateTime localDateTime = object.asLocalDateTime(null);
+        return localDateTime == null ? null : localDateTime.truncatedTo(ChronoUnit.MILLIS);
     }
 
     @Override
@@ -144,5 +149,19 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
     @Override
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.BIGINT));
+    }
+
+    /**
+     * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
+     * <p>
+     * The initial value will commonly be a temporal value and thus not a constant.
+     * Therefore, we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     */
+    @Override
+    protected void determineDefaultValue() {
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
+        }
     }
 }

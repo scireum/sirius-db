@@ -16,12 +16,14 @@ import sirius.db.mixing.DateRange;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixing;
+import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
+import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -35,15 +37,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides a fluent query API for Elasticsearch.
@@ -57,7 +62,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @deprecated moved to {@link AggregationBuilder}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
 
     /**
@@ -65,7 +70,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * This essentially instructs ES to keep a scroll response open for the given timeout
      */
-    private static final int SCROLL_TTL_SECONDS = 60 * 15;
+    private static final int SCROLL_TTL_SECONDS = 60 * 60;
 
     /**
      * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD} entities at once and hope to
@@ -78,6 +83,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * {@link #SCROLL_TTL_SECONDS}.
      */
     private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
+
+    public static final String SHARD_DOC_ID = "_shard_doc";
+
     private static final String KEY_SCROLL_ID = "_scroll_id";
     private static final String KEY_DOC_ID = "_doc";
 
@@ -88,6 +96,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_RANGES = "ranges";
     private static final String KEY_QUERY = "query";
     private static final String KEY_SORT = "sort";
+    private static final String KEY_SEARCH_AFTER = "search_after";
     private static final String KEY_AGGS = "aggs";
     private static final String KEY_POST_FILTER = "post_filter";
     private static final String KEY_INNER_HITS = "inner_hits";
@@ -133,6 +142,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private List<JSONObject> sorts;
 
+    private List<String> searchAfter;
+
     private FunctionScoreBuilder functionScore;
 
     private String routing;
@@ -145,7 +156,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private JSONObject response;
 
     /**
-     * Used to describe inner hits which are determine for field collapsing.
+     * Used to describe inner hits which are determined for field collapsing.
      * <p>
      * Note that there is no <tt>build()</tt> method, as the constructor already applies the object to the query.
      */
@@ -160,7 +171,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
-         * Adds a sort criteria for the given field, sorting ascending
+         * Adds a sorting criterion for the given field, in ascending order.
          *
          * @param field the field to sort by
          * @return the builder itself for fluent method calls
@@ -175,7 +186,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
-         * Adds a sort criteria for the given field, sorting descending
+         * Adds a sorting criterion for the given field, in ascending order.
+         *
+         * @param field the field to sort by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByAsc(Mapping field) {
+            return orderByAsc(field.getName());
+        }
+
+        /**
+         * Adds a sorting criterion for the given field, in descending order.
          *
          * @param field the field to sort by
          * @return the builder itself for fluent method calls
@@ -219,8 +240,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * Note that this query will inherit all filters, constraints, sorts and aggregations. After
      * the copy has been performed, both queries can be used and modified independently. However,
-     * note that we perform a shallow copy. Therefore if a query is e.g. supplier with an inner hits
-     * builder (via {@link #addCollapsedInnerHits(String, int)} and then copied, the builder will
+     * note that we perform a shallow copy. Therefore, if a query is e.g. supplier with an inner hits
+     * builder (via {@link #addCollapsedInnerHits(String, int)}) and then copied, the builder will
      * be shared internally and modifying it, will affect both queries - therefore modifications like
      * this have to happen after a copy.
      * <p>
@@ -259,6 +280,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             copy.sorts = this.sorts.stream().map(Elastic::copyJSON).collect(Collectors.toList());
         }
 
+        if (searchAfter != null) {
+            copy.searchAfter = new ArrayList<>(searchAfter);
+        }
+
         if (functionScore != null) {
             copy.functionScore = this.functionScore.copy();
         }
@@ -267,7 +292,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             copy.suggesters = this.suggesters.entrySet()
                                              .stream()
                                              .collect(Collectors.toMap(Map.Entry::getKey,
-                                                                       entry -> (JSONObject) entry.getValue().clone()));
+                                                                       entry -> entry.getValue().clone()));
         }
 
         copy.additionalDescriptors = additionalDescriptors;
@@ -304,7 +329,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Enables the explain mode which gives detailed informations about score calculations.
+     * Enables the explain mode which gives detailed information about score calculations.
      * <p>
      * Only use this mode for debugging as this might cost performance!
      *
@@ -313,6 +338,83 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public ElasticQuery<E> explain() {
         this.explain = true;
         return this;
+    }
+
+    /**
+     * Specifies a list of "last sort values" to continue a previous query.
+     * <p>
+     * Use {@link #getLastSortValues()} to obtain the proper values.
+     *
+     * @param searchAfter the last sort values of the previous result
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> searchAfter(List<String> searchAfter) {
+        if (searchAfter != null) {
+            this.searchAfter = new ArrayList<>(searchAfter);
+        }
+
+        return this;
+    }
+
+    /**
+     * Sets a singular "last sort value" to continue a previous query.
+     * <p>
+     * It is recommended to sort by {@link Elastic#ID_FIELD_MAPPING} when using this. Note that this gracefully
+     * handles empty values as well as "-" which is properly generated by {@link #getLastSortValue()} if no more
+     * results are expected.
+     *
+     * @param searchAfter the last sort value of the previous result
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> searchAfter(String searchAfter) {
+        if (Strings.isFilled(searchAfter)) {
+            if ("-".equals(searchAfter)) {
+                return this.fail();
+            }
+
+            this.searchAfter = Collections.singletonList(searchAfter);
+        }
+
+        return this;
+    }
+
+    /**
+     * Obtains the list of last sort values to be used with {@link #searchAfter(List)}.
+     *
+     * @return the list of last sort values or an empty list if no results are present
+     */
+    public List<String> getLastSortValues() {
+        if (response == null) {
+            return Collections.emptyList();
+        }
+
+        JSONArray jsonArray = getRawResponse().getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
+        if (jsonArray == null || jsonArray.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        JSONArray sortArray = jsonArray.getJSONObject(jsonArray.size() - 1).getJSONArray(KEY_SORT);
+        if (sortArray == null) {
+            return Collections.emptyList();
+        }
+
+        return sortArray.stream().map(Object::toString).collect(Collectors.toList());
+    }
+
+    /**
+     * Obtains the last sort value of this result.
+     * <p>
+     * Note that this will automatically return "-" if no more results are expected. Use this in conjunction with
+     * {@link #searchAfter(String)} and sort queries by {@link Elastic#ID_FIELD_MAPPING}.
+     *
+     * @return the last sort value within this result
+     */
+    public String getLastSortValue() {
+        if (limit > 0 && getRawResponse().getJSONObject(KEY_HITS).getJSONArray(KEY_HITS).size() < limit) {
+            return "-";
+        }
+
+        return getLastSortValues().stream().filter(Strings::isFilled).findFirst().orElse("-");
     }
 
     /**
@@ -542,10 +644,22 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
+     * Computes a random score and sorts by this.
+     * <p>
+     * Note that this will replace all other scoring.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderRandomly() {
+        return functionScore(FunctionScoreBuilder.RANDOM_SCORE).orderByScoreDesc();
+    }
+
+    /**
      * Collapses by the given field.
      *
      * @param field the field to collapse results by.
      * @return the query itself for fluent method calls
+     * @see #addCollapsedInnerHits(String, int)
      */
     public ElasticQuery<E> collapse(Mapping field) {
         this.collapseBy = field.toString();
@@ -557,6 +671,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param field the field to collapse results by.
      * @return the query itself for fluent method calls
+     * @see #addCollapsedInnerHits(String, int)
      */
     public ElasticQuery<E> collapse(String field) {
         this.collapseBy = field;
@@ -572,6 +687,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public InnerHitsBuilder addCollapsedInnerHits(String name, int size) {
         return new InnerHitsBuilder(name, size);
+    }
+
+    /**
+     * Adds a description to obtain a sublist of collapsed results.
+     *
+     * @param size the number of results
+     * @return the builder which can be used to control sorting
+     */
+    public InnerHitsBuilder addCollapsedInnerHits(int size) {
+        return new InnerHitsBuilder(ElasticEntity.DEFAULT_INNER_HITS, size);
     }
 
     /**
@@ -699,7 +824,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public ElasticQuery<E> suggest(String name, JSONObject suggest) {
         if (this.suggesters == null) {
             this.suggesters = new HashMap<>();
@@ -715,7 +840,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public ElasticQuery<E> suggest(sirius.db.es.suggest.SuggestBuilder suggestBuilder) {
         return suggest(suggestBuilder.getName(), suggestBuilder.build());
     }
@@ -723,9 +848,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Specifies the routing value to use.
      * <p>
-     * For routed entities it is highly recommended to supply a routing value as it greatly improves the
+     * For routed entities it is highly recommended supplying a routing value as it greatly improves the
      * search performance. If no routing value is available, use {@link #deliberatelyUnrouted()} to signal
-     * the the value was deliberately skipped. Otherwise a warning will be emitted to support error tracing.
+     * the value was deliberately skipped. Otherwise, a warning will be emitted to support error tracing.
      *
      * @param value the value to use for routing
      * @return the query itself for fluent method calls
@@ -736,7 +861,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Signals the the routing is deliberately skipped as no routing value is available.
+     * Signals the routing is deliberately skipped as no routing value is available.
      *
      * @return the query itself for fluent method calls
      */
@@ -746,7 +871,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Builds the acutal JSON query for <tt>_search</tt>
+     * Builds the actual JSON query for <tt>_search</tt>
      *
      * @return the query as JSON
      */
@@ -764,6 +889,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         if (sorts != null && !sorts.isEmpty()) {
             payload.put(KEY_SORT, sorts);
+
+            if (searchAfter != null && !searchAfter.isEmpty()) {
+                payload.put(KEY_SEARCH_AFTER, searchAfter);
+            }
         }
 
         if (aggregations != null) {
@@ -809,7 +938,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Adds the query and the function score query to the payload.
      * <p>
-     * If a function score builder is set, it is used to wrap the query. Otherwise the query is directly added to the
+     * If a function score builder is set, it is used to wrap the query. Otherwise, the query is directly added to the
      * payload. If only a function score builder is set, it is added to the payload without a query.
      *
      * @param payload the existing payload to add the query to
@@ -846,9 +975,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (forceFail) {
             return 0;
         }
-        if (skip > 0 || limit > 0) {
-            Elastic.LOG.WARN("COUNT queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
-        }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
@@ -861,7 +987,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Computes the effective index name to query.
      * <p>
-     * In most cases this is simply the lowercased entity name (or its alias if one is present. However,
+     * In most cases this is simply the lowercase entity name (or its alias if one is present). However,
      * if additional descriptors are present, we concatenate all index names using "," e.g. <tt>index1,index2</tt>.
      *
      * @return the effective index name to use
@@ -889,18 +1015,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         if (elastic.isRouted(descriptor, accessMode)) {
             if (Strings.isEmpty(filteredRouting) && !unrouted) {
-                Elastic.LOG.WARN("Trying query an entity of type '%s' without providing a routing!"
-                                 + " This will most probably return an invalid result!\n%s\n",
-                                 descriptor.getType().getName(),
-                                 this,
-                                 ExecutionPoint.snapshot());
+                Elastic.LOG.WARN("""
+                                         Trying query an entity of type '%s' without providing a routing! This will most probably return an invalid result!
+                                         %s
+                                         """, descriptor.getType().getName(), this, ExecutionPoint.snapshot());
             }
         } else if (Strings.isFilled(filteredRouting)) {
-            Elastic.LOG.WARN("Trying query an entity of type '%s' while providing a routing! This entity is unrouted!"
-                             + " This will most probably return an invalid result!\n%s\n",
-                             descriptor.getType().getName(),
-                             this,
-                             ExecutionPoint.snapshot());
+            Elastic.LOG.WARN("""
+                                     Trying query an entity of type '%s' while providing a routing! This entity is unrouted! This will most probably return an invalid result!
+                                     %s
+                                     """, descriptor.getType().getName(), this, ExecutionPoint.snapshot());
         }
 
         return filteredRouting;
@@ -910,9 +1034,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public boolean exists() {
         if (forceFail) {
             return false;
-        }
-        if (skip > 0 || limit > 0) {
-            Elastic.LOG.WARN("EXISTS queries support neither skip nor limit: %s\n%s", this, ExecutionPoint.snapshot());
         }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
@@ -995,7 +1116,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the buckets which were computed for the given aggregation
      * @deprecated use {@link #getAggregation(String)} and {@link AggregationResult#getBuckets()} or the like
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
         return getRawAggregation(name).map(aggregation -> Bucket.fromAggregation(aggregation)
                                                                 .stream()
@@ -1014,7 +1135,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the cardinality (number of distinct values) in the field
      * @deprecated use {@link #getAggregation(String)} and {@link AggregationResult#getCardinality()}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public Integer getCardinality(String name) {
         return getRawAggregation(name).map(aggregation -> aggregation.getIntValue(KEY_VALUE)).orElse(0);
     }
@@ -1034,11 +1155,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Provides access to the raw JSON object generated by an aggregation.
      *
      * @param name the name of the aggregation. Sub aggregations can be accessed by supplying a path like
-     *             aggregation.child
+     *             <tt>aggregation.child</tt>
      * @return the JSON generated by the aggregation or an empty optional if no result was found for this aggregation
      * @deprecated use {@link #getAggregation(String)} along with {@link AggregationResult#getJSONObject()}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public Optional<JSONObject> getRawAggregation(String name) {
         return Optional.of(getAggregation(name).getJSONObject());
     }
@@ -1147,13 +1268,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a map of the hits as JSON with the document ID as the key
      * @deprecated use {@link ElasticEntity#getSearchHit()}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public Map<String, JSONObject> getRawHits() {
         return getRawResponse().getJSONObject(KEY_HITS)
                                .getJSONArray(KEY_HITS)
                                .stream()
-                               .filter(hit -> hit instanceof JSONObject)
-                               .map(hit -> (JSONObject) hit)
+                               .filter(JSONObject.class::isInstance)
+                               .map(JSONObject.class::cast)
                                .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
     }
 
@@ -1164,7 +1285,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a list of suggest options
      * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public List<sirius.db.es.suggest.SuggestOption> getSuggestOptions(String name) {
         return getSuggestParts(name).stream().flatMap(part -> part.getOptions().stream()).collect(Collectors.toList());
     }
@@ -1178,7 +1299,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a list of suggest parts
      * @deprecated Use {@link Elastic#suggest(Class)}
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
         if (forceFail) {
             return Collections.emptyList();
@@ -1201,14 +1322,14 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         return responseSuggestions.getJSONArray(name)
                                   .stream()
-                                  .map(part -> (JSONObject) part)
+                                  .map(JSONObject.class::cast)
                                   .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
                                   .collect(Collectors.toList());
     }
 
     /**
      * For larger queries, we use a scroll query in Elasticsearch, which provides kind of a
-     * cursor to fetch the results blockwise.
+     * cursor to fetch the results block-wise.
      *
      * @param handler the result handler as passed to {@link #iterate(Predicate)}
      */
@@ -1250,7 +1371,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                         return false;
                     }
 
-                    // Let the limit deciede if we should continue or not...
+                    // Let the limit decide if we should continue or not...
                     return effectiveLimit.shouldContinue();
                 }, scrollResponse);
             } finally {
@@ -1291,9 +1412,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * As a scroll cursor can timeout, we monitor the call interval and emit a warning if a timeout might have occurred.
+     * As a scroll cursor can experience a timeout, we monitor the call interval and emit a warning if a timeout might
+     * have occurred.
      *
-     * @param lastScroll the timestamp when the last scoll was executed
+     * @param lastScroll the timestamp when the last scroll was executed
      * @return the next timestamp
      */
     private long performScrollMonitoring(long lastScroll) {
@@ -1304,7 +1426,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             if (deltaInSeconds > SCROLL_TTL_SECONDS) {
                 Exceptions.handle()
                           .withSystemErrorMessage(
-                                  "A scroll query against elasticserach took too long to process its data! "
+                                  "A scroll query against elasticsearch took too long to process its data! "
                                   + "The result is probably inconsistent! Query: %s\n%s",
                                   this,
                                   ExecutionPoint.snapshot())
@@ -1313,6 +1435,76 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             }
         }
         return now;
+    }
+
+    @Override
+    public Stream<E> streamBlockwise() {
+        if (forceFail) {
+            return Stream.empty();
+        }
+
+        if (limit > 0) {
+            throw new UnsupportedOperationException("ElasticQuery doesn't allow 'limit' in streamBlockwise");
+        }
+        if (skip > 0) {
+            throw new UnsupportedOperationException("ElasticQuery doesn't allow 'skip' in streamBlockwise");
+        }
+
+        // Note we use this "hack" of a stream of streams + flatMap so that our spliterator is guaranteed to
+        // be closed once the stream is terminated. Note that Stream actually implements AutoClosable - however,
+        // almost no stream is wrapped in a proper try-with-resources - and even IntelliJ doesn't care if the
+        // stream remains open. However, Stream.flatMap has this nice guarantee of closing any incoming stream
+        // automatically...
+        ElasticScrollingSpliterator spliterator = new ElasticScrollingSpliterator();
+        return Stream.of(StreamSupport.stream(spliterator, false).onClose(spliterator::close))
+                     .flatMap(Function.identity());
+    }
+
+    private class ElasticScrollingSpliterator extends PullBasedSpliterator<E> {
+        private long lastScroll = 0;
+        private String scrollId = null;
+        private final TaskContext taskContext = TaskContext.get();
+
+        @Override
+        public int characteristics() {
+            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        protected Iterator<E> pullNextBlock() {
+            if (!taskContext.isActive()) {
+                return null;
+            }
+
+            JSONObject scrollResponse =
+                    scrollId == null ? pullFirstBlock() : client.continueScroll(SCROLL_TTL_SECONDS, scrollId);
+            scrollId = scrollResponse.getString(KEY_SCROLL_ID);
+            lastScroll = performScrollMonitoring(lastScroll);
+            return scrollResponse.getJSONObject(KEY_HITS)
+                                 .getJSONArray(KEY_HITS)
+                                 .stream()
+                                 .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
+                                 .iterator();
+        }
+
+        private JSONObject pullFirstBlock() {
+            String filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
+            return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
+                                       filterRouting,
+                                       0,
+                                       filterRouting != null ?
+                                       MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
+                                       MAX_SCROLL_RESULTS_PER_SHARD,
+                                       SCROLL_TTL_SECONDS,
+                                       buildPayload());
+        }
+
+        private void close() {
+            if (scrollId != null) {
+                client.closeScroll(scrollId);
+            }
+        }
     }
 
     @Override
@@ -1328,6 +1520,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void truncate() {
+        elastic.retry(this::tryTruncate);
+    }
+
+    /**
+     * Deletes all matches using the capabilities of the underlying database.
+     * <p>
+     * Therefore <b>no checks</b> or anything will be invoked for the deleted entities.
+     * <p>
+     * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
+     *
+     * @throws OptimisticLockException if one of the documents was modified during the runtime of the truncate
+     */
+    public void tryTruncate() throws OptimisticLockException {
         if (forceFail) {
             return;
         }

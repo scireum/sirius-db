@@ -9,6 +9,7 @@
 package sirius.db.es;
 
 import com.alibaba.fastjson.JSONObject;
+import sirius.db.es.annotations.CustomSettings;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.es.annotations.RoutedBy;
 import sirius.db.mixing.EntityDescriptor;
@@ -18,6 +19,7 @@ import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mixing.properties.NestedListProperty;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
+import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -97,6 +99,9 @@ public class IndexMappings implements Startable {
 
     @Part
     private Elastic elastic;
+
+    @Part
+    private GlobalContext globalContext;
 
     @Override
     public void started() {
@@ -229,33 +234,33 @@ public class IndexMappings implements Startable {
      * Creates the mapping for the given {@link EntityDescriptor} within the given <tt>indexName</tt>. The index is
      * created if not present.
      *
-     * @param ed        the {@link EntityDescriptor} describing the mapping that should be created
-     * @param indexName the name of the index in which the mapping should be created
-     * @param mode      defines the setting which should be used for dynamic mappings
+     * @param entityDescriptor the {@link EntityDescriptor} describing the mapping that should be created
+     * @param indexName        the name of the index in which the mapping should be created
+     * @param mode             defines the setting which should be used for dynamic mappings
      */
-    public void createMapping(EntityDescriptor ed, String indexName, DynamicMapping mode) {
+    public void createMapping(EntityDescriptor entityDescriptor, String indexName, DynamicMapping mode) {
         JSONObject mapping = new JSONObject();
         JSONObject properties = new JSONObject();
         mapping.put(MAPPING_DYNAMIC, mode.toString());
         mapping.put("properties", properties);
 
-        List<String> excludes = ed.getProperties()
-                                  .stream()
-                                  .filter(this::isExcludeFromSource)
-                                  .map(Property::getName)
-                                  .collect(Collectors.toList());
+        List<String> excludes = entityDescriptor.getProperties()
+                                                .stream()
+                                                .filter(this::isExcludeFromSource)
+                                                .map(Property::getName)
+                                                .collect(Collectors.toList());
 
         if (!excludes.isEmpty()) {
             mapping.put("_source", new JSONObject().fluentPut("excludes", excludes));
         }
 
-        for (Property property : ed.getProperties()) {
+        for (Property property : entityDescriptor.getProperties()) {
             if (!(property instanceof ESPropertyInfo)) {
                 Exceptions.handle()
                           .to(Elastic.LOG)
                           .withSystemErrorMessage(
                                   "The entity %s (%s) contains an unmappable property %s - ESPropertyInfo is not available!",
-                                  ed.getType().getName(),
+                                  entityDescriptor.getType().getName(),
                                   indexName,
                                   property.getName())
                           .handle();
@@ -270,19 +275,31 @@ public class IndexMappings implements Startable {
             }
         }
 
-        Extension realmConfig = Sirius.getSettings().getExtension("elasticsearch.settings", ed.getRealm());
+        Extension realmConfig =
+                Sirius.getSettings().getExtension("elasticsearch.settings", entityDescriptor.getRealm());
         if (!elastic.getLowLevelClient().indexExists(indexName)) {
             Elastic.LOG.FINE("Creating index %s in Elasticsearch....", indexName);
             elastic.getLowLevelClient()
                    .createIndex(indexName,
                                 realmConfig.getInt("numberOfShards"),
-                                realmConfig.getInt("numberOfReplicas"));
+                                realmConfig.getInt("numberOfReplicas"),
+                                settingsObject -> {
+                                    entityDescriptor.getAnnotation(CustomSettings.class)
+                                                    .flatMap(customSettings -> globalContext.getParts(SettingsCustomizer.class)
+                                                                                            .stream()
+                                                                                            .filter(settings -> customSettings.value()
+                                                                                                                              .equals(settings.getClass()))
+                                                                                            .findFirst())
+                                                    .ifPresent(customizer -> customizer.customizeSettings(
+                                                            entityDescriptor,
+                                                            settingsObject));
+                                });
         }
 
-        String mappingName = elastic.determineTypeName(ed);
+        String mappingName = elastic.determineTypeName(entityDescriptor);
         Elastic.LOG.FINE("Creating mapping %s for %s in index %s in Elasticsearch....",
                          mappingName,
-                         ed.getType().getSimpleName(),
+                         entityDescriptor.getType().getSimpleName(),
                          indexName);
         elastic.getLowLevelClient().putMapping(indexName, mapping);
     }

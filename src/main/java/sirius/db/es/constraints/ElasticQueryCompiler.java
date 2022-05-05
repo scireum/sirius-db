@@ -11,9 +11,12 @@ package sirius.db.es.constraints;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Property;
+import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mixing.query.QueryCompiler;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Tuple;
 
 import java.util.List;
 
@@ -48,5 +51,23 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
         }
 
         return Elastic.FILTERS.prefix(field, value.replace("*", "").toLowerCase());
+    }
+
+    @Override
+    protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
+        if (property instanceof BaseMapProperty) {
+            return Tuple.create(Mapping.named(nestedPath), property);
+        }
+
+        return null;
+    }
+
+    @Override
+    protected ElasticConstraint compileFieldEquals(Mapping field, Property property, FieldValue value) {
+        if ((value.getValue() instanceof String stringValue) && (property instanceof BaseMapProperty)) {
+            return Elastic.FILTERS.nestedMapContains(Mapping.named(property.getName()), field.getName(), stringValue);
+        }
+
+        return super.compileFieldEquals(field, property, value);
     }
 }

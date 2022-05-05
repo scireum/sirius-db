@@ -11,9 +11,12 @@ package sirius.db.jdbc.constraints;
 import sirius.db.jdbc.OMA;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Property;
+import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.query.QueryCompiler;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Tuple;
 
 import java.util.List;
 
@@ -57,5 +60,14 @@ public class SQLQueryCompiler extends QueryCompiler<SQLConstraint> {
             default:
                 return OMA.FILTERS.like(field).contains(value).ignoreCase().build();
         }
+    }
+
+    @Override
+    protected Tuple<Mapping, Property> resolvedNestedProperty(Property property, Mapping mapping, String nestedPath) {
+        if (property instanceof BaseEntityRefProperty<?, ?, ?> baseEntityRefProperty) {
+            return resolveProperty(baseEntityRefProperty.getReferencedDescriptor(), nestedPath, mapping);
+        }
+
+        return null;
     }
 }

@@ -47,7 +47,7 @@ public class Finder extends QueryBuilder<Finder> {
     private static final String OPERATOR_SAMPLE = "$sample";
 
     private Document fields;
-    private Document orderBy;
+    protected Document orderBy;
     private int skip;
     private int limit;
     private int batchSize;
@@ -249,8 +249,7 @@ public class Finder extends QueryBuilder<Finder> {
     }
 
     private FindIterable<Document> buildCursor(String collection) {
-        FindIterable<Document> cursor =
-                getMongoCollection(collection).find(filterObject).collation(mongo.determineCollation());
+        FindIterable<Document> cursor = getMongoCollection(collection).find(filterObject);
         if (fields != null) {
             cursor.projection(fields);
         }
@@ -431,13 +430,12 @@ public class Finder extends QueryBuilder<Finder> {
         Watch watch = Watch.start();
         try {
             if (filterObject.isEmpty() && !forceAccurate) {
-                return Optional.of(getMongoCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions()
-                                                                                                 .maxTime(maxTimeMS,
-                                                                                                          TimeUnit.MILLISECONDS)));
+                return Optional.of(getMongoCollection(collection).estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(
+                        maxTimeMS,
+                        TimeUnit.MILLISECONDS)));
             }
             return Optional.of(getMongoCollection(collection).countDocuments(filterObject,
-                                                                             new CountOptions().collation(mongo.determineCollation())
-                                                                                               .maxTime(maxTimeMS,
+                                                                             new CountOptions().maxTime(maxTimeMS,
                                                                                                         TimeUnit.MILLISECONDS)));
         } catch (MongoExecutionTimeoutException e) {
             Exceptions.ignore(e);
@@ -490,7 +488,6 @@ public class Finder extends QueryBuilder<Finder> {
                     getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
                                                                                              filterObject),
                                                                            new BasicDBObject("$group", groupStage)))
-                                                  .collation(mongo.determineCollation())
                                                   .iterator();
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
@@ -541,7 +538,6 @@ public class Finder extends QueryBuilder<Finder> {
                     getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
                                                                                              filterObject),
                                                                            new BasicDBObject("$facet", facetStage)))
-                                                  .collation(mongo.determineCollation())
                                                   .iterator();
 
             if (queryResult.hasNext()) {

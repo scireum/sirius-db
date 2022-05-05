@@ -24,15 +24,19 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.Numeric;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.NumberFormat;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Types;
 import java.util.function.Consumer;
 
@@ -68,7 +72,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
                 }
             } catch (Exception e) {
                 Mixing.LOG.WARN(
-                        "An error occured while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
+                        "An error occurred while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
                         field.getName(),
                         field.getDeclaringClass().getName(),
                         e.getMessage(),
@@ -90,35 +94,67 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (value.isFilled()) {
             return NLS.parseUserString(Amount.class, value.asString());
         }
-        if (this.isNullable() || Strings.isEmpty(defaultValue)) {
+        if (this.isNullable() || defaultValue.isEmptyString()) {
             return Amount.NOTHING;
         }
-        return Value.of(defaultValue).getAmount();
+        return defaultValue.getAmount();
     }
 
     @Override
     protected Object transformValueFromImport(Value value) {
         if (value.is(Amount.class)) {
+            if (value.getAmount().isEmpty() && !this.isNullable()) {
+                return defaultValue.getAmount();
+            }
             return value.get();
         }
 
         if (value.isFilled()) {
-            return Amount.ofMachineString(value.asString());
+            return parseWithNLS(value);
         }
 
         return transformValue(value);
     }
 
+    private Amount parseWithNLS(@Nonnull Value value) {
+        try {
+            return Amount.ofMachineString(value.asString());
+        } catch (IllegalArgumentException originalFormatException) {
+            try {
+                return Amount.ofUserString(value.asString());
+            } catch (Exception ignored) {
+                throw originalFormatException;
+            }
+        }
+    }
+
     @Override
-    protected Object transformToJDBC(Object object) {
+    protected BigDecimal transformToJDBC(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
+    }
+
+    @Override
+    public String getColumnDefaultValue() {
+        if (defaultValue.isNull()) {
+            return null;
+        }
+        Object defaultData = transformToDatasource(OMA.class, defaultValue.get());
+        if (defaultData == null) {
+            return null;
+        }
+        // the resulting string needs to match the string representation in the DB exactly,
+        // else a schema change will be issued.
+        NumberFormat format = getAnnotation(Numeric.class).map(numeric -> {
+            return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
+        }).orElse(NumberFormat.MACHINE_THREE_DECIMAL_PLACES);
+        return Amount.of((BigDecimal) defaultData).toString(format).asString();
     }
 
     @Override
     protected Object transformToElastic(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
     }
-    
+
     @Override
     protected Object transformToMongo(Object object) {
         return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();

@@ -8,11 +8,9 @@
 
 package sirius.db.mongo
 
-
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
@@ -123,7 +121,7 @@ class MangoSpec extends BaseSpecification {
         notFound == null
     }
 
-    def "unique constaint violations are properly thrown"() {
+    def "unique constraint violations are properly thrown"() {
         setup:
         mango.select(MongoUniqueTestEntity.class).eq(MongoUniqueTestEntity.VALUE, "Test").delete()
         when:
@@ -137,39 +135,6 @@ class MangoSpec extends BaseSpecification {
         mango.tryUpdate(conflictingEntity)
         then:
         thrown(IntegrityConstraintFailedException)
-    }
-
-    @Scope(Scope.SCOPE_NIGHTLY)
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        mango.select(MangoListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new MangoListTestEntity()
-            entityToCreate.setCounter(i)
-            mango.update(entityToCreate)
-        }
-        when:
-        mango.select(MangoListTestEntity.class).queryList()
-        then:
-        thrown(HandledException)
-    }
-
-    @Scope(Scope.SCOPE_NIGHTLY)
-    def "a timed out mongo count returns an empty optional"() {
-        when:
-        mango.select(MangoListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 100_000; i++) {
-            def entityToCreate = new MangoListTestEntity()
-            entityToCreate.setCounter(i)
-            mango.update(entityToCreate)
-        }
-        and:
-        MongoQuery<MangoListTestEntity> query = mango
-                .select(MangoListTestEntity.class)
-        then:
-        query.count(true, 1) == Optional.empty()
     }
 
     def "MongoQuery.exists works as expected and leaves the query intact"() {
@@ -189,7 +154,7 @@ class MangoSpec extends BaseSpecification {
         query.exists() == true
         and: "a count after an exists still yields all entities"
         query.count() == 10
-        and: "a list after an exists still yields all entitiies"
+        and: "a list after an exists still yields all entities"
         query.queryList().size() == 10
         and: "a list after an exists still yields all fields"
         query.queryList().get(0).getCounter() == 9
@@ -197,6 +162,25 @@ class MangoSpec extends BaseSpecification {
         mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 5).exists() == true
         and: "an exists with a filter that yields an empty result works"
         mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 50).exists() == false
+    }
+
+    def "MongoQuery.streamBlockwise() works in mango"() {
+        when:
+        mango.select(MangoListTestEntity.class).delete()
+        and:
+        for (int i = 0; i < 10; i++) {
+            def entityToCreate = new MangoListTestEntity()
+            entityToCreate.setCounter(i)
+            mango.update(entityToCreate)
+        }
+        and:
+        MongoQuery<MangoListTestEntity> query = mango.select(MangoListTestEntity.class)
+        then:
+        query.streamBlockwise().count() == 10
+        when:
+        query.skip(3).limit(0).streamBlockwise().count() == 7
+        then:
+        thrown(UnsupportedOperationException)
     }
 
     def "wasCreated() works in mango"() {

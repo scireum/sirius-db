@@ -19,6 +19,7 @@ import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mongo.QueryBuilder;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
@@ -35,7 +36,7 @@ import java.time.format.DateTimeParseException;
 import java.util.function.Consumer;
 
 /**
- * Represents a date property which contains no associated time value. This is used to represents fields of type
+ * Represents a date property which contains no associated time value. This is used to represent fields of type
  * {@link LocalDate}.
  */
 public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
@@ -140,5 +141,19 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
                        getAnnotation(IndexMode.class),
                        IndexMode::docValues,
                        description);
+    }
+
+    /**
+     * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
+     * <p>
+     * The initial value will commonly be a temporal value and thus not a constant.
+     * Therefore we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     */
+    @Override
+    protected void determineDefaultValue() {
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
+        }
     }
 }

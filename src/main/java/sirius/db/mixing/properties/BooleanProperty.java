@@ -23,7 +23,6 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
-import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.sql.Types;
@@ -60,7 +59,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
 
     @Override
     public Object transformValue(Value value) {
-        if (defaultValue == null) {
+        if (defaultValue.isEmptyString()) {
             if (value.isNull() || value.isEmptyString()) {
                 return null;
             } else {
@@ -68,7 +67,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
             }
         }
 
-        return value.asBoolean(NLS.parseMachineString(Boolean.class, defaultValue));
+        return value.asBoolean(defaultValue.asBoolean());
     }
 
     @Override
@@ -78,7 +77,7 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
             return object;
         }
 
-        if (data.is(String.class) ) {
+        if (data.is(String.class)) {
             return data.asBoolean();
         }
 
@@ -91,15 +90,6 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
         }
 
         return ((Integer) object) != 0;
-    }
-
-    @Override
-    protected void determineDefaultValue() {
-        if (field.getType().isPrimitive()) {
-            this.defaultValue = "0";
-        } else {
-            super.determineDefaultValue();
-        }
     }
 
     @Override

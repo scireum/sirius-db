@@ -14,6 +14,7 @@ import sirius.db.es.ElasticQuery;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -172,7 +173,8 @@ public class BoolQueryBuilder {
      * @return the query as constraint
      */
     @SuppressWarnings("squid:MethodCyclomaticComplexity")
-    @Explain("Splitting this method would most probably increase the complexity")
+    @Explain("Splitting this method would most probably increase the complexity.")
+    @Nullable
     public JSONObject build() {
         int filters = filter == null ? 0 : filter.size();
         int musts = must == null ? 0 : must.size();
@@ -192,7 +194,7 @@ public class BoolQueryBuilder {
             query.put("must", must);
         }
         if (mustNots > 0) {
-            query.put("mustNot", mustNot);
+            query.put("must_not", mustNot);
         }
         if (shoulds > 0) {
             query.put("should", should);

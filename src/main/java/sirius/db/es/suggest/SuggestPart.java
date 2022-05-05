@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  *
  * @deprecated use {@link SuggestionQuery}
  */
-@Deprecated
+@Deprecated(since = "2021/07/01")
 public class SuggestPart {
 
     private static final String PARAM_TEXT = "text";
@@ -110,7 +110,7 @@ public class SuggestPart {
 
         suggestPart.withOptions(part.getJSONArray(PARAM_OPTIONS)
                                     .stream()
-                                    .map(option -> (JSONObject) option)
+                                    .map(JSONObject.class::cast)
                                     .map(SuggestOption::makeSuggestOption)
                                     .collect(Collectors.toList()));
 

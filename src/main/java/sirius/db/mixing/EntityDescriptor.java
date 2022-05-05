@@ -10,6 +10,7 @@ package sirius.db.mixing;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
+import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.AfterDelete;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.BeforeDelete;
@@ -22,9 +23,11 @@ import sirius.db.mixing.annotations.RelationName;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.Sirius;
+import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.MultiMap;
 import sirius.kernel.commons.PriorityCollector;
@@ -33,6 +36,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
 import sirius.kernel.commons.ValueSupplier;
 import sirius.kernel.di.Injector;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.PriorityParts;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
@@ -45,6 +49,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,6 +74,9 @@ import java.util.stream.Stream;
  * These entities and be stored and loaded from various databases using an appropriate {@link BaseMapper mapper}.
  */
 public class EntityDescriptor {
+
+    @Part
+    protected static Mixing mixing;
 
     /**
      * Contains the effective / technical to use in the datasource
@@ -145,7 +154,7 @@ public class EntityDescriptor {
     protected PriorityCollector<Consumer<Object>> beforeSaveHandlerCollector = PriorityCollector.create();
 
     /**
-     * A list of all additional handlers to be executed once an entity is was saved
+     * A list of all additional handlers to be executed once an entity is saved
      */
     protected final List<Consumer<Object>> afterSaveHandlers = new ArrayList<>();
 
@@ -215,6 +224,23 @@ public class EntityDescriptor {
         return type;
     }
 
+    /**
+     * Builds a standard message that the given entity cannot be saved.
+     * <p>
+     * This message is mostly used as a consequence for describing why an error happened. Therefore, this will create
+     * a message such as <tt>Entity cannot be saved: Field-Error</tt> instead of logging an arbitrary looking field
+     * error alone.
+     *
+     * @param errorMessage the error message thrown by the entity
+     * @return the formatted message
+     */
+    public String createCannotSaveMessage(String errorMessage) {
+        return NLS.fmtr("EntityDescriptor.cannotSaveEntity")
+                  .set("entity", getLabel())
+                  .set("message", errorMessage)
+                  .format();
+    }
+
     private void loadLegacyInfo(Class<?> type) {
         String configKey = "mixing.legacy." + type.getSimpleName();
         this.legacyInfo = Sirius.getSettings().getConfig().hasPath(configKey) ?
@@ -269,10 +295,10 @@ public class EntityDescriptor {
     }
 
     /**
-     * Returns the "end user friendly" name of the entity.
+     * Returns the "end-user friendly" name of the entity.
      * <p>
      * This is determined by calling <tt>NLS.get()</tt>
-     * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore
+     * with the full class name or as fallback the simple class name as lower case, prepended with "Model.". Therefore,
      * the property keys for "org.acme.model.Customer" would be the class name and "Model.customer". The fallback
      * key will be the same which is tried for a property named "customer" and can therefore be reused.
      *
@@ -282,25 +308,63 @@ public class EntityDescriptor {
         String className = translationSource.getSimpleName();
         String currentLang = NLS.getCurrentLang();
         return NLS.getIfExists(className, currentLang)
-                  .orElseGet(() -> NLS.getIfExists("Model."
-                                                   + Character.toLowerCase(className.charAt(0))
-                                                   + className.substring(1), currentLang)
-                                      .orElseGet(() -> NLS.get("Model." + className)));
+                  .orElseGet(() -> NLS.getIfExists(determineLowercasedPropertyKey(className), currentLang)
+                                      .orElseGet(() -> NLS.get(determineModelPropertyKey(className))));
+    }
+
+    private String determineLowercasedPropertyKey(String className) {
+        return "Model." + Character.toLowerCase(className.charAt(0)) + className.substring(1);
+    }
+
+    private String determineModelPropertyKey(String className) {
+        return "Model." + className;
     }
 
     /**
-     * Returns the "end user friendly" plural of the entity.
+     * Provides the i18n key used to translate this entity.
+     * <p>
+     * This can be passed into {@link NLS#get(String)} to retrieve the actual translation.
+     *
+     * @return the effective property key used to get the singular name of this entity
+     */
+    public String getLabelKey() {
+        String className = translationSource.getSimpleName();
+        if (NLS.exists(className, null)) {
+            return className;
+        }
+
+        String propertyWithLowercase = determineLowercasedPropertyKey(className);
+        if (NLS.exists(propertyWithLowercase, null)) {
+            return propertyWithLowercase;
+        }
+
+        return determineModelPropertyKey(className);
+    }
+
+    /**
+     * Provides the i18n key used to translate the plural of this entity.
+     * <p>
+     * This can be passed into {@link NLS#get(String)} to retrieve the actual translation.
+     *
+     * @return the effective property key used to get the plural name of this entity
+     */
+    public String getPluralLabelKey() {
+        return translationSource.getSimpleName() + ".plural";
+    }
+
+    /**
+     * Returns the "end user-friendly" plural of the entity.
      * <p>
      * The i18n keys tried are the same as for {@link #getLabel()} with ".plural" appended.
      *
      * @return a translated plural which can be shown to the end user
      */
     public String getPluralLabel() {
-        return NLS.get(translationSource.getSimpleName() + ".plural");
+        return NLS.get(getPluralLabelKey());
     }
 
     /**
-     * Links all properties to setup foreign keys and delete constraints.
+     * Links all properties to set up foreign keys and delete constraints.
      */
     protected void link() {
         for (Property p : properties.values()) {
@@ -342,12 +406,22 @@ public class EntityDescriptor {
 
     /**
      * Determines if the value for the property was changed since it was last fetched from the database.
+     * <p>
+     * For {@link LocalDateTimeProperty}, we consider milliseconds as the smallest unit for comparison,
+     * ignoring micro- and nanoseconds.
      *
      * @param entity   the entity to check
      * @param property the property to check for
      * @return <tt>true</tt> if the value was changed, <tt>false</tt> otherwise
      */
     public boolean isChanged(BaseEntity<?> entity, Property property) {
+        if (property instanceof LocalDateTimeProperty) {
+            if (entity instanceof SQLEntity) {
+                return isChanged(entity, property, (a, b) -> isLocalDateTimeEqual(a, b, ChronoUnit.SECONDS));
+            } else {
+                return isChanged(entity, property, (a, b) -> isLocalDateTimeEqual(a, b, ChronoUnit.MILLIS));
+            }
+        }
         return isChanged(entity, property, Objects::equals);
     }
 
@@ -376,7 +450,7 @@ public class EntityDescriptor {
     }
 
     /**
-     * Executes all <tt>beforedSaveHandlers</tt> known to the descriptor.
+     * Executes all <tt>beforeSaveHandlers</tt> known to the descriptor.
      *
      * @param entity the entity to perform the handlers on
      */
@@ -402,6 +476,19 @@ public class EntityDescriptor {
         }
 
         return sortedBeforeSaveHandlers;
+    }
+
+    private boolean isLocalDateTimeEqual(Object source, Object target, ChronoUnit precision) {
+        if (source == null && target == null) {
+            return true;
+        }
+
+        // `null instanceof LocalDateTime` is always `false`, and we processed the case of both `null` before
+        if (source instanceof LocalDateTime sourceDateTime && target instanceof LocalDateTime targetDateTime) {
+            return sourceDateTime.truncatedTo(precision).equals(targetDateTime.truncatedTo(precision));
+        }
+
+        return false;
     }
 
     /**
@@ -450,6 +537,10 @@ public class EntityDescriptor {
             }
         }
 
+        for (Property property : properties.values()) {
+            property.onValidate(entity, warnings::add);
+        }
+
         return warnings;
     }
 
@@ -477,16 +568,21 @@ public class EntityDescriptor {
      * @param entity the entity which is about to be deleted
      */
     public void beforeDelete(Object entity) {
+        TaskContext context = TaskContext.get();
         for (Property property : properties.values()) {
-            property.onBeforeDelete(entity);
+            if (context.isActive()) {
+                property.onBeforeDelete(entity);
+            }
         }
         for (Consumer<Object> handler : beforeDeleteHandlers) {
-            if (handler != null) {
+            if (handler != null && context.isActive()) {
                 handler.accept(entity);
             }
         }
         for (Consumer<Object> handler : cascadeDeleteHandlers) {
-            handler.accept(entity);
+            if (context.isActive()) {
+                handler.accept(entity);
+            }
         }
     }
 
@@ -1056,7 +1152,7 @@ public class EntityDescriptor {
      * with a {@link ComplexDelete} annotation. This way even a <b>Mixin</b> can mark an entity
      * as complex.
      * <p>
-     * If an entity has cascade delete actions but should not be considered complex, an annotation with
+     * If an entity has cascaded delete actions but should not be considered complex, an annotation with
      * <tt>value</tt> set to <tt>false</tt> can be placed on the entity class.
      *
      * @return <tt>true</tt> if entities of this descriptor are complex to delete, <tt>false</tt>

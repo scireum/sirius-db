@@ -33,10 +33,11 @@ public abstract class QueryBuilder<S> {
 
     protected final String database;
     protected final Mongo mongo;
+    protected boolean longRunning;
     protected BasicDBObject filterObject = new BasicDBObject();
 
     /**
-     * Represents the filter factory used by mong queries.
+     * Represents the filter factory used by Mongo queries.
      */
     public static final MongoFilterFactory FILTERS = new MongoFilterFactory();
 
@@ -132,6 +133,19 @@ public abstract class QueryBuilder<S> {
     }
 
     /**
+     * Marks the query as potentially long-running.
+     * <p>
+     * These queries will not emit "slow query" warnings in the log.
+     *
+     * @return the builder itself for fluent method calls
+     */
+    @SuppressWarnings("unchecked")
+    public S markLongRunning() {
+        this.longRunning = true;
+        return (S) this;
+    }
+
+    /**
      * Applies all filters of this query to the given target.
      *
      * @param target the target to be supplied with the filters of this query
@@ -139,10 +153,14 @@ public abstract class QueryBuilder<S> {
     public void transferFilters(QueryBuilder<?> target) {
         target.filterObject.clear();
         target.filterObject.putAll(filterObject.toMap());
+
+        if (longRunning) {
+            target.markLongRunning();
+        }
     }
 
     protected void traceIfRequired(String collection, Watch w) {
-        if (w.elapsedMillis() > mongo.getLogQueryThresholdMillis()) {
+        if (!longRunning && w.elapsedMillis() > mongo.getLogQueryThresholdMillis()) {
             mongo.numSlowQueries.inc();
             DB.SLOW_DB_LOG.INFO("A slow MongoDB query was executed (%s): %s\n%s\n%s",
                                 w.duration(),

@@ -31,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -103,7 +104,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
                 throw Exceptions.handle()
                                 .to(OMA.LOG)
                                 .error(e)
-                                .withSystemErrorMessage("An error occured while batch executing a statement: %s (%s)")
+                                .withSystemErrorMessage("An error occurred while batch executing a statement: %s (%s)")
                                 .handle();
             }
         }
@@ -229,7 +230,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
             Exceptions.handle()
                       .to(OMA.LOG)
                       .error(e)
-                      .withSystemErrorMessage("An error occured while closing a prepared statement: %s (%s)")
+                      .withSystemErrorMessage("An error occurred while closing a prepared statement: %s (%s)")
                       .handle();
         } finally {
             stmt = null;
@@ -272,11 +273,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
         }
         sb.append("] ");
 
-        if (query != null) {
-            sb.append(query);
-        } else {
-            sb.append(" no query available yet");
-        }
+        sb.append(Objects.requireNonNullElse(query, " no query available yet"));
 
         return sb.toString();
     }

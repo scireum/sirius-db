@@ -8,14 +8,12 @@
 
 package sirius.db.jdbc
 
-
+import sirius.db.jdbc.constraints.CompoundValue
 import sirius.db.jdbc.schema.Schema
 import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
-import sirius.kernel.Scope
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
-import sirius.kernel.health.HandledException
 
 import java.util.function.Function
 import java.util.stream.Collectors
@@ -33,6 +31,7 @@ class SmartQuerySpec extends BaseSpecification {
 
         fillSmartQueryTestEntity()
         fillSmartQueryTestChildAndParentEntity()
+        fillSmartQueryTestLargeTableEntity()
     }
 
     private void fillSmartQueryTestEntity() {
@@ -63,6 +62,7 @@ class SmartQuerySpec extends BaseSpecification {
         c.setName("Child 1")
         c.getParent().setId(p1.getId())
         c.getOtherParent().setId(p2.getId())
+        c.setParentName(p1.name)
         oma.update(c)
 
         SmartQueryTestChildChildEntity cc = new SmartQueryTestChildChildEntity()
@@ -74,8 +74,16 @@ class SmartQuerySpec extends BaseSpecification {
         c.setName("Child 2")
         c.getParent().setId(p2.getId())
         c.getOtherParent().setId(p1.getId())
+        c.setParentName(p2.name)
         oma.update(c)
+    }
 
+    private void fillSmartQueryTestLargeTableEntity() {
+        for (int i = 0; i < 1100; i++) {
+            SmartQueryTestLargeTableEntity e = new SmartQueryTestLargeTableEntity()
+            e.setTestNumber(i)
+            oma.update(e)
+        }
     }
 
     def "queryList returns all entities"() {
@@ -88,6 +96,20 @@ class SmartQuerySpec extends BaseSpecification {
         result.stream().
                 map({ x -> x.getValue() } as Function).
                 collect(Collectors.toList()) == ["Test", "Hello", "World"]
+    }
+
+    def "streamBlockwise() works"() {
+        when:
+        SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                                                  .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+        then:
+        qry.streamBlockwise().
+                map({ it.getValue() }).
+                collect(Collectors.toList()) == ["Test", "Hello", "World"]
+        when:
+        qry.skip(1).limit(1).streamBlockwise().count()
+        then:
+        thrown(UnsupportedOperationException)
     }
 
     def "count returns the number of entity"() {
@@ -199,7 +221,8 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                                                        .
-                orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                                       SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -209,10 +232,10 @@ class SmartQuerySpec extends BaseSpecification {
     def "automatic joins work when fetching a referenced field"() {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
-                                                       .
-                fields(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
-                                                       .
-                orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                       .fields(SmartQueryTestChildEntity.PARENT.join(
+                                                               SmartQueryTestParentEntity.NAME))
+                                                       .orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                               SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -225,9 +248,10 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                                                        .
-                fields(
-                        SmartQueryTestChildEntity.PARENT,
-                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               fields(
+                                                                       SmartQueryTestChildEntity.PARENT,
+                                                                       SmartQueryTestChildEntity.PARENT.join(
+                                                                               SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -238,10 +262,13 @@ class SmartQuerySpec extends BaseSpecification {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
                                                        .
-                fields(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME),
-                       SmartQueryTestChildEntity.OTHER_PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               fields(SmartQueryTestChildEntity.PARENT.join(
+                                                                       SmartQueryTestParentEntity.NAME),
+                                                                      SmartQueryTestChildEntity.OTHER_PARENT.join(
+                                                                              SmartQueryTestParentEntity.NAME))
                                                        .
-                orderAsc(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME))
+                                                               orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                                       SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -252,15 +279,12 @@ class SmartQuerySpec extends BaseSpecification {
 
     def "automatic joins work across several tables"() {
         given:
-        SmartQuery<SmartQueryTestChildChildEntity> qry = oma.select(SmartQueryTestChildChildEntity.class)
-                                                            .
-                fields(
-                        SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).
-                                join(SmartQueryTestParentEntity.NAME))
-                                                            .
-                orderAsc(
-                        SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).
-                                join(SmartQueryTestParentEntity.NAME))
+        SmartQuery<SmartQueryTestChildChildEntity> qry = oma.
+                select(SmartQueryTestChildChildEntity.class).
+                fields(SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
+                        SmartQueryTestParentEntity.NAME)).
+                orderAsc(SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
+                        SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -290,7 +314,7 @@ class SmartQuerySpec extends BaseSpecification {
                         SmartQueryTestParentEntity.ID,
                         SmartQueryTestChildEntity.class,
                         SmartQueryTestChildEntity.PARENT).
-                              where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1")))
+                        where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1")))
         when:
         def result = qry.queryList()
         then:
@@ -304,11 +328,26 @@ class SmartQuerySpec extends BaseSpecification {
                         SmartQueryTestParentEntity.ID,
                         SmartQueryTestChildEntity.class,
                         SmartQueryTestChildEntity.PARENT).
-                                              where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))))
+                        where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))))
         when:
         def result = qry.queryList()
         then:
         result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 2"]
+    }
+
+    def "exists works with complicated columns"() {
+        given:
+        SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestParentEntity.class).
+                where(OMA.FILTERS.existsIn(
+                        new CompoundValue(SmartQueryTestParentEntity.ID).addComponent(SmartQueryTestParentEntity.NAME),
+                        SmartQueryTestChildEntity.class,
+                        new CompoundValue(SmartQueryTestChildEntity.PARENT).addComponent(SmartQueryTestChildEntity
+                                                                                                 .PARENT_NAME)).
+                        where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1")))
+        when:
+        def result = qry.queryList()
+        then:
+        result.stream().map({ x -> x.getName() } as Function).collect(Collectors.toList()) == ["Parent 1"]
     }
 
     def "copy of query does also copy fields"() {
@@ -394,25 +433,9 @@ class SmartQuerySpec extends BaseSpecification {
         mixinEntity.getId() == entity.getId()
     }
 
-    @Scope(Scope.SCOPE_NIGHTLY)
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        oma.select(ListTestEntity.class).delete()
-        and:
-        for (int i = 0; i < 1001; i++) {
-            def entityToCreate = new ListTestEntity()
-            entityToCreate.setCounter(i)
-            oma.update(entityToCreate)
-        }
-        when:
-        oma.select(ListTestEntity.class).queryList()
-        then:
-        thrown(HandledException)
-    }
-
     def "a forcefully failed query does not yield any results"() {
         when:
-        def qry =  oma.select(SmartQueryTestEntity.class).fail()
+        def qry = oma.select(SmartQueryTestEntity.class).fail()
         def flag = false
         then:
         qry.queryList().isEmpty()
@@ -423,5 +446,40 @@ class SmartQuerySpec extends BaseSpecification {
         qry.count() == 0
         and:
         !qry.exists()
+    }
+
+    def "eq with row values works"() {
+        when:
+        def items = oma.select(SmartQueryTestEntity.class).
+                where(OMA.FILTERS.eq(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                                     new CompoundValue("Test").addComponent(1))).queryList()
+        then:
+        items.size() == 1
+        and:
+        items.get(0).testNumber == 1
+        when:
+        items = oma.select(SmartQueryTestEntity.class).
+                where(OMA.FILTERS.eq(new CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                                     new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(1))).queryList()
+        then:
+        items.size() == 1
+        and:
+        items.get(0).testNumber == 1
+    }
+
+    def "gt with row values works"() {
+        when:
+        def items = oma.
+                select(SmartQueryTestEntity.class).
+                where(OMA.FILTERS.gt(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(2),
+                                     new CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER))).
+                orderAsc(SmartQueryTestEntity.VALUE).
+                queryList()
+        then:
+        items.size() == 2
+        and:
+        items.get(0).testNumber == 1
+        and:
+        items.get(1).testNumber == 3
     }
 }

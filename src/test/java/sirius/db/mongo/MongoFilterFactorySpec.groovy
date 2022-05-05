@@ -8,6 +8,7 @@
 
 package sirius.db.mongo
 
+import sirius.db.mixing.Mapping
 import sirius.db.mongo.properties.MongoStringListEntity
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Value
@@ -127,7 +128,49 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .queryOne().getId() == entityEmpty.getId()
     }
 
-    def "complex constraint cant be inverted"() {
+    def "complex OR-constraint can be inverted"() {
+        setup:
+        MongoStringListEntity entity = new MongoStringListEntity()
+        entity.getList().modify().addAll(["1", "2", "3", "4"])
+        MongoStringListEntity entityEmpty = new MongoStringListEntity()
+        Mapping fakeField = Mapping.named("fakeField")
+        when:
+        mango.update(entity)
+        mango.update(entityEmpty)
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entity.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
+                                                                              Value.of("4,5,6")).build()))
+             .count() == 0
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
+                                                                              Value.of("4,5,6")).build()))
+             .queryOne().getId() == entityEmpty.getId()
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
+                                                                              Value.of("4,5,6")).orEmpty().build()))
+             .count() == 0
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.or(QueryBuilder.FILTERS.eq(fakeField, "someValue"),
+                                                                     QueryBuilder.FILTERS.eq(fakeField, "otherValue"))))
+             .queryOne().getId() == entityEmpty.getId()
+        then:
+        mango.select(MongoStringListEntity.class)
+             .eq(MongoEntity.ID, entityEmpty.getId())
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.or(QueryBuilder.FILTERS.eq(fakeField, "someValue"),
+                                                                     QueryBuilder.FILTERS.eq(fakeField, "otherValue"),
+                                                                     QueryBuilder.FILTERS.notExists(fakeField))))
+             .count() == 0
+    }
+
+    def "complex AND-constraint cannot be inverted"() {
         setup:
         MongoStringListEntity entity = new MongoStringListEntity()
         entity.getList().modify().addAll(["1", "2", "3"])
@@ -137,8 +180,8 @@ class MongoFilterFactorySpec extends BaseSpecification {
         when:
         mango.select(MongoStringListEntity.class)
              .eq(MongoEntity.ID, entityEmpty.getId())
-             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
-                                                                              Value.of("4,5,6")).build()))
+             .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAll(MongoStringListEntity.LIST,
+                                                                              Value.of("1,2,3,4")).build()))
              .queryOne()
         then:
         thrown IllegalArgumentException
@@ -246,7 +289,7 @@ class MongoFilterFactorySpec extends BaseSpecification {
              .countIn(MangoTestEntity.class) == 1
     }
 
-    def "isEmptyArray works on List fields"() {
+    def "isEmptyList works on List fields"() {
         setup:
         mango.select(MangoTestEntity.class).delete()
         when:
@@ -261,7 +304,7 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mango.update(e2)
         then:
         mango.select(MangoTestEntity.class)
-             .where(QueryBuilder.FILTERS.isEmptyArray(MangoTestEntity.SUPER_POWERS)).count() == 1
+             .where(QueryBuilder.FILTERS.isEmptyList(MangoTestEntity.SUPER_POWERS)).count() == 1
     }
 
     def "forceEmpty works on List fields"() {
@@ -279,6 +322,41 @@ class MongoFilterFactorySpec extends BaseSpecification {
         mango.update(e2)
         then:
         mango.select(MangoTestEntity.class)
-             .where(QueryBuilder.FILTERS.oneInField(MangoTestEntity.SUPER_POWERS, Collections.emptyList()).forceEmpty().build()).count() == 1
+             .where(QueryBuilder.FILTERS.oneInField(MangoTestEntity.SUPER_POWERS, Collections.emptyList())
+                                .forceEmpty().build()).count() == 1
+    }
+
+    def "hasListSize works on List fields"() {
+        setup:
+        mango.select(MangoTestEntity.class).delete()
+        when:
+        MangoTestEntity e1 = new MangoTestEntity()
+        e1.setFirstname("Peter")
+        e1.setLastname("Parker")
+        e1.getSuperPowers().add("Häkeln");
+        e1.getSuperPowers().add("Stricken");
+        e1.getSuperPowers().add("Klöppeln");
+        mango.update(e1)
+        MangoTestEntity e2 = new MangoTestEntity()
+        e2.setFirstname("Spider")
+        e2.setLastname("Man")
+        e2.getSuperPowers().add("Wallcrawling")
+        e2.getSuperPowers().add("Unkrautjäten");
+        e2.getSuperPowers().add("Rasenmähen");
+        e2.getSuperPowers().add("Fensterputzen");
+        mango.update(e2)
+        then:
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 0)).count() == 0
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 1)).count() == 0
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 2)).count() == 0
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 3)).count() == 1
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 4)).count() == 1
+        mango.select(MangoTestEntity.class)
+             .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 5)).count() == 0
     }
 }

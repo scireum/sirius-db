@@ -151,14 +151,14 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
-                            .withSystemErrorMessage("A database error occured while executing an InsertQuery"
+                            .withSystemErrorMessage("A database error occurred while executing an InsertQuery"
                                                     + " for %s: %s (%s)", type.getName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
-                            .withSystemErrorMessage("An error occured while executing an InsertQuery"
+                            .withSystemErrorMessage("An error occurred while executing an InsertQuery"
                                                     + " for %s: %s (%s)", type.getName())
                             .handle();
         }
