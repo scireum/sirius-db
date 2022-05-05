@@ -21,62 +21,85 @@ import kotlin.test.assertEquals
 class SkipDefaultValueTest {
 
     @Test
-    fun `SkipDefaultValues works as expected`() {
-        // when:
+    fun `SkipDefaultValues fields with default values are not stored in Mongo`() {
+        // Store Test Entity to Mongo.
         var test = SkipDefaultTestEntity()
         mango.update(test)
-        //and:
+
+        // Retrieve it back from Mongo.
         test = mango.find(SkipDefaultTestEntity::class.java, test.id).get()
-        // then:
+
+        // Fields should equal the default/null values.
         assertEquals(null, test.stringTest)
         assertEquals(false, test.isBoolTest)
         assertEquals(0, test.listTest.size())
         assertEquals(0, test.mapTest.size())
-        // and:
-        // Only the id (and _id) is stored...
+
+        // Also, only the id (and _id) is persisted in Mongo.
         assertEquals(
             2, mongo.find()
                 .where(SkipDefaultTestEntity.ID, test.id)
                 .singleIn(SkipDefaultTestEntity::class.java).get().underlyingObject.keys.size
         )
+    }
 
-        //        when:
-        test = SkipDefaultTestEntity()
+    @Test
+    fun `SkipDefaultValues fields with custom values are stored in Mongo`() {
+        // Store new Test Entity with values for all fields to Mongo.
+        var test = SkipDefaultTestEntity()
         test.stringTest = "Hello"
         test.isBoolTest = true
         test.listTest.add("Item")
         test.mapTest.put("Key", "Value")
         mango.update(test)
-        // and :
+
+        // Retrieve it back from Mongo.
         test = mango.find(SkipDefaultTestEntity::class.java, test.id).get()
-        // then :
+
+        // Fields should equal the custom values.
         assertEquals("Hello", test.stringTest)
         assertEquals(true, test.isBoolTest)
         assertEquals(true, test.listTest.contains("Item"))
         assertEquals("Value", test.mapTest.get("Key").orElse(""))
-        // and :
-        // All fields are stored...
+
+        // Also, all fields are persisted in Mongo.
         assertEquals(
             6, mongo.find().where(SkipDefaultTestEntity.ID, test.id).singleIn(
                 SkipDefaultTestEntity::class.java
             ).get().underlyingObject.keys.size
         )
+    }
 
-        // when:
+    @Test
+    fun `SkipDefaultValues fields are removed from Mongo when reset to default value`() {
+        // Store new Test Entity with values for all fields to Mongo.
+        var test = SkipDefaultTestEntity()
+        test.stringTest = "Hello"
+        test.isBoolTest = true
+        test.listTest.add("Item")
+        test.mapTest.put("Key", "Value")
+        mango.update(test)
+
+        // Retrieve it back from Mongo.
+        test = mango.find(SkipDefaultTestEntity::class.java, test.id).get()
+
+        // Reset fields to default values and store to Mongo.
         test.stringTest = null
         test.isBoolTest = false
         test.listTest.clear()
         test.mapTest.clear()
         mango.update(test)
-        // and :
+
+        // Retrieve it back from Mongo.
         test = mango.find(SkipDefaultTestEntity::class.java, test.id).get()
-        // then :
+
+        // Fields should equal the default/null values.
         assertEquals(null, test.stringTest)
         assertEquals(false, test.isBoolTest)
         assertEquals(0, test.listTest.size())
         assertEquals(0, test.mapTest.size())
-        // and :
-        // Only the id (and again _id) is stored...
+
+        // Also, only the id (and _id) is persisted in Mongo.
         assertEquals(
             2, mongo.find().where(SkipDefaultTestEntity.ID, test.id)
                 .singleIn(SkipDefaultTestEntity::class.java).get().underlyingObject.keys.size
