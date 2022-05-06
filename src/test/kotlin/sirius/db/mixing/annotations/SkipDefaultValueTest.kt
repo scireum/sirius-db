@@ -16,6 +16,7 @@ import sirius.db.mongo.SkipDefaultTestEntity
 import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 @ExtendWith(SiriusExtension::class)
 class SkipDefaultValueTest {
@@ -34,6 +35,10 @@ class SkipDefaultValueTest {
         assertEquals(false, test.isBoolTest)
         assertEquals(0, test.listTest.size())
         assertEquals(0, test.mapTest.size())
+        assertEquals(100, test.integerWithDefault)
+
+        // No fields are marked as changed
+        assertFalse(test.isAnyMappingChanged)
 
         // Also, only the id (and _id) is persisted in Mongo.
         assertEquals(
@@ -51,6 +56,7 @@ class SkipDefaultValueTest {
         test.isBoolTest = true
         test.listTest.add("Item")
         test.mapTest.put("Key", "Value")
+        test.integerWithDefault = 500
         mango.update(test)
 
         // Retrieve it back from Mongo.
@@ -61,10 +67,14 @@ class SkipDefaultValueTest {
         assertEquals(true, test.isBoolTest)
         assertEquals(true, test.listTest.contains("Item"))
         assertEquals("Value", test.mapTest.get("Key").orElse(""))
+        assertEquals(500, test.integerWithDefault)
+
+        // No fields are marked as changed
+        assertFalse(test.isAnyMappingChanged)
 
         // Also, all fields are persisted in Mongo.
         assertEquals(
-            6, mongo.find().where(SkipDefaultTestEntity.ID, test.id).singleIn(
+            7, mongo.find().where(SkipDefaultTestEntity.ID, test.id).singleIn(
                 SkipDefaultTestEntity::class.java
             ).get().underlyingObject.keys.size
         )
@@ -78,6 +88,7 @@ class SkipDefaultValueTest {
         test.isBoolTest = true
         test.listTest.add("Item")
         test.mapTest.put("Key", "Value")
+        test.integerWithDefault = 500
         mango.update(test)
 
         // Retrieve it back from Mongo.
@@ -88,6 +99,7 @@ class SkipDefaultValueTest {
         test.isBoolTest = false
         test.listTest.clear()
         test.mapTest.clear()
+        test.integerWithDefault = 100
         mango.update(test)
 
         // Retrieve it back from Mongo.
@@ -98,13 +110,16 @@ class SkipDefaultValueTest {
         assertEquals(false, test.isBoolTest)
         assertEquals(0, test.listTest.size())
         assertEquals(0, test.mapTest.size())
+        assertEquals(100, test.integerWithDefault)
+
+        // No fields are marked as changed
+        assertFalse(test.isAnyMappingChanged)
 
         // Also, only the id (and _id) is persisted in Mongo.
         assertEquals(
             2, mongo.find().where(SkipDefaultTestEntity.ID, test.id)
                 .singleIn(SkipDefaultTestEntity::class.java).get().underlyingObject.keys.size
         )
-
     }
 
     companion object {

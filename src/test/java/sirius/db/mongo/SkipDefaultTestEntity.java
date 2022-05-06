@@ -8,6 +8,7 @@
 
 package sirius.db.mongo;
 
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.SkipDefaultValue;
 import sirius.db.mixing.types.StringList;
@@ -27,6 +28,10 @@ public class SkipDefaultTestEntity extends MongoEntity {
 
     @SkipDefaultValue
     private final StringMap mapTest = new StringMap();
+
+    @SkipDefaultValue
+    @DefaultValue("100")
+    private Integer integerWithDefault = 100;
 
     public String getStringTest() {
         return stringTest;
@@ -50,5 +55,13 @@ public class SkipDefaultTestEntity extends MongoEntity {
 
     public StringMap getMapTest() {
         return mapTest;
+    }
+
+    public Integer getIntegerWithDefault() {
+        return integerWithDefault;
+    }
+
+    public void setIntegerWithDefault(Integer integerWithDefault) {
+        this.integerWithDefault = integerWithDefault;
     }
 }
