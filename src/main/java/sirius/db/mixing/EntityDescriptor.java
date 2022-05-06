@@ -20,6 +20,7 @@ import sirius.db.mixing.annotations.Mixin;
 import sirius.db.mixing.annotations.OnValidate;
 import sirius.db.mixing.annotations.Realm;
 import sirius.db.mixing.annotations.RelationName;
+import sirius.db.mixing.annotations.SkipDefaultValue;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
@@ -444,6 +445,11 @@ public class EntityDescriptor {
         Object persistedValue = entity.persistedData.get(property);
         Object newValue = property.getValue(entity);
         if (property.isConsideredNull(persistedValue) && property.isConsideredNull(newValue)) {
+            return false;
+        }
+        if (property.isAnnotationPresent(SkipDefaultValue.class)
+            && property.isConsideredNull(persistedValue)
+            && Objects.equals(property.defaultValue, newValue)) {
             return false;
         }
         return !equalsFunction.test(persistedValue, newValue);
