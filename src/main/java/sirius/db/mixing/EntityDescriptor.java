@@ -447,6 +447,11 @@ public class EntityDescriptor {
         if (property.isConsideredNull(persistedValue) && property.isConsideredNull(newValue)) {
             return false;
         }
+        // The following is used to properly handle missing values in the database.
+        // If, i.e. a boolean property has a "SkipDefaultValue" with the default being "false",
+        // the persisted value will be "null" (as it wasn't stored at all) but the newValue will
+        // be false (the default). In this case, this still doesn't count as a changed value, as
+        // this way solely a storage optimization.
         if (property.isAnnotationPresent(SkipDefaultValue.class)
             && property.isConsideredNull(persistedValue)
             && Objects.equals(property.defaultValue, newValue)) {
