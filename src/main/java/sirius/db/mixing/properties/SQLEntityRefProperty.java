@@ -20,6 +20,7 @@ import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
 import sirius.db.mixing.AccessPath;
+import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
@@ -155,6 +156,19 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
         if (!targetRef.is(referencedId) && referencedId != -1) {
             child.setId(referencedId);
             targetRef.setId(referencedId);
+        }
+    }
+
+    @Override
+    public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
+        Object value = object.get();
+        if (value instanceof Integer intValue) {
+            // We need to convert integers to longs here, as otherwise the autoboxing magic of the JVM will
+            // happily write the Integer object into the Long field of the SQLEntityRef#id, which might cause
+            // ClassCastExceptions downstream...
+            return intValue.longValue();
+        } else {
+            return value;
         }
     }
 }
