@@ -9,10 +9,14 @@
 package sirius.db.es.properties;
 
 import sirius.db.es.ElasticEntity;
+import sirius.db.jdbc.SQLEntity;
+import sirius.db.jdbc.SQLEntityRef;
+import sirius.db.jdbc.TestEntity;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Ordinal;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.commons.Amount;
 
 import java.time.LocalDate;
@@ -65,6 +69,9 @@ public class ESDataTypesEntity extends ElasticEntity {
     @NullAllowed
     @Ordinal
     private TestEnum enumValue2;
+
+    @NullAllowed
+    private final SQLEntityRef<TestEntity> sqlEntityRef = SQLEntityRef.on(TestEntity.class, BaseEntityRef.OnDelete.IGNORE);
 
     private int intValue2 = 5;
 
@@ -156,5 +163,9 @@ public class ESDataTypesEntity extends ElasticEntity {
 
     public void setIntValue2(int intValue2) {
         this.intValue2 = intValue2;
+    }
+
+    public SQLEntityRef<TestEntity> getSqlEntityRef() {
+        return sqlEntityRef;
     }
 }
