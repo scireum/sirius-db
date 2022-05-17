@@ -13,6 +13,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.types.BaseEntityRef;
+import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -53,6 +54,9 @@ public abstract class FilterFactory<C extends Constraint> {
         }
         if (value instanceof Value) {
             return ((Value) value).asString();
+        }
+        if (value instanceof Amount amountValue) {
+            return amountValue.getAmount();
         }
 
         return customTransform(value);
