@@ -15,7 +15,11 @@ import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import org.bson.codecs.Codec;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 import sirius.db.mixing.Mixing;
+import sirius.db.mongo.codec.AmountCodec;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
 import sirius.kernel.Stoppable;
@@ -37,6 +41,7 @@ import sirius.kernel.settings.PortMapper;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -126,6 +131,11 @@ public class Mongo implements Startable, Stoppable {
                                                                          .applyConnectionString(new ConnectionString(
                                                                                  "mongodb://" + connectionString))
                                                                          .applicationName(CallContext.getNodeName());
+
+        CodecRegistry codecRegistry = CodecRegistries.fromRegistries(CodecRegistries.fromCodecs(obtainCustomCodecs()),
+                                                                     MongoClientSettings.getDefaultCodecRegistry());
+        settingsBuilder.codecRegistry(codecRegistry);
+
         MongoCredential credentials = determineCredentials(config);
         if (credentials != null) {
             settingsBuilder.credential(credentials);
@@ -134,6 +144,15 @@ public class Mongo implements Startable, Stoppable {
         MongoClient mongoClient = MongoClients.create(settingsBuilder.build());
         createIndices(database, mongoClient.getDatabase(config.get("db").asString()));
         return Tuple.create(mongoClient, config.get("db").asString());
+    }
+
+    /**
+     * Returns a list of custom codecs used to decode/encode data from/to mongo.
+     *
+     * @return a List of {@link Codec} objects which will be added to the default ones.
+     */
+    private List<? extends Codec<?>> obtainCustomCodecs() {
+        return List.of(new AmountCodec());
     }
 
     private MongoCredential determineCredentials(Extension config) {
