@@ -102,18 +102,19 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
 
     @Override
     public Object transformValue(Value value) {
-        if (value.isEmptyString()) {
-            return null;
-        }
-
         if (entityRef.getType().isInstance(value.get())) {
             return value.get();
+        }
+
+        if (value.isEmptyString()) {
+            return null;
         }
 
         Optional<E> e = find(entityRef.getType(), value);
         if (e.isEmpty()) {
             throw illegalFieldValue(value);
         }
+
         return e.get();
     }
 
