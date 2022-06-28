@@ -117,9 +117,10 @@ public class Mongo implements Startable, Stoppable {
     @Explain("We cannot close the client here as it is part of the return value.")
     protected synchronized Tuple<MongoClient, String> setupClient(String database) {
         Extension config = Sirius.getSettings().getExtension("mongo.databases", database);
+        int port = config.get("port").asInt(MONGO_PORT);
         String connectionString = Arrays.stream(config.get("hosts").asString().split(","))
                                         .map(String::trim)
-                                        .map(hostname -> PortMapper.mapPort(SERVICE_NAME, hostname, MONGO_PORT))
+                                        .map(hostname -> PortMapper.mapPort(SERVICE_NAME, hostname, port))
                                         .map(hostAndPort -> hostAndPort.getFirst() + ":" + hostAndPort.getSecond())
                                         .collect(Collectors.joining(","));
         MongoClientSettings.Builder settingsBuilder = MongoClientSettings.builder()
