@@ -18,11 +18,14 @@ import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents the base class for all entities which can be managed using {@link Mixing}.
@@ -62,6 +65,8 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
     public static final String NEW = "new";
 
     private static final String PARAM_FIELD = "field";
+
+    private static final Mapping[] EMPTY_MAPPINGS = new Mapping[0];
 
     /**
      * Returns the descriptor which maps the entity to the database table.
@@ -139,6 +144,36 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
                             .withNLSKey("Property.fieldNotUnique")
                             .set(PARAM_FIELD, getDescriptor().getProperty(field).getFullLabel())
                             .set("value", NLS.toUserString(value))
+                            .handle();
+        }
+    }
+
+    /**
+     * Ensures that the given value in the given field is unique within the given side constraints.
+     *
+     * @param field            the field to check
+     * @param value            the value to be unique
+     * @param within           the side constraints within the value must be unique
+     * @param fieldsForMessage the side constraints which should be mentioned within the exception message
+     * @throws sirius.kernel.health.HandledException if the value isn't unique
+     */
+    public void assertUnique(Mapping field,
+                             Object value,
+                             Collection<Mapping> within,
+                             Collection<Mapping> fieldsForMessage) {
+        if (!isUnique(field, value, within.toArray(EMPTY_MAPPINGS))) {
+            String fieldValueSet = Stream.concat(Stream.of(field), fieldsForMessage.stream())
+                                         .map(mapping -> getDescriptor().getProperty(mapping.getName()))
+                                         .map(property -> property.getFullLabel()
+                                                          + ": "
+                                                          + NLS.toUserString(property.getValue(this)))
+                                         .collect(Collectors.joining(", "));
+
+            throw Exceptions.createHandled()
+                            .error(new InvalidFieldException(field.toString()))
+                            .withNLSKey("Property.fieldNotUniqueException")
+                            .set("entity", getDescriptor().getLabel())
+                            .set("fieldValueSet", fieldValueSet)
                             .handle();
         }
     }
