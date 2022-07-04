@@ -457,6 +457,16 @@ public abstract class Property extends Composable {
     }
 
     /**
+     * Obtains a translated value to be included into error messages.
+     *
+     * @param entity the entity to extract the value from
+     * @return the extracted and translated value to include in messages shown to the user
+     */
+    public String getValueForUserMessage(Object entity) {
+        return NLS.toUserString(getValue(entity));
+    }
+
+    /**
      * For modifiable datatypes like collections, this returns the value as copy so that further modifications
      * will not change the returned value.
      *

@@ -101,6 +101,11 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
     }
 
     @Override
+    public String getValueForUserMessage(Object entity) {
+        return NLS.toUserString(getEntityRef(accessPath.apply(entity)).fetchValue());
+    }
+
+    @Override
     public Object transformValue(Value value) {
         if (entityRef.getType().isInstance(value.get())) {
             return value.get();
