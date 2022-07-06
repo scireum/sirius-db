@@ -143,7 +143,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
                             .error(new InvalidFieldException(field.toString()))
                             .withNLSKey("Property.fieldNotUnique")
                             .set(PARAM_FIELD, getDescriptor().getProperty(field).getFullLabel())
-                            .set("value", NLS.toUserString(value))
+                            .set("value", NLS.toUserString(getDescriptor().getProperty(field).getValueForUserMessage(this)))
                             .handle();
         }
     }
