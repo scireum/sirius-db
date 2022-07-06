@@ -166,10 +166,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
                                          .map(mapping -> getDescriptor().getProperty(mapping.getName()))
                                          .map(property -> property.getFullLabel()
                                                           + ": "
-                                                          + (Strings.isEmpty(NLS.toUserString(property.getValueForUserMessage(
-                                                 this))) ?
-                                                             NLS.get("Property.emptyValue") :
-                                                             NLS.toUserString(property.getValueForUserMessage(this))))
+                                                          + NLS.toUserString(property.getValueForUserMessage(this)))
                                          .collect(Collectors.joining(", "));
 
             throw Exceptions.createHandled()

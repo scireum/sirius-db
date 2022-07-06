@@ -463,7 +463,8 @@ public abstract class Property extends Composable {
      * @return the extracted and translated value to include in messages shown to the user
      */
     public String getValueForUserMessage(Object entity) {
-        return NLS.toUserString(getValue(entity));
+        final String userString = NLS.toUserString(getValue(entity));
+        return Strings.isEmpty(userString) ? NLS.get("Property.emptyValue") : userString;
     }
 
     /**
