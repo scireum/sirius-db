@@ -143,7 +143,7 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
                             .error(new InvalidFieldException(field.toString()))
                             .withNLSKey("Property.fieldNotUnique")
                             .set(PARAM_FIELD, getDescriptor().getProperty(field).getFullLabel())
-                            .set("value", NLS.toUserString(getDescriptor().getProperty(field).getValueForUserMessage(this)))
+                            .set("value", fetchUserStringForProperty(getDescriptor().getProperty(field)))
                             .handle();
         }
     }
@@ -164,9 +164,8 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
         if (!isUnique(field, value, within.toArray(EMPTY_MAPPINGS))) {
             String fieldValueSet = Stream.concat(Stream.of(field), fieldsForMessage.stream())
                                          .map(mapping -> getDescriptor().getProperty(mapping.getName()))
-                                         .map(property -> property.getFullLabel()
-                                                          + ": "
-                                                          + NLS.toUserString(property.getValueForUserMessage(this)))
+                                         .map(property -> property.getFullLabel() + ": " + fetchUserStringForProperty(
+                                                 property))
                                          .collect(Collectors.joining(", "));
 
             throw Exceptions.createHandled()
@@ -176,6 +175,11 @@ public abstract class BaseEntity<I> extends Mixable implements Entity {
                             .set("fieldValueSet", fieldValueSet)
                             .handle();
         }
+    }
+
+    private String fetchUserStringForProperty(Property property) {
+        final String userString = NLS.toUserString(property.getValueForUserMessage(this));
+        return Strings.isEmpty(userString) ? NLS.get("Property.emptyValue") : userString;
     }
 
     /**
