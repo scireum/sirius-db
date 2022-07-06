@@ -1261,24 +1261,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Returns the hits as a map of {@link JSONObject}s.
-     * <p>
-     * Note that the query has to be executed before calling this method.
-     *
-     * @return a map of the hits as JSON with the document ID as the key
-     * @deprecated use {@link ElasticEntity#getSearchHit()}
-     */
-    @Deprecated(forRemoval = true)
-    public Map<String, JSONObject> getRawHits() {
-        return getRawResponse().getJSONObject(KEY_HITS)
-                               .getJSONArray(KEY_HITS)
-                               .stream()
-                               .filter(JSONObject.class::isInstance)
-                               .map(JSONObject.class::cast)
-                               .collect(Collectors.toMap(hit -> hit.getString(Elastic.ID_FIELD), Function.identity()));
-    }
-
-    /**
      * Returns all suggest options for the suggester with the given name.
      *
      * @param name the name of the suggester
