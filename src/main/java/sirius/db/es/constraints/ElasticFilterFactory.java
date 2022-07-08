@@ -140,6 +140,22 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     /**
+     * Checks whether the given field is not filled which means whether the given field is absent, as elastic doesn't index
+     * null-values by default. The field is just not created.
+     * <p>
+     * This temporary method skips the call of {@link #determineFilterField(Mapping)}, allowing us to check the presence
+     * of the <tt>id</tt> field.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     * @deprecated use {@link #notFilled(Mapping)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ElasticConstraint isMissing(Mapping field) {
+        return not(wrap(new JSONObject().fluentPut("exists", new JSONObject().fluentPut("field", field.toString()))));
+    }
+
+    /**
      * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
      *
      * @param field the field to check
