@@ -252,9 +252,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     protected void createEntity(ElasticEntity entity, EntityDescriptor entityDescriptor) throws Exception {
         JSONObject data = new JSONObject();
+        String id = determineId(entity);
+        entity.setId(id);
         toJSON(entityDescriptor, entity, data);
 
-        String id = determineId(entity);
         JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         id,
                                                         determineRouting(entityDescriptor,
@@ -263,7 +264,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         null,
                                                         null,
                                                         data);
-        entity.setId(id);
         if (entityDescriptor.isVersioned()) {
             entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
             entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
