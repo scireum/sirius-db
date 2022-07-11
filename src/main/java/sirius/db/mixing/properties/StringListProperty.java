@@ -31,6 +31,7 @@ import sirius.kernel.commons.Values;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
@@ -104,6 +105,12 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     @Override
     protected Object getValueFromField(Object target) {
         return ((StringList) super.getValueFromField(target)).data();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public String getValueForUserMessage(Object entity) {
+        return ((List<String>) getValue(entity)).stream().map(NLS::toUserString).collect(Collectors.joining(", "));
     }
 
     @Override
