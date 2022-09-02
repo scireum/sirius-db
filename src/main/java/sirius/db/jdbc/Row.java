@@ -75,7 +75,13 @@ public class Row {
     @Nonnull
     public Value tryGetValue(@Nonnull Object key) {
         String upperCaseKey = key.toString().toUpperCase();
-        return Value.of(fields.get(upperCaseKey).getSecond());
+
+        Tuple<String, Object> value = fields.get(upperCaseKey);
+        if (value == null) {
+            return Value.EMPTY;
+        }
+
+        return Value.of(value.getSecond());
     }
 
     /**
