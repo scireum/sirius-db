@@ -53,6 +53,7 @@ public class Row {
      * @param key the name of the field to retrieve
      * @return the value associated with the given key wrapped as {@link sirius.kernel.commons.Value}
      * @throws java.lang.IllegalArgumentException if an unknown column key is requested
+     * @see #tryGetValue(Object)
      */
     @Nonnull
     public Value getValue(@Nonnull Object key) {
@@ -60,6 +61,20 @@ public class Row {
         if (!fields.containsKey(upperCaseKey)) {
             throw new IllegalArgumentException(Strings.apply("Unknown column: %s in %s", upperCaseKey, this));
         }
+        return Value.of(fields.get(upperCaseKey).getSecond());
+    }
+
+    /**
+     * Returns the value associated with the given key, returns an empty <tt>Value</tt> if the row doesn't contain the
+     * value at all.
+     *
+     * @param key the name of the field to retrieve
+     * @return the value associated with the given key wrapped as {@link sirius.kernel.commons.Value}
+     * @see #getValue(Object)
+     */
+    @Nonnull
+    public Value tryGetValue(@Nonnull Object key) {
+        String upperCaseKey = key.toString().toUpperCase();
         return Value.of(fields.get(upperCaseKey).getSecond());
     }
 
