@@ -11,7 +11,6 @@ package sirius.db.jdbc
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Limit
 import sirius.kernel.di.std.Part
-import spock.lang.Stepwise
 
 import java.util.function.Predicate
 
@@ -118,6 +117,26 @@ class JDBCSpec extends BaseSpecification {
         def db = dbs.get("test")
         when:
         def qry = db.createQuery('SELECT * FROM test_a [WHERE a = ${filter}]').set("filter", "Hello")
+        then:
+        qry.queryList().size() == 1
+    }
+
+    def "the statement compiler omits a conditional clause"() {
+        given:
+        def db = dbs.get("test")
+        when:
+        def qry = db.createQuery('SELECT * FROM test_a [:disabled WHERE a = ${filter}]').set("disabled", false)
+                    .set("filter", null)
+        then:
+        qry.queryList().size() == 2
+    }
+
+    def "the statement compiler includes an active conditional clause"() {
+        given:
+        def db = dbs.get("test")
+        when:
+        def qry = db.createQuery('SELECT * FROM test_a [:enabled WHERE a = ${filter}]').set("enabled", true)
+                    .set("filter", "Hello")
         then:
         qry.queryList().size() == 1
     }

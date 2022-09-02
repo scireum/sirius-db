@@ -49,7 +49,8 @@ class StatementCompiler {
     protected PreparedStatement getStatement() throws SQLException {
         if (statement == null) {
             if (retrieveGeneratedKeys) {
-                statement = connection.prepareStatement(effectiveQueryBuilder.toString(), Statement.RETURN_GENERATED_KEYS);
+                statement =
+                        connection.prepareStatement(effectiveQueryBuilder.toString(), Statement.RETURN_GENERATED_KEYS);
             } else {
                 statement = connection.prepareStatement(effectiveQueryBuilder.toString(),
                                                         ResultSet.TYPE_FORWARD_ONLY,
@@ -139,14 +140,41 @@ class StatementCompiler {
      * in context.
      */
     private void compileSection(boolean ignoreIfParametersNull, String sql) throws SQLException {
+        String effectiveSql = checkForBlockCondition(sql);
+        if (effectiveSql == null) {
+            return;
+        }
+
         List<Object> tempParams = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder();
-
-        boolean appendToStatement = compileSectionPart(sql, tempParams, sqlBuilder, !ignoreIfParametersNull);
+        boolean appendToStatement = compileSectionPart(effectiveSql, tempParams, sqlBuilder, !ignoreIfParametersNull);
 
         if (appendToStatement) {
             effectiveQueryBuilder.append(sqlBuilder);
             params.addAll(tempParams);
+        }
+    }
+
+    /*
+     * Checks for a condition like [:fooMode AND y = 10 ].
+     *
+     * These will be cut and the whole block is only compiles if the condition (fooMode in this case) is a paremter
+     * which is set to true.
+     */
+    private String checkForBlockCondition(String sql) throws SQLException {
+        if (!sql.startsWith(":")) {
+            return sql;
+        }
+        int endOfCondition = sql.indexOf(" ");
+        if (endOfCondition < 0) {
+            return sql;
+        }
+
+        String condition = sql.substring(1, endOfCondition);
+        if (Boolean.TRUE.equals(computeEffectiveParameterValue(condition))) {
+            return sql.substring(endOfCondition);
+        } else {
+            return null;
         }
     }
 
@@ -237,12 +265,12 @@ class StatementCompiler {
             return false;
         }
 
-        if (paramValue instanceof Collection<?>) {
-            return !((Collection<?>) paramValue).isEmpty();
+        if (paramValue instanceof Collection<?> collection) {
+            return !collection.isEmpty();
         }
 
-        if (paramValue instanceof String) {
-            return ((String) paramValue).length() > 0;
+        if (paramValue instanceof String stringValue) {
+            return stringValue.length() > 0;
         }
 
         return true;
