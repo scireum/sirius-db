@@ -287,20 +287,17 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             return Stream.empty();
         }
-
-        if (limit > 0) {
-            throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
-        }
-        if (skip > 0) {
-            throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
-        }
-
         return StreamSupport.stream(new SmartQuerySpliterator(), false);
     }
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
-        private TaskContext taskContext = TaskContext.get();
+        private final TaskContext taskContext = TaskContext.get();
+        private final SmartQuery<E> adjustedQuery;
+
+        private SmartQuerySpliterator() {
+            adjustedQuery = adjustQuery(SmartQuery.this);
+        }
 
         @Override
         public int characteristics() {
@@ -320,8 +317,23 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return block.iterator();
         }
 
+        private SmartQuery<E> adjustQuery(SmartQuery<E> query) {
+            SmartQuery<E> adjusted = query.copy();
+
+            if (adjusted.limit > 0) {
+                throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
+            }
+            if (adjusted.skip > 0) {
+                throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
+            }
+
+            adjusted.orderAsc(BaseEntity.ID);
+
+            return adjusted;
+        }
+
         private List<E> queryNextBlock() {
-            SmartQuery<E> effectiveQuery = copy().orderAsc(BaseEntity.ID).limit(MAX_LIST_SIZE);
+            SmartQuery<E> effectiveQuery = adjustedQuery.copy().limit(MAX_LIST_SIZE);
 
             if (lastValue == null) {
                 return effectiveQuery.queryList();
