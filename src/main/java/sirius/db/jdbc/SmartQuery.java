@@ -41,6 +41,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -327,7 +328,28 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
             }
 
-            adjusted.orderAsc(BaseEntity.ID);
+            // we need to guarantee an absolute ordering
+            if (adjusted.distinct) {
+                // we have distinct fields, so we can easily create an absolute ordering, if it's not already there
+                if (!new HashSet<>(Tuple.firsts(adjusted.orderBys)).containsAll(adjusted.fields)) {
+                    Set<Mapping> missingOrderBys = new HashSet<>(adjusted.fields);
+                    Tuple.firsts(orderBys).forEach(missingOrderBys::remove);
+                    missingOrderBys.forEach(adjusted::orderAsc);
+                }
+            } else {
+                adjusted.orderAsc(BaseEntity.ID);
+            }
+
+            if (!adjusted.distinct && !fields.isEmpty()) {
+                // We SELECT a subset of the columns to optimize the network bandwidth.
+                // When pulling the next block, we need to continue exactly where we left of, so we need to SELECT
+                // at least all the fields from the ORDER BY clause.
+                Set<Mapping> allFields = new HashSet<>(adjusted.fields);
+                if (!allFields.containsAll(Tuple.firsts(adjusted.orderBys))) {
+                    allFields.addAll(Tuple.firsts(adjusted.orderBys));
+                }
+                adjusted.fields(allFields.toArray(Mapping[]::new));
+            }
 
             return adjusted;
         }
