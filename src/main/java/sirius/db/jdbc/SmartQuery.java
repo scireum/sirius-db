@@ -337,6 +337,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                     missingOrderBys.forEach(adjusted::orderAsc);
                 }
             } else {
+                // we are not DISTINCT, so we can easily guarantee an absolute ordering using the ID
                 adjusted.orderAsc(BaseEntity.ID);
             }
 
