@@ -345,9 +345,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 // When pulling the next block, we need to continue exactly where we left of, so we need to SELECT
                 // at least all the fields from the ORDER BY clause.
                 Set<Mapping> allFields = new HashSet<>(adjusted.fields);
-                if (!allFields.containsAll(Tuple.firsts(adjusted.orderBys))) {
-                    allFields.addAll(Tuple.firsts(adjusted.orderBys));
-                }
+                allFields.addAll(Tuple.firsts(adjusted.orderBys));
                 adjusted.fields(allFields.toArray(Mapping[]::new));
             }
 
