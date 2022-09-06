@@ -331,11 +331,9 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             // we need to guarantee an absolute ordering
             if (adjusted.distinct) {
                 // we have distinct fields, so we can easily create an absolute ordering, if it's not already there
-                if (!new HashSet<>(Tuple.firsts(adjusted.orderBys)).containsAll(adjusted.fields)) {
-                    Set<Mapping> missingOrderBys = new HashSet<>(adjusted.fields);
-                    Tuple.firsts(orderBys).forEach(missingOrderBys::remove);
-                    missingOrderBys.forEach(adjusted::orderAsc);
-                }
+                adjusted.fields.stream()
+                               .filter(Predicate.not(new HashSet<>(Tuple.firsts(orderBys))::contains))
+                               .forEach(adjusted::orderAsc);
             } else {
                 // we are not DISTINCT, so we can easily guarantee an absolute ordering using the ID
                 adjusted.orderAsc(BaseEntity.ID);
