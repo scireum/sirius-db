@@ -140,11 +140,29 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     /**
+     * Checks whether the given field is not filled which means whether the given field is absent, as elastic doesn't index
+     * null-values by default. The field is just not created.
+     * <p>
+     * This temporary method skips the call of {@link #determineFilterField(Mapping)}, allowing us to check the presence
+     * of the <tt>id</tt> field.
+     *
+     * @param field the field to check
+     * @return the generated constraint
+     * @deprecated use {@link #notFilled(Mapping)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ElasticConstraint isMissing(Mapping field) {
+        return not(wrap(new JSONObject().fluentPut("exists", new JSONObject().fluentPut("field", field.toString()))));
+    }
+
+    /**
      * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #filled(Mapping)} instead
      */
+    @Deprecated
     public ElasticConstraint exists(Mapping field) {
         return filled(field);
     }
@@ -154,7 +172,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      *
      * @param field the field to check
      * @return the generated constraint
+     * @deprecated use {@link #notFilled(Mapping)} instead
      */
+    @Deprecated
     public ElasticConstraint notExists(Mapping field) {
         return notFilled(field);
     }
@@ -257,7 +277,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * if there are several objects nested in a list, an entity would also match, if the filtered properties match
      * against any of the nested objects instead of all in a single one - which is most commonly wanted.
      * <p>
-     * See: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-nested-query.html
+     * See: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-nested-query.html">Nested Query Documentation</a>
      *
      * @param field the list or inner map to query
      * @return a nested query which can be populated with constraints

@@ -13,6 +13,7 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.types.BaseEntityRef;
+import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
@@ -38,30 +39,33 @@ public abstract class FilterFactory<C extends Constraint> {
     /**
      * Transforms a given value into the representation expected by the database.
      *
-     * @param value the value to tranform
+     * @param value the value to transform
      * @return the transformed value
      */
     public Object transform(Object value) {
         if (value != null && value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         }
-        if (value instanceof BaseEntity<?>) {
-            return ((BaseEntity<?>) value).getId();
+        if (value instanceof BaseEntity<?> baseEntity) {
+            return baseEntity.getId();
         }
-        if (value instanceof BaseEntityRef<?, ?>) {
-            return ((BaseEntityRef<?, ?>) value).getId();
+        if (value instanceof BaseEntityRef<?, ?> baseEntityRef) {
+            return baseEntityRef.getId();
         }
-        if (value instanceof Value) {
-            return ((Value) value).asString();
+        if (value instanceof Value castValue) {
+            return castValue.asString();
+        }
+        if (value instanceof Amount amountValue) {
+            return amountValue.getAmount();
         }
 
         return customTransform(value);
     }
 
     /**
-     * Permits to provive database dependent transformations.
+     * Permits to provide database dependent transformations.
      *
-     * @param value the value to tranform
+     * @param value the value to transform
      * @return the transformed value
      */
     protected abstract Object customTransform(Object value);
@@ -524,7 +528,7 @@ public abstract class FilterFactory<C extends Constraint> {
     }
 
     /**
-     * Creates a constraint which ensures that the given field contains all of the given values.
+     * Creates a constraint which ensures that the given field contains all the given values.
      *
      * @param field  the field to filter on
      * @param values the values to check
@@ -558,8 +562,7 @@ public abstract class FilterFactory<C extends Constraint> {
     }
 
     /**
-     * Creates a new constraint for the given field which asserts that all of the given values in the string is
-     * present.
+     * Creates a new constraint for the given field which asserts that all given values in the string are present.
      * <p>
      * The string can have a form like A,B,C or A|B|C.
      *

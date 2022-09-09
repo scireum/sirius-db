@@ -31,6 +31,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.nls.NLS;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents an {@link NestedList} field within a {@link MongoEntity}.
@@ -96,6 +98,12 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
     @Override
     protected Object getValueFromField(Object target) {
         return getNestedList(target).data();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public String getValueForUserMessage(Object entity) {
+        return ((List<Nested>) getValue(entity)).stream().map(NLS::toUserString).collect(Collectors.joining(", "));
     }
 
     @Override

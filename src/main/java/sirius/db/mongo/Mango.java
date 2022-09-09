@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -80,7 +81,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
         for (Property property : entityDescriptor.getProperties()) {
             Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
-            if (!MongoEntity.ID.getName().equals(property.getName()) && (!isDefaultValue(valueForDatasource)
+            if (!MongoEntity.ID.getName().equals(property.getName()) && (!isDefaultValue(property, valueForDatasource)
                                                                          || !property.isAnnotationPresent(
                     SkipDefaultValue.class))) {
                 insert.set(property.getPropertyName(), valueForDatasource);
@@ -147,7 +148,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
 
     private void writeField(MongoEntity entity, Updater updater, Property property) {
         Object valueForDatasource = property.getValueForDatasource(Mango.class, entity);
-        if (property.isAnnotationPresent(SkipDefaultValue.class) && isDefaultValue(valueForDatasource)) {
+        if (property.isAnnotationPresent(SkipDefaultValue.class) && isDefaultValue(property, valueForDatasource)) {
             updater.unset(property.getPropertyName());
         } else {
             updater.set(property.getPropertyName(), valueForDatasource);
@@ -162,7 +163,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * @param valueForDatasource the value to check
      * @return <tt>true</tt> if the given value is a default value, <tt>false</tt> otherwise
      */
-    private boolean isDefaultValue(Object valueForDatasource) {
+    private boolean isDefaultValue(Property property, Object valueForDatasource) {
+        if (Objects.equals(property.getDefaultValue().get(), valueForDatasource)) {
+            return true;
+        }
+
         if (valueForDatasource == null) {
             return true;
         }

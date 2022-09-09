@@ -257,4 +257,19 @@ class ESDataTypesSpec extends BaseSpecification {
         then:
         test.getTestEnum2() == ESDataTypesEntity.TestEnum.Test2
     }
+
+    def "reading and writing SQLEntityRefs work"() {
+        given:
+        ESDataTypesEntity test = new ESDataTypesEntity()
+        when:
+        test.getSqlEntityRef().setId(1)
+        and:
+        elastic.update(test)
+        and:
+        test = elastic.refreshOrFail(test)
+        then:
+        test.getSqlEntityRef().getId() == 1L
+        and:
+        test.getSqlEntityRef().getId().getClass() == Long.class
+    }
 }

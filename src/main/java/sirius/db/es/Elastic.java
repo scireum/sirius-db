@@ -24,6 +24,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -125,7 +126,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     @ConfigValue("elasticsearch.suppressedRoutings")
     private List<String> suppressedRoutings;
-    private Map<EntityDescriptor, EnumSet<RoutingAccessMode>> suppressedRoutingsMap = new HashMap<>();
+    private final Map<EntityDescriptor, EnumSet<RoutingAccessMode>> suppressedRoutingsMap = new HashMap<>();
     private static final EnumSet<RoutingAccessMode> NO_SUPPRESSION = EnumSet.noneOf(RoutingAccessMode.class);
 
     private LowLevelClient client;
@@ -134,8 +135,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected Average callDuration = new Average();
     protected Counter numSlowQueries = new Counter();
 
-    private Map<EntityDescriptor, Property> routeTable = new HashMap<>();
-    private Map<EntityDescriptor, String> writeIndexTable = new ConcurrentHashMap<>();
+    private final Map<EntityDescriptor, Property> routeTable = new HashMap<>();
+    private final Map<EntityDescriptor, String> writeIndexTable = new ConcurrentHashMap<>();
     private boolean dockerDetected = false;
 
     protected void updateRouteTable(EntityDescriptor ed, Property p) {
@@ -251,9 +252,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     protected void createEntity(ElasticEntity entity, EntityDescriptor entityDescriptor) throws Exception {
         JSONObject data = new JSONObject();
+        String id = determineId(entity);
+        entity.setId(id);
         toJSON(entityDescriptor, entity, data);
 
-        String id = determineId(entity);
         JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         id,
                                                         determineRouting(entityDescriptor,
@@ -262,7 +264,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         null,
                                                         null,
                                                         data);
-        entity.setId(id);
         if (entityDescriptor.isVersioned()) {
             entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
             entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
@@ -327,10 +328,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected boolean toJSON(EntityDescriptor ed, ElasticEntity entity, JSONObject data) {
         boolean changed = false;
         for (Property p : ed.getProperties()) {
-            if (!ElasticEntity.ID.getName().equals(p.getName())) {
-                data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
-                changed |= ed.isChanged(entity, p);
-            }
+            data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
+            changed |= ed.isChanged(entity, p);
         }
         return changed;
     }
@@ -740,6 +739,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @param json the object to copy
      * @return a shallow copy of the given JSON object
      */
+    @SuppressWarnings("java:S1168")
+    @Explain("We don't really return a map or collection here, so null is more expected than an empty json object")
     public static JSONObject copyJSON(JSONObject json) {
         if (json == null) {
             return null;

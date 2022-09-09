@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.scireum</groupId>
         <artifactId>sirius-parent</artifactId>
-        <version>9.0.1</version>
+        <version>10.1.1</version>
     </parent>
     <artifactId>sirius-db</artifactId>
     <version>DEVELOPMENT-SNAPSHOT</version>
@@ -19,7 +19,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>dev-29.1.2</sirius.kernel>
+        <sirius.kernel>ga-5.0.0</sirius.kernel>
     </properties>
 
     <repositories>
@@ -66,12 +66,19 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>7.4.2</version>
+            <version>8.2.2</version>
         </dependency>
+        <!-- Required as the version brought by elasticsearch-rest-client contains security issues -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version>
+        </dependency>
+
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.78</version>
+            <version>1.2.83</version>
         </dependency>
 
         <dependency>
@@ -85,6 +92,12 @@
             <artifactId>clickhouse-jdbc</artifactId>
             <version>0.2.6</version>
             <scope>test</scope>
+        </dependency>
+        <!-- Required as the version brought by clickhouse-jdbc contains security issues -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.13.2.1</version>
         </dependency>
     </dependencies>
 
