@@ -41,6 +41,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -287,20 +288,17 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (forceFail) {
             return Stream.empty();
         }
-
-        if (limit > 0) {
-            throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
-        }
-        if (skip > 0) {
-            throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
-        }
-
         return StreamSupport.stream(new SmartQuerySpliterator(), false);
     }
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
-        private TaskContext taskContext = TaskContext.get();
+        private final TaskContext taskContext = TaskContext.get();
+        private final SmartQuery<E> adjustedQuery;
+
+        private SmartQuerySpliterator() {
+            adjustedQuery = adjustQuery(SmartQuery.this);
+        }
 
         @Override
         public int characteristics() {
@@ -320,8 +318,41 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return block.iterator();
         }
 
+        private SmartQuery<E> adjustQuery(SmartQuery<E> query) {
+            SmartQuery<E> adjusted = query.copy();
+
+            if (adjusted.limit > 0) {
+                throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
+            }
+            if (adjusted.skip > 0) {
+                throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
+            }
+
+            // we need to guarantee an absolute ordering
+            if (adjusted.distinct) {
+                // we have distinct fields, so we can easily create an absolute ordering, if it's not already there
+                adjusted.fields.stream()
+                               .filter(Predicate.not(new HashSet<>(Tuple.firsts(orderBys))::contains))
+                               .forEach(adjusted::orderAsc);
+            } else {
+                // we are not DISTINCT, so we can easily guarantee an absolute ordering using the ID
+                adjusted.orderAsc(BaseEntity.ID);
+            }
+
+            if (!adjusted.distinct && !fields.isEmpty()) {
+                // We SELECT a subset of the columns to optimize the network bandwidth.
+                // When pulling the next block, we need to continue exactly where we left of, so we need to SELECT
+                // at least all the fields from the ORDER BY clause.
+                Set<Mapping> allFields = new HashSet<>(adjusted.fields);
+                allFields.addAll(Tuple.firsts(adjusted.orderBys));
+                adjusted.fields(allFields.toArray(Mapping[]::new));
+            }
+
+            return adjusted;
+        }
+
         private List<E> queryNextBlock() {
-            SmartQuery<E> effectiveQuery = copy().orderAsc(BaseEntity.ID).limit(MAX_LIST_SIZE);
+            SmartQuery<E> effectiveQuery = adjustedQuery.copy().limit(MAX_LIST_SIZE);
 
             if (lastValue == null) {
                 return effectiveQuery.queryList();

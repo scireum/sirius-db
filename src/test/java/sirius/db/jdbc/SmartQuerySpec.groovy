@@ -101,15 +101,22 @@ class SmartQuerySpec extends BaseSpecification {
     def "streamBlockwise() works"() {
         when:
         SmartQuery<SmartQueryTestEntity> qry = oma.select(SmartQueryTestEntity.class)
+                                                  .fields(SmartQueryTestEntity.VALUE)
                                                   .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         then:
-        qry.streamBlockwise().
+        qry.copy().
+                streamBlockwise().
                 map({ it.getValue() }).
                 collect(Collectors.toList()) == ["Test", "Hello", "World"]
         when:
-        qry.skip(1).limit(1).streamBlockwise().count()
+        qry.copy().skip(1).limit(1).streamBlockwise().count()
         then:
         thrown(UnsupportedOperationException)
+        when:
+        qry.copy().distinctFields(SmartQueryTestEntity.TEST_NUMBER).streamBlockwise().count()
+        then:
+        // just test whether this completes, we had a bug with an endless loop
+        return
     }
 
     def "count returns the number of entity"() {
