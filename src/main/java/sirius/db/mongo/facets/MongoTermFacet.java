@@ -55,7 +55,7 @@ public class MongoTermFacet extends MongoFacet {
     }
 
     /**
-     * Specifies the callback to invoke once the facet was been computed completely.
+     * Specifies the callback to invoke once the facet has been computed completely.
      *
      * @param completionCallback the callback to invoke
      * @return the facet itself for fluent method calls
