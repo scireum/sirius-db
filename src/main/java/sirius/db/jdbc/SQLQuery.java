@@ -31,10 +31,15 @@ import java.util.function.Predicate;
  * thinking too much about resource management.
  * <p>
  * Supports named parameters in form of ${name}. Also #{name} can be used in LIKE expressions and will be
- * surrounded by % signs (if not empty).
+ * appended with a % sign (if not empty), also all "*" will be replaced by a "%".
  * <p>
- * Optional blocks can be surrounded with angular braces: SELECT * FROM x WHERE test = 1[ AND test2=${val}]
+ * Optional blocks can be surrounded with angular braces: <tt>SELECT * FROM x WHERE test = 1[ AND test2=${val}]</tt>
  * The surrounded block will only be added to the query, if the parameter within has a non-null value.
+ * <p>
+ * Additionally, block can be marked with conditions like <tt>SELECT * FROM x WHERE test = 1[:check AND test2= 2]</tt>.
+ * These blocks are only emitted, if the condition (<tt>check</tt> in this case) is a parameter which is set to
+ * <tt>true</tt>. Note that if the block contains parameters (like <tt>${param}</tt>), these also have to be present
+ * and non-null for the block to be emitted.
  */
 public class SQLQuery extends BaseSQLQuery {
 

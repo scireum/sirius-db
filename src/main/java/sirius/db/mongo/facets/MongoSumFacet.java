@@ -15,24 +15,20 @@ import org.bson.Document;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mongo.Doc;
-import sirius.kernel.commons.Tuple;
+import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Value;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Represents a term facet which aggregates a given field (counts individual values).
- * <p>
- * This will generate a $sortByCount for the given field.
+ * Represents a term facet which computes the sum of a given field.
  */
-public class MongoTermFacet extends MongoFacet {
+public class MongoSumFacet extends MongoFacet {
 
     private final Mapping field;
-    private List<Tuple<String, Integer>> values;
-    private Consumer<MongoTermFacet> completionCallback;
+    private Amount value = Amount.NOTHING;
+    private Consumer<MongoSumFacet> completionCallback;
 
     /**
      * Generates a facet with the given name, for the given field.
@@ -40,7 +36,7 @@ public class MongoTermFacet extends MongoFacet {
      * @param name  the name of the facet
      * @param field the field to aggregate on
      */
-    public MongoTermFacet(String name, Mapping field) {
+    public MongoSumFacet(String name, Mapping field) {
         super(name);
         this.field = field;
     }
@@ -50,7 +46,7 @@ public class MongoTermFacet extends MongoFacet {
      *
      * @param field the field to aggregate on
      */
-    public MongoTermFacet(Mapping field) {
+    public MongoSumFacet(Mapping field) {
         this(field.toString(), field);
     }
 
@@ -60,7 +56,7 @@ public class MongoTermFacet extends MongoFacet {
      * @param completionCallback the callback to invoke
      * @return the facet itself for fluent method calls
      */
-    public MongoTermFacet onComplete(Consumer<MongoTermFacet> completionCallback) {
+    public MongoSumFacet onComplete(Consumer<MongoSumFacet> completionCallback) {
         this.completionCallback = completionCallback;
         return this;
     }
@@ -69,35 +65,28 @@ public class MongoTermFacet extends MongoFacet {
     public void emitFacets(EntityDescriptor descriptor, BiConsumer<String, DBObject> facetConsumer) {
         BasicDBList facet = new BasicDBList();
         String fieldName = descriptor.findProperty(field.toString()).getPropertyName();
-        facet.add(new BasicDBObject().append("$unwind", "$" + fieldName));
-        facet.add(new BasicDBObject().append("$sortByCount", "$" + fieldName));
-
+        facet.add(new BasicDBObject().append("$group",
+                                             new BasicDBObject().append("_id", null)
+                                                                .append("sum",
+                                                                        new BasicDBObject().append("sum",
+                                                                                                   "$" + fieldName))));
         facetConsumer.accept(name, facet);
     }
 
     @Override
     public void digest(Doc result) {
-        this.values = new ArrayList<>();
-
-        List<Object> results = result.getList(name);
-        for (Object resultItem : results) {
-            Document resultDoc = (Document) resultItem;
-            String term = resultDoc.getString("_id");
-            int count = resultDoc.getInteger("count", 0);
-            values.add(Tuple.create(term, count));
-        }
+        result.getList(name)
+              .stream()
+              .findFirst()
+              .map(Document.class::cast)
+              .ifPresent(group -> this.value = Value.of(group.get("sum")).getAmount());
 
         if (completionCallback != null) {
             completionCallback.accept(this);
         }
     }
 
-    /**
-     * Returns the list of filter values.
-     *
-     * @return a list of names (terms) and their number of matches
-     */
-    public List<Tuple<String, Integer>> getValues() {
-        return Collections.unmodifiableList(values);
+    public Amount getValue() {
+        return value;
     }
 }
