@@ -24,11 +24,11 @@ import java.util.function.Consumer;
 /**
  * Represents a term facet which computes the avarage of a given field.
  */
-public class MongoAvgFacet extends MongoFacet {
+public class MongoAverageFacet extends MongoFacet {
 
     private final Mapping field;
     private Amount value = Amount.NOTHING;
-    private Consumer<MongoAvgFacet> completionCallback;
+    private Consumer<MongoAverageFacet> completionCallback;
 
     /**
      * Generates a facet with the given name, for the given field.
@@ -36,7 +36,7 @@ public class MongoAvgFacet extends MongoFacet {
      * @param name  the name of the facet
      * @param field the field to aggregate on
      */
-    public MongoAvgFacet(String name, Mapping field) {
+    public MongoAverageFacet(String name, Mapping field) {
         super(name);
         this.field = field;
     }
@@ -46,7 +46,7 @@ public class MongoAvgFacet extends MongoFacet {
      *
      * @param field the field to aggregate on
      */
-    public MongoAvgFacet(Mapping field) {
+    public MongoAverageFacet(Mapping field) {
         this(field.toString(), field);
     }
 
@@ -56,7 +56,7 @@ public class MongoAvgFacet extends MongoFacet {
      * @param completionCallback the callback to invoke
      * @return the facet itself for fluent method calls
      */
-    public MongoAvgFacet onComplete(Consumer<MongoAvgFacet> completionCallback) {
+    public MongoAverageFacet onComplete(Consumer<MongoAverageFacet> completionCallback) {
         this.completionCallback = completionCallback;
         return this;
     }
