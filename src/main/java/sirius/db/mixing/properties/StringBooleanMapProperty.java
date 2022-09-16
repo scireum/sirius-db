@@ -29,7 +29,6 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringBooleanMap} field within a {@link Mixable}.
@@ -85,7 +84,7 @@ public class StringBooleanMapProperty extends BaseMapProperty implements ESPrope
                                    .stream()
                                    .map(e -> new JSONObject().fluentPut(StringMapProperty.KEY, e.getKey())
                                                              .fluentPut(StringMapProperty.VALUE, e.getValue()))
-                                   .collect(Collectors.toList());
+                                   .toList();
     }
 
     @Override

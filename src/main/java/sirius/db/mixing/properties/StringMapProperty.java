@@ -29,7 +29,6 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringMap} field within an {@link ElasticEntity} or a {@link sirius.db.mongo.MongoEntity}.
@@ -81,7 +80,7 @@ public class StringMapProperty extends BaseMapProperty implements ESPropertyInfo
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
                                    .map(e -> new JSONObject().fluentPut(KEY, e.getKey()).fluentPut(VALUE, e.getValue()))
-                                   .collect(Collectors.toList());
+                                   .toList();
     }
 
     @Override

@@ -321,9 +321,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @SafeVarargs
     public final ElasticQuery<E> withAdditionalIndices(Class<? extends ElasticEntity>... additionalEntitiesToQuery) {
-        this.additionalDescriptors = Arrays.stream(additionalEntitiesToQuery)
-                                           .map(type -> mixing.getDescriptor(type))
-                                           .collect(Collectors.toList());
+        this.additionalDescriptors =
+                Arrays.stream(additionalEntitiesToQuery).map(type -> mixing.getDescriptor(type)).toList();
 
         return this;
     }
@@ -398,7 +397,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return sortArray.stream().map(Object::toString).collect(Collectors.toList());
+        return sortArray.stream().map(Object::toString).toList();
     }
 
     /**
@@ -808,7 +807,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 result.fluentPut(KEY_TO, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
             }
             return result;
-        }).collect(Collectors.toList());
+        }).toList();
 
         return addAggregation(AggregationBuilder.create(KEY_DATE_RANGE, name)
                                                 .addBodyParameter(KEY_FIELD, field.toString())
@@ -1186,10 +1185,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject object = getRawAggregations();
         for (String aggregationName : name.split("\\.")) {
             Object child = object.get(aggregationName);
-            if (!(child instanceof JSONObject)) {
+            if (!(child instanceof JSONObject childObject)) {
                 return AggregationResult.of(null);
             } else {
-                object = (JSONObject) child;
+                object = childObject;
             }
         }
 

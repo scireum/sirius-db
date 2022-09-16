@@ -60,14 +60,14 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected Object customTransform(Object value) {
-        if (value instanceof Instant) {
-            value = LocalDateTime.ofInstant((Instant) value, ZoneId.systemDefault());
+        if (value instanceof Instant instant) {
+            value = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
         }
-        if (value instanceof TemporalAccessor) {
-            if (((TemporalAccessor) value).isSupported(ChronoField.HOUR_OF_DAY)) {
-                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format((TemporalAccessor) value);
+        if (value instanceof TemporalAccessor temporalAccessor) {
+            if (temporalAccessor.isSupported(ChronoField.HOUR_OF_DAY)) {
+                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(temporalAccessor);
             } else {
-                return DateTimeFormatter.ISO_LOCAL_DATE.format((TemporalAccessor) value);
+                return DateTimeFormatter.ISO_LOCAL_DATE.format(temporalAccessor);
             }
         }
 

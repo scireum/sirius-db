@@ -84,9 +84,9 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     protected Object transformFromJDBC(Value object) {
         Object effectiveValue = object.get();
-        if (effectiveValue instanceof Clob) {
+        if (effectiveValue instanceof Clob clob) {
             try {
-                return ((Clob) effectiveValue).getSubString(1, (int) ((Clob) effectiveValue).length());
+                return clob.getSubString(1, (int) clob.length());
             } catch (Exception e) {
                 throw Exceptions.handle()
                                 .to(Mixing.LOG)
@@ -138,7 +138,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (value != null && (trim  || lowerCase || upperCase)) {
+        if (value != null && (trim || lowerCase || upperCase)) {
             value = applyAnnotationModifications(entity, value);
             setValue(entity, value);
         }
@@ -170,7 +170,6 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         } else if (upperCase) {
             modifiedValue = modifiedValue.toUpperCase();
         }
-
 
         return modifiedValue;
     }

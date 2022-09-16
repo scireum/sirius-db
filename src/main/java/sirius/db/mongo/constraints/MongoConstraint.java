@@ -37,8 +37,8 @@ public class MongoConstraint extends Constraint {
     public void asString(StringBuilder builder) {
         builder.append(key);
         builder.append(": ");
-        if (object instanceof Document) {
-            builder.append(((Document) object).toJson());
+        if (object instanceof Document document) {
+            builder.append(document.toJson());
         } else {
             builder.append(object.toString());
         }

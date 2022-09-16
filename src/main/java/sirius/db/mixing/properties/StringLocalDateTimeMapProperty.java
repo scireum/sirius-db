@@ -41,7 +41,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringLocalDateTimeMap} field within a {@link Mixable}.
@@ -90,8 +89,8 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
     protected Object transformFromMongo(Value object) {
         Map<String, LocalDateTime> result = new LinkedHashMap<>();
         Object obj = object.get();
-        if (obj instanceof Document) {
-            for (Map.Entry<String, Object> entry : ((Document) obj).entrySet()) {
+        if (obj instanceof Document document) {
+            for (Map.Entry<String, Object> entry : document.entrySet()) {
                 try {
                     result.put(entry.getKey(),
                                Value.of(entry.getValue()).asLocalDateTime(null).truncatedTo(ChronoUnit.MILLIS));
@@ -111,7 +110,7 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
                                    .map(e -> new JSONObject().fluentPut(StringMapProperty.KEY, e.getKey())
                                                              .fluentPut(StringMapProperty.VALUE,
                                                                         Elastic.FILTERS.transform(e.getValue())))
-                                   .collect(Collectors.toList());
+                                   .toList();
     }
 
     private LocalDateTime readDate(String date) {

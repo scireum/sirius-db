@@ -8,6 +8,8 @@
 
 package sirius.db.mixing.types;
 
+import sirius.kernel.commons.Explain;
+
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -245,6 +247,8 @@ public abstract class SafeList<T> implements Iterable<T> {
      *
      * @return a copy of the internally stored list
      */
+    @SuppressWarnings("java:S6204")
+    @Explain("The created copy is intended to be modified.")
     public List<T> copyList() {
         if (data == null) {
             return Collections.emptyList();

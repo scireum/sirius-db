@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Generates filters and constraints for {@link sirius.db.mongo.MongoQuery}.
@@ -141,7 +140,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         return new MongoConstraint("$and",
                                    effectiveConstraints.stream()
                                                        .map(clause -> new Document(clause.getKey(), clause.getObject()))
-                                                       .collect(Collectors.toList()));
+                                                       .toList());
     }
 
     @Override
@@ -149,7 +148,7 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
         return new MongoConstraint("$or",
                                    effectiveConstraints.stream()
                                                        .map(clause -> new Document(clause.getKey(), clause.getObject()))
-                                                       .collect(Collectors.toList()));
+                                                       .toList());
     }
 
     @Override

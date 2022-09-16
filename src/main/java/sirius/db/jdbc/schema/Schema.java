@@ -320,18 +320,18 @@ public class Schema implements Startable, Initializable {
             table.getColumns().add(versionColumn);
         }
 
-        for (Property p : ed.getProperties()) {
-            if (!(p instanceof SQLPropertyInfo)) {
+        for (Property property : ed.getProperties()) {
+            if (!(property instanceof SQLPropertyInfo propertyInfo)) {
                 Exceptions.handle()
                           .to(OMA.LOG)
                           .withSystemErrorMessage(
                                   "The entity %s (%s) contains an unmappable property %s - SQLPropertyInfo is not available!",
                                   ed.getType().getName(),
                                   ed.getRelationName(),
-                                  p.getName())
+                                  property.getName())
                           .handle();
-            } else if (!Strings.areEqual(SQLEntity.ID.getName(), p.getName())) {
-                ((SQLPropertyInfo) p).contributeToTable(table);
+            } else if (!Strings.areEqual(SQLEntity.ID.getName(), property.getName())) {
+                propertyInfo.contributeToTable(table);
             }
         }
     }

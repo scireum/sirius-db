@@ -21,6 +21,7 @@ abstract class CombinedConstraint extends SQLConstraint {
 
     protected List<SQLConstraint> inner;
 
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     protected CombinedConstraint(List<SQLConstraint> inner) {
         this.inner = inner;
     }

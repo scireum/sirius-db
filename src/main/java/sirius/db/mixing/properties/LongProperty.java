@@ -74,8 +74,8 @@ public class LongProperty extends NumberProperty implements SQLPropertyInfo, ESP
 
     @Override
     public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
-        if (object.get() instanceof Integer) {
-            return Long.valueOf((Integer) object.get());
+        if (object.get() instanceof Integer number) {
+            return Long.valueOf(number.longValue());
         }
 
         if (object.is(String.class)) {

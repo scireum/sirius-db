@@ -70,7 +70,7 @@ public class Database {
     private String validationQuery;
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
-    private static final Pattern SANE_COLUMN_NAME = Pattern.compile("[a-zA-Z0-9_]+");
+    private static final Pattern SANE_COLUMN_NAME = Pattern.compile("\\w+");
     private static final Pattern HOST_AND_PORT_PATTERN = Pattern.compile("//([^:]+):(\\d+)");
 
     /*

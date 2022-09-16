@@ -16,6 +16,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -32,7 +33,6 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link BatchContext}.
@@ -122,6 +122,8 @@ public abstract class BatchQuery<E extends SQLEntity> {
      *
      * @throws SQLException in case of a database error
      */
+    @SuppressWarnings("resource")
+    @Explain("We close the statement later, this is just an intermediate")
     protected void addBatch() throws SQLException {
         prepareStmt().addBatch();
         batchBacklog++;
@@ -173,7 +175,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
     protected abstract void buildSQL() throws SQLException;
 
     /**
-     * Determines the descriptor for the our entity type.
+     * Determines the descriptor for the entity type.
      *
      * @return the descriptor for the type of entities this query can process
      */
@@ -194,7 +196,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
             EntityDescriptor ed = getDescriptor();
             properties = filters.stream()
                                 .map(filter -> Tuple.create(filter.getFirst(), ed.getProperty(filter.getSecond())))
-                                .collect(Collectors.toList());
+                                .toList();
         }
 
         return Collections.unmodifiableList(properties);

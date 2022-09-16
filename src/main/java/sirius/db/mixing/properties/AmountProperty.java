@@ -166,11 +166,11 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (object == null) {
             return Amount.NOTHING;
         }
-        if (object instanceof Double) {
-            return Amount.of((Double) object);
+        if (object instanceof Double value) {
+            return Amount.of(value);
         }
-        if (object instanceof Integer) {
-            return Amount.of((Integer) object);
+        if (object instanceof Integer value) {
+            return Amount.of(value);
         }
         return Amount.of((BigDecimal) object);
     }

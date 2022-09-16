@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Bundles the preparation and execution of a bunch of {@link BatchQuery batch queries}.
@@ -83,13 +82,13 @@ public class BatchContext implements Closeable {
         return Arrays.stream(mappingsToCompare)
                      .map(Mapping::toString)
                      .map(mapping -> Tuple.create(Operator.EQ, mapping))
-                     .collect(Collectors.toList());
+                     .toList();
     }
 
     protected static List<Tuple<Operator, String>> simplifyMappings(Tuple<Operator, Mapping>[] filters) {
         return Arrays.stream(filters)
                      .map(filter -> Tuple.create(filter.getFirst(), filter.getSecond().toString()))
-                     .collect(Collectors.toList());
+                     .toList();
     }
 
     protected Connection getConnection(String realm) {
@@ -219,9 +218,7 @@ public class BatchContext implements Closeable {
         return register(new InsertQuery<>(this,
                                           type,
                                           fetchId,
-                                          Arrays.stream(mappingsToInsert)
-                                                .map(Mapping::getName)
-                                                .collect(Collectors.toList())));
+                                          Arrays.stream(mappingsToInsert).map(Mapping::getName).toList()));
     }
 
     /**
