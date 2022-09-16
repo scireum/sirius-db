@@ -133,30 +133,6 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         return not(filled(field));
     }
 
-    /**
-     * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #filled(Mapping)} instead
-     */
-    @Deprecated
-    public ElasticConstraint exists(Mapping field) {
-        return filled(field);
-    }
-
-    /**
-     * As elastic doesn't index null-values by default a notExists query is basically the same as a {@link #notFilled(Mapping)} query.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #notFilled(Mapping)} instead
-     */
-    @Deprecated
-    public ElasticConstraint notExists(Mapping field) {
-        return notFilled(field);
-    }
-
     @Override
     protected ElasticConstraint invert(ElasticConstraint constraint) {
         return wrap(new BoolQueryBuilder().mustNot(constraint).build());

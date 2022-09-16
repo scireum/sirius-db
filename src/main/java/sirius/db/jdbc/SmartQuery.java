@@ -237,52 +237,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
     }
 
-    /**
-     * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
-     * <p>
-     * In contrast to {@link #iterate(Predicate)}, this method is suitable for large result sets or long processing
-     * times. As <tt>iterate</tt> keeps the JDBC <tt>ResultSet</tt> open, the underlying server might discard the
-     * result at some point in time (e.g. MySQL does this after 30-45min). Therefore, we execute the query and start
-     * processing. If a timeout ({@link #queryIterateTimeout} is reached, we stop iterating, discard the result set
-     * and emit another query which starts just where the previous query stopped.
-     * <p>
-     * While we try hard to keep the result consistent, there is no way to guarantee this. There is a possibility,
-     * that we either miss an entity or even process an entity twice if a concurrent modification happens. Basically,
-     * you might get <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Non-repeatable_reads">
-     * non-repeatable reads</a> or <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Phantom_reads">
-     * phantom reads</a>.
-     * <p>
-     * Performance wise, it helps a lot if there are indices on any fields used for {@link #orderAsc(Mapping) ordering}.
-     *
-     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
-     *                to continue processing or <tt>false</tt> to abort processing of the result set.
-     * @deprecated Use {@link #streamBlockwise()} instead.
-     */
-    @Deprecated
-    public void iterateBlockwise(Predicate<E> handler) {
-        if (forceFail) {
-            return;
-        }
-
-        streamBlockwise().takeWhile(handler).forEach(ignored -> {
-        });
-    }
-
-    /**
-     * Calls the given function on all items in the result.
-     *
-     * @param handler the handler to be invoked for each item in the result
-     * @see #iterateBlockwise(Predicate)
-     * @deprecated Use {@link #streamBlockwise()} instead.
-     */
-    @Deprecated
-    public void iterateBlockwiseAll(Consumer<E> handler) {
-        iterateBlockwise(entity -> {
-            handler.accept(entity);
-            return true;
-        });
-    }
-
     @Override
     public Stream<E> streamBlockwise() {
         if (forceFail) {
