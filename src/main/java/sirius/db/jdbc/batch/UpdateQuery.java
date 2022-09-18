@@ -15,6 +15,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -72,6 +73,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      *                     batch update (<tt>true</tt>).
      */
     @SuppressWarnings({"unchecked", "resource"})
+    @Explain("We don't want to close the statement here - this is done in close() globally.")
     public void update(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
         try {
             if (this.type == null) {
