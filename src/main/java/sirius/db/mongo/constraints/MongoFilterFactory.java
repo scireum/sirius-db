@@ -15,6 +15,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mixing.query.constraints.OneInField;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 
@@ -30,6 +31,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Generates filters and constraints for {@link sirius.db.mongo.MongoQuery}.
@@ -136,19 +138,23 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
+    @SuppressWarnings("java:S6204")
+    @Explain("We return mutable lists here, as the QueryBuilder optimizes adjacent constraints into one.")
     protected MongoConstraint effectiveAnd(List<MongoConstraint> effectiveConstraints) {
         return new MongoConstraint("$and",
                                    effectiveConstraints.stream()
                                                        .map(clause -> new Document(clause.getKey(), clause.getObject()))
-                                                       .toList());
+                                                       .collect(Collectors.toList()));
     }
 
     @Override
+    @SuppressWarnings("java:S6204")
+    @Explain("We return mutable lists here, as the QueryBuilder optimizes adjacent constraints into one.")
     protected MongoConstraint effectiveOr(List<MongoConstraint> effectiveConstraints) {
         return new MongoConstraint("$or",
                                    effectiveConstraints.stream()
                                                        .map(clause -> new Document(clause.getKey(), clause.getObject()))
-                                                       .toList());
+                                                       .collect(Collectors.toList()));
     }
 
     @Override
