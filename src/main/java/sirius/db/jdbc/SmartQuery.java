@@ -22,6 +22,7 @@ import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.PullBasedSpliterator;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -72,8 +73,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     private static Databases dbs;
 
     protected List<Mapping> fields = Collections.emptyList();
+    protected List<String> aggregationFields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Mapping, Boolean>> orderBys = new ArrayList<>();
+    protected List<String> groupBys = Collections.emptyList();
     protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
 
@@ -147,6 +150,56 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      */
     public SmartQuery<E> fields(Mapping... fields) {
         this.fields = Arrays.asList(fields);
+        return this;
+    }
+
+    /**
+     * Adds a complex expression like an aggregation function to the <tt>SELECT</tt> clause of the generated SQL.
+     * <p>
+     * In contrast to {@link #fields(Mapping...)}, this adds an expression but does not replace the previous ones
+     * (neither those added via {@link #fields(Mapping...)} nor other {@link #aggregationField(String)} calls).
+     * Therefore, this can be used to add fields or aggregations conditionally.
+     * <p>
+     * <b>NOTE:</b> This cannot be used in "normal" entity queries, as the O/R mapper cannot handle aggregations.
+     * Rather, the query has to be converted using {@link #asSQLQuery()} which then permits direct access to rows.
+     * <p>
+     * <b>ALSO NOTE:</b> The given expressions will directly end up on the SQL query and must therefore be constant
+     * and safe string which aren't subject to SQL injection attacks!
+     *
+     * @param expression the expression to group by
+     * @return the query itself for fluent method calls
+     * @see #groupBy(String)
+     * @see #asSQLQuery()
+     */
+    public SmartQuery<E> aggregationField(String expression) {
+        if (this.aggregationFields.isEmpty()) {
+            this.aggregationFields = new ArrayList<>();
+        }
+
+        this.aggregationFields.add(expression);
+        return this;
+    }
+
+    /**
+     * Adds an expression to the <tt>GROUP BY</tt> clause of the generated SQL.
+     * <p>
+     * <b>NOTE:</b> This cannot be used in "normal" entity queries, as the O/R mapper cannot handle aggregations.
+     * Rather, the query has to be converted using {@link #asSQLQuery()} which then permits direct access to rows.
+     * <p>
+     * <b>ALSO NOTE:</b> The given expressions will directly end up on the SQL query and must therefore be constant
+     * and safe string which aren't subject to SQL injection attacks!
+     *
+     * @param expression the expression to group by
+     * @return the query itself for fluent method calls
+     * @see #aggregationField(String)
+     * @see #asSQLQuery()
+     */
+    public SmartQuery<E> groupBy(String expression) {
+        if (this.groupBys.isEmpty()) {
+            this.groupBys = new ArrayList<>();
+        }
+
+        this.groupBys.add(expression);
         return this;
     }
 
@@ -693,6 +746,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         Compiler compiler = select();
         from(compiler);
         where(compiler);
+        groupBy(compiler);
         orderBy(compiler);
         limit(compiler);
         return compiler;
@@ -702,13 +756,14 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         Compiler compiler = selectCount();
         from(compiler);
         where(compiler);
+        groupBy(compiler);
         return compiler;
     }
 
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
-        if (fields.isEmpty()) {
+        if (fields.isEmpty() && aggregationFields.isEmpty()) {
             c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
         } else {
             if (distinct) {
@@ -729,6 +784,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
         // make sure that the join fields are always fetched
         requiredFields.forEach(requiredField -> appendToSELECT(c, applyAliases, mf, requiredField, false, null));
+
+        for (String aggregationField : aggregationFields) {
+            if (mf.successiveCall()) {
+                c.getSELECTBuilder().append(", ");
+            }
+            c.getSELECTBuilder().append(aggregationField);
+        }
     }
 
     private void appendToSELECT(Compiler c,
@@ -811,6 +873,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 compiler.getWHEREBuilder().append(compiler.translateColumnName(e.getFirst()));
                 compiler.getWHEREBuilder().append(Boolean.TRUE.equals(e.getSecond()) ? " ASC" : " DESC");
             }
+        }
+    }
+
+    private void groupBy(Compiler compiler) {
+        if (!groupBys.isEmpty()) {
+            compiler.getWHEREBuilder().append(" GROUP BY ");
+            compiler.getWHEREBuilder().append(Strings.join(groupBys, ", "));
         }
     }
 
