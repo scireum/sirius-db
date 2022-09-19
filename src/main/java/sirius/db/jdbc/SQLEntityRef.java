@@ -85,8 +85,8 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
     @Override
     protected Long coerceToId(Object id) {
         try {
-            if (id instanceof Long) {
-                return (Long) id;
+            if (id instanceof Long number) {
+                return number;
             }
             return Long.parseLong(id.toString());
         } catch (NumberFormatException e) {

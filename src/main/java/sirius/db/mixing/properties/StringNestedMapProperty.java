@@ -111,8 +111,8 @@ public class StringNestedMapProperty extends BaseMapProperty {
     protected Object transformFromMongo(Value object) {
         Map<String, Nested> result = new LinkedHashMap<>();
         Object obj = object.get();
-        if (obj instanceof Document) {
-            for (Map.Entry<String, Object> entry : ((Document) obj).entrySet()) {
+        if (obj instanceof Document document) {
+            for (Map.Entry<String, Object> entry : document.entrySet()) {
                 try {
                     Doc innerDoc = new Doc((Document) entry.getValue());
                     result.put(entry.getKey(), (Nested) getNestedDescriptor().make(Mango.class, null, innerDoc::get));

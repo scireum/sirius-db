@@ -9,6 +9,7 @@
 package sirius.db.jdbc.constraints;
 
 import sirius.db.jdbc.SmartQuery;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 
 import java.util.List;
@@ -21,6 +22,8 @@ abstract class CombinedConstraint extends SQLConstraint {
 
     protected List<SQLConstraint> inner;
 
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    @Explain("This is only used internally so copying / wrapping etc. aren't worth the overhead.")
     protected CombinedConstraint(List<SQLConstraint> inner) {
         this.inner = inner;
     }

@@ -71,12 +71,12 @@ public class AggregationResult {
     public void forEachBucket(Consumer<Bucket> bucketConsumer) {
         Object buckets = data.get(KEY_BUCKETS);
 
-        if (buckets instanceof JSONArray) {
-            for (Object bucket : (JSONArray) buckets) {
+        if (buckets instanceof JSONArray array) {
+            for (Object bucket : array) {
                 bucketConsumer.accept(new Bucket(null, (JSONObject) bucket));
             }
-        } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
+        } else if (buckets instanceof JSONObject object) {
+            for (Map.Entry<String, Object> entry : object.entrySet()) {
                 bucketConsumer.accept(new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
             }
         }
@@ -115,13 +115,13 @@ public class AggregationResult {
     public Optional<Bucket> getFirstBucket() {
         Object buckets = data.get(KEY_BUCKETS);
 
-        if (buckets instanceof JSONArray && !((JSONArray) buckets).isEmpty()) {
-            return Optional.of(new Bucket(null, (JSONObject) ((JSONArray) buckets).get(0)));
-        } else if (buckets instanceof JSONObject) {
-            return ((JSONObject) buckets).entrySet()
-                                         .stream()
-                                         .findFirst()
-                                         .map(entry -> new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
+        if (buckets instanceof JSONArray array && !array.isEmpty()) {
+            return Optional.of(new Bucket(null, (JSONObject) array.get(0)));
+        } else if (buckets instanceof JSONObject object) {
+            return object.entrySet()
+                         .stream()
+                         .findFirst()
+                         .map(entry -> new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
         } else {
             return Optional.empty();
         }

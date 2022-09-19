@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Represents a constraint which verifies that the given field contains one of the given values.
@@ -34,7 +33,7 @@ public class OneInField<C extends Constraint> {
         this.factory = factory;
         this.field = field;
         if (values != null) {
-            this.values = values.stream().filter(Objects::nonNull).collect(Collectors.toList());
+            this.values = values.stream().filter(Objects::nonNull).toList();
         } else {
             this.values = Collections.emptyList();
         }

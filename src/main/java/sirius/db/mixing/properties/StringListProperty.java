@@ -25,6 +25,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.types.StringList;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
@@ -149,6 +150,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     }
 
     @Override
+    @SuppressWarnings("java:S6204")
+    @Explain("The created copy is intended to be modified.")
     protected Object transformFromJDBC(Value object) {
         if (hasDBCapabilityLists()) {
             if (object.isFilled()) {
@@ -230,6 +233,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     }
 
     @Nonnull
+    @SuppressWarnings("java:S6204")
+    @Explain("The created copy is intended to be modified.")
     private List<String> performAutoparse(Value value) {
         return Arrays.stream(value.asString().split(","))
                      .map(Strings::trim)

@@ -15,6 +15,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.db.mixing.query.constraints.OneInField;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 
@@ -137,6 +138,8 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
+    @SuppressWarnings("java:S6204")
+    @Explain("We return mutable lists here, as the QueryBuilder optimizes adjacent constraints into one.")
     protected MongoConstraint effectiveAnd(List<MongoConstraint> effectiveConstraints) {
         return new MongoConstraint("$and",
                                    effectiveConstraints.stream()
@@ -145,6 +148,8 @@ public class MongoFilterFactory extends FilterFactory<MongoConstraint> {
     }
 
     @Override
+    @SuppressWarnings("java:S6204")
+    @Explain("We return mutable lists here, as the QueryBuilder optimizes adjacent constraints into one.")
     protected MongoConstraint effectiveOr(List<MongoConstraint> effectiveConstraints) {
         return new MongoConstraint("$or",
                                    effectiveConstraints.stream()

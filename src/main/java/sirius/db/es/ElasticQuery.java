@@ -26,7 +26,6 @@ import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
@@ -40,7 +39,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -321,9 +319,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @SafeVarargs
     public final ElasticQuery<E> withAdditionalIndices(Class<? extends ElasticEntity>... additionalEntitiesToQuery) {
-        this.additionalDescriptors = Arrays.stream(additionalEntitiesToQuery)
-                                           .map(type -> mixing.getDescriptor(type))
-                                           .collect(Collectors.toList());
+        this.additionalDescriptors =
+                Arrays.stream(additionalEntitiesToQuery).map(type -> mixing.getDescriptor(type)).toList();
 
         return this;
     }
@@ -398,7 +395,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return sortArray.stream().map(Object::toString).collect(Collectors.toList());
+        return sortArray.stream().map(Object::toString).toList();
     }
 
     /**
@@ -757,7 +754,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param name  the name of the aggregation
      * @param field the field to aggregate
      * @return the query itself for fluent method calls
-     * @see #getCardinality(String)
+     * @see #getAggregation(String)
+     * @see AggregationResult#getCardinality()
      */
     public ElasticQuery<E> addCardinalityAggregation(String name, Mapping field) {
         return addAggregation(AggregationBuilder.createCardinality(name, field));
@@ -771,7 +769,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param precision the precision threshold to apply. This contains the number up to which the returned cardinality
      *                  is exact.
      * @return the query itself for fluent method calls
-     * @see #getCardinality(String)
+     * @see #getAggregation(String)
+     * @see AggregationResult#getCardinality()
      */
     public ElasticQuery<E> addCardinalityAggregation(String name, Mapping field, int precision) {
         return addAggregation(AggregationBuilder.createCardinality(name, field)
@@ -808,7 +807,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 result.fluentPut(KEY_TO, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
             }
             return result;
-        }).collect(Collectors.toList());
+        }).toList();
 
         return addAggregation(AggregationBuilder.create(KEY_DATE_RANGE, name)
                                                 .addBodyParameter(KEY_FIELD, field.toString())
@@ -1108,39 +1107,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Returns the buckets which were computed as an aggregation while executing the query.
-     * <p>
-     * Note that the query has to be executed before calling this method.
-     *
-     * @param name the aggregation to read
-     * @return the buckets which were computed for the given aggregation
-     * @deprecated use {@link #getAggregation(String)} and {@link AggregationResult#getBuckets()} or the like
-     */
-    @Deprecated(forRemoval = true)
-    public List<Tuple<String, Integer>> getAggregationBuckets(String name) {
-        return getRawAggregation(name).map(aggregation -> Bucket.fromAggregation(aggregation)
-                                                                .stream()
-                                                                .map(bucket -> Tuple.create(bucket.getKey(),
-                                                                                            bucket.getDocCount()))
-                                                                .collect(Collectors.toList()))
-                                      .orElseGet(Collections::emptyList);
-    }
-
-    /**
-     * Returns the cardinality computed as an aggregation while executing the query.
-     * <p>
-     * Note that the query has to be executed before calling this method.
-     *
-     * @param name the aggregation to read
-     * @return the cardinality (number of distinct values) in the field
-     * @deprecated use {@link #getAggregation(String)} and {@link AggregationResult#getCardinality()}
-     */
-    @Deprecated(forRemoval = true)
-    public Integer getCardinality(String name) {
-        return getRawAggregation(name).map(aggregation -> aggregation.getIntValue(KEY_VALUE)).orElse(0);
-    }
-
-    /**
      * Returns the aggregations as a {@link JSONObject}.
      * <p>
      * Note that the query has to be executed before calling this method.
@@ -1149,19 +1115,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public JSONObject getRawAggregations() {
         return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
-    }
-
-    /**
-     * Provides access to the raw JSON object generated by an aggregation.
-     *
-     * @param name the name of the aggregation. Sub aggregations can be accessed by supplying a path like
-     *             <tt>aggregation.child</tt>
-     * @return the JSON generated by the aggregation or an empty optional if no result was found for this aggregation
-     * @deprecated use {@link #getAggregation(String)} along with {@link AggregationResult#getJSONObject()}
-     */
-    @Deprecated(forRemoval = true)
-    public Optional<JSONObject> getRawAggregation(String name) {
-        return Optional.of(getAggregation(name).getJSONObject());
     }
 
     /**
@@ -1186,10 +1139,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         JSONObject object = getRawAggregations();
         for (String aggregationName : name.split("\\.")) {
             Object child = object.get(aggregationName);
-            if (!(child instanceof JSONObject)) {
+            if (!(child instanceof JSONObject childObject)) {
                 return AggregationResult.of(null);
             } else {
-                object = (JSONObject) child;
+                object = childObject;
             }
         }
 

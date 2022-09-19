@@ -11,7 +11,6 @@ package sirius.db.text;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -36,7 +35,7 @@ public class PipelineProcessor extends ChainableTokenProcessor {
      * @param processorsStream the internal processors to chain together to form the desired pipeline
      */
     public PipelineProcessor(Stream<ChainableTokenProcessor> processorsStream) {
-        this.processors = processorsStream.filter(Objects::nonNull).collect(Collectors.toList());
+        this.processors = processorsStream.filter(Objects::nonNull).toList();
         for (int i = 0; i < processors.size() - 1; i++) {
             processors.get(i).chain(processors.get(i + 1));
         }

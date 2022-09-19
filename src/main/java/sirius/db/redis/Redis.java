@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Provides a thin layer to access Redis.
@@ -188,11 +187,7 @@ public class Redis implements Startable, Stoppable {
      * @return a list of all configured pools in the system configuration
      */
     public List<String> getPools() {
-        return Sirius.getSettings()
-                     .getExtensions("redis.pools")
-                     .stream()
-                     .map(Extension::getId)
-                     .collect(Collectors.toList());
+        return Sirius.getSettings().getExtensions("redis.pools").stream().map(Extension::getId).toList();
     }
 
     /**

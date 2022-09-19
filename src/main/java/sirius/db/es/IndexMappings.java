@@ -28,7 +28,6 @@ import sirius.kernel.settings.Extension;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Creates the mappings for all available {@link ElasticEntity Elasticsearch entities}.
@@ -248,14 +247,14 @@ public class IndexMappings implements Startable {
                                                 .stream()
                                                 .filter(this::isExcludeFromSource)
                                                 .map(Property::getName)
-                                                .collect(Collectors.toList());
+                                                .toList();
 
         if (!excludes.isEmpty()) {
             mapping.put("_source", new JSONObject().fluentPut("excludes", excludes));
         }
 
         for (Property property : entityDescriptor.getProperties()) {
-            if (!(property instanceof ESPropertyInfo)) {
+            if (!(property instanceof ESPropertyInfo esPropertyInfo)) {
                 Exceptions.handle()
                           .to(Elastic.LOG)
                           .withSystemErrorMessage(
@@ -266,9 +265,9 @@ public class IndexMappings implements Startable {
                           .handle();
             } else {
                 JSONObject propertyInfo = new JSONObject();
-                ((ESPropertyInfo) property).describeProperty(propertyInfo);
+                esPropertyInfo.describeProperty(propertyInfo);
                 if ((property instanceof BaseMapProperty || property instanceof NestedListProperty)
-                    && !((ESPropertyInfo) property).doesEnableDynamicMappings()) {
+                    && !esPropertyInfo.doesEnableDynamicMappings()) {
                     propertyInfo.put(MAPPING_DYNAMIC, mode.toString());
                 }
                 properties.put(property.getPropertyName(), propertyInfo);

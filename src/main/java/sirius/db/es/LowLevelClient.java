@@ -13,7 +13,6 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import sirius.db.mixing.OptimisticLockException;
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
  */
 public class LowLevelClient {
 
-    private static final String API_REINDEX_ASYNC = "/_reindex?pretty";
     private static final String API_REINDEX = "/_reindex?wait_for_completion=false";
     private static final String API_TASK_INFO = "/_tasks/";
     private static final String API_ALIAS = "/_alias";
@@ -218,28 +216,6 @@ public class LowLevelClient {
                            .data(query)
                            .execute(alias + API_SEARCH)
                            .response();
-    }
-
-    /**
-     * Executes a async reindex request.
-     *
-     * @param sourceIndexName      the source index to read from
-     * @param destinationIndexName the name of the index in which the documents should be re-indexed
-     * @param onSuccess            is called if the request is successfully finished
-     * @param onFailure            is called if an exception occurs while performing the request
-     * @deprecated Use {@link #startReindex(String, String)} and {@link #checkTaskActivity(String)} instead. As this
-     * approach frequently runs into HTTP timeouts.
-     */
-    @Deprecated
-    public void reindex(String sourceIndexName,
-                        String destinationIndexName,
-                        @Nullable Consumer<Response> onSuccess,
-                        @Nullable Consumer<HandledException> onFailure) {
-        performPost().data(new JSONObject().fluentPut("source",
-                                                      new JSONObject().fluentPut(PARAM_INDEX, sourceIndexName))
-                                           .fluentPut("dest",
-                                                      new JSONObject().fluentPut(PARAM_INDEX, destinationIndexName)))
-                     .executeAsync(API_REINDEX_ASYNC, onSuccess, onFailure);
     }
 
     /**
@@ -483,20 +459,6 @@ public class LowLevelClient {
     public JSONObject bulk(List<JSONObject> bulkData) {
         return performPost().rawData(bulkData.stream().map(obj -> obj.toJSONString()).collect(Collectors.joining("\n"))
                                      + "\n").execute("_bulk").response();
-    }
-
-    /**
-     * Creates the given index.
-     *
-     * @param index            the name of the index
-     * @param numberOfShards   the number of shards to use
-     * @param numberOfReplicas the number of replicas per shard
-     * @return the response of the call
-     * @deprecated use {@link #createIndex(String, int, int, Consumer)} instead
-     */
-    @Deprecated
-    public JSONObject createIndex(String index, int numberOfShards, int numberOfReplicas) {
-        return createIndex(index, numberOfShards, numberOfReplicas, null);
     }
 
     /**

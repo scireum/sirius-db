@@ -15,6 +15,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -26,7 +27,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents a batch query which updates an entity in the database.
@@ -51,8 +51,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      */
     public UpdateQuery<E> withUpdatedMappings(Mapping... mappingsToUpdate) {
         EntityDescriptor ed = getDescriptor();
-        this.propertiesToUpdate =
-                Arrays.stream(mappingsToUpdate).map(Mapping::getName).map(ed::getProperty).collect(Collectors.toList());
+        this.propertiesToUpdate = Arrays.stream(mappingsToUpdate).map(Mapping::getName).map(ed::getProperty).toList();
         return this;
     }
 
@@ -73,7 +72,8 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
      *                     batch update (<tt>true</tt>).
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "resource"})
+    @Explain("We don't want to close the statement here - this is done in close() globally.")
     public void update(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
         try {
             if (this.type == null) {

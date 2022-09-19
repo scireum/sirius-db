@@ -20,7 +20,6 @@ import sirius.kernel.health.Microtiming;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 /**
  * Fluent builder to build an update statement.
@@ -211,11 +210,7 @@ public class Updater extends QueryBuilder<Updater> {
         if (addToSetObject == null) {
             addToSetObject = new BasicDBObject();
         }
-        addToSetObject.put(field,
-                           new Document("$each",
-                                        values.stream()
-                                              .map(QueryBuilder.FILTERS::transform)
-                                              .collect(Collectors.toList())));
+        addToSetObject.put(field, new Document("$each", values.stream().map(QueryBuilder.FILTERS::transform).toList()));
 
         return this;
     }

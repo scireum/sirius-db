@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -144,6 +143,6 @@ public class CSVFilter<C extends Constraint> {
         if (uppercaseValues) {
             stream = stream.map(String::toUpperCase);
         }
-        return stream.collect(Collectors.toList());
+        return stream.toList();
     }
 }

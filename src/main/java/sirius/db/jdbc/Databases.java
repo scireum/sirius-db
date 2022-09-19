@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * Provides a {@link javax.sql.DataSource} which can be configured via the system
@@ -161,11 +160,7 @@ public class Databases implements Initializable {
      * @return a list of all known databases
      */
     public List<String> getDatabases() {
-        return Sirius.getSettings()
-                     .getExtensions("jdbc.database")
-                     .stream()
-                     .map(Extension::getId)
-                     .collect(Collectors.toList());
+        return Sirius.getSettings().getExtensions("jdbc.database").stream().map(Extension::getId).toList();
     }
 
     /**
@@ -280,17 +275,17 @@ public class Databases implements Initializable {
         if (value == null) {
             return value;
         }
-        if (value instanceof LocalDateTime) {
-            return encodeLocalDateTime((LocalDateTime) value);
+        if (value instanceof LocalDateTime dateTime) {
+            return encodeLocalDateTime(dateTime);
         }
-        if (value instanceof LocalDate) {
-            return Date.valueOf((LocalDate) value);
+        if (value instanceof LocalDate date) {
+            return Date.valueOf(date);
         }
-        if (value instanceof LocalTime) {
-            return Time.valueOf((LocalTime) value);
+        if (value instanceof LocalTime time) {
+            return Time.valueOf(time);
         }
-        if (value instanceof Amount) {
-            return ((Amount) value).getAmount();
+        if (value instanceof Amount amount) {
+            return amount.getAmount();
         }
         if (value.getClass().isEnum()) {
             return ((Enum<?>) value).name();

@@ -29,7 +29,7 @@ class ReindexSpec extends BaseSpecification {
         elastic.refresh(ElasticTestEntity.class)
 
         when:
-        elastic.getLowLevelClient().reindex(elastic.determineReadAlias(e.getDescriptor()), "reindex-test", null, null)
+        elastic.getLowLevelClient().startReindex(elastic.determineReadAlias(e.getDescriptor()), "reindex-test")
         and:
         Wait.seconds(2)
         then:

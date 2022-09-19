@@ -128,7 +128,7 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
 
         // As SQL entities use -1 to indicate that no id is available,
         // we handle this case gracefully here...
-        if (this.id instanceof Long && (Long) this.id < 0) {
+        if (this.id instanceof Long number && number < 0) {
             this.id = null;
         }
 

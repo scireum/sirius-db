@@ -60,14 +60,14 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected Object customTransform(Object value) {
-        if (value instanceof Instant) {
-            value = LocalDateTime.ofInstant((Instant) value, ZoneId.systemDefault());
+        if (value instanceof Instant instant) {
+            value = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
         }
-        if (value instanceof TemporalAccessor) {
-            if (((TemporalAccessor) value).isSupported(ChronoField.HOUR_OF_DAY)) {
-                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format((TemporalAccessor) value);
+        if (value instanceof TemporalAccessor temporalAccessor) {
+            if (temporalAccessor.isSupported(ChronoField.HOUR_OF_DAY)) {
+                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(temporalAccessor);
             } else {
-                return DateTimeFormatter.ISO_LOCAL_DATE.format((TemporalAccessor) value);
+                return DateTimeFormatter.ISO_LOCAL_DATE.format(temporalAccessor);
             }
         }
 
@@ -131,30 +131,6 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     @Override
     public ElasticConstraint notFilled(Mapping field) {
         return not(filled(field));
-    }
-
-    /**
-     * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #filled(Mapping)} instead
-     */
-    @Deprecated
-    public ElasticConstraint exists(Mapping field) {
-        return filled(field);
-    }
-
-    /**
-     * As elastic doesn't index null-values by default a notExists query is basically the same as a {@link #notFilled(Mapping)} query.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #notFilled(Mapping)} instead
-     */
-    @Deprecated
-    public ElasticConstraint notExists(Mapping field) {
-        return notFilled(field);
     }
 
     @Override
