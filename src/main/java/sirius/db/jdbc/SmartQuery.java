@@ -22,6 +22,7 @@ import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.PullBasedSpliterator;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -924,13 +925,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     private void groupBy(Compiler compiler) {
         if (!groupBys.isEmpty()) {
             compiler.getWHEREBuilder().append(" GROUP BY ");
-            Monoflop mf = Monoflop.create();
-            for (String expression : groupBys) {
-                if (mf.successiveCall()) {
-                    compiler.getWHEREBuilder().append(", ");
-                }
-                compiler.getWHEREBuilder().append(expression);
-            }
+            compiler.getWHEREBuilder().append(Strings.join(groupBys, ", "));
         }
     }
 
