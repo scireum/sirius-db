@@ -158,6 +158,8 @@ public abstract class BaseSQLQuery {
             Object obj = rs.getObject(col);
             if (obj instanceof Blob blob) {
                 writeBlobToParameter(fieldName, blob);
+            } else if (obj instanceof String string) {
+                row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, string.replace("\0", "")));
             } else {
                 row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
             }
