@@ -26,6 +26,7 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
@@ -76,6 +77,18 @@ public class SQLEntityRefProperty extends BaseEntityRefProperty<Long, SQLEntity,
 
     protected SQLEntityRefProperty(EntityDescriptor descriptor, AccessPath accessPath, Field field) {
         super(descriptor, accessPath, field);
+    }
+
+    @Override
+    public void link() {
+        super.link();
+
+        if (entityRef.getDeleteHandler() == BaseEntityRef.OnDelete.IGNORE && !entityRef.isWeak()) {
+            Mixing.LOG.WARN("SQLEntityRef %s in %s has IGNORE as DELETE handler but is not marked as weak! "
+                            + "This will most probably result in constraint errors.",
+                            field.getName(),
+                            field.getDeclaringClass().getName());
+        }
     }
 
     @Override
