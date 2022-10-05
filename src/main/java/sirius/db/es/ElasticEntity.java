@@ -136,6 +136,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         return Collections.unmodifiableSet(matchedQueries);
     }
 
+    @SuppressWarnings("unchecked")
     private Set<String> parseMatchedQueries() {
         if (searchHit == null) {
             return Collections.emptySet();
@@ -146,7 +147,10 @@ public abstract class ElasticEntity extends BaseEntity<String> {
             return Collections.emptySet();
         }
 
-        return matchedQueriesArray.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toSet());
+        return ((List<Object>) matchedQueriesArray).stream()
+                                                   .filter(Objects::nonNull)
+                                                   .map(String::valueOf)
+                                                   .collect(Collectors.toSet());
     }
 
     /**

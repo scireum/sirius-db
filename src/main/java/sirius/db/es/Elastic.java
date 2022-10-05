@@ -738,6 +738,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             return null;
         }
 
-        return json.clone();
+        return (JSONObject)json.clone();
     }
 }

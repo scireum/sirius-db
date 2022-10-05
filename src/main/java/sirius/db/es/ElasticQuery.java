@@ -290,7 +290,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             copy.suggesters = this.suggesters.entrySet()
                                              .stream()
                                              .collect(Collectors.toMap(Map.Entry::getKey,
-                                                                       entry -> entry.getValue().clone()));
+                                                                       entry -> (JSONObject) entry.getValue().clone()));
         }
 
         copy.additionalDescriptors = additionalDescriptors;
@@ -380,6 +380,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the list of last sort values or an empty list if no results are present
      */
+    @SuppressWarnings("unchecked")
     public List<String> getLastSortValues() {
         if (response == null) {
             return Collections.emptyList();
@@ -1234,6 +1235,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return a list of suggest parts
      * @deprecated Use {@link Elastic#suggest(Class)}
      */
+    @SuppressWarnings("unchecked")
     @Deprecated(forRemoval = true)
     public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
         if (forceFail) {
@@ -1255,11 +1257,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return responseSuggestions.getJSONArray(name)
-                                  .stream()
-                                  .map(JSONObject.class::cast)
-                                  .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
-                                  .collect(Collectors.toList());
+        return ((List<JSONObject>) responseSuggestions.getJSONArray(name)).stream()
+                                                                          .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
+                                                                          .collect(Collectors.toList());
     }
 
     /**
