@@ -238,7 +238,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
@@ -358,7 +358,7 @@ public class Finder extends QueryBuilder<Finder> {
     private void handleTracingAndReporting(String collection, Watch watch) {
         long callDuration = watch.elapsedMillis();
         mongo.callDuration.addValue(callDuration);
-        if (readPreference != null && readPreference.isSlaveOk()) {
+        if (readPreference != null && readPreference.isSecondaryOk()) {
             mongo.secondaryCallDuration.addValue(callDuration);
         }
         if (Microtiming.isEnabled()) {
@@ -443,7 +443,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
@@ -481,14 +481,11 @@ public class Finder extends QueryBuilder<Finder> {
      */
     public Value aggregateIn(@Nonnull String collection, @Nonnull Mapping field, @Nonnull String operator) {
         Watch watch = Watch.start();
-        try {
-            BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
-                                                          .append("result", new BasicDBObject(operator, "$" + field));
-            MongoCursor<Document> queryResult =
-                    getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                             filterObject),
-                                                                           new BasicDBObject("$group", groupStage)))
-                                                  .iterator();
+        BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
+                                                      .append("result", new BasicDBObject(operator, "$" + field));
+        try (MongoCursor<Document> queryResult = getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(
+                OPERATOR_MATCH,
+                filterObject), new BasicDBObject("$group", groupStage))).iterator()) {
             if (queryResult.hasNext()) {
                 return Value.of(queryResult.next().get("result"));
             } else {
@@ -497,7 +494,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
@@ -533,12 +530,9 @@ public class Finder extends QueryBuilder<Finder> {
             facet.emitFacets(descriptor, facetStage::append);
         }
 
-        try {
-            MongoCursor<Document> queryResult =
-                    getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                             filterObject),
-                                                                           new BasicDBObject("$facet", facetStage)))
-                                                  .iterator();
+        try (MongoCursor<Document> queryResult = getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(
+                OPERATOR_MATCH,
+                filterObject), new BasicDBObject("$facet", facetStage))).iterator()) {
 
             if (queryResult.hasNext()) {
                 Doc doc = new Doc(queryResult.next());
@@ -549,7 +543,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {

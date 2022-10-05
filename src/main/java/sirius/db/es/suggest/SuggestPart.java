@@ -103,16 +103,15 @@ public class SuggestPart {
      * @param part the JSON object
      * @return the newly created suggest part
      */
+    @SuppressWarnings("unchecked")
     public static SuggestPart makeSuggestPart(JSONObject part) {
         SuggestPart suggestPart = new SuggestPart(part.getString(PARAM_TEXT),
                                                   part.getIntValue(PARAM_OFFSET),
                                                   part.getIntValue(PARAM_LENGTH));
 
-        suggestPart.withOptions(part.getJSONArray(PARAM_OPTIONS)
-                                    .stream()
-                                    .map(JSONObject.class::cast)
-                                    .map(SuggestOption::makeSuggestOption)
-                                    .collect(Collectors.toList()));
+        suggestPart.withOptions(((List<JSONObject>) part.getJSONArray(PARAM_OPTIONS)).stream()
+                                                                                     .map(SuggestOption::makeSuggestOption)
+                                                                                     .collect(Collectors.toList()));
 
         return suggestPart;
     }

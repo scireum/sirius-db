@@ -26,6 +26,7 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
 
 /**
@@ -68,6 +69,12 @@ public class InstantProperty extends Property implements SQLPropertyInfo {
         if (object == null) {
             return null;
         }
+        if (data.is(LocalDateTime.class)) {
+            return ((LocalDateTime) (data.get())).truncatedTo(ChronoUnit.MILLIS)
+                                                 .atZone(ZoneId.systemDefault())
+                                                 .toInstant();
+        }
+
         return ((Timestamp) object).toInstant();
     }
 

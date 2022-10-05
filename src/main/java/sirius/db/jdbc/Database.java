@@ -430,7 +430,7 @@ public class Database {
                 capabilities = Capability.MYSQL_CAPABILITIES;
             } else if ("org.postgresql.Driver".equalsIgnoreCase(driver)) {
                 capabilities = Capability.POSTGRES_CAPABILITIES;
-            } else if ("ru.yandex.clickhouse.ClickHouseDriver".equalsIgnoreCase(driver)) {
+            } else if (driver.contains("ClickHouseDriver")) {
                 capabilities = Capability.CLICKHOUSE_CAPABILITIES;
             } else {
                 capabilities = Capability.DEFAULT_CAPABILITIES;

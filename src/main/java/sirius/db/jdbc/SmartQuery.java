@@ -495,7 +495,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
         if (limit.getTotalItems() > SQLQuery.DEFAULT_FETCH_SIZE || limit.getTotalItems() <= 0) {
             if (db.hasCapability(Capability.STREAMING)) {
-                stmt.setFetchSize(Integer.MIN_VALUE);
+                stmt.setFetchSize(1);
             } else {
                 stmt.setFetchSize(SQLQuery.DEFAULT_FETCH_SIZE);
             }
