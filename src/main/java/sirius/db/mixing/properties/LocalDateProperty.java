@@ -82,6 +82,10 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
         if (object == null) {
             return null;
         }
+        if (data.get() instanceof LocalDate localDate) {
+            return localDate;
+        }
+
         return ((Date) object).toLocalDate();
     }
 

@@ -76,6 +76,9 @@ public class BooleanProperty extends Property implements ESPropertyInfo, SQLProp
         if (object instanceof Boolean) {
             return object;
         }
+        if (object instanceof Number number) {
+            return number.intValue() != 0;
+        }
 
         if (data.is(String.class)) {
             return data.asBoolean();
