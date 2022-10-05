@@ -138,7 +138,7 @@ public class SQLQuery extends BaseSQLQuery {
     protected void applyFetchSize(PreparedStatement stmt, Limit effectiveLimit) throws SQLException {
         if (effectiveLimit.getTotalItems() > DEFAULT_FETCH_SIZE || effectiveLimit.getTotalItems() <= 0) {
             if (ds.hasCapability(Capability.STREAMING)) {
-                stmt.setFetchSize(Integer.MIN_VALUE);
+                stmt.setFetchSize(1);
             } else {
                 stmt.setFetchSize(DEFAULT_FETCH_SIZE);
             }
