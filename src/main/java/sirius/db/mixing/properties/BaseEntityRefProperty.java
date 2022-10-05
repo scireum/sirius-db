@@ -134,7 +134,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
     }
 
     /**
-     * Actually resolves the the type and value into an entity.
+     * Actually resolves the type and value into an entity.
      *
      * @param type  the type to resolve
      * @param value the id to resolve

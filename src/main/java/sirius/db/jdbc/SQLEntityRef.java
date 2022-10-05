@@ -30,6 +30,7 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
 
     @Part
     private static OMA oma;
+
     protected transient boolean isWeak;
 
     protected SQLEntityRef(Class<E> type, OnDelete deleteHandler, boolean writeOnce) {
@@ -51,7 +52,7 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
     /**
      * Generates an entity reference to the given entity type which has <b>write once semantics</b>.
      * <p>
-     * A write once reference can only be set when the entity is new and never be changed afterwards.
+     * A write-once reference can only be set when the entity is new and never be changed afterwards.
      *
      * @param type          the target type to reference
      * @param deleteHandler determines what happens if the referenced entity is deleted
