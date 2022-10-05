@@ -55,18 +55,18 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>4.3.4</version>
+            <version>4.7.1</version>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>3.7.1</version>
+            <version>4.2.3</version>
         </dependency>
 
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>8.2.2</version>
+            <version>8.4.1</version>
         </dependency>
         <!-- Required as the version brought by elasticsearch-rest-client contains security issues -->
         <dependency>
@@ -78,19 +78,19 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
+            <version>2.0.14</version>
         </dependency>
 
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>2.7.4</version>
+            <version>3.0.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ru.yandex.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.2.6</version>
+            <version>0.3.2</version>
             <scope>test</scope>
         </dependency>
         <!-- Required as the version brought by clickhouse-jdbc contains security issues -->
