@@ -238,7 +238,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
@@ -358,7 +358,7 @@ public class Finder extends QueryBuilder<Finder> {
     private void handleTracingAndReporting(String collection, Watch watch) {
         long callDuration = watch.elapsedMillis();
         mongo.callDuration.addValue(callDuration);
-        if (readPreference != null && readPreference.isSlaveOk()) {
+        if (readPreference != null && readPreference.isSecondaryOk()) {
             mongo.secondaryCallDuration.addValue(callDuration);
         }
         if (Microtiming.isEnabled()) {
@@ -443,7 +443,7 @@ public class Finder extends QueryBuilder<Finder> {
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
@@ -484,20 +484,19 @@ public class Finder extends QueryBuilder<Finder> {
         try {
             BasicDBObject groupStage = new BasicDBObject().append(Mango.ID_FIELD, null)
                                                           .append("result", new BasicDBObject(operator, "$" + field));
-            MongoCursor<Document> queryResult =
-                    getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                             filterObject),
-                                                                           new BasicDBObject("$group", groupStage)))
-                                                  .iterator();
-            if (queryResult.hasNext()) {
-                return Value.of(queryResult.next().get("result"));
-            } else {
-                return Value.EMPTY;
+            try (MongoCursor<Document> queryResult = getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(
+                    OPERATOR_MATCH,
+                    filterObject), new BasicDBObject("$group", groupStage))).iterator()) {
+                if (queryResult.hasNext()) {
+                    return Value.of(queryResult.next().get("result"));
+                } else {
+                    return Value.EMPTY;
+                }
             }
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
@@ -534,22 +533,21 @@ public class Finder extends QueryBuilder<Finder> {
         }
 
         try {
-            MongoCursor<Document> queryResult =
-                    getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(OPERATOR_MATCH,
-                                                                                             filterObject),
-                                                                           new BasicDBObject("$facet", facetStage)))
-                                                  .iterator();
+            try (MongoCursor<Document> queryResult = getMongoCollection(collection).aggregate(Arrays.asList(new BasicDBObject(
+                    OPERATOR_MATCH,
+                    filterObject), new BasicDBObject("$facet", facetStage))).iterator()) {
 
-            if (queryResult.hasNext()) {
-                Doc doc = new Doc(queryResult.next());
-                for (MongoFacet facet : facets) {
-                    facet.digest(doc);
+                if (queryResult.hasNext()) {
+                    Doc doc = new Doc(queryResult.next());
+                    for (MongoFacet facet : facets) {
+                        facet.digest(doc);
+                    }
                 }
             }
         } finally {
             long callDuration = watch.elapsedMillis();
             mongo.callDuration.addValue(callDuration);
-            if (readPreference != null && readPreference.isSlaveOk()) {
+            if (readPreference != null && readPreference.isSecondaryOk()) {
                 mongo.secondaryCallDuration.addValue(callDuration);
             }
             if (Microtiming.isEnabled()) {
