@@ -87,7 +87,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         return referencedDescriptor;
     }
 
-    private R getReferenceEntityRef() {
+    protected R getReferenceEntityRef() {
         if (entityRef == null) {
             this.entityRef = getEntityRef(accessPath.apply(descriptor.getReferenceInstance()));
         }
