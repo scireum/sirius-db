@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Database;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
@@ -101,8 +102,9 @@ public class BatchContext implements Closeable {
 
     protected Connection createConnection(String realm) {
         try {
-            Connection connection = oma.getDatabase(realm).getLongRunningConnection();
-            changeAutoCommit(connection, false, false);
+            Database database = oma.getDatabase(realm);
+            Connection connection = database.getLongRunningConnection();
+            changeAutoCommit(connection, database.isAutoCommit(), false);
             return connection;
         } catch (SQLException e) {
             throw Exceptions.handle()
