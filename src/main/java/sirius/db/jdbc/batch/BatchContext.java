@@ -47,7 +47,7 @@ public class BatchContext implements Closeable {
 
     private List<BatchQuery<?>> queries = new ArrayList<>();
     private Map<String, Connection> connectionsPerRealm = new HashMap<>();
-    private Operation op;
+    private final Operation op;
 
     /**
      * Creates a new context with the given debugging description and the expected runtime.
