@@ -159,7 +159,7 @@ public class BatchContext implements Closeable {
      * @param enable       the flag which determines if auto-commit should be enabled or disabled
      * @param ignoreErrors controls whether exceptions during the change are reported or ignored. As this is invoked
      *                     when a connection is closed, we ignore any error as closing the connection might already
-     *                     be part of handling a previous error (e.g. GaleraDB doesn't like changinf the auto-commit
+     *                     be part of handling a previous error (e.g. GaleraDB doesn't like changing the auto-commit
      *                     setting after a transaction has been aborted due to a deadlock).
      */
     private void changeAutoCommit(Connection connection, boolean enable, boolean ignoreErrors) {

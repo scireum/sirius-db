@@ -36,7 +36,7 @@ public class BatchSQLQuery extends BaseSQLQuery {
         Watch w = Watch.start();
 
         try (ResultSet rs = query.prepareStmt().executeQuery()) {
-            query.avarage.addValue(w.elapsedMillis());
+            query.average.addValue(w.elapsedMillis());
             TaskContext tc = TaskContext.get();
             processResultSet(handler, limit, rs, tc);
         }

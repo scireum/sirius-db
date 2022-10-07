@@ -83,7 +83,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
             } else {
                 stmt.executeUpdate();
                 stmt.getConnection().commit();
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
             }
 
             if (invokeChecks) {

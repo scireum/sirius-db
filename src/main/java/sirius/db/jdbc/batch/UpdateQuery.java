@@ -92,7 +92,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             } else {
                 stmt.executeUpdate();
                 stmt.getConnection().commit();
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
                 if (descriptor.isVersioned()) {
                     entity.setVersion(entity.getVersion() + 1);
                 }

@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 /**
  * Represents a database connection obtained via {@link Databases#get(String)}.
  * <p>
- * Use {@link #createQuery(String)} to create an SQL query with built in connection management.
+ * Use {@link #createQuery(String)} to create an SQL query with built-in connection management.
  * Use {@link #getConnection()} to obtain a regular JDBC connection (which has to be handled with some caution).
  */
 public class Database {
@@ -194,7 +194,7 @@ public class Database {
      * <p>
      * This connection behaves entirely the same as one returned by {@link #getConnection()}. However, for this
      * connection, the checks are disabled which ensure that connections aren't borrowed for too long. Although,
-     * this check is very helpful under normal conditions, it generates false warning when performing long running
+     * this check is very helpful under normal conditions, it generates false warning when performing long-running
      * {@link sirius.db.jdbc.batch.BatchContext batch operations} - which provide their own way of monitoring.
      *
      * @return a new {@link Connection} to the database
@@ -211,7 +211,7 @@ public class Database {
     /**
      * Tries to obtain a host connection which is not bound to a specific database or schema.
      * <p>
-     * This is used to setup test databases by executing an initial statement like <tt>CREATE DATABASE test</tt>.
+     * This is used to set up test databases by executing an initial statement like <tt>CREATE DATABASE test</tt>.
      *
      * @return the host connection
      * @throws SQLException in case of a database or configuration error

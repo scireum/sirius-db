@@ -73,7 +73,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
 
                 return Optional.of((E) make(rs));
             } finally {
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
             }
         } catch (SQLException e) {
             context.safeClose();
