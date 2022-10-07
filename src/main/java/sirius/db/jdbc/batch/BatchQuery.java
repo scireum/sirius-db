@@ -94,7 +94,9 @@ public abstract class BatchQuery<E extends SQLEntity> {
             try {
                 Watch w = Watch.start();
                 stmt.executeBatch();
-                stmt.getConnection().commit();
+                if (!stmt.getConnection().getAutoCommit()) {
+                    stmt.getConnection().commit();
+                }
                 avarage.addValues(batchBacklog, w.elapsedMillis());
                 batchBacklog = 0;
             } catch (SQLException e) {
