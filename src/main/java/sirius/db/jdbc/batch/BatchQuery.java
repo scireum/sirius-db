@@ -95,6 +95,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
                 Watch w = Watch.start();
                 stmt.executeBatch();
                 if (!stmt.getConnection().getAutoCommit()) {
+                    // Do not send a commit statement for connections using auto-commit
                     stmt.getConnection().commit();
                 }
                 average.addValues(batchBacklog, w.elapsedMillis());

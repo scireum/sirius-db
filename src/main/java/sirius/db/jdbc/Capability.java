@@ -10,6 +10,7 @@ package sirius.db.jdbc;
 
 import sirius.kernel.commons.Explain;
 
+import java.sql.Connection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -58,7 +59,15 @@ public enum Capability {
     /**
      * Signales that the database supports DECIMAL fields.
      */
-    DECIMAL_TYPE;
+    DECIMAL_TYPE,
+
+    /**
+     * Signals that the database performs auto-commits, therefore no explicit calls to {@link Connection#commit()}
+     * should be performed.
+     * <p>
+     * This is especially needed for Clickhouse, as newer drivers uses the commit method to control transactions.
+     */
+    AUTO_COMMIT;
 
     /**
      * Contains the default capabilities of unknown databases.
@@ -87,5 +96,6 @@ public enum Capability {
     /**
      * Contains the capabilities of a Clickhouse database
      */
-    public static final Set<Capability> CLICKHOUSE_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS));
+    public static final Set<Capability> CLICKHOUSE_CAPABILITIES =
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS, AUTO_COMMIT));
 }
