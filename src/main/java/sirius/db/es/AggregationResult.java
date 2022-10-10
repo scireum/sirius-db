@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Tuple;

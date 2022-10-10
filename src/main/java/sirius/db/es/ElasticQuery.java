@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.DateRange;
@@ -914,7 +914,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (suggesters != null && !suggesters.isEmpty()) {
-            payload.put(KEY_SUGGEST, new JSONObject().fluentPutAll(suggesters));
+            JSONObject suggest = new JSONObject();
+            suggest.putAll(suggesters);
+            payload.put(KEY_SUGGEST, suggest);
         }
 
         return payload;
@@ -1257,9 +1259,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return ((List<JSONObject>) responseSuggestions.getJSONArray(name)).stream()
-                                                                          .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
-                                                                          .collect(Collectors.toList());
+        return responseSuggestions.getJSONArray(name)
+                                  .stream()
+                                  .map(JSONObject.class::cast)
+                                  .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
+                                  .collect(Collectors.toList());
     }
 
     /**

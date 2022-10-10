@@ -8,7 +8,7 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.db.mixing.Mapping;
 
 import java.util.Collections;
@@ -33,10 +33,11 @@ public class SuggestionResult {
     public SuggestionResult(JSONObject json) {
         JSONObject suggestionsObject = json.getJSONObject(KEY_SUGGEST);
         suggestionsObject.keySet().forEach(name -> {
-            List<TextPartSuggestion> textPartSuggestions =
-                    ((List<JSONObject>) suggestionsObject.getJSONArray(name)).stream()
-                                                                             .map(TextPartSuggestion::new)
-                                                                             .toList();
+            List<TextPartSuggestion> textPartSuggestions = suggestionsObject.getJSONArray(name)
+                                                                            .stream()
+                                                                            .map(JSONObject.class::cast)
+                                                                            .map(TextPartSuggestion::new)
+                                                                            .toList();
             this.suggestions.put(name, textPartSuggestions);
         });
     }

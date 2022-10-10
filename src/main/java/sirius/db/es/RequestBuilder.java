@@ -8,9 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -187,7 +186,7 @@ class RequestBuilder {
 
     private Optional<String> buildContent() {
         if (data != null) {
-            return Optional.of(JSON.toJSONString(data, SerializerFeature.DisableCircularReferenceDetect));
+            return Optional.of(JSON.toJSONString(data));
         }
         if (rawData != null) {
             return Optional.of(rawData);

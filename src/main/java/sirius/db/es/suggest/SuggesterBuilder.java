@@ -8,7 +8,7 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticQuery;
 import sirius.db.mixing.Mapping;

@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.db.mixing.Mapping;
 
 import java.time.Duration;
@@ -227,11 +227,10 @@ public class FunctionScoreBuilder {
      * @return the function score query as {@link JSONObject}
      */
     public JSONObject apply(JSONObject query) {
-        return new JSONObject().fluentPut(FUNCTION_SCORE,
-                                          new JSONObject().fluentPut(FIELD_QUERY, query)
-                                                          .fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<>(functions)))
-                                                          .fluentPutAll(parameters));
+        JSONObject score = new JSONObject().fluentPut(FIELD_QUERY, query)
+                                           .fluentPut(FIELD_FUNCTIONS, new JSONArray(new ArrayList<>(functions)));
+        score.putAll(parameters);
+        return new JSONObject().fluentPut(FUNCTION_SCORE, score);
     }
 
     /**
@@ -240,10 +239,9 @@ public class FunctionScoreBuilder {
      * @return the function score query as {@link JSONObject}
      */
     public JSONObject build() {
-        return new JSONObject().fluentPut(FUNCTION_SCORE,
-                                          new JSONObject().fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<>(functions)))
-                                                          .fluentPutAll(parameters));
+        JSONObject score = new JSONObject().fluentPut(FIELD_FUNCTIONS, new JSONArray(new ArrayList<>(functions)));
+        score.putAll(parameters);
+        return new JSONObject().fluentPut(FUNCTION_SCORE, score);
     }
 
     /**

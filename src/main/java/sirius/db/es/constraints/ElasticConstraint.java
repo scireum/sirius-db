@@ -8,7 +8,7 @@
 
 package sirius.db.es.constraints;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.commons.Explain;

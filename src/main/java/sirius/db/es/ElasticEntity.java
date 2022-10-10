@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;

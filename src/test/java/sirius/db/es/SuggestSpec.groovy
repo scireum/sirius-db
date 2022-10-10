@@ -8,7 +8,7 @@
 
 package sirius.db.es
 
-import com.alibaba.fastjson.JSONObject
+import com.alibaba.fastjson2.JSONObject
 import org.junit.jupiter.api.Tag
 import sirius.db.es.constraints.BoolQueryBuilder
 import sirius.db.es.suggest.SuggestBuilder

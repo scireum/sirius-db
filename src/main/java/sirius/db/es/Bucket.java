@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import sirius.kernel.commons.Explain;
 
 /**

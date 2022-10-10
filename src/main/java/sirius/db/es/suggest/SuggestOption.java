@@ -8,7 +8,7 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 
 /**
  * Represents an option in an Elasticsearch suggest response.

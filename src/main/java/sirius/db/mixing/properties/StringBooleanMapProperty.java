@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;

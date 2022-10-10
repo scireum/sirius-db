@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.elasticsearch.client.Request;
