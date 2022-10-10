@@ -10,7 +10,6 @@ package sirius.db.es;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.JSONWriter;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -187,7 +186,7 @@ class RequestBuilder {
 
     private Optional<String> buildContent() {
         if (data != null) {
-            return Optional.of(JSON.toJSONString(data, JSONWriter.Feature.WriteNulls));
+            return Optional.of(JSON.toJSONString(data));
         }
         if (rawData != null) {
             return Optional.of(rawData);
