@@ -62,18 +62,19 @@ public enum Capability {
     DECIMAL_TYPE,
 
     /**
-     * Signals that the database performs auto-commits, therefore no explicit calls to {@link Connection#commit()}
-     * should be performed.
+     * Signals that the database supports transactions, where statements must be committed by performing a
+     * {@link Connection#commit()} statement.
      * <p>
-     * This is especially needed for Clickhouse, as newer drivers uses the commit method to control transactions.
+     * This is especially needed for Clickhouse, as newer drivers expects commits to be used in context of transactions,
+     * which must be enabled and opened before.
      */
-    AUTO_COMMIT;
+    TRANSACTION;
 
     /**
      * Contains the default capabilities of unknown databases.
      */
     public static final Set<Capability> DEFAULT_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE, TRANSACTION));
     /**
      * Contains the capabilities of a MySQL database
      */
@@ -85,17 +86,17 @@ public enum Capability {
             LIMIT,
             GENERATED_KEYS,
             NULL_SAFE_OPERATOR,
-            DECIMAL_TYPE));
+            DECIMAL_TYPE,
+            TRANSACTION));
 
     /**
      * Contains the capabilities of a Postgres database
      */
     public static final Set<Capability> POSTGRES_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE, TRANSACTION));
 
     /**
      * Contains the capabilities of a Clickhouse database
      */
-    public static final Set<Capability> CLICKHOUSE_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS, AUTO_COMMIT));
+    public static final Set<Capability> CLICKHOUSE_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS));
 }

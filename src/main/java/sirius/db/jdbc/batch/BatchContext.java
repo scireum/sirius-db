@@ -105,7 +105,7 @@ public class BatchContext implements Closeable {
         try {
             Database database = oma.getDatabase(realm);
             Connection connection = database.getLongRunningConnection();
-            changeAutoCommit(connection, database.hasCapability(Capability.AUTO_COMMIT), false);
+            changeAutoCommit(connection, !database.hasCapability(Capability.TRANSACTION), false);
             return connection;
         } catch (SQLException e) {
             throw Exceptions.handle()
