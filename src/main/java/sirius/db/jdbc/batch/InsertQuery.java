@@ -139,7 +139,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                 getDescriptor().afterSave(entity);
             }
             if (!addBatch) {
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
             }
         } catch (SQLIntegrityConstraintViolationException e) {
             throw e;
