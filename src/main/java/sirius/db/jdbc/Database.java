@@ -56,7 +56,6 @@ public class Database {
     private static final String KEY_MAX_ACTIVE = "maxActive";
     private static final String KEY_MAX_IDLE = "maxIdle";
     private static final String KEY_VALIDATION_QUERY = "validationQuery";
-    private static final String KEY_AUTO_COMMIT = "autoCommit";
     protected final String name;
     private final String service;
     private final String driver;
@@ -68,7 +67,6 @@ public class Database {
     private final int maxActive;
     private final int maxIdle;
     private final boolean testOnBorrow;
-    private final boolean autoCommit;
     private final String validationQuery;
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
@@ -121,9 +119,6 @@ public class Database {
                                Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).setDirect(ctx).format() :
                                ext.get(KEY_VALIDATION_QUERY).asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
-        this.autoCommit = ext.get(KEY_AUTO_COMMIT).isFilled() ?
-                          ext.get(KEY_AUTO_COMMIT).asBoolean() :
-                          profile.get(KEY_AUTO_COMMIT).asBoolean();
     }
 
     private void applyPortMapping() {
@@ -387,15 +382,6 @@ public class Database {
      */
     public String getPassword() {
         return password;
-    }
-
-    /**
-     * Returns if auto-commit is enabled for this connection.
-     *
-     * @return <tt>true</tt> if auto-commit is enabled, <tt>false</tt> otherwise
-     */
-    public boolean isAutoCommit() {
-        return autoCommit;
     }
 
     /**
