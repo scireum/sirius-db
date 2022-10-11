@@ -29,14 +29,14 @@ public class SuggestionResult {
      *
      * @param json the JSON to parse
      */
-    @SuppressWarnings("unchecked")
     public SuggestionResult(JSONObject json) {
         JSONObject suggestionsObject = json.getJSONObject(KEY_SUGGEST);
         suggestionsObject.keySet().forEach(name -> {
-            List<TextPartSuggestion> textPartSuggestions =
-                    ((List<JSONObject>) suggestionsObject.getJSONArray(name)).stream()
-                                                                             .map(TextPartSuggestion::new)
-                                                                             .toList();
+            List<TextPartSuggestion> textPartSuggestions = suggestionsObject.getJSONArray(name)
+                                                                            .stream()
+                                                                            .map(JSONObject.class::cast)
+                                                                            .map(TextPartSuggestion::new)
+                                                                            .toList();
             this.suggestions.put(name, textPartSuggestions);
         });
     }
