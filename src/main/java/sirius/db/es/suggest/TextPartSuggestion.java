@@ -33,15 +33,12 @@ public class TextPartSuggestion {
      *
      * @param json a JSON snipped as returned by ES
      */
-    @SuppressWarnings("unchecked")
     public TextPartSuggestion(JSONObject json) {
         this.text = json.getString(PARAM_TEXT);
         this.offset = json.getIntValue(PARAM_OFFSET);
         this.length = json.getIntValue(PARAM_LENGTH);
-        this.termSuggestions = ((List<JSONObject>) json.getJSONArray(PARAM_OPTIONS)).stream()
-                                                                                    .map(JSONObject.class::cast)
-                                                                                    .map(TermSuggestion::new)
-                                                                                    .toList();
+        this.termSuggestions =
+                json.getJSONArray(PARAM_OPTIONS).stream().map(JSONObject.class::cast).map(TermSuggestion::new).toList();
     }
 
     /**
