@@ -21,7 +21,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
     hostname: mysql
   clickhouse:
-    image: clickhouse/clickhouse-server:21.10
+    image: clickhouse/clickhouse-server:22.5-alpine
     ports:
     - "8123"
     - "9000"
