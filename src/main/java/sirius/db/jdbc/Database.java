@@ -293,7 +293,7 @@ public class Database {
         int index = 0;
         for (Object o : valueList) {
             try {
-                stmt.setObject(++index, o);
+                Databases.convertAndSetParameter(stmt, ++index, o);
             } catch (Exception e) {
                 throw new IllegalArgumentException(e.getMessage()
                                                    + " - Index: "
@@ -323,7 +323,7 @@ public class Database {
                 }
                 fields.append(entry.getKey());
                 values.append("?");
-                valueList.add(Databases.convertValue(entry.getValue()));
+                valueList.add(entry.getValue());
             }
         }
     }

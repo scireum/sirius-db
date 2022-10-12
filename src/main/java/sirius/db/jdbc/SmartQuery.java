@@ -723,7 +723,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             PreparedStatement stmt =
                     c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < parameters.size(); i++) {
-                stmt.setObject(i + 1, parameters.get(i));
+                Databases.convertAndSetParameter(stmt, i + 1, parameters.get(i));
             }
             return stmt;
         }

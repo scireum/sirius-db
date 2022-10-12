@@ -58,7 +58,7 @@ class StatementCompiler {
             }
             for (Tuple<Integer, Object> parameter : parameters) {
                 try {
-                    statement.setObject(parameter.getFirst(), parameter.getSecond());
+                    Databases.convertAndSetParameter(statement, parameter.getFirst(), parameter.getSecond());
                 } catch (SQLException error) {
                     throw new SQLException(Strings.apply("Failed to set parameter %s to '%s': %s",
                                                          parameter.getFirst(),
@@ -95,11 +95,11 @@ class StatementCompiler {
         for (Object param : params) {
             if (param instanceof Collection<?>) {
                 for (Object obj : (Collection<?>) param) {
-                    parameters.add(Tuple.create(++index, Databases.convertValue(obj)));
+                    parameters.add(Tuple.create(++index, obj));
                     Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
                 }
             } else {
-                parameters.add(Tuple.create(++index, Databases.convertValue(param)));
+                parameters.add(Tuple.create(++index, param));
                 Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(param));
             }
         }

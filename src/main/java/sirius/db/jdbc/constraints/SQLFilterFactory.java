@@ -27,7 +27,7 @@ public class SQLFilterFactory extends FilterFactory<SQLConstraint> {
 
     @Override
     protected Object customTransform(Object value) {
-        return Databases.convertValue(value);
+        return value;
     }
 
     @Override

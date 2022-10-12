@@ -81,7 +81,7 @@ public class ExternalBatchQuery extends BaseSQLQuery {
      * @throws SQLException in case of a database error
      */
     public ExternalBatchQuery withParameter(int oneBasedIndex, Object value) throws SQLException {
-        statement.setObject(oneBasedIndex, Databases.convertValue(value));
+        Databases.convertAndSetParameter(statement, oneBasedIndex, value);
         return this;
     }
 
