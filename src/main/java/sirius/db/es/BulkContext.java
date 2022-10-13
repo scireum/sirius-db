@@ -51,6 +51,7 @@ public class BulkContext implements Closeable {
     protected static final String COMMAND_CREATE = "create";
     protected static final String COMMAND_UPDATE = "update";
 
+    private final LowLevelClient.Refresh refresh;
     private LowLevelClient client;
     private List<JSONObject> commands;
 
@@ -63,8 +64,9 @@ public class BulkContext implements Closeable {
      * @param client the client used to execute the bulk requests
      * @see Elastic#batch()
      */
-    protected BulkContext(LowLevelClient client) {
+    protected BulkContext(LowLevelClient client, LowLevelClient.Refresh refresh) {
         this.client = client;
+        this.refresh = refresh;
         this.commands = new ArrayList<>();
     }
 
@@ -171,11 +173,10 @@ public class BulkContext implements Closeable {
     /**
      * Forces the execution of a bulk update (if statements are queued).
      *
-     * @param refresh determines the refresh mode to request from Elasticsearch. The default is <tt>Refresh.FALSE</tt>.
      * @return a result which can be used to determine if errors have occurred. If an exception should be thrown for
      * any error, use {@link BulkResult#throwFailures()}.
      */
-    public BulkResult commit(LowLevelClient.Refresh refresh) {
+    public BulkResult commit() {
         if (commands.isEmpty()) {
             return new BulkResult(null);
         }
@@ -197,17 +198,6 @@ public class BulkContext implements Closeable {
         } finally {
             commands.clear();
         }
-    }
-
-    /**
-     * Forces the execution of a bulk update without any refresh.
-     *
-     * @return a result which can be used to determine if errors have occurred. If an exception should be thrown for
-     * any error, use {@link BulkResult#throwFailures()}.
-     * @see #commit(LowLevelClient.Refresh)
-     */
-    public BulkResult commit() {
-        return commit(LowLevelClient.Refresh.FALSE);
     }
 
     /**

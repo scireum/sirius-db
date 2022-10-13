@@ -650,10 +650,20 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Creates a {@link BulkContext batch context} used for bulk updates.
      *
+     * @param refresh the refresh mode to use when submitting a bulk update
+     * @return a new batch context
+     */
+    public BulkContext batch(LowLevelClient.Refresh refresh) {
+        return new BulkContext(getLowLevelClient(), refresh);
+    }
+
+    /**
+     * Creates a {@link BulkContext batch context} used for bulk updates.
+     *
      * @return a new batch context
      */
     public BulkContext batch() {
-        return new BulkContext(getLowLevelClient());
+        return batch(LowLevelClient.Refresh.FALSE);
     }
 
     /**
