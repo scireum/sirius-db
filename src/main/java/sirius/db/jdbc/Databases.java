@@ -272,9 +272,6 @@ public class Databases implements Initializable {
      * @return the database level representation of the given value
      */
     public static Object convertValue(Object value) {
-        if (value == null) {
-            return value;
-        }
         if (value instanceof LocalDateTime dateTime) {
             return encodeLocalDateTime(dateTime);
         }
@@ -287,7 +284,7 @@ public class Databases implements Initializable {
         if (value instanceof Amount amount) {
             return amount.getAmount();
         }
-        if (value.getClass().isEnum()) {
+        if (value != null && value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         }
         if (value instanceof BaseEntityRef) {
@@ -298,6 +295,35 @@ public class Databases implements Initializable {
         }
 
         return value;
+    }
+
+    /**
+     * Converts and sets the parameter at the specified index into the given statement.
+     * <p>
+     * This is required, as simply invoking <tt>PreparedStatement.setObject</tt> might lead to unexpected behavior
+     * (e.g. for Clickhouse, this then treats <tt>Date</tt> values wrong.
+     *
+     * @param stmt          the statement to add the parameter to
+     * @param oneBasedIndex the one based index of the parameter
+     * @param value         the value to add. This will be converted using {@link #convertValue(Object)}
+     * @throws SQLException in case of a database error
+     */
+    public static void convertAndSetParameter(PreparedStatement stmt, int oneBasedIndex, Object value)
+            throws SQLException {
+        Object effectiveValue = convertValue(value);
+        if (effectiveValue instanceof Long number) {
+            stmt.setLong(oneBasedIndex, number);
+        } else if (effectiveValue instanceof Integer number) {
+            stmt.setInt(oneBasedIndex, number);
+        } else if (effectiveValue instanceof Date date) {
+            stmt.setDate(oneBasedIndex, date);
+        } else if (effectiveValue instanceof Time time) {
+            stmt.setTime(oneBasedIndex, time);
+        } else if (effectiveValue instanceof String string) {
+            stmt.setString(oneBasedIndex, string);
+        } else {
+            stmt.setObject(oneBasedIndex, effectiveValue);
+        }
     }
 
     /**

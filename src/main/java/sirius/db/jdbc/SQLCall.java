@@ -113,7 +113,7 @@ public class SQLCall {
             if (types.get(i) != null) {
                 stmt.registerOutParameter(i + 1, types.get(i));
             } else {
-                stmt.setObject(i + 1, data.get(i));
+                Databases.convertAndSetParameter(stmt, i + 1, data.get(i));
             }
         }
     }

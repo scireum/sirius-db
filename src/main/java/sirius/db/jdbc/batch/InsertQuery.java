@@ -116,11 +116,11 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : propertiesToUpdate) {
-                stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+                Databases.convertAndSetParameter(stmt, i++, property.getValueForDatasource(OMA.class, entity));
             }
 
             if (descriptor.isVersioned()) {
-                stmt.setObject(i, 1);
+                Databases.convertAndSetParameter(stmt, i, 1);
             }
 
             if (addBatch) {

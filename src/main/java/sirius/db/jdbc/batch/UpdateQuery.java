@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
@@ -124,15 +125,15 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
         PreparedStatement stmt = prepareStmt();
         int i = 1;
         for (Property property : getPropertiesToUpdate()) {
-            stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+            Databases.convertAndSetParameter(stmt, i++, property.getValueForDatasource(OMA.class, entity));
         }
 
         if (descriptor.isVersioned()) {
-            stmt.setObject(i++, entity.getVersion() + 1);
+            Databases.convertAndSetParameter(stmt, i++, entity.getVersion() + 1);
         }
 
         for (Tuple<Operator, Property> filter : getPropertyFilters()) {
-            stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, entity));
+            Databases.convertAndSetParameter(stmt, i++, filter.getSecond().getValueForDatasource(OMA.class, entity));
         }
 
         if (descriptor.isVersioned()) {
@@ -144,7 +145,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
                                 .handle();
             }
 
-            stmt.setObject(i, entity.getVersion());
+            Databases.convertAndSetParameter(stmt, i, entity.getVersion());
         }
         return stmt;
     }

@@ -58,7 +58,7 @@ public class CustomQuery extends BatchQuery<SQLEntity> {
      */
     public void setParameter(int oneBasedIndex, Object value) throws SQLException {
         PreparedStatement stmt = prepareStmt();
-        stmt.setObject(oneBasedIndex, Databases.convertValue(value));
+        Databases.convertAndSetParameter(stmt, oneBasedIndex, value);
     }
 
     /**

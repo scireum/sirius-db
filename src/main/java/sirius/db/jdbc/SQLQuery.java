@@ -193,7 +193,7 @@ public class SQLQuery extends BaseSQLQuery {
      * <p>
      * Requires the SQL statement to be an UPDATE or DELETE statement.
      *
-     * @return the a row representing all generated keys
+     * @return a row representing all generated keys
      * @throws SQLException in case of a database error
      */
     public Row executeUpdateReturnKeys() throws SQLException {
