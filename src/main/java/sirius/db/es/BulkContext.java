@@ -13,7 +13,6 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
-import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -137,7 +136,6 @@ public class BulkContext implements Closeable {
         }
     }
 
-    @Nonnull
     private JSONObject builtMetadata(ElasticEntity entity, boolean force, EntityDescriptor ed) {
         JSONObject meta = new JSONObject();
 
@@ -173,16 +171,17 @@ public class BulkContext implements Closeable {
     /**
      * Forces the execution of a bulk update (if statements are queued).
      *
+     * @param refresh determines the refresh mode to request from Elasticsearch. The default is <tt>Refresh.FALSE</tt>.
      * @return a result which can be used to determine if errors have occurred. If an exception should be thrown for
      * any error, use {@link BulkResult#throwFailures()}.
      */
-    public BulkResult commit() {
+    public BulkResult commit(LowLevelClient.Refresh refresh) {
         if (commands.isEmpty()) {
             return new BulkResult(null);
         }
 
         try {
-            JSONObject bulkResponse = client.bulk(commands);
+            JSONObject bulkResponse = client.bulkWithRefresh(commands, refresh);
             if (Elastic.LOG.isFINE()) {
                 Elastic.LOG.FINE(bulkResponse);
             }
@@ -198,6 +197,17 @@ public class BulkContext implements Closeable {
         } finally {
             commands.clear();
         }
+    }
+
+    /**
+     * Forces the execution of a bulk update without any refresh.
+     *
+     * @return a result which can be used to determine if errors have occurred. If an exception should be thrown for
+     * any error, use {@link BulkResult#throwFailures()}.
+     * @see #commit(LowLevelClient.Refresh)
+     */
+    public BulkResult commit() {
+        return commit(LowLevelClient.Refresh.FALSE);
     }
 
     /**

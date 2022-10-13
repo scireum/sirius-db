@@ -50,14 +50,47 @@ public class LowLevelClient {
     private static final String API_SETTINGS = "/_settings";
     private static final String API_CLUSTER_HEALTH = "/_cluster/health";
     private static final String API_STATS = "/_stats";
+    private static final String API_MAPPING = "/_mapping";
+    private static final String API_BULK = "_bulk";
 
     private static final String PARAM_INDEX = "index";
     private static final String PARAM_ALIAS = "alias";
     private static final String PARAM_ACTIONS = "actions";
+    private static final String PARAM_NUMBER_OF_SHARDS = "number_of_shards";
+    private static final String PARAM_NUMBER_OF_REPLICAS = "number_of_replicas";
+    private static final String PARAM_SETTINGS = "settings";
+
+    private static final String PARAM_REFRESH = "refresh";
     private static final String ACTON_ADD = "add";
     private static final String ACTION_REMOVE = "remove";
 
+    private static final String REQUEST_METHOD_HEAD = "HEAD";
+    private static final String REQUEST_METHOD_GET = "GET";
+    private static final String REQUEST_METHOD_POST = "POST";
+    private static final String REQUEST_METHOD_PUT = "PUT";
+    private static final String REQUEST_METHOD_DELETE = "DELETE";
+
     private final RestClient restClient;
+
+    /**
+     * Enumerates possible values for {@link #PARAM_REFRESH} in {@link #bulkWithRefresh(List, Refresh)}.
+     */
+    public enum Refresh {
+        /**
+         * Force a refresh of the affected shards.
+         */
+        TRUE,
+
+        /**
+         * Do nothing with the affected shards.
+         */
+        FALSE,
+
+        /**
+         * Force and await the refresh of the affected shards.
+         */
+        WAIT_FOR
+    }
 
     /**
      * Creates a new client based on the given REST client which handles load balancing and connection management.
@@ -83,7 +116,7 @@ public class LowLevelClient {
      * @return a request builder used to execute the request
      */
     protected RequestBuilder performGet() {
-        return new RequestBuilder("GET", getRestClient());
+        return new RequestBuilder(REQUEST_METHOD_GET, getRestClient());
     }
 
     /**
@@ -92,7 +125,7 @@ public class LowLevelClient {
      * @return a request builder used to execute the request
      */
     protected RequestBuilder performPost() {
-        return new RequestBuilder("POST", getRestClient());
+        return new RequestBuilder(REQUEST_METHOD_POST, getRestClient());
     }
 
     /**
@@ -101,7 +134,7 @@ public class LowLevelClient {
      * @return a request builder used to execute the request
      */
     protected RequestBuilder performPut() {
-        return new RequestBuilder("PUT", getRestClient());
+        return new RequestBuilder(REQUEST_METHOD_PUT, getRestClient());
     }
 
     /**
@@ -110,7 +143,7 @@ public class LowLevelClient {
      * @return a request builder used to execute the request
      */
     protected RequestBuilder performDelete() {
-        return new RequestBuilder("DELETE", getRestClient());
+        return new RequestBuilder(REQUEST_METHOD_DELETE, getRestClient());
     }
 
     /**
@@ -282,7 +315,7 @@ public class LowLevelClient {
      */
     public boolean aliasExists(String alias) {
         try {
-            return restClient.performRequest(new Request("HEAD", API_ALIAS + "/" + alias))
+            return restClient.performRequest(new Request(REQUEST_METHOD_HEAD, API_ALIAS + "/" + alias))
                              .getStatusLine()
                              .getStatusCode() == 200;
         } catch (ResponseException e) {
@@ -454,11 +487,26 @@ public class LowLevelClient {
      * @return the response of the call
      * @see BulkContext
      */
+    public JSONObject bulk(List<JSONObject> bulkData) {
+        return bulkWithRefresh(bulkData, Refresh.FALSE);
+    }
+
+    /**
+     * Executes a list of bulk statements with the given refresh setting.
+     *
+     * @param bulkData the statements to execute
+     * @param refresh  the refresh mode to use
+     * @return the response of the call
+     * @see BulkContext
+     */
     @SuppressWarnings("squid:S1612")
     @Explain("Due to method overloading the compiler cannot deduce which method to pick")
-    public JSONObject bulk(List<JSONObject> bulkData) {
-        return performPost().rawData(bulkData.stream().map(obj -> obj.toJSONString()).collect(Collectors.joining("\n"))
-                                     + "\n").execute("_bulk").response();
+    public JSONObject bulkWithRefresh(List<JSONObject> bulkData, Refresh refresh) {
+        return performPost().withParam(PARAM_REFRESH, refresh.name().toLowerCase())
+                            .rawData(bulkData.stream().map(obj -> obj.toJSONString()).collect(Collectors.joining("\n"))
+                                     + "\n")
+                            .execute(API_BULK)
+                            .response();
     }
 
     /**
@@ -474,13 +522,13 @@ public class LowLevelClient {
                                   int numberOfShards,
                                   int numberOfReplicas,
                                   @Nullable Consumer<JSONObject> settingsCustomizer) {
-        JSONObject indexObj = new JSONObject().fluentPut("number_of_shards", numberOfShards)
-                                              .fluentPut("number_of_replicas", numberOfReplicas);
+        JSONObject indexObj = new JSONObject().fluentPut(PARAM_NUMBER_OF_SHARDS, numberOfShards)
+                                              .fluentPut(PARAM_NUMBER_OF_REPLICAS, numberOfReplicas);
         JSONObject settingsObj = new JSONObject().fluentPut(PARAM_INDEX, indexObj);
         if (settingsCustomizer != null) {
             settingsCustomizer.accept(settingsObj);
         }
-        JSONObject input = new JSONObject().fluentPut("settings", settingsObj);
+        JSONObject input = new JSONObject().fluentPut(PARAM_SETTINGS, settingsObj);
         return performPut().data(input).execute(index).response();
     }
 
@@ -492,7 +540,7 @@ public class LowLevelClient {
      * @return the response of the call
      */
     public JSONObject putMapping(String index, JSONObject data) {
-        return performPut().data(data).execute(index + "/_mapping").response();
+        return performPut().data(data).execute(index + API_MAPPING).response();
     }
 
     /**
@@ -503,7 +551,8 @@ public class LowLevelClient {
      */
     public boolean indexExists(String index) {
         try {
-            return restClient.performRequest(new Request("HEAD", index)).getStatusLine().getStatusCode() == 200;
+            return restClient.performRequest(new Request(REQUEST_METHOD_HEAD, index)).getStatusLine().getStatusCode()
+                   == HttpURLConnection.HTTP_OK;
         } catch (ResponseException e) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
