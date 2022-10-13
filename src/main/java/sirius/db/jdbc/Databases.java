@@ -284,7 +284,7 @@ public class Databases implements Initializable {
         if (value instanceof Amount amount) {
             return amount.getAmount();
         }
-        if (value.getClass().isEnum()) {
+        if (value != null && value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         }
         if (value instanceof BaseEntityRef) {
