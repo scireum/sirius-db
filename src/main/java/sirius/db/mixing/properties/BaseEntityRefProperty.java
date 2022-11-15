@@ -142,8 +142,16 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
      */
     protected abstract Optional<E> find(Class<E> type, Value value);
 
+    /**
+     * Resolve the referenced EntityRef
+     * <p>
+     * In contrast to {@link #find(Class, Value)}, this does not do a database lookup right away.
+     *
+     * @param entity the entity that contains the entity ref
+     * @return the entity ref
+     */
     @SuppressWarnings("unchecked")
-    protected R getEntityRef(Object entity) {
+    public R getEntityRef(Object entity) {
         try {
             return (R) super.getValueFromField(entity);
         } catch (Exception e) {

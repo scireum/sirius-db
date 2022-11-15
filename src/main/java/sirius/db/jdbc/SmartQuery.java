@@ -370,7 +370,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
-                Object value = lastValue.getDescriptor().getProperty(sortColumn).getValue(lastValue);
+                Object value = lastValue.getDescriptor().getPropertyValue(sortColumn, lastValue, false);
                 if (sortAscending) {
                     // the order by is ascending -> COLUMN > lastvalue.column
                     leftHandSide.addComponent(sortColumn);

@@ -24,9 +24,11 @@ import sirius.db.mixing.annotations.SkipDefaultValue;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
+import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
@@ -149,7 +151,7 @@ public class EntityDescriptor {
     /**
      * Collects handlers which are executed before entity is saved, need to be in order (some checks might depend on others),
      * {@link BeforeSave} permits to specify a property which is used to here to sort the handlers.
-     *
+     * <p>
      * <tt>sortedBeforeSaveHandlers</tt> will be filled when first accessed and provide a properly sorted list
      */
     protected PriorityCollector<Consumer<Object>> beforeSaveHandlerCollector = PriorityCollector.create();
@@ -1043,6 +1045,34 @@ public class EntityDescriptor {
         }
 
         return prop;
+    }
+
+    /**
+     * Get the value of a mapping for an entity.
+     * <p>
+     * If the mapping contains joins, they are only resolved if (a) they are already fetched from the database, or (b)
+     * the parameter value of {@code resolveJoins} evaluates to {@code true}. In all other cases, an Exception is thrown.
+     * <p>
+     * Usually, this can be achieved using {@link #getProperty(Mapping)}.{@link Property#getValue(Object)}. However, no
+     * property can be created if the mapping is a JOIN-mapping.
+     *
+     * @param mapping      the mapping; may contain joins
+     * @param entity       the entity
+     * @param resolveJoins whether to load joined columns from the database
+     * @return the value of the mapping
+     */
+    public Object getPropertyValue(Mapping mapping, Object entity, boolean resolveJoins) {
+        if (mapping.getParent() != null) {
+            Object parent = getPropertyValue(mapping.getParent(), entity, resolveJoins);
+            return mixing.getDescriptor(parent.getClass())
+                         .getPropertyValue(Mapping.named(mapping.getName()), parent, resolveJoins);
+        }
+        Property property = getProperty(mapping.getName());
+        if (property instanceof BaseEntityRefProperty<?, ?, ?> ref) {
+            BaseEntityRef<?, ?> entityRef = ref.getEntityRef(entity);
+            return resolveJoins ? entityRef.fetchValue() : entityRef.getValueIfPresent().orElseThrow();
+        }
+        return property.getValue(entity);
     }
 
     /**
