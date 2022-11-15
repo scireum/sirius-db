@@ -1053,12 +1053,13 @@ public class EntityDescriptor {
      * If the mapping contains joins, they are only resolved if (a) they are already fetched from the database, or (b)
      * the parameter value of {@code resolveJoins} evaluates to {@code true}. In all other cases, an Exception is thrown.
      * <p>
-     * Usually, this can be achieved using {@link #getProperty(Mapping)}.{@link Property#getValue(Object)}. However, no
-     * property can be created if the mapping is a JOIN-mapping.
+     * Usually, this can be achieved using <p>
+     * {@link #getProperty(Mapping)}{@code .}{@link Property#getValue(Object) getValue(Object)}<p>
+     * However, no property can be created if the mapping is a JOIN-mapping, rendering this method useless in that case.
      *
      * @param mapping      the mapping; may contain joins
      * @param entity       the entity
-     * @param resolveJoins whether to load joined columns from the database
+     * @param resolveJoins whether to load joined columns from the database instead of throwing
      * @return the value of the mapping
      */
     public Object getPropertyValue(Mapping mapping, Object entity, boolean resolveJoins) {
