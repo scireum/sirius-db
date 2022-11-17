@@ -1071,7 +1071,12 @@ public class EntityDescriptor {
         Property property = getProperty(mapping.getName());
         if (property instanceof BaseEntityRefProperty<?, ?, ?> ref) {
             BaseEntityRef<?, ?> entityRef = ref.getEntityRef(entity);
-            return resolveJoins ? entityRef.fetchValue() : entityRef.getValueIfPresent().orElseThrow();
+            return resolveJoins ? entityRef.fetchValue() : entityRef.getValueIfPresent().orElseThrow(() -> {
+                return new IllegalArgumentException(Strings.apply(
+                        "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
+                        entityRef.getUniqueObjectName(),
+                        mapping));
+            });
         }
         return property.getValue(entity);
     }
