@@ -143,9 +143,10 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
     protected abstract Optional<E> find(Class<E> type, Value value);
 
     /**
-     * Resolves the referenced entity.
+     * Resolves the corresponding entity ref.
      * <p>
-     * In contrast to {@link #find(Class, Value)}, this does not do a database lookup right away.
+     * In contrast to {@link #find(Class, Value)}, this does not do a database lookup right away, and instead returns
+     * the EntityRef. The caller can decide by himself if he wants to fetch the object, or just use its id etc.
      *
      * @param entity the entity that contains the entity ref
      * @return the entity ref
