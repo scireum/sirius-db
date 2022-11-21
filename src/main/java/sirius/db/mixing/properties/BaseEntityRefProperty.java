@@ -143,7 +143,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
     protected abstract Optional<E> find(Class<E> type, Value value);
 
     /**
-     * Resolve the referenced EntityRef
+     * Resolves the referenced entity.
      * <p>
      * In contrast to {@link #find(Class, Value)}, this does not do a database lookup right away.
      *
