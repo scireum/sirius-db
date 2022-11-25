@@ -8,21 +8,14 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.kernel.commons.Explain;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Represents a bucket of an aggregation result.
  */
 public class Bucket {
 
-    private static final String KEY_BUCKETS = "buckets";
     private static final String KEY_KEY = "key";
     private static final String KEY_DOC_COUNT = "doc_count";
 
@@ -34,36 +27,6 @@ public class Bucket {
     protected Bucket(String key, JSONObject data) {
         this.key = key;
         this.data = data;
-    }
-
-    /**
-     * Creates a list of buckets from the given aggregation.
-     *
-     * @param aggregation the aggregation as {@link JSONObject} to read the buckets from
-     * @return a list of buckets
-     * @deprecated use {@link AggregationResult#forEachBucket(Consumer)} etc.
-     */
-    @Deprecated(since = "2021/07/01")
-    public static List<Bucket> fromAggregation(JSONObject aggregation) {
-        List<Bucket> result = new ArrayList<>();
-
-        if (aggregation == null) {
-            return result;
-        }
-
-        Object buckets = aggregation.get(KEY_BUCKETS);
-
-        if (buckets instanceof JSONArray) {
-            for (Object bucket : (JSONArray) buckets) {
-                result.add(new Bucket(null, (JSONObject) bucket));
-            }
-        } else if (buckets instanceof JSONObject) {
-            for (Map.Entry<String, Object> entry : ((JSONObject) buckets).entrySet()) {
-                result.add(new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
-            }
-        }
-
-        return result;
     }
 
     /**

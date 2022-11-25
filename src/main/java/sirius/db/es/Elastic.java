@@ -81,15 +81,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Contains the name of the ID field used by Elasticsearch
      */
-    public static final String ID_FIELD = "_id";
-
-    /**
-     * Contains the ID field as mapping.
-     * <p>
-     * This can be used to sort by to yield unique sort fields to be used with
-     * {@link ElasticQuery#searchAfter(String)}.
-     */
-    public static final Mapping ID_FIELD_MAPPING = Mapping.named(ID_FIELD);
+    private static final String ID_FIELD = "_id";
 
     private static final int DEFAULT_HTTP_PORT = 9200;
 
@@ -658,10 +650,20 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Creates a {@link BulkContext batch context} used for bulk updates.
      *
+     * @param refresh the refresh mode to use when submitting a bulk update
+     * @return a new batch context
+     */
+    public BulkContext batch(LowLevelClient.Refresh refresh) {
+        return new BulkContext(getLowLevelClient(), refresh);
+    }
+
+    /**
+     * Creates a {@link BulkContext batch context} used for bulk updates.
+     *
      * @return a new batch context
      */
     public BulkContext batch() {
-        return new BulkContext(getLowLevelClient());
+        return batch(LowLevelClient.Refresh.FALSE);
     }
 
     /**

@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -388,7 +387,7 @@ public abstract class FilterFactory<C extends Constraint> {
      */
     @Nullable
     public final C and(List<C> constraints) {
-        List<C> effectiveConstraints = constraints.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        List<C> effectiveConstraints = constraints.stream().filter(Objects::nonNull).toList();
         if (effectiveConstraints.isEmpty()) {
             return null;
         }
@@ -428,7 +427,7 @@ public abstract class FilterFactory<C extends Constraint> {
      */
     @Nullable
     public final C or(List<C> constraints) {
-        List<C> effectiveConstraints = constraints.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        List<C> effectiveConstraints = constraints.stream().filter(Objects::nonNull).toList();
         if (effectiveConstraints.isEmpty()) {
             return null;
         }

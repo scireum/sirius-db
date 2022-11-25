@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -66,7 +65,7 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
      */
     public PatternExtractProcessor(Pattern pattern, Stream<String> replacements) {
         this.pattern = pattern;
-        this.replacements = replacements.map(this::compileReplacementPattern).collect(Collectors.toList());
+        this.replacements = replacements.map(this::compileReplacementPattern).toList();
     }
 
     /**

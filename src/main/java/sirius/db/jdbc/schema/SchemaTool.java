@@ -67,7 +67,7 @@ public class SchemaTool {
     public List<Table> getSchema(Database db) throws SQLException {
         List<Table> tables = new ArrayList<>();
         try (Connection c = db.getConnection()) {
-            try (ResultSet rs = c.getMetaData().getTables(c.getSchema(), c.getSchema(), null, null)) {
+            try (ResultSet rs = c.getMetaData().getTables(c.getCatalog(), c.getSchema(), null, null)) {
                 while (rs.next()) {
                     readTableRow(tables, c, rs);
                 }
@@ -95,7 +95,7 @@ public class SchemaTool {
     }
 
     private void fillFKs(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getImportedKeys(c.getSchema(), null, table.getName());
+        ResultSet rs = c.getMetaData().getImportedKeys(c.getCatalog(), c.getSchema(), table.getName());
         while (rs.next()) {
             String indexName = rs.getString("FK_NAME");
             if (indexName != null) {
@@ -114,7 +114,7 @@ public class SchemaTool {
     }
 
     private void fillIndices(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getIndexInfo(c.getSchema(), null, table.getName(), false, false);
+        ResultSet rs = c.getMetaData().getIndexInfo(c.getCatalog(), c.getSchema(), table.getName(), false, false);
         while (rs.next()) {
             String indexName = rs.getString("INDEX_NAME");
             if (indexName != null) {
@@ -132,7 +132,7 @@ public class SchemaTool {
     }
 
     private void fillPK(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getPrimaryKeys(c.getSchema(), null, table.getName());
+        ResultSet rs = c.getMetaData().getPrimaryKeys(c.getCatalog(), c.getSchema(), table.getName());
         List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
         while (rs.next()) {
             keyFields.add(ComparableTuple.create(rs.getInt(COLUMN_KEY_SEQ), rs.getString(COLUMN_COLUMN_NAME)));
@@ -145,7 +145,7 @@ public class SchemaTool {
     }
 
     private void fillColumns(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getColumns(c.getSchema(), null, table.getName(), null);
+        ResultSet rs = c.getMetaData().getColumns(c.getCatalog(), c.getSchema(), table.getName(), null);
         while (rs.next()) {
             TableColumn column = new TableColumn();
             column.setName(rs.getString(COLUMN_COLUMN_NAME));

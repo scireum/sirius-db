@@ -63,7 +63,9 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Tuple<Operator, Property> filter : getPropertyFilters()) {
-                stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, example));
+                Databases.convertAndSetParameter(stmt,
+                                                 i++,
+                                                 filter.getSecond().getValueForDatasource(OMA.class, example));
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -73,7 +75,7 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
 
                 return Optional.of((E) make(rs));
             } finally {
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
             }
         } catch (SQLException e) {
             context.safeClose();

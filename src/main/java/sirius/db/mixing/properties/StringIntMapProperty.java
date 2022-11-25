@@ -29,7 +29,6 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Represents an {@link StringIntMap} field within a {@link Mixable}.
@@ -71,7 +70,7 @@ public class StringIntMapProperty extends BaseMapProperty implements ESPropertyI
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
                                    .map(e -> new JSONObject().fluentPut(KEY, e.getKey()).fluentPut(VALUE, e.getValue()))
-                                   .collect(Collectors.toList());
+                                   .toList();
     }
 
     @Override

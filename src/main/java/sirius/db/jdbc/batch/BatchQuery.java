@@ -16,6 +16,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -32,7 +33,6 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Provides an abstract wrapper around a {@link PreparedStatement} to be used within a {@link BatchContext}.
@@ -55,7 +55,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
     protected List<Tuple<Operator, Property>> properties;
     protected EntityDescriptor descriptor;
     protected String query;
-    protected Average avarage = new Average();
+    protected Average average = new Average();
 
     @Part
     protected static OMA oma;
@@ -94,8 +94,11 @@ public abstract class BatchQuery<E extends SQLEntity> {
             try {
                 Watch w = Watch.start();
                 stmt.executeBatch();
-                stmt.getConnection().commit();
-                avarage.addValues(batchBacklog, w.elapsedMillis());
+                if (!stmt.getConnection().getAutoCommit()) {
+                    // Do not send a commit statement for connections using auto-commit
+                    stmt.getConnection().commit();
+                }
+                average.addValues(batchBacklog, w.elapsedMillis());
                 batchBacklog = 0;
             } catch (SQLException e) {
                 if (cascade) {
@@ -122,6 +125,8 @@ public abstract class BatchQuery<E extends SQLEntity> {
      *
      * @throws SQLException in case of a database error
      */
+    @SuppressWarnings("resource")
+    @Explain("We close the statement later, this is just an intermediate")
     protected void addBatch() throws SQLException {
         prepareStmt().addBatch();
         batchBacklog++;
@@ -154,7 +159,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
     /**
      * Prepares a new statement if not done already.
      *
-     * @return the prepared statment
+     * @return the prepared statement
      * @throws SQLException in case of a database error
      */
     protected PreparedStatement prepareStmt() throws SQLException {
@@ -173,7 +178,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
     protected abstract void buildSQL() throws SQLException;
 
     /**
-     * Determines the descriptor for the our entity type.
+     * Determines the descriptor for the entity type.
      *
      * @return the descriptor for the type of entities this query can process
      */
@@ -194,7 +199,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
             EntityDescriptor ed = getDescriptor();
             properties = filters.stream()
                                 .map(filter -> Tuple.create(filter.getFirst(), ed.getProperty(filter.getSecond())))
-                                .collect(Collectors.toList());
+                                .toList();
         }
 
         return Collections.unmodifiableList(properties);
@@ -243,7 +248,7 @@ public abstract class BatchQuery<E extends SQLEntity> {
      * A batch query can be created but the underlying SQL query is created just in time
      * on its first use.
      *
-     * @return <tt>true</tt> if the underlying query has already been created, <tt>false</tt> otehrwise
+     * @return <tt>true</tt> if the underlying query has already been created, <tt>false</tt> otherwise
      */
     protected boolean isQueryAvailable() {
         return query != null;
@@ -264,11 +269,11 @@ public abstract class BatchQuery<E extends SQLEntity> {
             sb.append("|Backlog: ");
             sb.append(batchBacklog);
         }
-        if (avarage.getCount() > 0) {
+        if (average.getCount() > 0) {
             sb.append("|Executed: ");
-            sb.append(avarage.getCount());
+            sb.append(average.getCount());
             sb.append("|Duration: ");
-            sb.append(NLS.toUserString(avarage.getAvg()));
+            sb.append(NLS.toUserString(average.getAvg()));
             sb.append(" ms");
         }
         sb.append("] ");

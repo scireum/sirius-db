@@ -12,7 +12,6 @@ import com.alibaba.fastjson.JSONObject;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents a list of suggestions for a piece of the given input text.
@@ -38,11 +37,8 @@ public class TextPartSuggestion {
         this.text = json.getString(PARAM_TEXT);
         this.offset = json.getIntValue(PARAM_OFFSET);
         this.length = json.getIntValue(PARAM_LENGTH);
-        this.termSuggestions = json.getJSONArray(PARAM_OPTIONS)
-                                   .stream()
-                                   .map(JSONObject.class::cast)
-                                   .map(TermSuggestion::new)
-                                   .collect(Collectors.toList());
+        this.termSuggestions =
+                json.getJSONArray(PARAM_OPTIONS).stream().map(JSONObject.class::cast).map(TermSuggestion::new).toList();
     }
 
     /**

@@ -281,7 +281,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
             try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 int index = 1;
                 for (Object o : data) {
-                    stmt.setObject(index++, o);
+                    Databases.convertAndSetParameter(stmt, index++, o);
                 }
                 if (ed.isVersioned()) {
                     stmt.setInt(index++, entity.getVersion() + 1);

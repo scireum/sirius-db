@@ -235,7 +235,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
 
         JSONObject properties = new JSONObject();
         for (Property property : getNestedDescriptor().getProperties()) {
-            if (!(property instanceof ESPropertyInfo)) {
+            if (!(property instanceof ESPropertyInfo esPropertyInfo)) {
                 Exceptions.handle()
                           .to(Elastic.LOG)
                           .withSystemErrorMessage("The nested %s in %s of %s (%s) contains an unmappable property"
@@ -248,7 +248,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
                           .handle();
             } else {
                 JSONObject propertyInfo = new JSONObject();
-                ((ESPropertyInfo) property).describeProperty(propertyInfo);
+                esPropertyInfo.describeProperty(propertyInfo);
                 properties.put(property.getPropertyName(), propertyInfo);
             }
         }

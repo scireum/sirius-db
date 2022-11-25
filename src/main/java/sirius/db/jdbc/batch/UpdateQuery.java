@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
@@ -15,6 +16,7 @@ import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
@@ -26,7 +28,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents a batch query which updates an entity in the database.
@@ -51,8 +52,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      */
     public UpdateQuery<E> withUpdatedMappings(Mapping... mappingsToUpdate) {
         EntityDescriptor ed = getDescriptor();
-        this.propertiesToUpdate =
-                Arrays.stream(mappingsToUpdate).map(Mapping::getName).map(ed::getProperty).collect(Collectors.toList());
+        this.propertiesToUpdate = Arrays.stream(mappingsToUpdate).map(Mapping::getName).map(ed::getProperty).toList();
         return this;
     }
 
@@ -73,7 +73,8 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
      * @param addBatch     determines if the query should be executed instantly (<tt>false</tt>) or added to the
      *                     batch update (<tt>true</tt>).
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "resource"})
+    @Explain("We don't want to close the statement here - this is done in close() globally.")
     public void update(@Nonnull E entity, boolean invokeChecks, boolean addBatch) {
         try {
             if (this.type == null) {
@@ -92,7 +93,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
             } else {
                 stmt.executeUpdate();
                 stmt.getConnection().commit();
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
                 if (descriptor.isVersioned()) {
                     entity.setVersion(entity.getVersion() + 1);
                 }
@@ -124,15 +125,15 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
         PreparedStatement stmt = prepareStmt();
         int i = 1;
         for (Property property : getPropertiesToUpdate()) {
-            stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+            Databases.convertAndSetParameter(stmt, i++, property.getValueForDatasource(OMA.class, entity));
         }
 
         if (descriptor.isVersioned()) {
-            stmt.setObject(i++, entity.getVersion() + 1);
+            Databases.convertAndSetParameter(stmt, i++, entity.getVersion() + 1);
         }
 
         for (Tuple<Operator, Property> filter : getPropertyFilters()) {
-            stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, entity));
+            Databases.convertAndSetParameter(stmt, i++, filter.getSecond().getValueForDatasource(OMA.class, entity));
         }
 
         if (descriptor.isVersioned()) {
@@ -144,7 +145,7 @@ public class UpdateQuery<E extends SQLEntity> extends BatchQuery<E> {
                                 .handle();
             }
 
-            stmt.setObject(i, entity.getVersion());
+            Databases.convertAndSetParameter(stmt, i, entity.getVersion());
         }
         return stmt;
     }

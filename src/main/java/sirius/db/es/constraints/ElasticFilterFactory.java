@@ -10,7 +10,6 @@ package sirius.db.es.constraints;
 
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.es.Elastic;
-import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.properties.StringMapProperty;
@@ -61,14 +60,14 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected Object customTransform(Object value) {
-        if (value instanceof Instant) {
-            value = LocalDateTime.ofInstant((Instant) value, ZoneId.systemDefault());
+        if (value instanceof Instant instant) {
+            value = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
         }
-        if (value instanceof TemporalAccessor) {
-            if (((TemporalAccessor) value).isSupported(ChronoField.HOUR_OF_DAY)) {
-                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format((TemporalAccessor) value);
+        if (value instanceof TemporalAccessor temporalAccessor) {
+            if (temporalAccessor.isSupported(ChronoField.HOUR_OF_DAY)) {
+                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(temporalAccessor);
             } else {
-                return DateTimeFormatter.ISO_LOCAL_DATE.format((TemporalAccessor) value);
+                return DateTimeFormatter.ISO_LOCAL_DATE.format(temporalAccessor);
             }
         }
 
@@ -83,13 +82,9 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         return new ElasticConstraint(jsonObject);
     }
 
-    private String determineFilterField(Mapping field) {
-        return ElasticEntity.ID.equals(field) ? Elastic.ID_FIELD : field.toString();
-    }
-
     @Override
     protected ElasticConstraint eqValue(Mapping field, Object value) {
-        return wrap(new JSONObject().fluentPut("term", new JSONObject().fluentPut(determineFilterField(field), value)));
+        return wrap(new JSONObject().fluentPut("term", new JSONObject().fluentPut(field.toString(), value)));
     }
 
     @Override
@@ -99,7 +94,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     private ElasticConstraint rangeFilter(Mapping field, String bound, Object value) {
         return wrap(new JSONObject().fluentPut("range",
-                                               new JSONObject().fluentPut(determineFilterField(field),
+                                               new JSONObject().fluentPut(field.toString(),
                                                                           new JSONObject().fluentPut(bound,
                                                                                                      transform(value)))));
     }
@@ -123,8 +118,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      */
     @Override
     public ElasticConstraint filled(Mapping field) {
-        return wrap(new JSONObject().fluentPut("exists",
-                                               new JSONObject().fluentPut("field", determineFilterField(field))));
+        return wrap(new JSONObject().fluentPut("exists", new JSONObject().fluentPut("field", field.toString())));
     }
 
     /**
@@ -137,46 +131,6 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     @Override
     public ElasticConstraint notFilled(Mapping field) {
         return not(filled(field));
-    }
-
-    /**
-     * Checks whether the given field is not filled which means whether the given field is absent, as elastic doesn't index
-     * null-values by default. The field is just not created.
-     * <p>
-     * This temporary method skips the call of {@link #determineFilterField(Mapping)}, allowing us to check the presence
-     * of the <tt>id</tt> field.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #notFilled(Mapping)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticConstraint isMissing(Mapping field) {
-        return not(wrap(new JSONObject().fluentPut("exists", new JSONObject().fluentPut("field", field.toString()))));
-    }
-
-    /**
-     * As elastic doesn't index null-values by default an exists query is basically the same as a {@link #filled(Mapping)} query.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #filled(Mapping)} instead
-     */
-    @Deprecated
-    public ElasticConstraint exists(Mapping field) {
-        return filled(field);
-    }
-
-    /**
-     * As elastic doesn't index null-values by default a notExists query is basically the same as a {@link #notFilled(Mapping)} query.
-     *
-     * @param field the field to check
-     * @return the generated constraint
-     * @deprecated use {@link #notFilled(Mapping)} instead
-     */
-    @Deprecated
-    public ElasticConstraint notExists(Mapping field) {
-        return notFilled(field);
     }
 
     @Override
@@ -314,8 +268,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value).fluentPut(PARAM_REWRITE, TOP_TERMS_256);
-        return wrap(new JSONObject().fluentPut(PARAM_PREFIX,
-                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+        return wrap(new JSONObject().fluentPut(PARAM_PREFIX, new JSONObject().fluentPut(field.toString(), settings)));
     }
 
     /**
@@ -334,7 +287,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
         JSONObject settings = new JSONObject().fluentPut(PARAM_QUERY, value);
         return wrap(new JSONObject().fluentPut(PARAM_MATCH_PHRASE,
-                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+                                               new JSONObject().fluentPut(field.toString(), settings)));
     }
 
     /**
@@ -350,8 +303,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value);
-        return wrap(new JSONObject().fluentPut(PARAM_REGEXP,
-                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+        return wrap(new JSONObject().fluentPut(PARAM_REGEXP, new JSONObject().fluentPut(field.toString(), settings)));
     }
 
     /**
@@ -367,8 +319,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value);
-        return wrap(new JSONObject().fluentPut(PARAM_WILDCARD,
-                                               new JSONObject().fluentPut(determineFilterField(field), settings)));
+        return wrap(new JSONObject().fluentPut(PARAM_WILDCARD, new JSONObject().fluentPut(field.toString(), settings)));
     }
 
     /**
@@ -406,7 +357,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
                                               .fluentPut(PARAM_TRANSPOSITIONS, transpositions)
                                               .fluentPut(PARAM_REWRITE, rewrite == null ? CONSTANT_SCORE : rewrite);
         return new ElasticConstraint(new JSONObject().fluentPut(PARAM_FUZZY,
-                                                                new JSONObject().fluentPut(determineFilterField(field),
+                                                                new JSONObject().fluentPut(field.toString(),
                                                                                            settings)));
     }
 

@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 /**
  * Represents a database connection obtained via {@link Databases#get(String)}.
  * <p>
- * Use {@link #createQuery(String)} to create an SQL query with built in connection management.
+ * Use {@link #createQuery(String)} to create an SQL query with built-in connection management.
  * Use {@link #getConnection()} to obtain a regular JDBC connection (which has to be handled with some caution).
  */
 public class Database {
@@ -58,19 +58,19 @@ public class Database {
     private static final String KEY_VALIDATION_QUERY = "validationQuery";
     protected final String name;
     private final String service;
-    private String driver;
+    private final String driver;
     private String url;
     private String hostUrl;
-    private String username;
-    private String password;
-    private int initialSize;
-    private int maxActive;
-    private int maxIdle;
-    private boolean testOnBorrow;
-    private String validationQuery;
+    private final String username;
+    private final String password;
+    private final int initialSize;
+    private final int maxActive;
+    private final int maxIdle;
+    private final boolean testOnBorrow;
+    private final String validationQuery;
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
-    private static final Pattern SANE_COLUMN_NAME = Pattern.compile("[a-zA-Z0-9_]+");
+    private static final Pattern SANE_COLUMN_NAME = Pattern.compile("\\w+");
     private static final Pattern HOST_AND_PORT_PATTERN = Pattern.compile("//([^:]+):(\\d+)");
 
     /*
@@ -189,7 +189,7 @@ public class Database {
      * <p>
      * This connection behaves entirely the same as one returned by {@link #getConnection()}. However, for this
      * connection, the checks are disabled which ensure that connections aren't borrowed for too long. Although,
-     * this check is very helpful under normal conditions, it generates false warning when performing long running
+     * this check is very helpful under normal conditions, it generates false warning when performing long-running
      * {@link sirius.db.jdbc.batch.BatchContext batch operations} - which provide their own way of monitoring.
      *
      * @return a new {@link Connection} to the database
@@ -206,7 +206,7 @@ public class Database {
     /**
      * Tries to obtain a host connection which is not bound to a specific database or schema.
      * <p>
-     * This is used to setup test databases by executing an initial statement like <tt>CREATE DATABASE test</tt>.
+     * This is used to set up test databases by executing an initial statement like <tt>CREATE DATABASE test</tt>.
      *
      * @return the host connection
      * @throws SQLException in case of a database or configuration error
@@ -293,7 +293,7 @@ public class Database {
         int index = 0;
         for (Object o : valueList) {
             try {
-                stmt.setObject(++index, o);
+                Databases.convertAndSetParameter(stmt, ++index, o);
             } catch (Exception e) {
                 throw new IllegalArgumentException(e.getMessage()
                                                    + " - Index: "
@@ -323,7 +323,7 @@ public class Database {
                 }
                 fields.append(entry.getKey());
                 values.append("?");
-                valueList.add(Databases.convertValue(entry.getValue()));
+                valueList.add(entry.getValue());
             }
         }
     }
@@ -430,7 +430,7 @@ public class Database {
                 capabilities = Capability.MYSQL_CAPABILITIES;
             } else if ("org.postgresql.Driver".equalsIgnoreCase(driver)) {
                 capabilities = Capability.POSTGRES_CAPABILITIES;
-            } else if ("ru.yandex.clickhouse.ClickHouseDriver".equalsIgnoreCase(driver)) {
+            } else if (driver.contains("ClickHouseDriver")) {
                 capabilities = Capability.CLICKHOUSE_CAPABILITIES;
             } else {
                 capabilities = Capability.DEFAULT_CAPABILITIES;

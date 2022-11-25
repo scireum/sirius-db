@@ -8,6 +8,7 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
@@ -63,7 +64,9 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Tuple<Operator, Property> filter : getPropertyFilters()) {
-                stmt.setObject(i++, filter.getSecond().getValueForDatasource(OMA.class, example));
+                Databases.convertAndSetParameter(stmt,
+                                                 i++,
+                                                 filter.getSecond().getValueForDatasource(OMA.class, example));
             }
 
             if (descriptor.isVersioned()) {
@@ -75,7 +78,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
                                             descriptor.getType())
                                     .handle();
                 }
-                stmt.setObject(i, example.getVersion());
+                Databases.convertAndSetParameter(stmt, i, example.getVersion());
             }
 
             if (addBatch) {
@@ -83,7 +86,7 @@ public class DeleteQuery<E extends SQLEntity> extends BatchQuery<E> {
             } else {
                 stmt.executeUpdate();
                 stmt.getConnection().commit();
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
             }
 
             if (invokeChecks) {

@@ -10,6 +10,7 @@ package sirius.db.jdbc;
 
 import sirius.kernel.commons.Explain;
 
+import java.sql.Connection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -58,13 +59,22 @@ public enum Capability {
     /**
      * Signales that the database supports DECIMAL fields.
      */
-    DECIMAL_TYPE;
+    DECIMAL_TYPE,
+
+    /**
+     * Signals that the database supports transactions, where statements must be committed by performing a
+     * {@link Connection#commit()} statement.
+     * <p>
+     * This is especially needed for Clickhouse, as newer drivers expects commits to be used in context of transactions,
+     * which must be enabled and opened before.
+     */
+    TRANSACTION;
 
     /**
      * Contains the default capabilities of unknown databases.
      */
     public static final Set<Capability> DEFAULT_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE, TRANSACTION));
     /**
      * Contains the capabilities of a MySQL database
      */
@@ -76,13 +86,14 @@ public enum Capability {
             LIMIT,
             GENERATED_KEYS,
             NULL_SAFE_OPERATOR,
-            DECIMAL_TYPE));
+            DECIMAL_TYPE,
+            TRANSACTION));
 
     /**
      * Contains the capabilities of a Postgres database
      */
     public static final Set<Capability> POSTGRES_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, GENERATED_KEYS, DECIMAL_TYPE, TRANSACTION));
 
     /**
      * Contains the capabilities of a Clickhouse database

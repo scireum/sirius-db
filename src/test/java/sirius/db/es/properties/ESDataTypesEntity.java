@@ -9,7 +9,6 @@
 package sirius.db.es.properties;
 
 import sirius.db.es.ElasticEntity;
-import sirius.db.jdbc.SQLEntity;
 import sirius.db.jdbc.SQLEntityRef;
 import sirius.db.jdbc.TestEntity;
 import sirius.db.mixing.Mapping;
@@ -71,7 +70,8 @@ public class ESDataTypesEntity extends ElasticEntity {
     private TestEnum enumValue2;
 
     @NullAllowed
-    private final SQLEntityRef<TestEntity> sqlEntityRef = SQLEntityRef.on(TestEntity.class, BaseEntityRef.OnDelete.IGNORE);
+    private final SQLEntityRef<TestEntity> sqlEntityRef =
+            SQLEntityRef.on(TestEntity.class, BaseEntityRef.OnDelete.IGNORE).weak();
 
     private int intValue2 = 5;
 

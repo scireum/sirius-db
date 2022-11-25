@@ -27,7 +27,6 @@ import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents a batch query which inserts an entity into the database.
@@ -47,12 +46,10 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
         this.fetchId = fetchId;
         EntityDescriptor ed = getDescriptor();
         if (mappingsToUpdate.isEmpty()) {
-            this.propertiesToUpdate = ed.getProperties()
-                                        .stream()
-                                        .filter(p -> !SQLEntity.ID.getName().equals(p.getName()))
-                                        .collect(Collectors.toList());
+            this.propertiesToUpdate =
+                    ed.getProperties().stream().filter(p -> !SQLEntity.ID.getName().equals(p.getName())).toList();
         } else {
-            this.propertiesToUpdate = mappingsToUpdate.stream().map(ed::getProperty).collect(Collectors.toList());
+            this.propertiesToUpdate = mappingsToUpdate.stream().map(ed::getProperty).toList();
         }
     }
 
@@ -119,11 +116,11 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
             PreparedStatement stmt = prepareStmt();
             int i = 1;
             for (Property property : propertiesToUpdate) {
-                stmt.setObject(i++, property.getValueForDatasource(OMA.class, entity));
+                Databases.convertAndSetParameter(stmt, i++, property.getValueForDatasource(OMA.class, entity));
             }
 
             if (descriptor.isVersioned()) {
-                stmt.setObject(i, 1);
+                Databases.convertAndSetParameter(stmt, i, 1);
             }
 
             if (addBatch) {
@@ -142,7 +139,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                 getDescriptor().afterSave(entity);
             }
             if (!addBatch) {
-                avarage.addValue(w.elapsedMillis());
+                average.addValue(w.elapsedMillis());
             }
         } catch (SQLIntegrityConstraintViolationException e) {
             throw e;

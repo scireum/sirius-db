@@ -22,6 +22,7 @@ import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.PullBasedSpliterator;
+import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -41,6 +42,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +73,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     private static Databases dbs;
 
     protected List<Mapping> fields = Collections.emptyList();
+    protected List<String> aggregationFields = Collections.emptyList();
     protected boolean distinct;
     protected List<Tuple<Mapping, Boolean>> orderBys = new ArrayList<>();
+    protected List<String> groupBys = Collections.emptyList();
     protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
 
@@ -146,6 +150,56 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      */
     public SmartQuery<E> fields(Mapping... fields) {
         this.fields = Arrays.asList(fields);
+        return this;
+    }
+
+    /**
+     * Adds a complex expression like an aggregation function to the <tt>SELECT</tt> clause of the generated SQL.
+     * <p>
+     * In contrast to {@link #fields(Mapping...)}, this adds an expression but does not replace the previous ones
+     * (neither those added via {@link #fields(Mapping...)} nor other {@link #aggregationField(String)} calls).
+     * Therefore, this can be used to add fields or aggregations conditionally.
+     * <p>
+     * <b>NOTE:</b> This cannot be used in "normal" entity queries, as the O/R mapper cannot handle aggregations.
+     * Rather, the query has to be converted using {@link #asSQLQuery()} which then permits direct access to rows.
+     * <p>
+     * <b>ALSO NOTE:</b> The given expressions will directly end up on the SQL query and must therefore be constant
+     * and safe string which aren't subject to SQL injection attacks!
+     *
+     * @param expression the expression to group by
+     * @return the query itself for fluent method calls
+     * @see #groupBy(String)
+     * @see #asSQLQuery()
+     */
+    public SmartQuery<E> aggregationField(String expression) {
+        if (this.aggregationFields.isEmpty()) {
+            this.aggregationFields = new ArrayList<>();
+        }
+
+        this.aggregationFields.add(expression);
+        return this;
+    }
+
+    /**
+     * Adds an expression to the <tt>GROUP BY</tt> clause of the generated SQL.
+     * <p>
+     * <b>NOTE:</b> This cannot be used in "normal" entity queries, as the O/R mapper cannot handle aggregations.
+     * Rather, the query has to be converted using {@link #asSQLQuery()} which then permits direct access to rows.
+     * <p>
+     * <b>ALSO NOTE:</b> The given expressions will directly end up on the SQL query and must therefore be constant
+     * and safe string which aren't subject to SQL injection attacks!
+     *
+     * @param expression the expression to group by
+     * @return the query itself for fluent method calls
+     * @see #aggregationField(String)
+     * @see #asSQLQuery()
+     */
+    public SmartQuery<E> groupBy(String expression) {
+        if (this.groupBys.isEmpty()) {
+            this.groupBys = new ArrayList<>();
+        }
+
+        this.groupBys.add(expression);
         return this;
     }
 
@@ -236,71 +290,22 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
     }
 
-    /**
-     * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
-     * <p>
-     * In contrast to {@link #iterate(Predicate)}, this method is suitable for large result sets or long processing
-     * times. As <tt>iterate</tt> keeps the JDBC <tt>ResultSet</tt> open, the underlying server might discard the
-     * result at some point in time (e.g. MySQL does this after 30-45min). Therefore, we execute the query and start
-     * processing. If a timeout ({@link #queryIterateTimeout} is reached, we stop iterating, discard the result set
-     * and emit another query which starts just where the previous query stopped.
-     * <p>
-     * While we try hard to keep the result consistent, there is no way to guarantee this. There is a possibility,
-     * that we either miss an entity or even process an entity twice if a concurrent modification happens. Basically,
-     * you might get <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Non-repeatable_reads">
-     * non-repeatable reads</a> or <a href="https://en.wikipedia.org/wiki/Isolation_(database_systems)#Phantom_reads">
-     * phantom reads</a>.
-     * <p>
-     * Performance wise, it helps a lot if there are indices on any fields used for {@link #orderAsc(Mapping) ordering}.
-     *
-     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
-     *                to continue processing or <tt>false</tt> to abort processing of the result set.
-     * @deprecated Use {@link #streamBlockwise()} instead.
-     */
-    @Deprecated
-    public void iterateBlockwise(Predicate<E> handler) {
-        if (forceFail) {
-            return;
-        }
-
-        streamBlockwise().takeWhile(handler).forEach(ignored -> {
-        });
-    }
-
-    /**
-     * Calls the given function on all items in the result.
-     *
-     * @param handler the handler to be invoked for each item in the result
-     * @see #iterateBlockwise(Predicate)
-     * @deprecated Use {@link #streamBlockwise()} instead.
-     */
-    @Deprecated
-    public void iterateBlockwiseAll(Consumer<E> handler) {
-        iterateBlockwise(entity -> {
-            handler.accept(entity);
-            return true;
-        });
-    }
-
     @Override
     public Stream<E> streamBlockwise() {
         if (forceFail) {
             return Stream.empty();
         }
-
-        if (limit > 0) {
-            throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
-        }
-        if (skip > 0) {
-            throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
-        }
-
         return StreamSupport.stream(new SmartQuerySpliterator(), false);
     }
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
-        private TaskContext taskContext = TaskContext.get();
+        private final TaskContext taskContext = TaskContext.get();
+        private final SmartQuery<E> adjustedQuery;
+
+        private SmartQuerySpliterator() {
+            adjustedQuery = adjustQuery(SmartQuery.this);
+        }
 
         @Override
         public int characteristics() {
@@ -320,8 +325,41 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return block.iterator();
         }
 
+        private SmartQuery<E> adjustQuery(SmartQuery<E> query) {
+            SmartQuery<E> adjusted = query.copy();
+
+            if (adjusted.limit > 0) {
+                throw new UnsupportedOperationException("SmartQuery doesn't allow 'limit' in streamBlockwise");
+            }
+            if (adjusted.skip > 0) {
+                throw new UnsupportedOperationException("SmartQuery doesn't allow 'skip' in streamBlockwise");
+            }
+
+            // we need to guarantee an absolute ordering
+            if (adjusted.distinct) {
+                // we have distinct fields, so we can easily create an absolute ordering, if it's not already there
+                adjusted.fields.stream()
+                               .filter(Predicate.not(new HashSet<>(Tuple.firsts(orderBys))::contains))
+                               .forEach(adjusted::orderAsc);
+            } else {
+                // we are not DISTINCT, so we can easily guarantee an absolute ordering using the ID
+                adjusted.orderAsc(BaseEntity.ID);
+            }
+
+            if (!adjusted.distinct && !fields.isEmpty()) {
+                // We SELECT a subset of the columns to optimize the network bandwidth.
+                // When pulling the next block, we need to continue exactly where we left of, so we need to SELECT
+                // at least all the fields from the ORDER BY clause.
+                Set<Mapping> allFields = new HashSet<>(adjusted.fields);
+                allFields.addAll(Tuple.firsts(adjusted.orderBys));
+                adjusted.fields(allFields.toArray(Mapping[]::new));
+            }
+
+            return adjusted;
+        }
+
         private List<E> queryNextBlock() {
-            SmartQuery<E> effectiveQuery = copy().orderAsc(BaseEntity.ID).limit(MAX_LIST_SIZE);
+            SmartQuery<E> effectiveQuery = adjustedQuery.copy().limit(MAX_LIST_SIZE);
 
             if (lastValue == null) {
                 return effectiveQuery.queryList();
@@ -457,7 +495,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
         if (limit.getTotalItems() > SQLQuery.DEFAULT_FETCH_SIZE || limit.getTotalItems() <= 0) {
             if (db.hasCapability(Capability.STREAMING)) {
-                stmt.setFetchSize(Integer.MIN_VALUE);
+                stmt.setFetchSize(1);
             } else {
                 stmt.setFetchSize(SQLQuery.DEFAULT_FETCH_SIZE);
             }
@@ -685,7 +723,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             PreparedStatement stmt =
                     c.prepareStatement(getQuery(), ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             for (int i = 0; i < parameters.size(); i++) {
-                stmt.setObject(i + 1, parameters.get(i));
+                Databases.convertAndSetParameter(stmt, i + 1, parameters.get(i));
             }
             return stmt;
         }
@@ -708,6 +746,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         Compiler compiler = select();
         from(compiler);
         where(compiler);
+        groupBy(compiler);
         orderBy(compiler);
         limit(compiler);
         return compiler;
@@ -717,13 +756,14 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         Compiler compiler = selectCount();
         from(compiler);
         where(compiler);
+        groupBy(compiler);
         return compiler;
     }
 
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
         c.getSELECTBuilder().append("SELECT ");
-        if (fields.isEmpty()) {
+        if (fields.isEmpty() && aggregationFields.isEmpty()) {
             c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
         } else {
             if (distinct) {
@@ -744,6 +784,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
         // make sure that the join fields are always fetched
         requiredFields.forEach(requiredField -> appendToSELECT(c, applyAliases, mf, requiredField, false, null));
+
+        for (String aggregationField : aggregationFields) {
+            if (mf.successiveCall()) {
+                c.getSELECTBuilder().append(", ");
+            }
+            c.getSELECTBuilder().append(aggregationField);
+        }
     }
 
     private void appendToSELECT(Compiler c,
@@ -826,6 +873,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 compiler.getWHEREBuilder().append(compiler.translateColumnName(e.getFirst()));
                 compiler.getWHEREBuilder().append(Boolean.TRUE.equals(e.getSecond()) ? " ASC" : " DESC");
             }
+        }
+    }
+
+    private void groupBy(Compiler compiler) {
+        if (!groupBys.isEmpty()) {
+            compiler.getWHEREBuilder().append(" GROUP BY ");
+            compiler.getWHEREBuilder().append(Strings.join(groupBys, ", "));
         }
     }
 

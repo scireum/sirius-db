@@ -122,13 +122,13 @@ class ElasticQuerySpec extends BaseSpecification {
                            .addTermAggregation(QueryTestEntity.VALUE)
                            .where(Elastic.FILTERS.prefix(QueryTestEntity.VALUE, "AGG"))
         def entities = query.queryList()
-        def buckets = query.getAggregationBuckets(QueryTestEntity.VALUE.toString())
+        def buckets = query.getAggregation(QueryTestEntity.VALUE.toString()).buckets
         then:
         entities.size() == 100
         and:
         buckets.size() == 10
         and:
-        buckets.get(0).getSecond() == 10
+        buckets.get(0).getDocCount() == 10
     }
 
     def "nested aggregations work"() {

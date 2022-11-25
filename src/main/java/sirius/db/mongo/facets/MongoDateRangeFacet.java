@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Represents a facet which aggregates on a set of date ranges.
@@ -51,7 +50,7 @@ public class MongoDateRangeFacet extends MongoFacet {
     public MongoDateRangeFacet(String name, Mapping field, List<DateRange> ranges) {
         super(name);
         this.field = field;
-        this.ranges = ranges.stream().map(range -> Tuple.create(range, 0)).collect(Collectors.toList());
+        this.ranges = ranges.stream().map(range -> Tuple.create(range, 0)).toList();
     }
 
     /**

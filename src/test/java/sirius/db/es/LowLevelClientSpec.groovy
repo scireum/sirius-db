@@ -20,21 +20,21 @@ class LowLevelClientSpec extends BaseSpecification {
 
     def "create index works"() {
         when:
-        JSONObject obj = elastic.getLowLevelClient().createIndex("test", 1, 1)
+        JSONObject obj = elastic.getLowLevelClient().createIndex("test", 1, 1, null)
         then:
         obj.acknowledged
     }
 
     def "error handling works"() {
         when:
-        JSONObject obj = elastic.getLowLevelClient().createIndex("invalid", 0, 1)
+        JSONObject obj = elastic.getLowLevelClient().createIndex("invalid", 0, 1, null)
         then:
         thrown(HandledException)
     }
 
     def "index / get / delete works"() {
         setup:
-        elastic.getLowLevelClient().createIndex("test1", 1, 1)
+        elastic.getLowLevelClient().createIndex("test1", 1, 1, null)
         when:
         elastic.getLowLevelClient().
                 index("test1", "TEST", null, null, null, new JSONObject().fluentPut("Hello", "World"))

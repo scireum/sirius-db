@@ -8,6 +8,8 @@
 
 package sirius.db.jdbc.batch;
 
+import sirius.db.jdbc.Capability;
+import sirius.db.jdbc.Database;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Operator;
 import sirius.db.jdbc.SQLEntity;
@@ -31,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Bundles the preparation and execution of a bunch of {@link BatchQuery batch queries}.
@@ -47,7 +48,7 @@ public class BatchContext implements Closeable {
 
     private List<BatchQuery<?>> queries = new ArrayList<>();
     private Map<String, Connection> connectionsPerRealm = new HashMap<>();
-    private Operation op;
+    private final Operation op;
 
     /**
      * Creates a new context with the given debugging description and the expected runtime.
@@ -83,13 +84,13 @@ public class BatchContext implements Closeable {
         return Arrays.stream(mappingsToCompare)
                      .map(Mapping::toString)
                      .map(mapping -> Tuple.create(Operator.EQ, mapping))
-                     .collect(Collectors.toList());
+                     .toList();
     }
 
     protected static List<Tuple<Operator, String>> simplifyMappings(Tuple<Operator, Mapping>[] filters) {
         return Arrays.stream(filters)
                      .map(filter -> Tuple.create(filter.getFirst(), filter.getSecond().toString()))
-                     .collect(Collectors.toList());
+                     .toList();
     }
 
     protected Connection getConnection(String realm) {
@@ -102,8 +103,9 @@ public class BatchContext implements Closeable {
 
     protected Connection createConnection(String realm) {
         try {
-            Connection connection = oma.getDatabase(realm).getLongRunningConnection();
-            changeAutoCommit(connection, false, false);
+            Database database = oma.getDatabase(realm);
+            Connection connection = database.getLongRunningConnection();
+            changeAutoCommit(connection, !database.hasCapability(Capability.TRANSACTION), false);
             return connection;
         } catch (SQLException e) {
             throw Exceptions.handle()
@@ -158,7 +160,7 @@ public class BatchContext implements Closeable {
      * @param enable       the flag which determines if auto-commit should be enabled or disabled
      * @param ignoreErrors controls whether exceptions during the change are reported or ignored. As this is invoked
      *                     when a connection is closed, we ignore any error as closing the connection might already
-     *                     be part of handling a previous error (e.g. GaleraDB doesn't like changinf the auto-commit
+     *                     be part of handling a previous error (e.g. GaleraDB doesn't like changing the auto-commit
      *                     setting after a transaction has been aborted due to a deadlock).
      */
     private void changeAutoCommit(Connection connection, boolean enable, boolean ignoreErrors) {
@@ -219,9 +221,7 @@ public class BatchContext implements Closeable {
         return register(new InsertQuery<>(this,
                                           type,
                                           fetchId,
-                                          Arrays.stream(mappingsToInsert)
-                                                .map(Mapping::getName)
-                                                .collect(Collectors.toList())));
+                                          Arrays.stream(mappingsToInsert).map(Mapping::getName).toList()));
     }
 
     /**

@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * Provides a {@link javax.sql.DataSource} which can be configured via the system
@@ -161,11 +160,7 @@ public class Databases implements Initializable {
      * @return a list of all known databases
      */
     public List<String> getDatabases() {
-        return Sirius.getSettings()
-                     .getExtensions("jdbc.database")
-                     .stream()
-                     .map(Extension::getId)
-                     .collect(Collectors.toList());
+        return Sirius.getSettings().getExtensions("jdbc.database").stream().map(Extension::getId).toList();
     }
 
     /**
@@ -277,22 +272,19 @@ public class Databases implements Initializable {
      * @return the database level representation of the given value
      */
     public static Object convertValue(Object value) {
-        if (value == null) {
-            return value;
+        if (value instanceof LocalDateTime dateTime) {
+            return encodeLocalDateTime(dateTime);
         }
-        if (value instanceof LocalDateTime) {
-            return encodeLocalDateTime((LocalDateTime) value);
+        if (value instanceof LocalDate date) {
+            return Date.valueOf(date);
         }
-        if (value instanceof LocalDate) {
-            return Date.valueOf((LocalDate) value);
+        if (value instanceof LocalTime time) {
+            return Time.valueOf(time);
         }
-        if (value instanceof LocalTime) {
-            return Time.valueOf((LocalTime) value);
+        if (value instanceof Amount amount) {
+            return amount.getAmount();
         }
-        if (value instanceof Amount) {
-            return ((Amount) value).getAmount();
-        }
-        if (value.getClass().isEnum()) {
+        if (value != null && value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         }
         if (value instanceof BaseEntityRef) {
@@ -303,6 +295,35 @@ public class Databases implements Initializable {
         }
 
         return value;
+    }
+
+    /**
+     * Converts and sets the parameter at the specified index into the given statement.
+     * <p>
+     * This is required, as simply invoking <tt>PreparedStatement.setObject</tt> might lead to unexpected behavior
+     * (e.g. for Clickhouse, this then treats <tt>Date</tt> values wrong.
+     *
+     * @param stmt          the statement to add the parameter to
+     * @param oneBasedIndex the one based index of the parameter
+     * @param value         the value to add. This will be converted using {@link #convertValue(Object)}
+     * @throws SQLException in case of a database error
+     */
+    public static void convertAndSetParameter(PreparedStatement stmt, int oneBasedIndex, Object value)
+            throws SQLException {
+        Object effectiveValue = convertValue(value);
+        if (effectiveValue instanceof Long number) {
+            stmt.setLong(oneBasedIndex, number);
+        } else if (effectiveValue instanceof Integer number) {
+            stmt.setInt(oneBasedIndex, number);
+        } else if (effectiveValue instanceof Date date) {
+            stmt.setDate(oneBasedIndex, date);
+        } else if (effectiveValue instanceof Time time) {
+            stmt.setTime(oneBasedIndex, time);
+        } else if (effectiveValue instanceof String string) {
+            stmt.setString(oneBasedIndex, string);
+        } else {
+            stmt.setObject(oneBasedIndex, effectiveValue);
+        }
     }
 
     /**

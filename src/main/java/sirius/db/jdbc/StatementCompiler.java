@@ -58,7 +58,7 @@ class StatementCompiler {
             }
             for (Tuple<Integer, Object> parameter : parameters) {
                 try {
-                    statement.setObject(parameter.getFirst(), parameter.getSecond());
+                    Databases.convertAndSetParameter(statement, parameter.getFirst(), parameter.getSecond());
                 } catch (SQLException error) {
                     throw new SQLException(Strings.apply("Failed to set parameter %s to '%s': %s",
                                                          parameter.getFirst(),
@@ -95,11 +95,11 @@ class StatementCompiler {
         for (Object param : params) {
             if (param instanceof Collection<?>) {
                 for (Object obj : (Collection<?>) param) {
-                    parameters.add(Tuple.create(++index, Databases.convertValue(obj)));
+                    parameters.add(Tuple.create(++index, obj));
                     Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
                 }
             } else {
-                parameters.add(Tuple.create(++index, Databases.convertValue(param)));
+                parameters.add(Tuple.create(++index, param));
                 Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(param));
             }
         }
@@ -140,14 +140,26 @@ class StatementCompiler {
      * in context.
      */
     private void compileSection(boolean ignoreIfParametersNull, String sql) throws SQLException {
-        String effectiveSql = checkForBlockCondition(sql);
-        if (effectiveSql == null) {
-            return;
+        if (sql.startsWith(":")) {
+            // Check if there is a condition present like [:enabled WHERE x = 1]
+            sql = checkForBlockCondition(sql);
+            if (sql == null) {
+                // A condition is present and not fulfilled - skip this block...
+                return;
+            }
+
+            if (getNextRelevantIndex(sql) == null) {
+                // The condition was present and no other parameters are in the block, so we can append it
+                // as is...
+                effectiveQueryBuilder.append(sql);
+                return;
+            }
         }
 
+        // Scan for parameters and only output if at least one is filled...
         List<Object> tempParams = new ArrayList<>();
         StringBuilder sqlBuilder = new StringBuilder();
-        boolean appendToStatement = compileSectionPart(effectiveSql, tempParams, sqlBuilder, !ignoreIfParametersNull);
+        boolean appendToStatement = compileSectionPart(sql, tempParams, sqlBuilder, !ignoreIfParametersNull);
 
         if (appendToStatement) {
             effectiveQueryBuilder.append(sqlBuilder);
@@ -162,9 +174,6 @@ class StatementCompiler {
      * which is set to true.
      */
     private String checkForBlockCondition(String sql) throws SQLException {
-        if (!sql.startsWith(":")) {
-            return sql;
-        }
         int endOfCondition = sql.indexOf(" ");
         if (endOfCondition < 0) {
             return sql;
@@ -187,6 +196,7 @@ class StatementCompiler {
             if (appendToStatement) {
                 sqlBuilder.append(sql);
             }
+
             return appendToStatement;
         }
 

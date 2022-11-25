@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Represents a result of a {@link SuggestionQuery}.
@@ -37,7 +36,7 @@ public class SuggestionResult {
                                                                             .stream()
                                                                             .map(JSONObject.class::cast)
                                                                             .map(TextPartSuggestion::new)
-                                                                            .collect(Collectors.toList());
+                                                                            .toList();
             this.suggestions.put(name, textPartSuggestions);
         });
     }

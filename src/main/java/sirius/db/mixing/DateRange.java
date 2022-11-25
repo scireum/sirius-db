@@ -174,22 +174,6 @@ public class DateRange {
                                                                                   .atStartOfDay());
 
     /**
-     * Creates a new DateRange with the given unique key, translated (shown) name and two dates specifying the
-     * range.
-     *
-     * @param key   the unique name of the ranged used as filter value
-     * @param name  the translated name shown to the user
-     * @param from  the lower limit (including) of the range
-     * @param until the upper limit (including) of the range
-     * @deprecated use {@link DateRange(String, Supplier, Supplier, Supplier)} instead, as using this constructor in
-     * a static context determines the dates at the start of the server
-     */
-    @Deprecated(forRemoval = true)
-    public DateRange(String key, String name, @Nullable LocalDateTime from, @Nullable LocalDateTime until) {
-        this(key, () -> name, () -> from, () -> until);
-    }
-
-    /**
      * Creates a new DateRange with the given unique key, a supplier that returns the translated (shown) name
      * and two date suppliers specifying the range.
      *
@@ -209,116 +193,6 @@ public class DateRange {
     }
 
     /**
-     * Creates a date range filtering on the last five minutes.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastFiveMinutes() {
-        return LAST_FIVE_MINUTES;
-    }
-
-    /**
-     * Creates a date range filtering on the last 15 minutes.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastFiveteenMinutes() {
-        return LAST_FIFTEEN_MINUTES;
-    }
-
-    /**
-     * Creates a date range filtering on the last hour.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastHour() {
-        return LAST_HOUR;
-    }
-
-    /**
-     * Creates a date range filtering on the last two hours.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastTwoHours() {
-        return LAST_TWO_HOURS;
-    }
-
-    /**
-     * Creates a date range filtering on "today".
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange today() {
-        return TODAY;
-    }
-
-    /**
-     * Creates a date range filtering on "yesterday".
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange yesterday() {
-        return YESTERDAY;
-    }
-
-    /**
-     * Creates a date range filtering on this week.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange thisWeek() {
-        return THIS_WEEK;
-    }
-
-    /**
-     * Creates a date range filtering on the last week.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastWeek() {
-        return LAST_WEEK;
-    }
-
-    /**
-     * Creates a date range filtering on the current month.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange thisMonth() {
-        return THIS_MONTH;
-    }
-
-    /**
-     * Creates a date range filtering on the last month.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastMonth() {
-        return LAST_MONTH;
-    }
-
-    /**
      * Creates a date range filtering on the last N months.
      * <p>
      * This will start at the first day of the selected month (current month - N) and
@@ -332,50 +206,6 @@ public class DateRange {
                              () -> NLS.fmtr("DateRange.lastMonths").set("months", months).format(),
                              () -> LocalDate.now().minusMonths(months).withDayOfMonth(1).atStartOfDay(),
                              () -> LocalDate.now().withDayOfMonth(1).minusDays(1).atTime(23, 59));
-    }
-
-    /**
-     * Creates a date range filtering on the current year.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange thisYear() {
-        return THIS_YEAR;
-    }
-
-    /**
-     * Creates a date range filtering on the last year.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange lastYear() {
-        return LAST_YEAR;
-    }
-
-    /**
-     * Creates a date range filtering on everything before this year.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange beforeThisYear() {
-        return BEFORE_THIS_YEAR;
-    }
-
-    /**
-     * Creates a date range filtering on everything before the last year.
-     *
-     * @return a date range for the given interval
-     * @deprecated use constant instead
-     */
-    @Deprecated(forRemoval = true)
-    public static DateRange beforeLastYear() {
-        return BEFORE_LAST_YEAR;
     }
 
     /**

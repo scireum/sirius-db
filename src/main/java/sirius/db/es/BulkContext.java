@@ -13,7 +13,6 @@ import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
-import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -52,6 +51,7 @@ public class BulkContext implements Closeable {
     protected static final String COMMAND_CREATE = "create";
     protected static final String COMMAND_UPDATE = "update";
 
+    private final LowLevelClient.Refresh refresh;
     private LowLevelClient client;
     private List<JSONObject> commands;
 
@@ -64,8 +64,9 @@ public class BulkContext implements Closeable {
      * @param client the client used to execute the bulk requests
      * @see Elastic#batch()
      */
-    protected BulkContext(LowLevelClient client) {
+    protected BulkContext(LowLevelClient client, LowLevelClient.Refresh refresh) {
         this.client = client;
+        this.refresh = refresh;
         this.commands = new ArrayList<>();
     }
 
@@ -137,7 +138,6 @@ public class BulkContext implements Closeable {
         }
     }
 
-    @Nonnull
     private JSONObject builtMetadata(ElasticEntity entity, boolean force, EntityDescriptor ed) {
         JSONObject meta = new JSONObject();
 
@@ -182,7 +182,7 @@ public class BulkContext implements Closeable {
         }
 
         try {
-            JSONObject bulkResponse = client.bulk(commands);
+            JSONObject bulkResponse = client.bulkWithRefresh(commands, refresh);
             if (Elastic.LOG.isFINE()) {
                 Elastic.LOG.FINE(bulkResponse);
             }

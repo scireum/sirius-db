@@ -29,6 +29,7 @@ public class Doc {
      *
      * @param obj the document or object to wrap
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Doc(Document obj) {
         this.obj = obj;
     }
@@ -135,10 +136,11 @@ public class Doc {
      * @param field the field to read
      * @return the object stored for the field
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Document getObject(String field) {
         Object result = get(field).get();
-        if (result instanceof Document) {
-            return (Document) result;
+        if (result instanceof Document document) {
+            return document;
         }
 
         return ReadonlyObject.EMPTY_OBJECT;
@@ -218,6 +220,7 @@ public class Doc {
      *
      * @return the underlying object
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Document getUnderlyingObject() {
         return obj;
     }

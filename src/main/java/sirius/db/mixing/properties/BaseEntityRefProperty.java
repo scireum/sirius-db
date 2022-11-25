@@ -87,7 +87,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         return referencedDescriptor;
     }
 
-    private R getReferenceEntityRef() {
+    protected R getReferenceEntityRef() {
         if (entityRef == null) {
             this.entityRef = getEntityRef(accessPath.apply(descriptor.getReferenceInstance()));
         }
@@ -134,7 +134,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
     }
 
     /**
-     * Actually resolves the the type and value into an entity.
+     * Actually resolves the type and value into an entity.
      *
      * @param type  the type to resolve
      * @param value the id to resolve
