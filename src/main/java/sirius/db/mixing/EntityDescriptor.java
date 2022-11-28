@@ -24,11 +24,9 @@ import sirius.db.mixing.annotations.SkipDefaultValue;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.annotations.TranslationSource;
 import sirius.db.mixing.annotations.Versioned;
-import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
-import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
@@ -1045,40 +1043,6 @@ public class EntityDescriptor {
         }
 
         return prop;
-    }
-
-    /**
-     * Get the value of a mapping for an entity.
-     * <p>
-     * If the mapping contains joins, they are only resolved if (a) they are already fetched from the database, or (b)
-     * the parameter value of {@code resolveJoins} evaluates to {@code true}. In all other cases, an Exception is thrown.
-     * <p>
-     * Usually, this can be achieved using <p>
-     * {@link #getProperty(Mapping)}{@code .}{@link Property#getValue(Object) getValue(Object)}<p>
-     * However, no property can be created if the mapping is a JOIN-mapping, rendering this method useless in that case.
-     *
-     * @param mapping      the mapping; may contain joins
-     * @param entity       the entity
-     * @param resolveJoins whether to load joined columns from the database instead of throwing
-     * @return the value of the mapping
-     */
-    public Object getPropertyValue(Mapping mapping, Object entity, boolean resolveJoins) {
-        if (mapping.getParent() != null) {
-            Object parent = getPropertyValue(mapping.getParent(), entity, resolveJoins);
-            return mixing.getDescriptor(parent.getClass())
-                         .getPropertyValue(Mapping.named(mapping.getName()), parent, resolveJoins);
-        }
-        Property property = getProperty(mapping.getName());
-        if (property instanceof BaseEntityRefProperty<?, ?, ?> ref) {
-            BaseEntityRef<?, ?> entityRef = ref.getEntityRef(entity);
-            return resolveJoins ? entityRef.fetchValue() : entityRef.getValueIfPresent().orElseThrow(() -> {
-                return new IllegalArgumentException(Strings.apply(
-                        "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
-                        entityRef.getUniqueObjectName(),
-                        mapping));
-            });
-        }
-        return property.getValue(entity);
     }
 
     /**

@@ -14,9 +14,12 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.Property;
+import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.SQLEntityRefProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
@@ -370,7 +373,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
-                Object value = lastValue.getDescriptor().getPropertyValue(sortColumn, lastValue, false);
+                Object value = getPropertyValue(lastValue.getDescriptor(), sortColumn, lastValue);
                 if (sortAscending) {
                     // the order by is ascending -> COLUMN > lastvalue.column
                     leftHandSide.addComponent(sortColumn);
@@ -383,6 +386,28 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             }
 
             return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
+        }
+
+        private static Object getPropertyValue(EntityDescriptor entityDescriptor,
+                                               Mapping mapping,
+                                               Object entity) {
+            if (mapping.getParent() != null) {
+                Object parent = getPropertyValue(entityDescriptor, mapping.getParent(), entity);
+                return getPropertyValue(mixing.getDescriptor(parent.getClass()),
+                                        Mapping.named(mapping.getName()),
+                                        parent);
+            }
+            Property property = entityDescriptor.getProperty(mapping.getName());
+            if (property instanceof BaseEntityRefProperty<?, ?, ?> ref) {
+                BaseEntityRef<?, ?> entityRef = ref.getEntityRef(entity);
+                return entityRef.getValueIfPresent().orElseThrow(() -> {
+                    return new IllegalArgumentException(Strings.apply(
+                            "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
+                            entityRef.getUniqueObjectName(),
+                            mapping));
+                });
+            }
+            return property.getValue(entity);
         }
     }
 
