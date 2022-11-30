@@ -373,7 +373,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
-                Object value = getPropertyValue(lastValue.getDescriptor(), sortColumn, lastValue);
+                Object value = getPropertyValue(sortColumn, lastValue);
                 if (sortAscending) {
                     // the order by is ascending -> COLUMN > lastvalue.column
                     leftHandSide.addComponent(sortColumn);
@@ -388,18 +388,14 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
         }
 
-        private static Object getPropertyValue(EntityDescriptor entityDescriptor,
-                                               Mapping mapping,
-                                               Object entity) {
+        private static Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
+            BaseEntity<?> currentEntity = entity;
             if (mapping.getParent() != null) {
-                Object parent = getPropertyValue(entityDescriptor, mapping.getParent(), entity);
-                return getPropertyValue(mixing.getDescriptor(parent.getClass()),
-                                        Mapping.named(mapping.getName()),
-                                        parent);
+                currentEntity = (BaseEntity<?>) getPropertyValue(mapping.getParent(), currentEntity);
             }
-            Property property = entityDescriptor.getProperty(mapping.getName());
+            Property property = currentEntity.getDescriptor().getProperty(mapping.getName());
             if (property instanceof BaseEntityRefProperty<?, ?, ?> ref) {
-                BaseEntityRef<?, ?> entityRef = ref.getEntityRef(entity);
+                BaseEntityRef<?, ?> entityRef = ref.getEntityRef(currentEntity);
                 return entityRef.getValueIfPresent().orElseThrow(() -> {
                     return new IllegalArgumentException(Strings.apply(
                             "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
@@ -407,7 +403,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                             mapping));
                 });
             }
-            return property.getValue(entity);
+            return property.getValue(currentEntity);
         }
     }
 
