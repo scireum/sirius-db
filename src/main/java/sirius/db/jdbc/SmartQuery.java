@@ -392,7 +392,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return parent.getDescriptor().getProperty(mapping.getName()).getValue(parent);
         }
 
-        private static BaseEntity<?> findParent(Mapping mapping, BaseEntity<?> entity) {
+        private BaseEntity<?> findParent(Mapping mapping, BaseEntity<?> entity) {
             if (mapping.getParent() != null) {
                 BaseEntity<?> parentEntity = findParent(mapping.getParent(), entity);
                 if (parentEntity.getDescriptor()
