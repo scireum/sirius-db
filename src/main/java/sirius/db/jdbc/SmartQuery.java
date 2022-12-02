@@ -387,7 +387,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
         }
 
-        private static Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
+        private Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
             BaseEntity<?> parent = findParent(mapping, entity);
             return parent.getDescriptor().getProperty(mapping.getName()).getValue(parent);
         }
