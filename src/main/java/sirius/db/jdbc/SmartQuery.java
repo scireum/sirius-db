@@ -14,9 +14,11 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.SQLEntityRefProperty;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Limit;
@@ -370,7 +372,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
-                Object value = lastValue.getDescriptor().getProperty(sortColumn).getValue(lastValue);
+                Object value = getPropertyValue(sortColumn, lastValue);
                 if (sortAscending) {
                     // the order by is ascending -> COLUMN > lastvalue.column
                     leftHandSide.addComponent(sortColumn);
@@ -383,6 +385,31 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             }
 
             return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
+        }
+
+        private Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
+            BaseEntity<?> parent = findParent(mapping, entity);
+            return parent.getDescriptor().getProperty(mapping.getName()).getValue(parent);
+        }
+
+        private BaseEntity<?> findParent(Mapping mapping, BaseEntity<?> entity) {
+            if (mapping.getParent() != null) {
+                BaseEntity<?> parentEntity = findParent(mapping.getParent(), entity);
+                if (parentEntity.getDescriptor()
+                                .getProperty(mapping.getParent().getName()) instanceof BaseEntityRefProperty<?, ?, ?> ref) {
+                    BaseEntityRef<?, ?> entityRef = ref.getEntityRef(parentEntity);
+                return entityRef.getValueIfPresent().orElseThrow(() -> {
+                    return new IllegalArgumentException(Strings.apply(
+                            "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
+                            entityRef.getUniqueObjectName(),
+                                mapping.getParent()));
+                });
+                } else {
+                    throw new IllegalArgumentException(Strings.apply("You cannot join on the non-ref property `%s`",
+                                                                     mapping.getParent()));
+            }
+            }
+            return entity;
         }
     }
 
