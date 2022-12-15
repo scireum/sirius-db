@@ -252,9 +252,8 @@ class SmartQuerySpec extends BaseSpecification {
     def "automatic joins work when sorting by a referenced field"() {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
-                                                       .
-                                                               orderAsc(SmartQueryTestChildEntity.PARENT.join(
-                                                                       SmartQueryTestParentEntity.NAME))
+                                                       .orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                               SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -304,9 +303,9 @@ class SmartQuerySpec extends BaseSpecification {
         when:
         def result = qry.queryList()
         then:
-        result.stream().
-                map({ x -> x.getParent().fetchValue().getName() + x.getOtherParent().fetchValue().getName() } as Function).
-                collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
+        result.stream()
+              .map({ x -> x.getParent().fetchValue().getName() + x.getOtherParent().fetchValue().getName() } as Function)
+              .collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
     }
 
     def "automatic joins work across several tables"() {
@@ -483,7 +482,8 @@ class SmartQuerySpec extends BaseSpecification {
     def "eq with row values works"() {
         when:
         def items = oma.select(SmartQueryTestEntity.class).
-                where(OMA.FILTERS.eq(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                where(OMA.FILTERS.eq(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(SmartQueryTestEntity
+                                                                                                        .TEST_NUMBER),
                                      new CompoundValue("Test").addComponent(1))).queryList()
         then:
         items.size() == 1
