@@ -14,6 +14,7 @@ import sirius.db.mixing.Mixing
 import sirius.kernel.BaseSpecification
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
+import sirius.kernel.health.HandledException
 
 import java.util.function.Function
 import java.util.stream.Collectors
@@ -28,10 +29,12 @@ class SmartQuerySpec extends BaseSpecification {
         oma.select(SmartQueryTestParentEntity.class).delete()
         oma.select(SmartQueryTestChildEntity.class).delete()
         oma.select(SmartQueryTestChildChildEntity.class).delete()
+        oma.select(SmartQueryTestCountEntity.class).delete()
 
         fillSmartQueryTestEntity()
         fillSmartQueryTestChildAndParentEntity()
         fillSmartQueryTestLargeTableEntity()
+        fillSmartQueryCountEntity()
     }
 
     private void fillSmartQueryTestEntity() {
@@ -84,6 +87,28 @@ class SmartQuerySpec extends BaseSpecification {
             e.setTestNumber(i)
             oma.update(e)
         }
+    }
+
+    private void fillSmartQueryCountEntity() {
+        SmartQueryTestCountEntity e1 = new SmartQueryTestCountEntity();
+        e1.setFieldOne("1")
+        e1.setFieldTwo("1")
+        oma.update(e1)
+
+        SmartQueryTestCountEntity e2 = new SmartQueryTestCountEntity();
+        e2.setFieldOne("1")
+        e2.setFieldTwo("2")
+        oma.update(e2)
+
+        SmartQueryTestCountEntity e3 = new SmartQueryTestCountEntity();
+        e3.setFieldOne("3")
+        e3.setFieldTwo("3")
+        oma.update(e3)
+
+        SmartQueryTestCountEntity e4 = new SmartQueryTestCountEntity();
+        e4.setFieldOne("3")
+        e4.setFieldTwo("3")
+        oma.update(e4)
     }
 
     def "queryList returns all entities"() {
@@ -227,9 +252,8 @@ class SmartQuerySpec extends BaseSpecification {
     def "automatic joins work when sorting by a referenced field"() {
         given:
         SmartQuery<SmartQueryTestChildEntity> qry = oma.select(SmartQueryTestChildEntity.class)
-                                                       .
-                                                               orderAsc(SmartQueryTestChildEntity.PARENT.join(
-                                                                       SmartQueryTestParentEntity.NAME))
+                                                       .orderAsc(SmartQueryTestChildEntity.PARENT.join(
+                                                               SmartQueryTestParentEntity.NAME))
         when:
         def result = qry.queryList()
         then:
@@ -279,9 +303,9 @@ class SmartQuerySpec extends BaseSpecification {
         when:
         def result = qry.queryList()
         then:
-        result.stream().
-                map({ x -> x.getParent().fetchValue().getName() + x.getOtherParent().fetchValue().getName() } as Function).
-                collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
+        result.stream()
+              .map({ x -> x.getParent().fetchValue().getName() + x.getOtherParent().fetchValue().getName() } as Function)
+              .collect(Collectors.toList()) == ["Parent 1Parent 2", "Parent 2Parent 1"]
     }
 
     def "automatic joins work across several tables"() {
@@ -458,7 +482,8 @@ class SmartQuerySpec extends BaseSpecification {
     def "eq with row values works"() {
         when:
         def items = oma.select(SmartQueryTestEntity.class).
-                where(OMA.FILTERS.eq(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                where(OMA.FILTERS.eq(new CompoundValue(SmartQueryTestEntity.VALUE).addComponent(SmartQueryTestEntity
+                                                                                                        .TEST_NUMBER),
                                      new CompoundValue("Test").addComponent(1))).queryList()
         then:
         items.size() == 1
@@ -488,5 +513,48 @@ class SmartQuerySpec extends BaseSpecification {
         items.get(0).testNumber == 1
         and:
         items.get(1).testNumber == 3
+    }
+
+
+    def "count distinct for one field returns a correct number of entities"() {
+        given:
+        SmartQuery<SmartQueryTestCountEntity> qry = oma.select(SmartQueryTestCountEntity.class)
+                                                       .distinctFields(SmartQueryTestCountEntity.FIELD_ONE)
+        when:
+        def result = qry.count()
+        then:
+        result == 2
+    }
+
+    def "count distinct for two fields returns a correct number of entities"() {
+        given:
+        SmartQuery<SmartQueryTestCountEntity> qry = oma.select(SmartQueryTestCountEntity.class)
+                                                       .distinctFields(SmartQueryTestCountEntity.FIELD_ONE,
+                                                                       SmartQueryTestCountEntity.FIELD_TWO)
+        when:
+        def result = qry.count()
+        then:
+        result == 3
+    }
+
+    def "count for one field without distinct modifier returns a correct number of entities"() {
+        given:
+        SmartQuery<SmartQueryTestCountEntity> qry = oma.select(SmartQueryTestCountEntity.class)
+                                                       .fields(SmartQueryTestCountEntity.FIELD_ONE)
+        when:
+        def result = qry.count()
+        then:
+        result == 4
+    }
+
+    def "count for two fields without distinct modifier throws an exception"() {
+        given:
+        SmartQuery<SmartQueryTestCountEntity> qry = oma.select(SmartQueryTestCountEntity.class)
+                                                       .fields(SmartQueryTestCountEntity.FIELD_ONE,
+                                                               SmartQueryTestCountEntity.FIELD_TWO)
+        when:
+        def result = qry.count()
+        then:
+        thrown(HandledException)
     }
 }
