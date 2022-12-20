@@ -281,14 +281,14 @@ public abstract class Property extends Composable {
      * @see #getFullLabel()
      */
     public String getLabel() {
-        String currentLang = NLS.getCurrentLang();
-        String localLabel = NLS.getIfExists(localPropertyKey, currentLang).orElse(null);
+        String currentLanguage = NLS.getCurrentLanguage();
+        String localLabel = NLS.getIfExists(localPropertyKey, currentLanguage).orElse(null);
         if (Strings.isFilled(localLabel)) {
             return localLabel;
         }
 
-        return NLS.getIfExists(propertyKey, currentLang)
-                  .orElseGet(() -> NLS.getIfExists(alternativePropertyKey, currentLang)
+        return NLS.getIfExists(propertyKey, currentLanguage)
+                  .orElseGet(() -> NLS.getIfExists(alternativePropertyKey, currentLanguage)
                                       .orElseGet(() -> NLS.get(propertyKey)));
     }
 
@@ -305,14 +305,14 @@ public abstract class Property extends Composable {
      * @see #getLabel()
      */
     public String getFullLabel() {
-        String currentLang = NLS.getCurrentLang();
-        String result = NLS.getIfExists(localPropertyKey, currentLang).orElse(null);
+        String currentLanguage = NLS.getCurrentLanguage();
+        String result = NLS.getIfExists(localPropertyKey, currentLanguage).orElse(null);
         if (Strings.isFilled(result)) {
             return result;
         }
 
         if (Strings.isFilled(parentPropertyKey)) {
-            String parentLabel = NLS.getIfExists(parentPropertyKey, currentLang).orElse(null);
+            String parentLabel = NLS.getIfExists(parentPropertyKey, currentLanguage).orElse(null);
             if (Strings.isFilled(parentLabel)) {
                 return Strings.apply("%s (%s)", getLabel(), parentLabel);
             }

@@ -307,9 +307,9 @@ public class EntityDescriptor {
      */
     public String getLabel() {
         String className = translationSource.getSimpleName();
-        String currentLang = NLS.getCurrentLang();
-        return NLS.getIfExists(className, currentLang)
-                  .orElseGet(() -> NLS.getIfExists(determineLowercasedPropertyKey(className), currentLang)
+        String currentLanguage = NLS.getCurrentLanguage();
+        return NLS.getIfExists(className, currentLanguage)
+                  .orElseGet(() -> NLS.getIfExists(determineLowercasedPropertyKey(className), currentLanguage)
                                       .orElseGet(() -> NLS.get(determineModelPropertyKey(className))));
     }
 
