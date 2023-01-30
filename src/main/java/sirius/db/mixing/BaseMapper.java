@@ -135,23 +135,10 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                 unitOfWork.execute();
                 return;
             } catch (OptimisticLockException e) {
-                Mixing.LOG.FINE(e);
-                if (Sirius.isDev()) {
-                    Mixing.LOG.INFO("Retrying due to optimistic lock: %s", e);
-                }
-                if (retries <= 0) {
-                    throw Exceptions.handle()
-                                    .withSystemErrorMessage(
-                                            "Failed to update an entity after re-trying a unit of work several times: %s (%s)")
-                                    .error(e)
-                                    .to(Mixing.LOG)
-                                    .handle();
-                }
-                int timeoutFactor = determineRetryTimeoutFactor();
-                // Wait 0, x ms, 2*x ms
-                Wait.millis((2 - retries) * timeoutFactor);
-                // Wait 0..x ms in 50% of all calls...
-                Wait.randomMillis(-timeoutFactor, timeoutFactor);
+                retryAfterTimeout(e,
+                                  retries,
+                                  "Failed to update an entity after re-trying a unit of work several times: %s (%s)",
+                                  "Retrying due to optimistic lock: " + e);
             } catch (HandledException e) {
                 throw e;
             } catch (Exception e) {
@@ -163,6 +150,21 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                 .handle();
             }
         }
+    }
+
+    private void retryAfterTimeout(Exception e, int retries, String errorMessage, String debugInfo) {
+        Mixing.LOG.FINE(e);
+        if (Sirius.isDev()) {
+            Mixing.LOG.INFO(debugInfo, e);
+        }
+        if (retries <= 0) {
+            throw Exceptions.handle().withSystemErrorMessage(errorMessage).error(e).to(Mixing.LOG).handle();
+        }
+        int timeoutFactor = determineRetryTimeoutFactor();
+        // Wait 0, x ms, 2*x ms
+        Wait.millis((2 - retries) * timeoutFactor);
+        // Wait 0..x ms in 50% of all calls...
+        Wait.randomMillis(-timeoutFactor, timeoutFactor);
     }
 
     /**
