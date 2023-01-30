@@ -134,31 +134,31 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             try {
                 unitOfWork.execute();
                 return;
-            } catch (OptimisticLockException e) {
-                retryAfterTimeout(e,
+            } catch (OptimisticLockException optimisticLockException) {
+                retryAfterTimeout(optimisticLockException,
                                   retries,
                                   "Failed to update an entity after re-trying a unit of work several times: %s (%s)",
-                                  "Retrying due to optimistic lock: " + e);
-            } catch (HandledException e) {
-                throw e;
-            } catch (Exception e) {
+                                  "Retrying due to optimistic lock: " + optimisticLockException);
+            } catch (HandledException handledException) {
+                throw handledException;
+            } catch (Exception exception) {
                 throw Exceptions.handle()
                                 .withSystemErrorMessage(
                                         "An unexpected exception occurred while executing a unit of work: %s (%s)")
-                                .error(e)
+                                .error(exception)
                                 .to(Mixing.LOG)
                                 .handle();
             }
         }
     }
 
-    private void retryAfterTimeout(Exception e, int retries, String errorMessage, String debugInfo) {
-        Mixing.LOG.FINE(e);
+    private void retryAfterTimeout(Exception exception, int retries, String errorMessage, String debugInfo) {
+        Mixing.LOG.FINE(exception);
         if (Sirius.isDev()) {
-            Mixing.LOG.INFO(debugInfo, e);
+            Mixing.LOG.INFO(debugInfo, exception);
         }
         if (retries <= 0) {
-            throw Exceptions.handle().withSystemErrorMessage(errorMessage).error(e).to(Mixing.LOG).handle();
+            throw Exceptions.handle().withSystemErrorMessage(errorMessage).error(exception).to(Mixing.LOG).handle();
         }
         int timeoutFactor = determineRetryTimeoutFactor();
         // Wait 0, x ms, 2*x ms
