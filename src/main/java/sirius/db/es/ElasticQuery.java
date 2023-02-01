@@ -1465,18 +1465,23 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
      *
-     * @throws OptimisticLockException if one of the documents was modified during the runtime of the truncate
+     * @throws OptimisticLockException  if one of the documents was modified during the runtime of the truncate
+     * @throws TruncateFailureException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery} request aborted due to any unrecoverable errors during the process
      */
-    public void tryTruncate() throws OptimisticLockException {
+    public void tryTruncate() throws OptimisticLockException, TruncateFailureException {
         if (forceFail) {
             return;
         }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.WRITE);
-        elastic.getLowLevelClient()
-               .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
-                              filteredRouting,
-                              buildSimplePayload());
+        JSONObject deleteByQueryResponse = elastic.getLowLevelClient()
+                                                  .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
+                                                                 filteredRouting,
+                                                                 buildSimplePayload());
+        if (deleteByQueryResponse.getJSONArray("failures") != null && !deleteByQueryResponse.getJSONArray("failures")
+                                                                                            .isEmpty()) {
+            throw new TruncateFailureException(deleteByQueryResponse);
+        }
     }
 
     @Override

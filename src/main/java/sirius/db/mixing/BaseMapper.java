@@ -8,6 +8,7 @@
 
 package sirius.db.mixing;
 
+import sirius.db.es.TruncateFailureException;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
@@ -139,6 +140,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                   retries,
                                   "Failed to update an entity after re-trying a unit of work several times: %s (%s)",
                                   "Retrying due to optimistic lock: " + optimisticLockException);
+            } catch (TruncateFailureException truncateFailureException) {
+                retryAfterTimeout(truncateFailureException,
+                                  retries,
+                                  "Failed to bulk delete entities after re-trying a unit of work several times: %s (%s)",
+                                  "Retrying due to failures in deleteByQuery request: " + truncateFailureException);
             } catch (HandledException handledException) {
                 throw handledException;
             } catch (Exception exception) {
