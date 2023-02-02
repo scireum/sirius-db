@@ -318,7 +318,7 @@ public class Finder extends QueryBuilder<Finder> {
             }
 
             boolean keepGoing = processor.test(new Doc(doc));
-            if (!keepGoing || !taskContext.isActive()) {
+            if (!keepGoing || (!taskContext.isActive() && longRunning)) {
                 return;
             }
         }

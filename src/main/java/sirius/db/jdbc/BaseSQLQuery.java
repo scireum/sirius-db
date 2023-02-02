@@ -95,8 +95,9 @@ public abstract class BaseSQLQuery {
     protected void processResultSet(Predicate<Row> handler,
                                     Limit effectiveLimit,
                                     ResultSet resultSet,
-                                    TaskContext taskContext) throws SQLException {
-        while (resultSet.next() && taskContext.isActive()) {
+                                    TaskContext taskContext,
+                                    boolean longRunning) throws SQLException {
+        while (resultSet.next() && (taskContext.isActive() && longRunning)) {
             Row row = loadIntoRow(resultSet);
             if (effectiveLimit.nextRow() && !handler.test(row)) {
                 return;

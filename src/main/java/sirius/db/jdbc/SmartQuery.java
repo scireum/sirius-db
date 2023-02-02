@@ -468,7 +468,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 boolean nativeLimit = db.hasCapability(Capability.LIMIT);
                 tuneStatement(stmt, limit, nativeLimit);
                 try (ResultSet rs = stmt.executeQuery()) {
-                    execIterate(handler, compiler, limit, nativeLimit, rs);
+                    execIterate(handler, compiler, limit, nativeLimit, rs, limit == Limit.UNLIMITED);
                 }
             } finally {
                 if (Microtiming.isEnabled()) {
@@ -481,11 +481,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @SuppressWarnings("unchecked")
-    protected void execIterate(Predicate<E> handler, Compiler compiler, Limit limit, boolean nativeLimit, ResultSet rs)
-            throws Exception {
+    protected void execIterate(Predicate<E> handler,
+                               Compiler compiler,
+                               Limit limit,
+                               boolean nativeLimit,
+                               ResultSet rs,
+                               boolean longRunning) throws Exception {
         TaskContext tc = TaskContext.get();
         Set<String> columns = dbs.readColumns(rs);
-        while (rs.next() && tc.isActive()) {
+        while (rs.next() && (tc.isActive() || !longRunning)) {
             if (nativeLimit || limit.nextRow()) {
                 SQLEntity e = makeEntity(descriptor, null, columns, rs);
                 compiler.executeJoinFetches(e, columns, rs);

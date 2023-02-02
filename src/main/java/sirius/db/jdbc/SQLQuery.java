@@ -123,7 +123,7 @@ public class SQLQuery extends BaseSQLQuery {
                 try (ResultSet rs = stmt.executeQuery()) {
                     w.submitMicroTiming(MICROTIMING_KEY, "ITERATE: " + sql);
                     TaskContext tc = TaskContext.get();
-                    processResultSet(handler, effectiveLimit, rs, tc);
+                    processResultSet(handler, effectiveLimit, rs, tc, longRunning || effectiveLimit == Limit.UNLIMITED);
                 }
             }
         }
