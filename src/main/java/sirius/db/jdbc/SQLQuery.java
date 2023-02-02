@@ -109,21 +109,25 @@ public class SQLQuery extends BaseSQLQuery {
 
     @Override
     public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         fieldNames = null;
-        try (Connection c = longRunning ? ds.getLongRunningConnection() : ds.getConnection()) {
-            try (PreparedStatement stmt = createPreparedStatement(c)) {
-                if (stmt == null) {
+        try (Connection connection = longRunning ? ds.getLongRunningConnection() : ds.getConnection()) {
+            try (PreparedStatement statement = createPreparedStatement(connection)) {
+                if (statement == null) {
                     return;
                 }
                 Limit effectiveLimit = limit != null ? limit : Limit.UNLIMITED;
-                applyMaxRows(stmt, effectiveLimit);
-                applyFetchSize(stmt, effectiveLimit);
+                applyMaxRows(statement, effectiveLimit);
+                applyFetchSize(statement, effectiveLimit);
 
-                try (ResultSet rs = stmt.executeQuery()) {
-                    w.submitMicroTiming(MICROTIMING_KEY, "ITERATE: " + sql);
-                    TaskContext tc = TaskContext.get();
-                    processResultSet(handler, effectiveLimit, rs, tc, longRunning || effectiveLimit == Limit.UNLIMITED);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    watch.submitMicroTiming(MICROTIMING_KEY, "ITERATE: " + sql);
+                    TaskContext taskContext = TaskContext.get();
+                    processResultSet(handler,
+                                     effectiveLimit,
+                                     resultSet,
+                                     taskContext,
+                                     longRunning || effectiveLimit == Limit.UNLIMITED);
                 }
             }
         }

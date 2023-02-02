@@ -34,13 +34,13 @@ public class BatchSQLQuery extends BaseSQLQuery {
 
     @Override
     public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
 
         try (PreparedStatement preparedStatement = query.prepareStmt()) {
-            ResultSet rs = preparedStatement.executeQuery();
-            query.average.addValue(w.elapsedMillis());
-            TaskContext tc = TaskContext.get();
-            processResultSet(handler, limit, rs, tc, true);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            query.average.addValue(watch.elapsedMillis());
+            TaskContext taskContext = TaskContext.get();
+            processResultSet(handler, limit, resultSet, taskContext, true);
         }
     }
 

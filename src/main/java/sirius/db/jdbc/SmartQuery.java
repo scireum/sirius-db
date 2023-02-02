@@ -486,15 +486,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                                Compiler compiler,
                                Limit limit,
                                boolean nativeLimit,
-                               ResultSet rs,
+                               ResultSet resultSet,
                                boolean longRunning) throws Exception {
-        TaskContext tc = TaskContext.get();
-        Set<String> columns = dbs.readColumns(rs);
-        while (rs.next() && (tc.isActive() || !longRunning)) {
+        TaskContext taskContext = TaskContext.get();
+        Set<String> columns = dbs.readColumns(resultSet);
+        while (resultSet.next() && (taskContext.isActive() || !longRunning)) {
             if (nativeLimit || limit.nextRow()) {
-                SQLEntity e = makeEntity(descriptor, null, columns, rs);
-                compiler.executeJoinFetches(e, columns, rs);
-                if (!handler.test((E) e)) {
+                SQLEntity entity = makeEntity(descriptor, null, columns, resultSet);
+                compiler.executeJoinFetches(entity, columns, resultSet);
+                if (!handler.test((E) entity)) {
                     return;
                 }
             }
