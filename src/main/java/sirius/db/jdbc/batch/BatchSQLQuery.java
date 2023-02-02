@@ -16,6 +16,7 @@ import sirius.kernel.commons.Watch;
 
 import javax.annotation.Nullable;
 import java.sql.Blob;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Predicate;
@@ -35,7 +36,8 @@ public class BatchSQLQuery extends BaseSQLQuery {
     public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         Watch w = Watch.start();
 
-        try (ResultSet rs = query.prepareStmt().executeQuery()) {
+        try (PreparedStatement preparedStatement = query.prepareStmt()) {
+            ResultSet rs = preparedStatement.executeQuery();
             query.average.addValue(w.elapsedMillis());
             TaskContext tc = TaskContext.get();
             processResultSet(handler, limit, rs, tc, true);
