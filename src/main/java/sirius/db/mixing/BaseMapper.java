@@ -122,11 +122,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     }
 
     /**
-     * Handles the given unit of work while restarting it if an optimistic lock error occurs.
+     * Handles the given unit of work while restarting it if an optimistic lock error or a {@link TruncateFailureException} occurs.
      *
      * @param unitOfWork the unit of work to handle.
      * @throws HandledException if either any other exception occurs, or if all three attempts
-     *                          fail with an optimistic lock error.
+     *                          fail with an optimistic lock error or a {@link TruncateFailureException}.
      */
     public void retry(UnitOfWork unitOfWork) {
         int retries = 3;
