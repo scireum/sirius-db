@@ -1465,10 +1465,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
      *
-     * @throws OptimisticLockException  if one of the documents was modified during the runtime of the truncate
-     * @throws TruncateFailureException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery} request aborted due to any unrecoverable errors during the process
+     * @throws OptimisticLockException               if one of the documents was modified during the runtime of the truncate
+     * @throws sirius.kernel.health.HandledException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery} request aborted due to any unrecoverable errors during the process
      */
-    public void tryTruncate() throws OptimisticLockException, TruncateFailureException {
+    public void tryTruncate() throws OptimisticLockException {
         if (forceFail) {
             return;
         }
@@ -1478,9 +1478,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                   .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
                                                                  filteredRouting,
                                                                  buildSimplePayload());
+        if (Boolean.TRUE.equals(deleteByQueryResponse.getBoolean("timed_out"))
+            || deleteByQueryResponse.getIntValue("version_conflicts") > 0) {
+            throw new OptimisticLockException("Truncate timed out or had version conflicts:\n"
+                                              + deleteByQueryResponse.toJSONString());
+        }
         if (deleteByQueryResponse.getJSONArray("failures") != null && !deleteByQueryResponse.getJSONArray("failures")
                                                                                             .isEmpty()) {
-            throw new TruncateFailureException(deleteByQueryResponse);
+            throw Exceptions.createHandled()
+                            .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s):\n"
+                                                    + deleteByQueryResponse.toJSONString())
+                            .handle();
         }
     }
 

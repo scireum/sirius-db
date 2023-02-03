@@ -36,6 +36,15 @@ public class OptimisticLockException extends Exception {
     }
 
     /**
+     * Creates a new instance with the given message.
+     *
+     * @param message the message to show
+     */
+    public OptimisticLockException(String message) {
+        super(message);
+    }
+
+    /**
      * Creates a new instance with a reference to the given cause.
      *
      * @param message the message to show
