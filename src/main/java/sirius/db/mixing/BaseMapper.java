@@ -137,8 +137,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             } catch (OptimisticLockException optimisticLockException) {
                 Mixing.LOG.FINE(optimisticLockException);
                 if (Sirius.isDev()) {
-                    Mixing.LOG.INFO("Retrying due to optimistic lock: " + optimisticLockException,
-                                    optimisticLockException);
+                    Mixing.LOG.INFO("Retrying due to optimistic lock: %s", optimisticLockException);
                 }
                 if (retries <= 0) {
                     throw Exceptions.handle()
