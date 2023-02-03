@@ -1469,7 +1469,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
      *
      * @throws OptimisticLockException               if one of the documents was modified during the runtime of the truncate
-     * @throws sirius.kernel.health.HandledException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery} request aborted due to any unrecoverable errors during the process
+     * @throws sirius.kernel.health.HandledException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery}
+     *                                               request aborted due to any unrecoverable errors during the process
      */
     public void tryTruncate() throws OptimisticLockException {
         if (forceFail) {
