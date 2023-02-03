@@ -8,7 +8,6 @@
 
 package sirius.db.mixing;
 
-import sirius.db.es.TruncateFailureException;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.annotations.Versioned;
 import sirius.db.mixing.query.Query;
@@ -122,11 +121,11 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     }
 
     /**
-     * Handles the given unit of work while restarting it if an optimistic lock error or a {@link TruncateFailureException} occurs.
+     * Handles the given unit of work while restarting it if an optimistic lock error occurs.
      *
      * @param unitOfWork the unit of work to handle.
      * @throws HandledException if either any other exception occurs, or if all three attempts
-     *                          fail with an optimistic lock error or a {@link TruncateFailureException}.
+     *                          fail with an optimistic lock error.
      */
     public void retry(UnitOfWork unitOfWork) {
         int retries = 3;
@@ -136,15 +135,24 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                 unitOfWork.execute();
                 return;
             } catch (OptimisticLockException optimisticLockException) {
-                retryAfterTimeout(optimisticLockException,
-                                  retries,
-                                  "Failed to update an entity after re-trying a unit of work several times: %s (%s)",
-                                  "Retrying due to optimistic lock: " + optimisticLockException);
-            } catch (TruncateFailureException truncateFailureException) {
-                retryAfterTimeout(truncateFailureException,
-                                  retries,
-                                  "Failed to bulk delete entities after re-trying a unit of work several times: %s (%s)",
-                                  "Retrying due to failures in deleteByQuery request: " + truncateFailureException);
+                Mixing.LOG.FINE(optimisticLockException);
+                if (Sirius.isDev()) {
+                    Mixing.LOG.INFO("Retrying due to optimistic lock: " + optimisticLockException,
+                                    optimisticLockException);
+                }
+                if (retries <= 0) {
+                    throw Exceptions.handle()
+                                    .withSystemErrorMessage(
+                                            "Failed to update an entity after re-trying a unit of work several times: %s (%s)")
+                                    .error(optimisticLockException)
+                                    .to(Mixing.LOG)
+                                    .handle();
+                }
+                int timeoutFactor = determineRetryTimeoutFactor();
+                // Wait 0, x ms, 2*x ms
+                Wait.millis((2 - retries) * timeoutFactor);
+                // Wait 0..x ms in 50% of all calls...
+                Wait.randomMillis(-timeoutFactor, timeoutFactor);
             } catch (HandledException handledException) {
                 throw handledException;
             } catch (Exception exception) {
@@ -156,21 +164,6 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                 .handle();
             }
         }
-    }
-
-    private void retryAfterTimeout(Exception exception, int retries, String errorMessage, String debugInfo) {
-        Mixing.LOG.FINE(exception);
-        if (Sirius.isDev()) {
-            Mixing.LOG.INFO(debugInfo, exception);
-        }
-        if (retries <= 0) {
-            throw Exceptions.handle().withSystemErrorMessage(errorMessage).error(exception).to(Mixing.LOG).handle();
-        }
-        int timeoutFactor = determineRetryTimeoutFactor();
-        // Wait 0, x ms, 2*x ms
-        Wait.millis((2 - retries) * timeoutFactor);
-        // Wait 0..x ms in 50% of all calls...
-        Wait.randomMillis(-timeoutFactor, timeoutFactor);
     }
 
     /**
