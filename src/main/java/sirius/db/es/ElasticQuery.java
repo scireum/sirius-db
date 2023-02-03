@@ -114,6 +114,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_SUGGEST = "suggest";
     private static final String KEY_VALUE = "value";
     private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
+    private static final String KEY_TIMED_OUT = "timed_out";
+    private static final String KEY_VERSION_CONFLICTS = "version_conflicts";
+    private static final String KEY_FAILURES = "failures";
     private static final Mapping SCORE = Mapping.named("_score");
 
     @Part
@@ -1478,13 +1481,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                   .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
                                                                  filteredRouting,
                                                                  buildSimplePayload());
-        if (Boolean.TRUE.equals(deleteByQueryResponse.getBoolean("timed_out"))
-            || deleteByQueryResponse.getIntValue("version_conflicts") > 0) {
+        if (Boolean.TRUE.equals(deleteByQueryResponse.getBoolean(KEY_TIMED_OUT))
+            || deleteByQueryResponse.getIntValue(KEY_VERSION_CONFLICTS) > 0) {
             throw new OptimisticLockException("Truncate timed out or had version conflicts:\n"
                                               + deleteByQueryResponse.toJSONString());
         }
-        if (deleteByQueryResponse.getJSONArray("failures") != null && !deleteByQueryResponse.getJSONArray("failures")
-                                                                                            .isEmpty()) {
+        if (deleteByQueryResponse.getJSONArray(KEY_FAILURES) != null
+            && !deleteByQueryResponse.getJSONArray(KEY_FAILURES).isEmpty()) {
             throw Exceptions.createHandled()
                             .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s):\n"
                                                     + deleteByQueryResponse.toJSONString())
