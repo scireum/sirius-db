@@ -1484,14 +1484,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                                  buildSimplePayload());
         if (Boolean.TRUE.equals(deleteByQueryResponse.getBoolean(KEY_TIMED_OUT))
             || deleteByQueryResponse.getIntValue(KEY_VERSION_CONFLICTS) > 0) {
-            throw new OptimisticLockException("Truncate timed out or had version conflicts:\n"
-                                              + deleteByQueryResponse.toJSONString());
+            Elastic.LOG.WARN("Truncate timed out or had version conflicts:\n" + deleteByQueryResponse.toJSONString());
+            throw new OptimisticLockException();
         }
         if (deleteByQueryResponse.getJSONArray(KEY_FAILURES) != null
             && !deleteByQueryResponse.getJSONArray(KEY_FAILURES).isEmpty()) {
+            Elastic.LOG.SEVERE("Truncate aborted due to unrecoverable error(s):\n"
+                               + deleteByQueryResponse.toJSONString());
             throw Exceptions.createHandled()
-                            .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s):\n"
-                                                    + deleteByQueryResponse.toJSONString())
+                            .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s)!")
                             .handle();
         }
     }
