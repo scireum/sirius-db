@@ -134,16 +134,16 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             try {
                 unitOfWork.execute();
                 return;
-            } catch (OptimisticLockException e) {
-                Mixing.LOG.FINE(e);
+            } catch (OptimisticLockException optimisticLockException) {
+                Mixing.LOG.FINE(optimisticLockException);
                 if (Sirius.isDev()) {
-                    Mixing.LOG.INFO("Retrying due to optimistic lock: %s", e);
+                    Mixing.LOG.INFO("Retrying due to optimistic lock: %s", optimisticLockException);
                 }
                 if (retries <= 0) {
                     throw Exceptions.handle()
                                     .withSystemErrorMessage(
                                             "Failed to update an entity after re-trying a unit of work several times: %s (%s)")
-                                    .error(e)
+                                    .error(optimisticLockException)
                                     .to(Mixing.LOG)
                                     .handle();
                 }
@@ -152,13 +152,13 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                 Wait.millis((2 - retries) * timeoutFactor);
                 // Wait 0..x ms in 50% of all calls...
                 Wait.randomMillis(-timeoutFactor, timeoutFactor);
-            } catch (HandledException e) {
-                throw e;
-            } catch (Exception e) {
+            } catch (HandledException handledException) {
+                throw handledException;
+            } catch (Exception exception) {
                 throw Exceptions.handle()
                                 .withSystemErrorMessage(
                                         "An unexpected exception occurred while executing a unit of work: %s (%s)")
-                                .error(e)
+                                .error(exception)
                                 .to(Mixing.LOG)
                                 .handle();
             }

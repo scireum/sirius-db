@@ -210,11 +210,11 @@ public class BulkContext implements Closeable {
     }
 
     /**
-     * Determines if {@link #commit()} whould be invoked manually if the caller is interested in properly handling
+     * Determines if {@link #commit()} would be invoked manually if the caller is interested in properly handling
      * update errors.
      * <p>
      * Note that there is no need to do this. {@link #autocommit()} will invoke {@link #commit()} in sane and regular
-     * intervals. However it will always throw an exception in case of any error being encountered.
+     * intervals. However, it will always throw an exception in case of any error being encountered.
      *
      * @return <tt>true</tt> if {@link #commit()} should be called manually, <tt>false</tt> otherwise
      */

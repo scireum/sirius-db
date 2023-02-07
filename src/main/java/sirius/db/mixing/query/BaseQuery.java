@@ -228,7 +228,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
      * <p>
      * Note that this method is intended for medium-sized results as not all items in the result need to be
-     * kept in memory when iterating through them. Note however, that for verly large result sets, a method
+     * kept in memory when iterating through them. Note however, that for very large result sets, a method
      * like {@link #streamBlockwise()} might be more appropriate, as it ensures that underlying resources
      * like <tt>cursors</tt> or <tt>database connections</tt> cannot run into a timeout.
      *
@@ -258,7 +258,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      * entities. Once these are processed, the next block will be fetched.
      * <p>
      * This has the benefit, that results of virtually any size can be processed in a safe manner, without locking
-     * any database resources and also without the risk of running into a timout of an underlying resource.
+     * any database resources and also without the risk of running into a timeout of an underlying resource.
      * <p>
      * While we try hard to keep the result consistent, there is no way to guarantee this. There is a possibility,
      * that we either miss an entity or even process an entity twice if a concurrent modification happens. Basically,
