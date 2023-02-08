@@ -11,6 +11,7 @@ package sirius.db.es;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Strings;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -136,16 +137,7 @@ public class FunctionScoreBuilder {
      * @see #fieldValueFunction(Mapping, float, float)
      */
     public FunctionScoreBuilder maxFieldValueFunction(Mapping field, float minValue) {
-        return script(//language=JavaScript
-                      "Math.max("
-                      + minValue
-                      + ", doc['"
-                      + field
-                      + "'].size() == 0 ? "
-                      + minValue
-                      + " : doc['"
-                      + field
-                      + "'].value)");
+        return script(Strings.apply("Math.max(%2$s, doc['%1$s'].size() == 0 ? %2$s : doc['%1$s'].value)", field, minValue));
     }
 
     private FunctionScoreBuilder dateTimeDecayFunction(String function,
