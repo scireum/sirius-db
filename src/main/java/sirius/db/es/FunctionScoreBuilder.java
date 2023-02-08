@@ -136,7 +136,7 @@ public class FunctionScoreBuilder {
      * @see #fieldValueFunction(Mapping, float, float)
      */
     public FunctionScoreBuilder maxFieldValueFunction(Mapping field, float minValue) {
-        return script("Math.max(" + minValue + ", doc['" + field.toString() + "'].value)");
+        return script("Math.max(" + minValue + ", doc['" + field + "'].size() == 0 ? " + minValue + " ? doc['" + field + "'].value)");
     }
 
     private FunctionScoreBuilder dateTimeDecayFunction(String function,
