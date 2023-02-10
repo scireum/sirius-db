@@ -114,6 +114,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_SUGGEST = "suggest";
     private static final String KEY_VALUE = "value";
     private static final String KEY_SEQ_NO_PRIMARY_TERM = "seq_no_primary_term";
+    private static final String KEY_TIMED_OUT = "timed_out";
+    private static final String KEY_VERSION_CONFLICTS = "version_conflicts";
+    private static final String KEY_FAILURES = "failures";
     private static final Mapping SCORE = Mapping.named("_score");
 
     @Part
@@ -1465,7 +1468,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * <p>
      * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
      *
-     * @throws OptimisticLockException if one of the documents was modified during the runtime of the truncate
+     * @throws OptimisticLockException               if one of the documents was modified during the runtime of the truncate
+     * @throws sirius.kernel.health.HandledException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery}
+     *                                               request aborted due to any unrecoverable errors during the process
      */
     public void tryTruncate() throws OptimisticLockException {
         if (forceFail) {
@@ -1473,10 +1478,23 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.WRITE);
-        elastic.getLowLevelClient()
-               .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
-                              filteredRouting,
-                              buildSimplePayload());
+        JSONObject deleteByQueryResponse = elastic.getLowLevelClient()
+                                                  .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
+                                                                 filteredRouting,
+                                                                 buildSimplePayload());
+        if (Boolean.TRUE.equals(deleteByQueryResponse.getBoolean(KEY_TIMED_OUT))
+            || deleteByQueryResponse.getIntValue(KEY_VERSION_CONFLICTS) > 0) {
+            Elastic.LOG.WARN("Truncate timed out or had version conflicts:\n" + deleteByQueryResponse.toJSONString());
+            throw new OptimisticLockException();
+        }
+        if (deleteByQueryResponse.getJSONArray(KEY_FAILURES) != null
+            && !deleteByQueryResponse.getJSONArray(KEY_FAILURES).isEmpty()) {
+            Elastic.LOG.SEVERE("Truncate aborted due to unrecoverable error(s):\n"
+                               + deleteByQueryResponse.toJSONString());
+            throw Exceptions.createHandled()
+                            .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s)!")
+                            .handle();
+        }
     }
 
     @Override

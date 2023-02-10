@@ -149,7 +149,7 @@ public class EntityDescriptor {
     /**
      * Collects handlers which are executed before entity is saved, need to be in order (some checks might depend on others),
      * {@link BeforeSave} permits to specify a property which is used to here to sort the handlers.
-     *
+     * <p>
      * <tt>sortedBeforeSaveHandlers</tt> will be filled when first accessed and provide a properly sorted list
      */
     protected PriorityCollector<Consumer<Object>> beforeSaveHandlerCollector = PriorityCollector.create();
@@ -307,9 +307,9 @@ public class EntityDescriptor {
      */
     public String getLabel() {
         String className = translationSource.getSimpleName();
-        String currentLang = NLS.getCurrentLang();
-        return NLS.getIfExists(className, currentLang)
-                  .orElseGet(() -> NLS.getIfExists(determineLowercasedPropertyKey(className), currentLang)
+        String currentLanguage = NLS.getCurrentLanguage();
+        return NLS.getIfExists(className, currentLanguage)
+                  .orElseGet(() -> NLS.getIfExists(determineLowercasedPropertyKey(className), currentLanguage)
                                       .orElseGet(() -> NLS.get(determineModelPropertyKey(className))));
     }
 
