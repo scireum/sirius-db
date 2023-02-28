@@ -76,13 +76,30 @@ public class CompoundValue {
                 sqlRepresentation.add(compiler.translateColumnName(mapping));
             } else {
                 sqlRepresentation.add("?");
-                parameters.add(component);
+                parameters.add(fetchComparableValue(component));
             }
         }
         if (components.size() == 1) {
             return Tuple.create(sqlRepresentation.get(0), parameters);
         }
         return Tuple.create("(" + Strings.join(sqlRepresentation, ", ") + ")", parameters);
+    }
+
+    /**
+     * Returns an {@link Object} that can be used in any arithmetic comparison.
+     * </p>
+     * In MySQL/MariaDB, {@code NULL} is considered as a 'missing, unkonwn value'. Any arithmetic comparison with
+     * {@code NULL} returns false e.g. {@code NULL != 'any'} returns {@code false}. Therefor we need to return
+     * {@link Boolean#FALSE} instead of {@code NULL} because {@code false != 'any'} will be {@code true}.
+     *
+     * @param component the {@link Object} on the basis of which a value is to be determined
+     * @return the component itself if it's not {@code NULL}, {@link Boolean#FALSE} otherwise
+     */
+    private Object fetchComparableValue(Object component) {
+        if (component == null) {
+            return Boolean.FALSE;
+        }
+        return component;
     }
 
     @Override
