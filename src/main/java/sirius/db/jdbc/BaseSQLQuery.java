@@ -141,7 +141,7 @@ public abstract class BaseSQLQuery {
      * Executes the given query returning the first matching row.
      * <p>
      * If the resulting row contains a {@link Blob} an {@link OutputStream} as to be passed in as parameter
-     * with the name name as the column. The contents of the blob will then be written into the given
+     * with the name as the column. The contents of the blob will then be written into the given
      * output stream (without closing it).
      *
      * @return the first matching row for the given query or <tt>null</tt> if no matching row was found

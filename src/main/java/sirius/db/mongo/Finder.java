@@ -196,7 +196,7 @@ public class Finder extends QueryBuilder<Finder> {
 
     /**
      * Specifies the number of items per batch. This has no effect on the result. Low batchSizes can be used
-     * to prevent cursor timeouts when using a time consuming processor, but will be slower because the cursor
+     * to prevent cursor timeouts when using a time-consuming processor, but will be slower because the cursor
      * makes more requests to the server.
      *
      * @param batchSize the number of items per batch. Values &lt;= 0 are ignored.

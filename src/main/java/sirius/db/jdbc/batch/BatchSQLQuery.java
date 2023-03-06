@@ -32,11 +32,11 @@ public class BatchSQLQuery extends BaseSQLQuery {
 
     @Override
     public void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
 
-        try (ResultSet rs = query.prepareStmt().executeQuery()) {
-            query.average.addValue(w.elapsedMillis());
-            processResultSet(handler, limit, rs);
+        try (ResultSet resultSet = query.prepareStmt().executeQuery()) {
+            query.average.addValue(watch.elapsedMillis());
+            processResultSet(handler, limit, resultSet);
         }
     }
 

@@ -51,7 +51,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     /**
      * Contains the maximal number of elements to be returned in {@link #queryList()}.
      * <p>
-     * For larger results {@link #iterate(Predicate)} mit be used as it can be more efficient
+     * For larger results {@link #iterate(Predicate)} might be used as it can be more efficient
      */
     public static final int MAX_LIST_SIZE = 1000;
 
@@ -61,7 +61,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     protected int limit;
 
     /**
-     * Contains the the number of items to skip before items are added to the result
+     * Contains the number of items to skip before items are added to the result
      */
     protected int skip;
 
