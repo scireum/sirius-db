@@ -11,6 +11,7 @@ package sirius.db.mixing.query;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
+import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.ValueHolder;
@@ -199,9 +200,10 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
             limit = MAX_LIST_SIZE + 1;
         }
 
-        iterateAll(entity -> {
+        doIterate(entity -> {
             result.add(entity);
             failOnOverflow(result);
+            return true;
         });
 
         // Restore limit in case the code above changed it.
@@ -225,7 +227,8 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     }
 
     /**
-     * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
+     * Calls the given function on all items in the result, as long as it returns <tt>true</tt> and the current
+     * {@linkplain TaskContext task context} is active.
      * <p>
      * Note that this method is intended for medium-sized results as not all items in the result need to be
      * kept in memory when iterating through them. Note however, that for very large result sets, a method
@@ -235,10 +238,27 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
-    public abstract void iterate(Predicate<E> handler);
+    public void iterate(Predicate<E> handler) {
+        doIterate(handler.and(ignored -> TaskContext.get().isActive()));
+    }
 
     /**
-     * Calls the given consumer on all items in the result.
+     * Calls the given function on all items in the result, as long as it returns <tt>true</tt>.
+     * In contrast to {@link #iterate(Predicate)} the {@linkplain TaskContext task context} active won't be considered.
+     * <p>
+     * Note that this method is intended for medium-sized results as not all items in the result need to be
+     * kept in memory when iterating through them. Note however, that for very large result sets, a method
+     * like {@link #streamBlockwise()} might be more appropriate, as it ensures that underlying resources
+     * like <tt>cursors</tt> or <tt>database connections</tt> cannot run into a timeout.
+     *
+     * @param handler the handler to be invoked for each item in the result. Should return <tt>true</tt>
+     *                to continue processing or <tt>false</tt> to abort processing of the result set.
+     */
+    protected abstract void doIterate(Predicate<E> handler);
+
+    /**
+     * Calls the given consumer on all items in the result. Aborts iteration the current
+     * {@linkplain TaskContext task context} is no longer active.
      * <p>
      * Note that this method is intended for medium-sized results just like {@link #iterate(Predicate)}.
      *
@@ -299,7 +319,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     public E queryFirst() {
         ValueHolder<E> result = ValueHolder.of(null);
         limit(1);
-        iterate(r -> {
+        doIterate(r -> {
             result.set(r);
             return false;
         });

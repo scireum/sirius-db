@@ -37,7 +37,7 @@ public class TransformedQuery<E extends SQLEntity> extends BaseQuery<Transformed
     }
 
     @Override
-    public void iterate(Predicate<E> handler) {
+    public void doIterate(Predicate<E> handler) {
         try {
             qry.iterate(row -> handler.test(mapToEntity(row)), getLimit());
         } catch (SQLException e) {

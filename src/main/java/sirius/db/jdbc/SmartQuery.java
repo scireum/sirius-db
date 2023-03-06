@@ -270,8 +270,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return;
         }
         AtomicBoolean continueDeleting = new AtomicBoolean(true);
-        TaskContext context = TaskContext.get();
-        while (continueDeleting.get() && context.isActive()) {
+        TaskContext taskContext = TaskContext.get();
+        while (continueDeleting.get() && taskContext.isActive()) {
             continueDeleting.set(false);
             Timeout timeout = new Timeout(queryIterateTimeout);
             iterate(entity -> {
@@ -396,18 +396,19 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             if (mapping.getParent() != null) {
                 BaseEntity<?> parentEntity = findParent(mapping.getParent(), entity);
                 if (parentEntity.getDescriptor()
-                                .getProperty(mapping.getParent().getName()) instanceof BaseEntityRefProperty<?, ?, ?> ref) {
+                                .getProperty(mapping.getParent()
+                                                    .getName()) instanceof BaseEntityRefProperty<?, ?, ?> ref) {
                     BaseEntityRef<?, ?> entityRef = ref.getEntityRef(parentEntity);
-                return entityRef.getValueIfPresent().orElseThrow(() -> {
-                    return new IllegalArgumentException(Strings.apply(
-                            "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
-                            entityRef.getUniqueObjectName(),
+                    return entityRef.getValueIfPresent().orElseThrow(() -> {
+                        return new IllegalArgumentException(Strings.apply(
+                                "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
+                                entityRef.getUniqueObjectName(),
                                 mapping.getParent()));
-                });
+                    });
                 } else {
                     throw new IllegalArgumentException(Strings.apply("You cannot join on the non-ref property `%s`",
                                                                      mapping.getParent()));
-            }
+                }
             }
             return entity;
         }
@@ -456,7 +457,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @Override
-    public void iterate(Predicate<E> handler) {
+    public void doIterate(Predicate<E> handler) {
         if (forceFail) {
             return;
         }
