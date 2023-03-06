@@ -282,7 +282,7 @@ public class Finder extends QueryBuilder<Finder> {
 
     /**
      * Executes the query for the given collection and calls the given processor for each document as long as it
-     * returns <tt>true</tt>.
+     * returns <tt>true</tt> and the current {@linkplain TaskContext task context} is active.
      *
      * @param collection the collection to search in
      * @param processor  the processor to handle matches, which also controls if further results should be processed
@@ -298,7 +298,7 @@ public class Finder extends QueryBuilder<Finder> {
         }
         applyBatchSize(cursor);
 
-        processCursor(cursor, processor, collection);
+        processCursor(cursor, processor.and(ignored -> TaskContext.get().isActive()), collection);
     }
 
     private void applyBatchSize(MongoIterable<Document> cursor) {
@@ -309,7 +309,6 @@ public class Finder extends QueryBuilder<Finder> {
 
     private void processCursor(MongoIterable<Document> cursor, Predicate<Doc> processor, String collection) {
         Watch watch = Watch.start();
-        TaskContext taskContext = TaskContext.get();
         Monoflop shouldHandleTracing = Monoflop.create();
 
         for (Document doc : cursor) {
@@ -318,7 +317,7 @@ public class Finder extends QueryBuilder<Finder> {
             }
 
             boolean keepGoing = processor.test(new Doc(doc));
-            if (!keepGoing || !taskContext.isActive()) {
+            if (!keepGoing) {
                 return;
             }
         }

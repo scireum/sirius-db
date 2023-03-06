@@ -484,9 +484,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     @SuppressWarnings("unchecked")
     protected void execIterate(Predicate<E> handler, Compiler compiler, Limit limit, boolean nativeLimit, ResultSet rs)
             throws Exception {
-        TaskContext tc = TaskContext.get();
         Set<String> columns = dbs.readColumns(rs);
-        while (rs.next() && tc.isActive()) {
+        while (rs.next()) {
             if (nativeLimit || limit.nextRow()) {
                 SQLEntity e = makeEntity(descriptor, null, columns, rs);
                 compiler.executeJoinFetches(e, columns, rs);

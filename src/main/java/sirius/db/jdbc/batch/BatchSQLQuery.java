@@ -10,7 +10,6 @@ package sirius.db.jdbc.batch;
 
 import sirius.db.jdbc.BaseSQLQuery;
 import sirius.db.jdbc.Row;
-import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Watch;
 
@@ -37,8 +36,7 @@ public class BatchSQLQuery extends BaseSQLQuery {
 
         try (ResultSet rs = query.prepareStmt().executeQuery()) {
             query.average.addValue(w.elapsedMillis());
-            TaskContext tc = TaskContext.get();
-            processResultSet(handler, limit, rs, tc);
+            processResultSet(handler, limit, rs);
         }
     }
 

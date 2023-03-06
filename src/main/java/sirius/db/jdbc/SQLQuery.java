@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Streams;
@@ -121,9 +120,8 @@ public class SQLQuery extends BaseSQLQuery {
                 applyFetchSize(stmt, effectiveLimit);
 
                 try (ResultSet rs = stmt.executeQuery()) {
-                    w.submitMicroTiming(MICROTIMING_KEY, "ITERATE: " + sql);
-                    TaskContext tc = TaskContext.get();
-                    processResultSet(handler, effectiveLimit, rs, tc);
+                    watch.submitMicroTiming(MICROTIMING_KEY, "ITERATE: " + sql);
+                    processResultSet(handler, effectiveLimit, rs);
                 }
             }
         }
