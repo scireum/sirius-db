@@ -58,13 +58,14 @@ public abstract class BaseSQLQuery {
     @Nonnull
     public List<Row> queryList(Limit limit) throws SQLException {
         List<Row> result = new ArrayList<>();
-        iterate(result::add, limit);
+        doIterate(result::add, limit);
 
         return result;
     }
 
     /**
-     * Executes the given query by invoking the given <tt>handler</tt> for each result row.
+     * Executes the given query by invoking the given <tt>handler</tt> for each result row as long as the current
+     * {@linkplain TaskContext task context} is active.
      * <p>
      * Consider using the method instead of {@link #queryList()} if a large result set is expected as this method. As
      * this method only processes one row at a time, this might be much more memory efficient.
@@ -74,7 +75,25 @@ public abstract class BaseSQLQuery {
      *                that there is no limit.
      * @throws SQLException in case of a database error
      */
-    public abstract void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException;
+    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
+        doIterate(handler, limit);
+    }
+
+    /**
+     * Executes the given query by invoking the given <tt>handler</tt> for each result row.
+     * <p>
+     * In contrast to {@link #iterate(Predicate, Limit)} the {@linkplain TaskContext task context} active state
+     * won't be considered.
+     * <p>
+     * Consider using the method instead of {@link #queryList()} if a large result set is expected as this method. As
+     * this method only processes one row at a time, this might be much more memory efficient.
+     *
+     * @param handler the row handler invoked for each row
+     * @param limit   the limit which controls which and how many rows are output. Can be <tt>null</tt> to indicate
+     *                that there is no limit.
+     * @throws SQLException in case of a database error
+     */
+    public abstract void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException;
 
     /**
      * Executes the given query by invoking the {@link Consumer} for each
@@ -133,8 +152,10 @@ public abstract class BaseSQLQuery {
     @Nullable
     public Row queryFirst() throws SQLException {
         ValueHolder<Row> result = ValueHolder.of(null);
-        iterateAll(result, Limit.singleItem());
-
+        doIterate(row -> {
+            result.accept(row);
+            return true;
+        }, Limit.singleItem());
         return result.get();
     }
 

@@ -108,8 +108,8 @@ public class SQLQuery extends BaseSQLQuery {
     }
 
     @Override
-    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
-        Watch w = Watch.start();
+    public void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
+        Watch watch = Watch.start();
         fieldNames = null;
         try (Connection c = longRunning ? ds.getLongRunningConnection() : ds.getConnection()) {
             try (PreparedStatement stmt = createPreparedStatement(c)) {

@@ -140,10 +140,10 @@ public class ExternalBatchQuery extends BaseSQLQuery {
     }
 
     @Override
-    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         try (ResultSet rs = statement.executeQuery()) {
             TaskContext tc = TaskContext.get();
             processResultSet(handler, limit, rs, tc);
+    public void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         }
     }
 

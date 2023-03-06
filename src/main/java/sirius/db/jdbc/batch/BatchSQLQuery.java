@@ -32,7 +32,7 @@ public class BatchSQLQuery extends BaseSQLQuery {
     }
 
     @Override
-    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
+    public void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
         Watch w = Watch.start();
 
         try (ResultSet rs = query.prepareStmt().executeQuery()) {
