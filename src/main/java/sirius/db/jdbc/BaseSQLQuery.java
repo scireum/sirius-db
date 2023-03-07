@@ -93,7 +93,7 @@ public abstract class BaseSQLQuery {
      *                that there is no limit.
      * @throws SQLException in case of a database error
      */
-    public abstract void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException;
+    protected abstract void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException;
 
     /**
      * Executes the given query by invoking the {@link Consumer} for each

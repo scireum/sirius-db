@@ -457,7 +457,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @Override
-    public void doIterate(Predicate<E> handler) {
+    protected void doIterate(Predicate<E> handler) {
         if (forceFail) {
             return;
         }

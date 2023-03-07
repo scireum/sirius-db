@@ -151,7 +151,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     @Override
-    public void doIterate(Predicate<E> resultHandler) {
+    protected void doIterate(Predicate<E> resultHandler) {
         if (forceFail) {
             return;
         }
