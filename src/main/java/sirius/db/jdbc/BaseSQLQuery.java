@@ -153,7 +153,7 @@ public abstract class BaseSQLQuery {
         ValueHolder<Row> result = ValueHolder.of(null);
         doIterate(row -> {
             result.accept(row);
-            return true;
+            return false;
         }, Limit.singleItem());
         return result.get();
     }

@@ -239,7 +239,8 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
      *                to continue processing or <tt>false</tt> to abort processing of the result set.
      */
     public void iterate(Predicate<E> handler) {
-        doIterate(handler.and(ignored -> TaskContext.get().isActive()));
+        TaskContext taskContext = TaskContext.get();
+        doIterate(handler.and(ignored -> taskContext.isActive()));
     }
 
     /**
