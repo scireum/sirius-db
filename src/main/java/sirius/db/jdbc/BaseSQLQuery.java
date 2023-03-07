@@ -76,7 +76,8 @@ public abstract class BaseSQLQuery {
      * @throws SQLException in case of a database error
      */
     public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
-        doIterate(handler, limit);
+        TaskContext taskContext = TaskContext.get();
+        doIterate(handler.and(ignored -> taskContext.isActive()), limit);
     }
 
     /**
