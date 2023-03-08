@@ -106,11 +106,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private static long logQueryThresholdMillis = -1;
 
     /**
-     * Determines if the effective routing should be computed for a read or a write access.
+     * Determines if the effective routing should be computed for a read or an write access.
      * <p>
      * This needs to be specified as we support that the routing suppression of the read index is
-     * different from the routing suppression of the write index. Thus, one can migrate from an
-     * un-routed index to a routed one and vice versa.
+     * different from the routing suppression of the write index. Thus one can migrate from an
+     * unrouted index to a routed one and vice versa.
      */
     enum RoutingAccessMode {
         READ, WRITE
@@ -131,15 +131,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     private final Map<EntityDescriptor, String> writeIndexTable = new ConcurrentHashMap<>();
     private boolean dockerDetected = false;
 
-    protected void updateRouteTable(EntityDescriptor entityDescriptor, Property property) {
-        if (suppressedRoutings != null && suppressedRoutings.contains(entityDescriptor.getRelationName())) {
+    protected void updateRouteTable(EntityDescriptor ed, Property p) {
+        if (suppressedRoutings != null && suppressedRoutings.contains(ed.getRelationName())) {
             Elastic.LOG.INFO("Routing for %s (%s) is suppressed via 'elasticsearch.suppressedRoutings'...",
-                             entityDescriptor.getRelationName(),
-                             entityDescriptor.getType().getSimpleName());
-            suppressedRoutingsMap.put(entityDescriptor, EnumSet.of(RoutingAccessMode.READ, RoutingAccessMode.WRITE));
+                             ed.getRelationName(),
+                             ed.getType().getSimpleName());
+            suppressedRoutingsMap.put(ed, EnumSet.of(RoutingAccessMode.READ, RoutingAccessMode.WRITE));
         }
 
-        routeTable.put(entityDescriptor, property);
+        routeTable.put(ed, p);
     }
 
     /**
@@ -183,7 +183,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configCallback).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
-            // to fully boot up. Otherwise, strange connection issues might arise.
+            // to fully boot up. Otherwise strange connection issues might arise.
             if (dockerDetected) {
                 waitForElasticsearchToBecomeReady();
             }
@@ -200,8 +200,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                           .getStatusCode() == 200) {
                     return;
                 }
-            } catch (Exception exception) {
-                Exceptions.ignore(exception);
+            } catch (Exception e) {
+                Exceptions.ignore(e);
             }
             Elastic.LOG.INFO("Sleeping two seconds to wait until Elasticsearch is ready...");
             Wait.seconds(2);
@@ -214,7 +214,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         if (Strings.isFilled(hostnameAndPort.getSecond())) {
             try {
                 return Tuple.create(hostnameAndPort.getFirst(), Integer.parseInt(hostnameAndPort.getSecond()));
-            } catch (NumberFormatException exception) {
+            } catch (NumberFormatException e) {
                 Exceptions.handle()
                           .to(LOG)
                           .withSystemErrorMessage("Invalid port in 'elasticsearch.hosts': %s %s",
@@ -265,19 +265,17 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the routing value to be used for the given entity.
      *
-     * @param entityDescriptor the entity descriptor of the entity
-     * @param entity           the entity to fetch the routing value from
+     * @param ed     the entity descriptor of the entity
+     * @param entity the entity to fetch the routing value from
      * @return the routing value to use
      */
     @Nullable
-    protected String determineRouting(EntityDescriptor entityDescriptor,
-                                      ElasticEntity entity,
-                                      RoutingAccessMode accessMode) {
-        if (isRoutingSuppressed(entityDescriptor, accessMode)) {
+    protected String determineRouting(EntityDescriptor ed, ElasticEntity entity, RoutingAccessMode accessMode) {
+        if (isRoutingSuppressed(ed, accessMode)) {
             return null;
         }
 
-        Property property = routeTable.get(entityDescriptor);
+        Property property = routeTable.get(ed);
 
         if (property == null) {
             return null;
@@ -314,27 +312,27 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Transforms the given entity to JSON.
      *
-     * @param entity           the entity to transform
-     * @param entityDescriptor the descriptor of the entity
-     * @param data             the target JSON to fill
+     * @param entity the entity to transform
+     * @param ed     the descriptor of the entity
+     * @param data   the target JSON to fill
      * @return <tt>true</tt> if at least on property has changed, <tt>false</tt> otherwise
      */
-    protected boolean toJSON(EntityDescriptor entityDescriptor, ElasticEntity entity, JSONObject data) {
+    protected boolean toJSON(EntityDescriptor ed, ElasticEntity entity, JSONObject data) {
         boolean changed = false;
-        for (Property property : entityDescriptor.getProperties()) {
-            data.put(property.getPropertyName(), property.getValueForDatasource(Elastic.class, entity));
-            changed |= entityDescriptor.isChanged(entity, property);
+        for (Property p : ed.getProperties()) {
+            data.put(p.getPropertyName(), p.getValueForDatasource(Elastic.class, entity));
+            changed |= ed.isChanged(entity, p);
         }
         return changed;
     }
 
     /**
-     * Determines the ID of the entity.
+     * Determines the id of the entity.
      * <p>
      * This will either return the stored ID or create a new one, if the entity is still new.
      *
-     * @param entity the entity to determine the ID for
-     * @return the ID to use for this entity
+     * @param entity the entity to determine the id for
+     * @return the id to use for this entity
      */
     protected String determineId(ElasticEntity entity) {
         if (entity.isNew()) {
@@ -350,53 +348,53 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * It will be determined by {@link IndexNaming} if it is implemented, or it will equal the
      * {@link EntityDescriptor#getRelationName() relation name}.
      *
-     * @param entityDescriptor the descriptor of the entity
+     * @param ed the descriptor of the entity
      * @return the index name to use for the given entity.
      */
-    protected String determineIndex(EntityDescriptor entityDescriptor) {
+    protected String determineIndex(EntityDescriptor ed) {
         if (indexNaming == null) {
-            return entityDescriptor.getRelationName();
+            return ed.getRelationName();
         }
 
-        return indexNaming.determineIndexName(entityDescriptor);
+        return indexNaming.determineIndexName(ed);
     }
 
     /**
      * Determines the alias for the currently active read index for the given {@link EntityDescriptor}.
      *
-     * @param entityDescriptor the descriptor of the entity to determine the read alias for
+     * @param ed the descriptor of the entity to determine the read alias for
      * @return the alias of the currently active index
      */
-    public String determineReadAlias(EntityDescriptor entityDescriptor) {
-        return entityDescriptor.getRelationName() + ACTIVE_ALIAS;
+    public String determineReadAlias(EntityDescriptor ed) {
+        return ed.getRelationName() + ACTIVE_ALIAS;
     }
 
     /**
      * Determines the alias for the currently active write index for the given {@link EntityDescriptor}.
      *
-     * @param entityDescriptor the descriptor of the entity to determine the write alias for
+     * @param ed the descriptor of the entity to determine the write alias for
      * @return the alias of the currently active index
      */
-    protected String determineWriteAlias(EntityDescriptor entityDescriptor) {
-        return writeIndexTable.getOrDefault(entityDescriptor, entityDescriptor.getRelationName() + ACTIVE_ALIAS);
+    protected String determineWriteAlias(EntityDescriptor ed) {
+        return writeIndexTable.getOrDefault(ed, ed.getRelationName() + ACTIVE_ALIAS);
     }
 
     /**
      * Resolves the effective index name being used for the given entity.
      *
-     * @param entityDescriptor the descriptor of the entity to determine the effective index for
+     * @param ed the descriptor of the entity to determine the effective index for
      * @return the effective index to which {@link #determineReadAlias(EntityDescriptor) the read alias} points
      * @throws sirius.kernel.health.HandledException in case the alias setup failed and the expected alias does
      *                                               not exist
      */
-    public String determineEffectiveIndex(EntityDescriptor entityDescriptor) {
-        return getLowLevelClient().resolveIndexForAlias(determineReadAlias(entityDescriptor))
+    public String determineEffectiveIndex(EntityDescriptor ed) {
+        return getLowLevelClient().resolveIndexForAlias(determineReadAlias(ed))
                                   .orElseThrow(() -> Exceptions.handle()
                                                                .to(Elastic.LOG)
                                                                .withSystemErrorMessage(
                                                                        "There is no index present for the alias (%s) of entity '%s'",
-                                                                       determineReadAlias(entityDescriptor),
-                                                                       entityDescriptor.getType().getName())
+                                                                       determineReadAlias(ed),
+                                                                       ed.getType().getName())
                                                                .handle());
     }
 
@@ -405,12 +403,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * <p>
      * This will also install the most current mappings into the newly created index.
      *
-     * @param entityDescriptor the entity descriptor of the entity to install a new write index for
+     * @param ed the entity descriptor of the entity to install a new write index for
      */
-    public void createAndInstallWriteIndex(EntityDescriptor entityDescriptor) {
-        String nextIndexName = indexMappings.determineNextIndexName(entityDescriptor);
-        indexMappings.createMapping(entityDescriptor, nextIndexName, IndexMappings.DynamicMapping.STRICT);
-        installWriteIndex(entityDescriptor, nextIndexName);
+    public void createAndInstallWriteIndex(EntityDescriptor ed) {
+        String nextIndexName = indexMappings.determineNextIndexName(ed);
+        indexMappings.createMapping(ed, nextIndexName, IndexMappings.DynamicMapping.STRICT);
+        installWriteIndex(ed, nextIndexName);
     }
 
     /**
@@ -418,11 +416,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * <p>
      * This can be used if the write index has already been created previously or on another node.
      *
-     * @param entityDescriptor the descriptor of the entity to set the write index for
-     * @param nextIndexName    the index name to send writes to (This is probably a name like entity-2021-01-01).
+     * @param ed            the descriptor of the entity to set the write index for
+     * @param nextIndexName the index name to send writes to (This is probably a name like entity-2021-01-01).
      */
-    public void installWriteIndex(EntityDescriptor entityDescriptor, String nextIndexName) {
-        writeIndexTable.put(entityDescriptor, nextIndexName);
+    public void installWriteIndex(EntityDescriptor ed, String nextIndexName) {
+        writeIndexTable.put(ed, nextIndexName);
     }
 
     /**
@@ -431,19 +429,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * This will also remove the write-redirection by clearing the entry in the {@link #writeIndexTable} as
      * the indices / aliases are now the same.
      *
-     * @param entityDescriptor the entity descriptor for which the write index should also become the new read index / alias
+     * @param ed the entity descriptor for which the write index should also become the new read index / alias
      */
-    public void commitWriteIndex(EntityDescriptor entityDescriptor) {
-        String writeIndexName = writeIndexTable.get(entityDescriptor);
+    public void commitWriteIndex(EntityDescriptor ed) {
+        String writeIndexName = writeIndexTable.get(ed);
         if (writeIndexName == null) {
             throw Exceptions.createHandled()
-                            .withSystemErrorMessage("These is no write index available for %s",
-                                                    entityDescriptor.getType().getName())
+                            .withSystemErrorMessage("These is no write index available for %s", ed.getType().getName())
                             .handle();
         }
 
-        getLowLevelClient().createOrMoveAlias(determineReadAlias(entityDescriptor), writeIndexName).toJSONString();
-        writeIndexTable.remove(entityDescriptor);
+        getLowLevelClient().createOrMoveAlias(determineReadAlias(ed), writeIndexName).toJSONString();
+        writeIndexTable.remove(ed);
     }
 
     /**
@@ -451,10 +448,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * <p>
      * Note that the underlying index will <b>NOT</b> be deleted. The {@link ESIndexCommand} can be used to achieve this.
      *
-     * @param entityDescriptor the entity descriptor for which the write index should be cleared
+     * @param ed the entity descriptor for which the write index should be cleared
      */
-    public void rollbackWriteIndex(EntityDescriptor entityDescriptor) {
-        writeIndexTable.remove(entityDescriptor);
+    public void rollbackWriteIndex(EntityDescriptor ed) {
+        writeIndexTable.remove(ed);
     }
 
     /**
@@ -463,15 +460,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * It will be determined by {@link IndexNaming} if it is implemented, or it will equal the lowercase
      * {@link Class#getSimpleName() name of the entity}.
      *
-     * @param entityDescriptor the descriptor of the entity
+     * @param ed the descriptor of the entity
      * @return the type name to use
      */
-    protected String determineTypeName(EntityDescriptor entityDescriptor) {
+    protected String determineTypeName(EntityDescriptor ed) {
         if (indexNaming == null) {
-            return entityDescriptor.getType().getSimpleName().toLowerCase();
+            return ed.getType().getSimpleName().toLowerCase();
         }
 
-        return indexNaming.determineMappingName(entityDescriptor);
+        return indexNaming.determineMappingName(ed);
     }
 
     /**
@@ -482,8 +479,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return <tt>null</tt> if an update is forced or if the entity isn't
      * {@link sirius.db.mixing.annotations.Versioned}, the actual primary term otherwise.
      */
-    private Long determinePrimaryTerm(boolean force, EntityDescriptor entityDescriptor, ElasticEntity entity) {
-        if (entityDescriptor.isVersioned() && !force) {
+    private Long determinePrimaryTerm(boolean force, EntityDescriptor ed, ElasticEntity entity) {
+        if (ed.isVersioned() && !force) {
             return entity.getPrimaryTerm();
         }
 
@@ -498,8 +495,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return <tt>null</tt> if an update is forced or if the entity isn't
      * {@link sirius.db.mixing.annotations.Versioned}, the actual sequence number otherwise.
      */
-    private Long determineSeqNo(boolean force, EntityDescriptor entityDescriptor, ElasticEntity entity) {
-        if (entityDescriptor.isVersioned() && !force) {
+    private Long determineSeqNo(boolean force, EntityDescriptor ed, ElasticEntity entity) {
+        if (ed.isVersioned() && !force) {
             return entity.getSeqNo();
         }
 
@@ -519,29 +516,28 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Creates a new instance of the given entity type for the given data.
      *
-     * @param entityDescriptor the descriptor of the entity type
-     * @param data             the JSON data to transform
+     * @param ed  the descriptor of the entity type
+     * @param obj the JSON data to transform
      * @return a new entity based on the given data
      */
-    protected static ElasticEntity make(EntityDescriptor entityDescriptor, JSONObject data) {
-        String id = data.getString(ID_FIELD);
+    protected static ElasticEntity make(EntityDescriptor ed, JSONObject obj) {
+        String id = obj.getString(ID_FIELD);
 
         try {
-            JSONObject source = data.getJSONObject(RESPONSE_SOURCE);
-            ElasticEntity result =
-                    (ElasticEntity) entityDescriptor.make(Elastic.class, null, key -> Value.of(source.get(key)));
-            result.setSearchHit(data);
+            JSONObject source = obj.getJSONObject(RESPONSE_SOURCE);
+            ElasticEntity result = (ElasticEntity) ed.make(Elastic.class, null, key -> Value.of(source.get(key)));
+            result.setSearchHit(obj);
             result.setId(id);
 
-            if (entityDescriptor.isVersioned()) {
-                result.setPrimaryTerm(data.getLong(RESPONSE_PRIMARY_TERM));
-                result.setSeqNo(data.getLong(RESPONSE_SEQ_NO));
+            if (ed.isVersioned()) {
+                result.setPrimaryTerm(obj.getLong(RESPONSE_PRIMARY_TERM));
+                result.setSeqNo(obj.getLong(RESPONSE_SEQ_NO));
             }
 
             return result;
-        } catch (Exception exception) {
+        } catch (Exception e) {
             throw Exceptions.handle()
-                            .error(exception)
+                            .error(e)
                             .withSystemErrorMessage("Failed processing entity (_id = %s)", id)
                             .to(Elastic.LOG)
                             .handle();
@@ -584,13 +580,13 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
         String routing = context.apply(CONTEXT_ROUTING).getString();
         if (routing == null && isRouted(entityDescriptor, RoutingAccessMode.READ)) {
-            LOG.WARN("Trying to FIND an entity of type '%s' with ID '%s' without providing a routing! "
+            LOG.WARN("Trying to FIND an entity of type '%s' with id '%s' without providing a routing! "
                      + "This will most probably return an invalid result!\n%s",
                      entityDescriptor.getType().getName(),
                      id,
                      ExecutionPoint.snapshot());
         } else if (routing != null && !isRouted(entityDescriptor, RoutingAccessMode.READ)) {
-            LOG.WARN("Trying to FIND an un-routed entity of type '%s' with ID '%s' with a routing! "
+            LOG.WARN("Trying to FIND an unrouted entity of type '%s' with id '%s' with a routing! "
                      + "This will most probably return an invalid result!\n%s",
                      entityDescriptor.getType().getName(),
                      id,
@@ -616,7 +612,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * <p>
      * Via the config list {@link #suppressedRoutings} (<tt>elasticsearch.suppressedRoutings</tt>) the usage of
      * a routing field can entirely be disabled for all listed entities. This might be useful when migrating
-     * from an un-routed to a routed index or even if the routing is only feasible in some scenarios.
+     * from an unrouted to a routed index or even if the routing is only feasible in some scenarios.
      *
      * @param entityDescriptor the descriptor of the entity to check
      * @param accessMode       the access mode for which the suppression should be checked
