@@ -15,6 +15,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
 import sirius.db.mixing.BaseMapper;
+import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.IntegrityConstraintFailedException;
 import sirius.db.mixing.Mapping;
@@ -30,6 +31,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.health.HandledException;
 
 import java.util.HashSet;
 import java.util.IntSummaryStatistics;
@@ -66,6 +68,8 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * Defines the value used to desclare create a fulltext index for the given column.
      */
     public static final String INDEX_AS_FULLTEXT = "text";
+
+    public static final String CONTEXT_IN_SECONDARY = "inSecondary";
 
     @Part
     private Mongo mongo;
@@ -240,10 +244,13 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
     protected <E extends MongoEntity> Optional<E> findEntity(Object id,
                                                              EntityDescriptor entityDescriptor,
                                                              Function<String, Value> context) throws Exception {
-        return mongo.find(entityDescriptor.getRealm())
-                    .where(MongoEntity.ID, id.toString())
-                    .singleIn(entityDescriptor.getRelationName())
-                    .map(doc -> make(entityDescriptor, doc));
+        boolean inSecondary = context.apply(CONTEXT_IN_SECONDARY).asBoolean(false);
+        Finder finder = inSecondary ?
+                        mongo.findInSecondary(entityDescriptor.getRealm()) :
+                        mongo.find(entityDescriptor.getRealm());
+        return finder.where(MongoEntity.ID, id.toString())
+                     .singleIn(entityDescriptor.getRelationName())
+                     .map(doc -> make(entityDescriptor, doc));
     }
 
     /**
@@ -271,6 +278,40 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                             .to(Mongo.LOG)
                             .handle();
         }
+    }
+
+    /**
+     * Performs a database lookup to select the entity of the given type with the given ID.
+     * <p>
+     * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
+     * may return stale data if a secondary lags behind. Therefore, this data must not be stored back in the primary
+     * database. This should rather only be used to serve web requests or other queries where occasional stale date
+     * does no harm.
+     * <p>
+     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
+     *
+     * @param type the type of entity to select
+     * @param id   the ID (which can be either a long, int or String) to select
+     * @param <E>  the generic type of the entity to select
+     * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given ID exists
+     */
+    public <E extends MongoEntity> Optional<E> findInSecondary(Class<E> type, Object id) {
+        return find(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(true)));
+    }
+
+    /**
+     * Tries to {@link #findInSecondary(Class, Object)} the entity with the given ID.
+     * <p>
+     * If no entity is found, an exception is thrown.
+     *
+     * @param type the type of entity to select
+     * @param id   the ID (which can be either a long, Long or String) to select
+     * @param <E>  the generic type of the entity to select
+     * @return the entity with the given ID
+     * @throws HandledException if no entity with the given ID was present
+     */
+    public <E extends MongoEntity> E findInSecondaryOrFail(Class<E> type, Object id) {
+        return findOrFail(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(false)));
     }
 
     @SuppressWarnings("unchecked")
