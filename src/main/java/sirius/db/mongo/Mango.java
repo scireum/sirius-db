@@ -15,7 +15,6 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import org.bson.Document;
 import sirius.db.mixing.BaseMapper;
-import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.IntegrityConstraintFailedException;
 import sirius.db.mixing.Mapping;
@@ -31,7 +30,6 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
-import sirius.kernel.health.HandledException;
 
 import java.util.HashSet;
 import java.util.IntSummaryStatistics;
@@ -47,7 +45,7 @@ import java.util.stream.Collectors;
  * Provides the {@link BaseMapper mapper} used to communicate with <tt>MongoDB</tt>.
  */
 @Register(classes = {Mango.class, Startable.class})
-public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?>> implements Startable {
+public class Mango extends SecondaryCapableMapper<MongoEntity, MongoConstraint, MongoQuery<?>> implements Startable {
 
     /**
      * Defines the name of the internal ID field in MongoDB
@@ -68,8 +66,6 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * Defines the value used to desclare create a fulltext index for the given column.
      */
     public static final String INDEX_AS_FULLTEXT = "text";
-
-    public static final String CONTEXT_IN_SECONDARY = "inSecondary";
 
     @Part
     private Mongo mongo;
@@ -280,40 +276,6 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         }
     }
 
-    /**
-     * Performs a database lookup to select the entity of the given type with the given ID.
-     * <p>
-     * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
-     * may return stale data if a secondary lags behind. Therefore, this data must not be stored back in the primary
-     * database. This should rather only be used to serve web requests or other queries where occasional stale date
-     * does no harm.
-     * <p>
-     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
-     *
-     * @param type the type of entity to select
-     * @param id   the ID (which can be either a long, int or String) to select
-     * @param <E>  the generic type of the entity to select
-     * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given ID exists
-     */
-    public <E extends MongoEntity> Optional<E> findInSecondary(Class<E> type, Object id) {
-        return find(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(true)));
-    }
-
-    /**
-     * Tries to {@link #findInSecondary(Class, Object)} the entity with the given ID.
-     * <p>
-     * If no entity is found, an exception is thrown.
-     *
-     * @param type the type of entity to select
-     * @param id   the ID (which can be either a long, Long or String) to select
-     * @param <E>  the generic type of the entity to select
-     * @return the entity with the given ID
-     * @throws HandledException if no entity with the given ID was present
-     */
-    public <E extends MongoEntity> E findInSecondaryOrFail(Class<E> type, Object id) {
-        return findOrFail(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(true)));
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     protected <E extends MongoEntity> Optional<E> findEntity(E entity) {
@@ -325,20 +287,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
         return new MongoQuery<>(mixing.getDescriptor(type), null);
     }
 
-    /**
-     * In contrast to {@link #select(Class)} this doesn't necessarily read from the primary node but from the nearest.
-     * <p>
-     * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
-     * may return stale data if a secondary lags behind. Therefore, this data must not be stored back in the primary
-     * database using {@link Mango#update(MongoEntity)}. This should rather only be used to serve web requests or other
-     * queries where occasional stale data does no harm.
-     * <p>
-     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
-     *
-     * @param type the type of entities to query for
-     * @param <E>  the generic type of entities to be returned
-     * @return a query used to search for entities of the given type in the nearest MongoDB instance
-     */
+    @Override
     public <E extends MongoEntity> MongoQuery<E> selectFromSecondary(Class<E> type) {
         return new MongoQuery<>(mixing.getDescriptor(type), ReadPreference.nearest());
     }

@@ -17,6 +17,7 @@ import sirius.db.mixing.IntegrityConstraintFailedException;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.db.mixing.Property;
+import sirius.db.mongo.SecondaryCapableMapper;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
 import sirius.kernel.commons.Strings;
@@ -43,7 +44,7 @@ import java.util.function.Function;
  * Provides the {@link BaseMapper mapper} used to communicate with JDBC / SQL databases.
  */
 @Register(classes = OMA.class)
-public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? extends SQLEntity>> {
+public class OMA extends SecondaryCapableMapper<SQLEntity, SQLConstraint, SmartQuery<? extends SQLEntity>> {
 
     /**
      * Contains the central logger for the OMA facility.
@@ -353,20 +354,7 @@ public class OMA extends BaseMapper<SQLEntity, SQLConstraint, SmartQuery<? exten
         return new SmartQuery<>(entityDescriptor, getDatabase(entityDescriptor.getRealm()));
     }
 
-    /**
-     * Creates a query for the given type using the <tt>secondary</tt> datasource.
-     * <p>
-     * Note that an entity fetched from a secondary database shouldn't be updated back into the
-     * primary database. Call {@link #tryRefresh(E)} to obtain an up-to-date copy from
-     * the primary or use <tt>optimistic locking</tt> to prevent re-inserting stale data into the primary db.
-     * <p>
-     * Also, this should NOT be used to fill any cache as this might poison the cache with already stale data.
-     *
-     * @param type the type of entities to query for.
-     * @param <E>  the generic type of entities to be returned
-     * @return a query used to search for entities of the given type
-     * @see #getSecondaryDatabase(String)
-     */
+    @Override
     public <E extends SQLEntity> SmartQuery<E> selectFromSecondary(Class<E> type) {
         EntityDescriptor entityDescriptor = mixing.getDescriptor(type);
         return new SmartQuery<>(entityDescriptor, getSecondaryDatabase(entityDescriptor.getRealm()));
