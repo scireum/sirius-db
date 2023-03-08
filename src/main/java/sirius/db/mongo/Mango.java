@@ -311,7 +311,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * @throws HandledException if no entity with the given ID was present
      */
     public <E extends MongoEntity> E findInSecondaryOrFail(Class<E> type, Object id) {
-        return findOrFail(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(false)));
+        return findOrFail(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(true)));
     }
 
     @SuppressWarnings("unchecked")
