@@ -98,11 +98,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             if (entityDescriptor.isVersioned()) {
                 entity.setVersion(1);
             }
-        } catch (MongoWriteException e) {
-            if (e.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
-                throw new IntegrityConstraintFailedException(e);
+        } catch (MongoWriteException exception) {
+            if (exception.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
+                throw new IntegrityConstraintFailedException(exception);
             } else {
-                throw e;
+                throw exception;
             }
         }
     }
@@ -141,11 +141,11 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             if (entityDescriptor.isVersioned()) {
                 entity.setVersion(entity.getVersion() + 1);
             }
-        } catch (MongoWriteException e) {
-            if (e.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
-                throw new IntegrityConstraintFailedException(e);
+        } catch (MongoWriteException exception) {
+            if (exception.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
+                throw new IntegrityConstraintFailedException(exception);
             } else {
-                throw e;
+                throw exception;
             }
         }
     }
@@ -271,9 +271,9 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
                 result.setVersion(doc.get(VERSION).asInt(0));
             }
             return result;
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw Exceptions.handle()
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage("Failed processing entity (_id = %s)", doc.id())
                             .to(Mongo.LOG)
                             .handle();
@@ -329,7 +329,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * In contrast to {@link #select(Class)} this doesn't necessarily read from the primary node but from the nearest.
      * <p>
      * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
-     * may return stale data if a secondary lags behind. Therefore this data must not be stored back in the primary
+     * may return stale data if a secondary lags behind. Therefore, this data must not be stored back in the primary
      * database using {@link Mango#update(MongoEntity)}. This should rather only be used to serve web requests or other
      * queries where occasional stale data does no harm.
      * <p>
@@ -409,7 +409,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      *
      * @param index       the index to check
      * @param seenIndices the set of seen index names
-     * @return <tt>true</tt> if the name has to been seen yet, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if the name hasn't been seen yet, <tt>false</tt> otherwise
      */
     private boolean deduplicateByName(Index index, Set<String> seenIndices) {
         return seenIndices.add(index.name());
@@ -432,7 +432,7 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
      * defined by the index.
      *
      * @param index            the index to check
-     * @param entityDescriptor the entitiy descriptor used to generate proper error messages
+     * @param entityDescriptor the entity descriptor used to generate proper error messages
      * @return <tt>true</tt> if the index is properly populated, <tt>false</tt> otherwise
      */
     private boolean checkColumnSettings(Index index, EntityDescriptor entityDescriptor) {
@@ -462,9 +462,9 @@ public class Mango extends BaseMapper<MongoEntity, MongoConstraint, MongoQuery<?
             Mongo.LOG.FINE("Creating MongoDB index %s for: %s...", index.name(), descriptor.getRelationName());
             client.getCollection(descriptor.getRelationName())
                   .createIndex(document, new IndexOptions().name(index.name()).unique(index.unique()));
-        } catch (Exception e) {
+        } catch (Exception exception) {
             Exceptions.handle()
-                      .error(e)
+                      .error(exception)
                       .to(Mongo.LOG)
                       .withSystemErrorMessage("Failed to create index %s of %s (%s) - %s (%s)",
                                               index.name(),

@@ -72,8 +72,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     public <E extends B> void update(E entity) {
         try {
             performUpdate(entity, false);
-        } catch (OptimisticLockException | IntegrityConstraintFailedException e) {
-            throw Exceptions.handle(e);
+        } catch (OptimisticLockException | IntegrityConstraintFailedException exception) {
+            throw Exceptions.handle(exception);
         }
     }
 
@@ -150,7 +150,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                 int timeoutFactor = determineRetryTimeoutFactor();
                 // Wait 0, x ms, 2*x ms
                 Wait.millis((2 - retries) * timeoutFactor);
-                // Wait 0..x ms in 50% of all calls...
+                // Wait 0...x ms in 50% of all calls...
                 Wait.randomMillis(-timeoutFactor, timeoutFactor);
             } catch (HandledException handledException) {
                 throw handledException;
@@ -182,8 +182,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     public <E extends B> void override(E entity) {
         try {
             performUpdate(entity, true);
-        } catch (IntegrityConstraintFailedException | OptimisticLockException e) {
-            throw Exceptions.handle(e);
+        } catch (IntegrityConstraintFailedException | OptimisticLockException exception) {
+            throw Exceptions.handle(exception);
         }
     }
 
@@ -206,12 +206,12 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
             }
 
             invokeAfterSaveHandlers(entity, entityDescriptor);
-        } catch (IntegrityConstraintFailedException | OptimisticLockException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (IntegrityConstraintFailedException | OptimisticLockException exception) {
+            throw exception;
+        } catch (Exception exception) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage("Unable to UPDATE %s (%s): %s (%s)",
                                                     entity,
                                                     entity.getClass().getSimpleName())
@@ -242,7 +242,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      *
      * @param entity           the entity to create
      * @param entityDescriptor the descriptor of the entity
-     * @throws Exception in case of an database error
+     * @throws Exception in case of a database error
      */
     protected abstract void createEntity(B entity, EntityDescriptor entityDescriptor) throws Exception;
 
@@ -252,7 +252,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * @param entity           the entity to update
      * @param force            <tt>ture</tt> if the update is forced and optimistic locking must be disabled
      * @param entityDescriptor the descriptor of the entity
-     * @throws Exception in case of an database error
+     * @throws Exception in case of a database error
      */
     protected abstract void updateEntity(B entity, boolean force, EntityDescriptor entityDescriptor) throws Exception;
 
@@ -268,8 +268,8 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     public <E extends B> void delete(E entity) {
         try {
             performDelete(entity, false);
-        } catch (OptimisticLockException e) {
-            throw Exceptions.handle(e);
+        } catch (OptimisticLockException exception) {
+            throw Exceptions.handle(exception);
         }
     }
 
@@ -297,9 +297,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     public <E extends B> void forceDelete(E entity) {
         try {
             performDelete(entity, true);
-        } catch (OptimisticLockException e) {
+        } catch (OptimisticLockException exception) {
             // Should really not happen....
-            throw Exceptions.handle(e);
+            throw Exceptions.handle(exception);
         }
     }
 
@@ -315,12 +315,12 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                 deleteEntity(entity, force, entityDescriptor);
                 invokeAfterDeleteHandlers(entity, entityDescriptor);
             }
-        } catch (OptimisticLockException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (OptimisticLockException exception) {
+            throw exception;
+        } catch (Exception exception) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage("Unable to DELETE %s (%s): %s (%s)",
                                                     entity,
                                                     entity.getClass().getSimpleName())
@@ -350,9 +350,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * Deletes the give entity from the database.
      *
      * @param entity           the entity to delete
-     * @param force            <tt>true</tt> if the delete is forced and optimistic locking must be disabled
+     * @param force            <tt>true</tt> if the deletion is forced and optimistic locking must be disabled
      * @param entityDescriptor the descriptor of the entity
-     * @throws Exception in case of an database error
+     * @throws Exception in case of a database error
      */
     protected abstract void deleteEntity(B entity, boolean force, EntityDescriptor entityDescriptor) throws Exception;
 
@@ -387,13 +387,13 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     }
 
     /**
-     * Performs a database lookup to select the entity of the given type with the given id.
+     * Performs a database lookup to select the entity of the given type with the given ID.
      *
      * @param type the type of entity to select
-     * @param id   the id (which can be either a long, int or String) to select
+     * @param id   the ID (which can be either a long, int or String) to select
      * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @param <E>  the generic type of the entity to select
-     * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given id exists
+     * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given ID exists
      */
     public <E extends B> Optional<E> find(Class<E> type, Object id, ContextInfo... info) {
         try {
@@ -413,12 +413,12 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
 
             EntityDescriptor entityDescriptor = mixing.getDescriptor(type);
             return findEntity(id, entityDescriptor, makeContext(info));
-        } catch (HandledException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (HandledException exception) {
+            throw exception;
+        } catch (Exception exception) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage("Unable to FIND  %s (%s): %s (%s)", type.getSimpleName(), id)
                             .handle();
         }
@@ -451,9 +451,9 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     }
 
     /**
-     * Tries to find the entity with the given id.
+     * Tries to find the entity with the given ID.
      *
-     * @param id               the id of the entity to find
+     * @param id               the ID of the entity to find
      * @param entityDescriptor the descriptor of the entity to find
      * @param context          the advanced search context which can be populated using {@link ContextInfo} in
      *                         {@link #find(Class, Object, ContextInfo...)}
@@ -466,15 +466,15 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
                                                             Function<String, Value> context) throws Exception;
 
     /**
-     * Tries to {@link #find(Class, Object, ContextInfo...)} the entity with the given id.
+     * Tries to {@link #find(Class, Object, ContextInfo...)} the entity with the given ID.
      * <p>
      * If no entity is found, an exception is thrown.
      *
      * @param type the type of entity to select
-     * @param id   the id (which can be either a long, Long or String) to select
+     * @param id   the ID (which can be either a long, Long or String) to select
      * @param info info provided as context (e.g. routing infos for Elasticsearch)
      * @param <E>  the generic type of the entity to select
-     * @return the entity with the given id
+     * @return the entity with the given ID
      * @throws HandledException if no entity with the given ID was present
      */
     public <E extends B> E findOrFail(Class<E> type, Object id, ContextInfo... info) {
@@ -484,7 +484,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         } else {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage("Cannot find entity of type '%s' with id '%s'", type.getName(), id)
+                            .withSystemErrorMessage("Cannot find entity of type '%s' with ID '%s'", type.getName(), id)
                             .handle();
         }
     }
@@ -607,7 +607,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
      * {@link FieldLookupCache#lookup(BaseEntityRef, String)} which provides a cache.
      *
      * @param type  the type of the entity
-     * @param id    the id of the entity
+     * @param id    the ID of the entity
      * @param field the field to resolve
      * @return the field value, transformed into the appropriate type
      * @throws Exception in case of an error during a lookup
