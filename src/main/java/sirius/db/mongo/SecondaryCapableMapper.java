@@ -28,7 +28,12 @@ import java.util.Optional;
 public abstract class SecondaryCapableMapper<B extends BaseEntity<?>, C extends Constraint, Q extends Query<?, ? extends B, C>>
         extends BaseMapper<B, C, Q> {
 
-    public static final String CONTEXT_IN_SECONDARY = "inSecondary";
+    /**
+     * Contains the context info which is used to indicate that a query should be executed against a secondary cluster node.
+     */
+    protected static final String CONTEXT_IN_SECONDARY = "inSecondary";
+
+    private static final Value ENABLED = Value.of(true);
 
     /**
      * Performs a database lookup to select the entity of the given type with the given ID.
@@ -46,7 +51,7 @@ public abstract class SecondaryCapableMapper<B extends BaseEntity<?>, C extends 
      * @return the entity wrapped as <tt>Optional</tt> or an empty optional if no entity with the given ID exists
      */
     public <E extends B> Optional<E> findInSecondary(Class<E> type, Object id) {
-        return find(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(true)));
+        return find(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, ENABLED));
     }
 
     /**
@@ -61,7 +66,7 @@ public abstract class SecondaryCapableMapper<B extends BaseEntity<?>, C extends 
      * @throws HandledException if no entity with the given ID was present
      */
     public <E extends B> E findInSecondaryOrFail(Class<E> type, Object id) {
-        return findOrFail(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, Value.of(true)));
+        return findOrFail(type, id, new ContextInfo(CONTEXT_IN_SECONDARY, ENABLED));
     }
 
     /**
