@@ -407,6 +407,11 @@ public class OMA extends SecondaryCapableMapper<SQLEntity, SQLConstraint, SmartQ
     protected <E extends SQLEntity> Optional<E> findEntity(Object id,
                                                            EntityDescriptor entityDescriptor,
                                                            Function<String, Value> context) throws Exception {
+        if (context.apply(SecondaryCapableMapper.CONTEXT_IN_SECONDARY).asBoolean(false)) {
+            try (Connection connection = getSecondaryDatabase(entityDescriptor.getRealm()).getConnection()) {
+                return execFind(id, entityDescriptor, connection);
+            }
+        }
         try (Connection connection = getDatabase(entityDescriptor.getRealm()).getConnection()) {
             return execFind(id, entityDescriptor, connection);
         }
