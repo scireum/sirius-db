@@ -1048,7 +1048,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @SuppressWarnings("unchecked")
     @Override
-    public void iterate(Predicate<E> handler) {
+    protected void doIterate(Predicate<E> handler) {
         if (forceFail) {
             return;
         }

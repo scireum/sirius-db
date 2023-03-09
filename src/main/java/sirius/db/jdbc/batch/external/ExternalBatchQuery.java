@@ -12,7 +12,6 @@ import sirius.db.jdbc.BaseSQLQuery;
 import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.Row;
-import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Average;
@@ -140,10 +139,9 @@ public class ExternalBatchQuery extends BaseSQLQuery {
     }
 
     @Override
-    public void iterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
-        try (ResultSet rs = statement.executeQuery()) {
-            TaskContext tc = TaskContext.get();
-            processResultSet(handler, limit, rs, tc);
+    protected void doIterate(Predicate<Row> handler, @Nullable Limit limit) throws SQLException {
+        try (ResultSet resultSet = statement.executeQuery()) {
+            processResultSet(handler, limit, resultSet);
         }
     }
 
