@@ -382,40 +382,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return effectiveQuery.where(sortingFilterConstraint).queryList();
         }
 
-        /**
-         * Creates a sql constraint for sorting purposes.
-         * </p>
-         * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
-         * returns false e.g. NULL != 'any' returns false.
-         * Therefore, comparisons with NULL values must be treated specially.
-         *
-         * @param sortAscending decides whether the sorting direction is descending or ascending
-         * @param column the column to be used for sorting
-         * @param value the value of the column
-         * @param previousSortingColumns all columns that should be sorted before the current one
-         * @return {@link SQLConstraint} which can be used to map a level of sorting.
-         */
-        private SQLConstraint createSqlConstraintForSortingColumn(boolean sortAscending, Mapping column, Object value,
-                                                                  Map<Mapping, Object> previousSortingColumns) {
-            SQLConstraint sortingStep = null;
-            for (Map.Entry<Mapping, Object> previousColumn : previousSortingColumns.entrySet()) {
-                sortingStep = OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
-            }
-            if (sortAscending) {
-                if (value == null) {
-                    return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
-                }
-                return OMA.FILTERS.and(sortingStep, OMA.FILTERS.gt(column, value));
-            } else {
-                // If the sort order is descending and the value is NULL, then all rows to be collected
-                // will be collected by other iterations of this method.
-                if (value == null) {
-                    return null;
-                }
-                return OMA.FILTERS.and(sortingStep, OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
-            }
-        }
-
         private Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
             BaseEntity<?> parent = findParent(mapping, entity);
             return parent.getDescriptor().getProperty(mapping.getName()).getValue(parent);
@@ -440,6 +406,40 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 }
             }
             return entity;
+        }
+    }
+
+    /**
+     * Creates a sql constraint for sorting purposes.
+     * </p>
+     * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
+     * returns false e.g. NULL != 'any' returns false.
+     * Therefore, comparisons with NULL values must be treated specially.
+     *
+     * @param sortAscending decides whether the sorting direction is descending or ascending
+     * @param column the column to be used for sorting
+     * @param value the value of the column
+     * @param previousSortingColumns all columns that should be sorted before the current one
+     * @return {@link SQLConstraint} which can be used to map a level of sorting.
+     */
+    SQLConstraint createSqlConstraintForSortingColumn(boolean sortAscending, Mapping column, Object value,
+                                                      Map<Mapping, Object> previousSortingColumns) {
+        SQLConstraint sortingStep = null;
+        for (Map.Entry<Mapping, Object> previousColumn : previousSortingColumns.entrySet()) {
+            sortingStep = OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
+        }
+        if (sortAscending) {
+            if (value == null) {
+                return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
+            }
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.gt(column, value));
+        } else {
+            // If the sort order is descending and the value is NULL, then all rows to be collected
+            // will be collected by other iterations of this method.
+            if (value == null) {
+                return null;
+            }
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
         }
     }
 
