@@ -428,19 +428,37 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         for (Map.Entry<Mapping, Object> previousColumn : previousSortingColumns.entrySet()) {
             sortingStep = OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
         }
-        if (sortAscending) {
-            if (value == null) {
-                return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
-            }
+
+        if (value == null) {
+            return createConstraintForSortingWithNull(sortAscending, sortingStep, column);
+        }
+        if (nullValuesFirst(sortAscending)) {
             return OMA.FILTERS.and(sortingStep, OMA.FILTERS.gt(column, value));
         } else {
-            // If the sort order is descending and the value is NULL, then all rows to be collected
-            // will be collected by other iterations of this method.
-            if (value == null) {
-                return null;
-            }
             return OMA.FILTERS.and(sortingStep, OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
         }
+    }
+
+    private SQLConstraint createConstraintForSortingWithNull(boolean sortAscending, SQLConstraint sortingStep,
+                                                             Mapping column) {
+        if (nullValuesFirst(sortAscending)) {
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
+        }
+        return null;
+    }
+
+    /**
+     * Indicates whether null values are listed before or after non-null values.
+     * </p>
+     * Both the sort order and the implementation in the database tell us whether we will get a
+     * list where the null values are at the beginning or at the end.
+     *
+     * @param sortAscending decides whether the sorting direction is descending or ascending
+     * @return {@code true} if the sorted list starts with null values
+     */
+    private boolean nullValuesFirst(boolean sortAscending) {
+        return (sortAscending && db.hasCapability(Capability.NULLS_FIRST))
+                || (!sortAscending && !db.hasCapability(Capability.NULLS_FIRST));
     }
 
     @Override
