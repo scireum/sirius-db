@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import sirius.db.jdbc.constraints.CompoundValue;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
@@ -44,6 +43,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -366,25 +366,20 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             if (lastValue == null) {
                 return effectiveQuery.queryList();
             }
-            CompoundValue leftHandSide = new CompoundValue();
-            CompoundValue rightHandSide = new CompoundValue();
-
+            SQLConstraint sortingFilterConstraint = null;
+            Map<Mapping, Object> previousSortingColumns = new HashMap<>();
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
                 Object value = getPropertyValue(sortColumn, lastValue);
-                if (sortAscending) {
-                    // the order by is ascending -> COLUMN > lastvalue.column
-                    leftHandSide.addComponent(sortColumn);
-                    rightHandSide.addComponent(value);
-                } else {
-                    // the order by is descending -> lastvalue.column > COLUMN
-                    leftHandSide.addComponent(value);
-                    rightHandSide.addComponent(sortColumn);
-                }
-            }
 
-            return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
+                SQLConstraint currentColumConstraint = createSqlConstraintForSortingColumn(sortAscending, sortColumn,
+                        value, previousSortingColumns);
+                sortingFilterConstraint = OMA.FILTERS.or(sortingFilterConstraint, currentColumConstraint);
+
+                previousSortingColumns.put(sortColumn, value);
+            }
+            return effectiveQuery.where(sortingFilterConstraint).queryList();
         }
 
         private Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
@@ -412,6 +407,59 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             }
             return entity;
         }
+    }
+
+    /**
+     * Creates a sql constraint for sorting purposes.
+     * </p>
+     * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
+     * returns false e.g. NULL != 'any' returns false.
+     * Therefore, comparisons with NULL values must be treated specially.
+     *
+     * @param sortAscending decides whether the sorting direction is descending or ascending
+     * @param column the column to be used for sorting
+     * @param value the value of the column
+     * @param previousSortingColumns all columns that should be sorted before the current one
+     * @return {@link SQLConstraint} which can be used to map a level of sorting.
+     */
+    SQLConstraint createSqlConstraintForSortingColumn(boolean sortAscending, Mapping column, Object value,
+                                                      Map<Mapping, Object> previousSortingColumns) {
+        SQLConstraint sortingStep = null;
+        for (Map.Entry<Mapping, Object> previousColumn : previousSortingColumns.entrySet()) {
+            sortingStep = OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
+        }
+
+        if (value == null) {
+            return createConstraintForSortingWithNull(sortAscending, sortingStep, column);
+        }
+        if (nullValuesFirst(sortAscending)) {
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.gt(column, value));
+        } else {
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
+        }
+    }
+
+    private SQLConstraint createConstraintForSortingWithNull(boolean sortAscending, SQLConstraint sortingStep,
+                                                             Mapping column) {
+        if (nullValuesFirst(sortAscending)) {
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
+        }
+        return null;
+    }
+
+    /**
+     * Indicates whether null values are listed before or after non-null values.
+     * </p>
+     * Both the sort order and the implementation in the database tell us whether we will get a
+     * list where the null values are at the beginning or at the end.
+     *
+     * @param sortAscending decides whether the sorting direction is descending or ascending
+     * @return {@code true} if the sorted list starts with null values
+     */
+    private boolean nullValuesFirst(boolean sortAscending) {
+        return ((db == null && sortAscending)
+                || (db != null && sortAscending && db.hasCapability(Capability.NULLS_FIRST))
+                || (db != null && !sortAscending && !db.hasCapability(Capability.NULLS_FIRST)));
     }
 
     @Override
