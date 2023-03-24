@@ -725,7 +725,12 @@ public class EntityDescriptor {
 
     private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
         if (method.isAnnotationPresent(BeforeSave.class)) {
-            handleBeforeSaveMethod(descriptor, accessPath, method);
+            assertNotYetCollected(descriptor.beforeSaveHandlerCollector,
+                                  BeforeSave.class.getSimpleName(),
+                                  descriptor.getType().getName(),
+                                  method);
+            descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),
+                                                      createInvokeHandler(accessPath, method));
         }
         if (method.isAnnotationPresent(AfterSave.class)) {
             descriptor.afterSaveHandlers.add(createInvokeHandler(accessPath, method));
@@ -838,19 +843,21 @@ public class EntityDescriptor {
         }
     }
 
-    private static void handleBeforeSaveMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
-        if (descriptor.beforeSaveHandlerCollector == null) {
+    private static void assertNotYetCollected(PriorityCollector<?> priorityCollector,
+                                              String annotationName,
+                                              String className,
+                                              Method method) {
+        if (priorityCollector == null) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage("Cannot provide a before-save-handler, as the sorted list was"
+                            .withSystemErrorMessage("Cannot provide a %s-handler, as the sorted list was"
                                                     + " already computed. Descriptor: %s, Method: %s.%s",
-                                                    descriptor.getType().getName(),
+                                                    annotationName,
+                                                    className,
                                                     method.getDeclaringClass().getName(),
                                                     method.getName())
                             .handle();
         }
-        descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),
-                                                  createInvokeHandler(accessPath, method));
     }
 
     private static void warnOnWrongVisibility(Method method) {
