@@ -139,7 +139,7 @@ public class EntityDescriptor {
 
     /**
      * Collects handlers which are executed once an entity is about to be deleted. Some checks might depend on others,
-     * so {@link BeforeDelete} permits to specify a property which is used to here to sort the handlers.
+     * so {@link BeforeDelete} permits to specify a property which is used here to sort the handlers.
      * <p>
      * {@link #sortedBeforeDeleteHandlers} will be filled when first accessed and provide a properly sorted list
      */
@@ -152,7 +152,7 @@ public class EntityDescriptor {
 
     /**
      * Collects handlers which are executed once an entity was successfully deleted. Some checks might depend on others,
-     * so {@link AfterDelete} permits to specify a property which is used to here to sort the handlers.
+     * so {@link AfterDelete} permits to specify a property which is used here to sort the handlers.
      * <p>
      * {@link #sortedAfterDeleteHandlers} will be filled when first accessed and provide a properly sorted list
      */
@@ -165,7 +165,7 @@ public class EntityDescriptor {
 
     /**
      * Collects handlers which are executed once an entity is about to be saved. Some checks might depend on others,
-     * so {@link BeforeSave} permits to specify a property which is used to here to sort the handlers.
+     * so {@link BeforeSave} permits to specify a property which is used here to sort the handlers.
      * <p>
      * {@link #sortedBeforeSaveHandlers} will be filled when first accessed and provide a properly sorted list
      */
@@ -178,7 +178,7 @@ public class EntityDescriptor {
 
     /**
      * Collects handlers which are executed once an entity is saved. Some checks might depend on others,
-     * so {@link AfterSave} permits to specify a property which is used to here to sort the handlers.
+     * so {@link AfterSave} permits to specify a property which is used here to sort the handlers.
      * <p>
      * {@link #sortedAfterSaveHandlers} will be filled when first accessed and provide a properly sorted list
      */
@@ -191,7 +191,7 @@ public class EntityDescriptor {
 
     /**
      * Collects handlers which are executed once an entity is validated. Some checks might depend on others,
-     * so {@link OnValidate} permits to specify a property which is used to here to sort the handlers.
+     * so {@link OnValidate} permits to specify a property which is used here to sort the handlers.
      * <p>
      * {@link #sortedValidateHandlers} will be filled when first accessed and provide a properly sorted list
      */
