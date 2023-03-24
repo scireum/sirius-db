@@ -686,7 +686,14 @@ public class EntityDescriptor {
      * @param handler the handler to add
      */
     public void addBeforeDeleteHandler(Consumer<Object> handler) {
-        beforeDeleteHandlers.add(handler);
+        if (beforeDeleteHandlerCollector == null) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("Cannot provide a before-delete-handler, as the sorted list was"
+                                                    + " already computed. Descriptor: %s", getType().getName())
+                            .handle();
+        }
+        beforeDeleteHandlerCollector.add(Priorized.DEFAULT_PRIORITY, handler);
     }
 
     /**
@@ -695,7 +702,14 @@ public class EntityDescriptor {
      * @param handler the handler to add
      */
     public void addValidationHandler(BiConsumer<Object, Consumer<String>> handler) {
-        validateHandlers.add(handler);
+        if (onValidateHandlerCollector == null) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("Cannot provide an on-validate-handler, as the sorted list was"
+                                                    + " already computed. Descriptor: %s", getType().getName())
+                            .handle();
+        }
+        onValidateHandlerCollector.add(Priorized.DEFAULT_PRIORITY, handler);
     }
 
     /**
