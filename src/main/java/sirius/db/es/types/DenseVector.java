@@ -27,7 +27,27 @@ public class DenseVector {
      * Specified the similarity function to apply.
      */
     public enum Similarity {
-        COSINE("cosine"), EUCLIDEAN("l2_norm"), INNER_PRODUCT("dot_product");
+
+        /**
+         * Cosine similarity.
+         * <p>
+         * This is the default similarity function used by Elasticsearch and also recommended for vectors generated
+         * by most embedding algorithms.However, if normalization is possible, the {@link #DOT_PRODUCT} is preferred.
+         */
+        COSINE("cosine"),
+
+        /**
+         * Represents the L-squared distance, better known as Euclidean distance.
+         */
+        L2_NORM("l2_norm"),
+
+        /**
+         * Represents the dot product of the vectors.
+         * <p>
+         * This the vectors are normalized to unit length, this is equivalent to the cosine similarity but mucht more
+         * efficient.
+         */
+        DOT_PRODUCT("dot_product");
 
         private final String esName;
 

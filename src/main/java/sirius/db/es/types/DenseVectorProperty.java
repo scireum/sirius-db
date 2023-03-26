@@ -59,12 +59,12 @@ public class DenseVectorProperty extends Property implements ESPropertyInfo {
                                     field.getName(),
                                     field.getDeclaringClass().getName());
                 }
-            } catch (Exception e) {
+            } catch (Exception exception) {
                 Mixing.LOG.WARN("An error occurred while ensuring that the field %s in %s is properly set up: %s (%s)",
                                 field.getName(),
                                 field.getDeclaringClass().getName(),
-                                e.getMessage(),
-                                e.getClass().getName());
+                                exception.getMessage(),
+                                exception.getClass().getName());
             }
 
             propertyConsumer.accept(denseVectorProperty);
@@ -96,10 +96,10 @@ public class DenseVectorProperty extends Property implements ESPropertyInfo {
     protected DenseVector getDenseVector(Object entity) {
         try {
             return (DenseVector) super.getValueFromField(entity);
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage(
                                     "Unable to obtain DenseVector object from field ('%s' in '%s'): %s (%s)",
                                     getName(),
