@@ -88,11 +88,13 @@ public class QdrantDatabase {
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
             throw Exceptions.handle()
+                            .to(Qdrant.LOG)
                             .withSystemErrorMessage("Got interrupted while executing a qdrant request: %s (%s)")
                             .error(error)
                             .handle();
         } catch (Exception error) {
             throw Exceptions.handle()
+                            .to(Qdrant.LOG)
                             .withSystemErrorMessage("Failed to execute qdrant request: %s (%s)")
                             .error(error)
                             .handle();
