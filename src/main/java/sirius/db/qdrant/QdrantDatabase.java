@@ -33,12 +33,12 @@ public class QdrantDatabase {
 
     private static final String QDRANT_DEFAULT_HOST = "qdrant";
     private static final int QDRANT_DEFAULT_PORT = 6333;
-    public static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
-    public static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofSeconds(60);
-    public static final String HEADER_CONTENT_TYPE = "Content-Type";
-    public static final String CONTENT_TYPE_APPLICATION_JSON = "application/json";
-    public static final int HTTP_STATUS_OK = 200;
-    public static final String URI_PREFIX_COLLECTIONS = "/collections/";
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofSeconds(60);
+    private static final String HEADER_CONTENT_TYPE = "Content-Type";
+    private static final String CONTENT_TYPE_APPLICATION_JSON = "application/json";
+    private static final int HTTP_STATUS_OK = 200;
+    private static final String URI_PREFIX_COLLECTIONS = "/collections/";
 
     /**
      * Specifies the similarity functions supported by qdrant.
