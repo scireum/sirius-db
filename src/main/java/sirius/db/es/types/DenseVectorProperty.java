@@ -54,7 +54,7 @@ public class DenseVectorProperty extends Property implements ESPropertyInfo {
                                     + " should never be null!", field.getName(), field.getDeclaringClass().getName());
                 }
 
-                if (Modifier.isFinal(field.getModifiers())) {
+                if (!Modifier.isFinal(field.getModifiers())) {
                     Mixing.LOG.WARN("Field %s in %s is a DenseVector and should be final!",
                                     field.getName(),
                                     field.getDeclaringClass().getName());
