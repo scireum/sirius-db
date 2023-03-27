@@ -97,7 +97,9 @@ public class NearestNeighborsSearch {
         result.put("field", field.getName());
         result.put("k", numResults);
         result.put("num_candidates", numCandidates);
-        result.put("filter", filterBuilder.build());
+        if (filterBuilder != null) {
+            result.put("filter", filterBuilder.build());
+        }
         result.put("query_vector", queryVector);
 
         return result;

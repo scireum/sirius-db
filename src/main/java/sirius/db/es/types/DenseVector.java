@@ -69,16 +69,16 @@ public class DenseVector {
     /**
      * Creates a new vector to be stored in an entity.
      *
-     * @param dimenstions the number of dimensions of the vector
+     * @param dimensions the number of dimensions of the vector
      * @param similarity  the similarity function to apply
      * @param indexed     <tt>true</tt> if the vector should be indexed, <tt>false</tt> otherwise. Note that efficient
      *                    searches need an indexed vector as otherwise the whole index needs to be scanned.
      */
-    public DenseVector(int dimenstions, Similarity similarity, boolean indexed) {
-        this.dimensions = dimenstions;
+    public DenseVector(int dimensions, Similarity similarity, boolean indexed) {
+        this.dimensions = dimensions;
         this.similarity = similarity;
         this.indexed = indexed;
-        this.vector = new float[dimensions];
+        this.vector = new float[this.dimensions];
     }
 
     /**
