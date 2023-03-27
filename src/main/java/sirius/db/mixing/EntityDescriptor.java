@@ -579,6 +579,20 @@ public class EntityDescriptor {
     }
 
     /**
+     * Invokes all <tt>rejectDeleteHandlers</tt> for the given entity.
+     *
+     * @param entity the entity which is about to be deleted
+     */
+    protected void invokeRejectDeleteHandlers(Object entity) {
+        TaskContext context = TaskContext.get();
+        for (Consumer<Object> handler : rejectDeleteHandlers) {
+            if (handler != null && context.isActive()) {
+                handler.accept(entity);
+            }
+        }
+    }
+
+    /**
      * Invokes all <tt>beforeDeleteHandlers</tt> and then all <tt>cascadeDeleteHandlers</tt> for the given entity.
      *
      * @param entity the entity which is about to be deleted
