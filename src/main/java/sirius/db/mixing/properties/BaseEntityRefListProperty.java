@@ -209,7 +209,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
                 getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
             } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-                getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+                getReferencedDescriptor().addRejectDeleteHandler(this::onDeleteReject);
             }
         } catch (Exception e) {
             Mixing.LOG.WARN("Error when linking property %s of %s: %s (%s)",

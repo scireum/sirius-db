@@ -128,9 +128,14 @@ public class EntityDescriptor {
     protected final Set<Class<? extends Mixable>> mixins = new HashSet<>();
 
     /**
-     * A list of all additional handlers to be executed once an entity was deleted
+     * A list of all cascade delete handlers to be executed once an entity was deleted
      */
     protected final List<Consumer<Object>> cascadeDeleteHandlers = new ArrayList<>();
+
+    /**
+     * A list of all reject handlers to be executed once an entity is about to be deleted
+     */
+    protected final List<Consumer<Object>> rejectDeleteHandlers = new ArrayList<>();
 
     /**
      * A list of all additional handlers to be executed once an entity is about to be deleted
@@ -634,12 +639,31 @@ public class EntityDescriptor {
     }
 
     /**
+     * Invokes all <tt>rejectDeleteHandlers</tt> for the given entity.
+     *
+     * @param entity the entity which is about to be deleted
+     */
+    protected void invokeRejectDeleteHandlers(Object entity) {
+        TaskContext context = TaskContext.get();
+        for (Consumer<Object> handler : rejectDeleteHandlers) {
+            if (handler != null && context.isActive()) {
+                handler.accept(entity);
+            }
+        }
+    }
+
+    /**
      * Invokes all <tt>beforeDeleteHandlers</tt> and then all <tt>cascadeDeleteHandlers</tt> for the given entity.
      *
      * @param entity the entity which is about to be deleted
      */
     public void beforeDelete(Object entity) {
         TaskContext context = TaskContext.get();
+        for (Consumer<Object> handler : rejectDeleteHandlers) {
+            if (handler != null && context.isActive()) {
+                handler.accept(entity);
+            }
+        }
         for (Property property : properties.values()) {
             if (context.isActive()) {
                 property.onBeforeDelete(entity);
@@ -678,6 +702,15 @@ public class EntityDescriptor {
     public void addCascadeDeleteHandler(Consumer<Object> handler) {
         cascadeDeleteHandlers.add(handler);
         markAsComplexDelete();
+    }
+
+    /**
+     * Adds a reject handler for entities managed by this descriptor.
+     *
+     * @param handler the handler to add
+     */
+    public void addRejectDeleteHandler(Consumer<Object> handler) {
+        rejectDeleteHandlers.add(handler);
     }
 
     /**
