@@ -7,5 +7,5 @@ using embeddings. These vectors are then stored in a database. During retrieval 
 query is also transformed into a vector and the task of the vector database is to find nearest neighbors in a
 quick and efficient manner.
 
-The implementation is lighwieght and does not require any external dependencies as all requests are sent via
+The implementation is lightweight and does not require any external dependencies as all requests are sent via
 the JSON / HTTP interface.

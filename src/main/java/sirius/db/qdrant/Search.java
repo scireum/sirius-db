@@ -33,7 +33,7 @@ public class Search {
     }
 
     /**
-     * Sepcifies a payload filter which must match.
+     * Specifies a payload filter which must match.
      *
      * @param key   the name of the field to match
      * @param value the value to match
