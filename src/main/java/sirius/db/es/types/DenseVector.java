@@ -32,7 +32,7 @@ public class DenseVector {
          * Cosine similarity.
          * <p>
          * This is the default similarity function used by Elasticsearch and also recommended for vectors generated
-         * by most embedding algorithms.However, if normalization is possible, the {@link #DOT_PRODUCT} is preferred.
+         * by most embedding algorithms. However, if normalization is possible, the {@link #DOT_PRODUCT} is preferred.
          */
         COSINE("cosine"),
 
@@ -44,7 +44,7 @@ public class DenseVector {
         /**
          * Represents the dot product of the vectors.
          * <p>
-         * This the vectors are normalized to unit length, this is equivalent to the cosine similarity but mucht more
+         * If the vectors are normalized to unit length, this is equivalent to the cosine similarity but much more
          * efficient.
          */
         DOT_PRODUCT("dot_product");
