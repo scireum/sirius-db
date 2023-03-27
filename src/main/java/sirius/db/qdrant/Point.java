@@ -32,7 +32,7 @@ public class Point {
      * @return a 128bit (32 hex bytes) id usable by qdrant
      */
     public static String deriveId(String identifier) {
-        return Hasher.sha1().hash(identifier).toHexString();
+        return Hasher.md5().hash(identifier).toHexString();
     }
 
     /**
