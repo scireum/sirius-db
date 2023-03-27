@@ -90,7 +90,7 @@ public class Search {
         }
 
         JSONObject response = qdrantDatabase.execute(QdrantDatabase.Method.POST,
-                                                     "/collections/" + collection + "/points/search",
+                                                     QdrantDatabase.URI_PREFIX_COLLECTIONS + collection + "/points/search",
                                                      query);
         JSONArray points = response.getJSONArray("result");
 

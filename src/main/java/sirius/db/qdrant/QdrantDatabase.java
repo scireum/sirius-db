@@ -18,6 +18,7 @@ import sirius.kernel.health.Exceptions;
 import sirius.kernel.settings.PortMapper;
 
 import javax.annotation.Nullable;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -37,8 +38,7 @@ public class QdrantDatabase {
     private static final Duration DEFAULT_OPERATION_TIMEOUT = Duration.ofSeconds(60);
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
     private static final String CONTENT_TYPE_APPLICATION_JSON = "application/json";
-    private static final int HTTP_STATUS_OK = 200;
-    private static final String URI_PREFIX_COLLECTIONS = "/collections/";
+    protected static final String URI_PREFIX_COLLECTIONS = "/collections/";
 
     /**
      * Specifies the similarity functions supported by qdrant.
@@ -57,7 +57,7 @@ public class QdrantDatabase {
         }
     }
 
-    enum Method {
+    protected enum Method {
         GET, PUT, POST, DELETE
     }
 
@@ -115,7 +115,7 @@ public class QdrantDatabase {
 
     protected JSONObject execute(Method method, String uri, @Nullable JSONObject input) {
         HttpResponse<String> response = executeRaw(method, uri, input);
-        if (response.statusCode() != HTTP_STATUS_OK) {
+        if (response.statusCode() != HttpURLConnection.HTTP_OK) {
             throw Exceptions.handle()
                             .withSystemErrorMessage("Failed to execute Qdrant request. Received: %s and: %s",
                                                     response.statusCode(),
@@ -157,7 +157,8 @@ public class QdrantDatabase {
      * @return <tt>true</tt> if a collection with the given name exists, <tt>false</tt> otherwise
      */
     public boolean collectionExists(String collection) {
-        return executeRaw(Method.GET, URI_PREFIX_COLLECTIONS + collection, null).statusCode() == HTTP_STATUS_OK;
+        return executeRaw(Method.GET, URI_PREFIX_COLLECTIONS + collection, null).statusCode()
+               == HttpURLConnection.HTTP_OK;
     }
 
     /**

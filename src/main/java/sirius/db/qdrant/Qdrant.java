@@ -36,7 +36,7 @@ public class Qdrant implements MetricProvider {
     @ConfigValue("qdrant.default.host")
     private String host;
 
-    private QdrantDatabase db;
+    private QdrantDatabase defaultDatabase;
 
     /**
      * Determines if the qdrant database is configured.
@@ -53,11 +53,11 @@ public class Qdrant implements MetricProvider {
      * @return the qdrant database being configured in the system config
      */
     public QdrantDatabase db() {
-        if (db == null) {
-            db = new QdrantDatabase(host);
+        if (defaultDatabase == null) {
+            defaultDatabase = new QdrantDatabase(host);
         }
 
-        return db;
+        return defaultDatabase;
     }
 
     @Override
