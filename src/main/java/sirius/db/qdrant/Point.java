@@ -40,7 +40,7 @@ public class Point {
      *
      * @param id     the id of the point. Note that this should be a UUID or at least a string of 32 bytes which only
      *               use hexadecimal characters (0-F). User either {@link UUID} or {@link #deriveId(String)}.
-     * @param vector the vector to store. User {@link Tensors} to decode string or list representations. Note that the
+     * @param vector the vector to store. Use {@link Tensors} to decode string or list representations. Note that the
      *               number of dimensions must match the number of dimensions of the index.
      */
     public Point(String id, float[] vector) {

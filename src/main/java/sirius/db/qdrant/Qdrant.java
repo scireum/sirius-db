@@ -17,7 +17,7 @@ import sirius.kernel.health.metrics.MetricProvider;
 import sirius.kernel.health.metrics.MetricsCollector;
 
 /**
- * Provides access to a qdrant vector dataase.
+ * Provides access to a qdrant vector database.
  * <p>
  * Note that we currently only support accessing a single instance (configured via <tt>qdrant.default.host</tt>).
  * However, the access to the database is already encapsulated in {@link QdrantDatabase} and thus adding support
