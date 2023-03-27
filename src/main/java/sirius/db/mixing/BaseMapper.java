@@ -328,6 +328,37 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
         }
     }
 
+    /**
+     * Asserts that the given entity is deletable.
+     * <p>
+     * This effecifely checks if the entity is referenced by other entities using {@link BaseEntityRef.OnDelete#REJECT}.
+     *
+     * @param entity the entity to check
+     * @param <E>    the generic entity type
+     */
+    public <E extends B> void assertDeletable(E entity) {
+        if (entity == null || entity.isNew()) {
+            return;
+        }
+
+        EntityDescriptor entityDescriptor = entity.getDescriptor();
+
+        Watch watch = Watch.start();
+        try {
+            entityDescriptor.invokeRejectDeleteHandlers(entity);
+        } catch (Exception exception) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .error(exception)
+                            .withSystemErrorMessage("Unable to DELETE %s (%s): %s (%s)",
+                                                    entity,
+                                                    entity.getClass().getSimpleName())
+                            .handle();
+        } finally {
+            watch.submitMicroTiming(TIMING_CATEGORY_MIXING, "RejectDelete - " + entityDescriptor.getName());
+        }
+    }
+
     private <E extends B> void invokeBeforeDeleteHandlers(E entity, EntityDescriptor entityDescriptor) {
         Watch watch = Watch.start();
         try {
