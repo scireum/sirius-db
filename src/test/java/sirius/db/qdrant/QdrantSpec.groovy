@@ -52,7 +52,9 @@ class QdrantSpec extends BaseSpecification {
         ])
         and:
         def result = qdrant.db().query("test-search", Tensors.fromList([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
-                           .queryPayload(Integer.class, "x", 2)
+                           .execute(2, "x").stream()
+                           .map { it.getPayload(Integer.class, "x") }
+                           .collect { it }
         then:
         result.size() == 2
         and:
