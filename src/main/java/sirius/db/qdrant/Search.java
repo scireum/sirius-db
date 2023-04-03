@@ -97,12 +97,7 @@ public class Search {
                                                      + "/points/search",
                                                      query);
         JSONArray points = response.getJSONArray("result");
-        return points.stream()
-                     .map(JSONObject.class::cast)
-                     .map(point -> new Match(point.getString("id"),
-                                             point.getFloat("score"),
-                                             point.getJSONObject("payload")))
-                     .toList();
+        return points.stream().map(JSONObject.class::cast).map(Match::new).toList();
     }
 
     private JSONArray buildConstraints(List<Tuple<String, Object>> filters) {

@@ -21,16 +21,14 @@ public class Match {
     private final float score;
 
     /**
-     * Creates a new match with the given id, score and payload.
+     * Creates a new match from the given JSON response
      *
-     * @param id      the id of the matched point
-     * @param score   the score or distance of the match
-     * @param payload the payload of the matched point
+     * @param match the match as returned by qdrant
      */
-    public Match(String id, float score, JSONObject payload) {
-        this.id = id;
-        this.score = score;
-        this.payload = payload;
+    public Match(JSONObject match) {
+        this.id = match.getString("id");
+        this.score = match.getFloat("score");
+        this.payload = match.getJSONObject("payload");
     }
 
     public String getId() {
