@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import sirius.kernel.commons.Tuple;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -67,16 +68,17 @@ public class Search {
     /**
      * Executes the search and returns the value of the requested payload field.
      *
-     * @param fieldType  the datatype of the field to return
-     * @param field      the name of the field to return
-     * @param maxResults the maximum number of results to return
-     * @param <T>        the generic type of the field to return
+     * @param maxResults    the maximum number of results to return
+     * @param payloadFields the field to pull from the payload
      * @return the matched points ordered by relevance
      */
-    public <T> List<T> queryPayload(Class<T> fieldType, String field, int maxResults) {
+    public List<Match> execute(int maxResults, String... payloadFields) {
+        JSONArray payloadFieldArray = new JSONArray();
+        Arrays.stream(payloadFields).forEach(payloadFieldArray::add);
+
         JSONObject query = new JSONObject();
         query.put("vector", vector);
-        query.put("with_payload", new JSONArray().fluentAdd(field));
+        query.put("with_payload", payloadFieldArray);
         query.put("limit", maxResults);
 
         if (mustFilters != null || mustNotFilters != null) {
@@ -90,16 +92,17 @@ public class Search {
         }
 
         JSONObject response = qdrantDatabase.execute(QdrantDatabase.Method.POST,
-                                                     QdrantDatabase.URI_PREFIX_COLLECTIONS + collection + "/points/search",
+                                                     QdrantDatabase.URI_PREFIX_COLLECTIONS
+                                                     + collection
+                                                     + "/points/search",
                                                      query);
         JSONArray points = response.getJSONArray("result");
-
-        List<T> payloadData = new ArrayList<>(points.size());
-        for (JSONObject point : points.toJavaList(JSONObject.class)) {
-            payloadData.add(fieldType.cast(point.getJSONObject("payload").get(field)));
-        }
-
-        return payloadData;
+        return points.stream()
+                     .map(JSONObject.class::cast)
+                     .map(point -> new Match(point.getString("id"),
+                                             point.getFloat("score"),
+                                             point.getJSONObject("payload")))
+                     .toList();
     }
 
     private JSONArray buildConstraints(List<Tuple<String, Object>> filters) {
