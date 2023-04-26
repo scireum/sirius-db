@@ -68,7 +68,16 @@ public enum Capability {
      * This is especially needed for Clickhouse, as newer drivers expects commits to be used in context of transactions,
      * which must be enabled and opened before.
      */
-    TRANSACTION;
+    TRANSACTION,
+
+    /**
+     * Signals that ordering ascending null values are listed before non-null values.
+     * </p>
+     * Some database management systems handles the sorting of a mix of null and non-null values in a different way.
+     * Some, e.g. mariaDB or MySQL, lists null values before non-null values. Oracle and postgreSQL do it the other way
+     * around.
+     */
+    NULLS_FIRST;
 
     /**
      * Contains the default capabilities of unknown databases.
@@ -87,7 +96,8 @@ public enum Capability {
             GENERATED_KEYS,
             NULL_SAFE_OPERATOR,
             DECIMAL_TYPE,
-            TRANSACTION));
+            TRANSACTION,
+            NULLS_FIRST));
 
     /**
      * Contains the capabilities of a Postgres database

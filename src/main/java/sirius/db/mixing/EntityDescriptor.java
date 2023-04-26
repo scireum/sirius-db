@@ -39,6 +39,7 @@ import sirius.kernel.commons.ValueSupplier;
 import sirius.kernel.di.Injector;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.PriorityParts;
+import sirius.kernel.di.std.Priorized;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.nls.NLS;
 
@@ -127,19 +128,40 @@ public class EntityDescriptor {
     protected final Set<Class<? extends Mixable>> mixins = new HashSet<>();
 
     /**
-     * A list of all additional handlers to be executed once an entity was deleted
+     * A list of all cascade delete handlers to be executed once an entity was deleted
      */
     protected final List<Consumer<Object>> cascadeDeleteHandlers = new ArrayList<>();
 
     /**
+     * A list of all reject handlers to be executed once an entity is about to be deleted
+     */
+    protected final List<Consumer<Object>> rejectDeleteHandlers = new ArrayList<>();
+
+    /**
      * A list of all additional handlers to be executed once an entity is about to be deleted
      */
-    protected final List<Consumer<Object>> beforeDeleteHandlers = new ArrayList<>();
+    protected List<Consumer<Object>> sortedBeforeDeleteHandlers;
+
+    /**
+     * Collects handlers which are executed once an entity is about to be deleted. Some checks might depend on others,
+     * so {@link BeforeDelete} permits to specify a property which is used here to sort the handlers.
+     * <p>
+     * {@link #sortedBeforeDeleteHandlers} will be filled when first accessed and provide a properly sorted list
+     */
+    protected PriorityCollector<Consumer<Object>> beforeDeleteHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all additional handlers to be executed once an entity was successfully deleted
      */
-    protected final List<Consumer<Object>> afterDeleteHandlers = new ArrayList<>();
+    protected List<Consumer<Object>> sortedAfterDeleteHandlers;
+
+    /**
+     * Collects handlers which are executed once an entity was successfully deleted. Some checks might depend on others,
+     * so {@link AfterDelete} permits to specify a property which is used here to sort the handlers.
+     * <p>
+     * {@link #sortedAfterDeleteHandlers} will be filled when first accessed and provide a properly sorted list
+     */
+    protected PriorityCollector<Consumer<Object>> afterDeleteHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all additional handlers to be executed once an entity is about to be saved
@@ -147,22 +169,39 @@ public class EntityDescriptor {
     protected List<Consumer<Object>> sortedBeforeSaveHandlers;
 
     /**
-     * Collects handlers which are executed before entity is saved, need to be in order (some checks might depend on others),
-     * {@link BeforeSave} permits to specify a property which is used to here to sort the handlers.
+     * Collects handlers which are executed once an entity is about to be saved. Some checks might depend on others,
+     * so {@link BeforeSave} permits to specify a property which is used here to sort the handlers.
      * <p>
-     * <tt>sortedBeforeSaveHandlers</tt> will be filled when first accessed and provide a properly sorted list
+     * {@link #sortedBeforeSaveHandlers} will be filled when first accessed and provide a properly sorted list
      */
     protected PriorityCollector<Consumer<Object>> beforeSaveHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all additional handlers to be executed once an entity is saved
      */
-    protected final List<Consumer<Object>> afterSaveHandlers = new ArrayList<>();
+    protected List<Consumer<Object>> sortedAfterSaveHandlers;
+
+    /**
+     * Collects handlers which are executed once an entity is saved. Some checks might depend on others,
+     * so {@link AfterSave} permits to specify a property which is used here to sort the handlers.
+     * <p>
+     * {@link #sortedAfterSaveHandlers} will be filled when first accessed and provide a properly sorted list
+     */
+    protected PriorityCollector<Consumer<Object>> afterSaveHandlerCollector = PriorityCollector.create();
 
     /**
      * A list of all handlers to be executed once an entity is validated
      */
-    protected final List<BiConsumer<Object, Consumer<String>>> validateHandlers = new ArrayList<>();
+    protected List<BiConsumer<Object, Consumer<String>>> sortedValidateHandlers;
+
+    /**
+     * Collects handlers which are executed once an entity is validated. Some checks might depend on others,
+     * so {@link OnValidate} permits to specify a property which is used here to sort the handlers.
+     * <p>
+     * {@link #sortedValidateHandlers} will be filled when first accessed and provide a properly sorted list
+     */
+    protected PriorityCollector<BiConsumer<Object, Consumer<String>>> onValidateHandlerCollector =
+            PriorityCollector.create();
 
     /**
      * Contains all known property factories. These are used to transform fields defined by entity classes to
@@ -508,7 +547,7 @@ public class EntityDescriptor {
      * @param entity the entity which was saved
      */
     public void afterSave(Object entity) {
-        for (Consumer<Object> handler : afterSaveHandlers) {
+        for (Consumer<Object> handler : getSortedAfterSaveHandlers()) {
             if (handler != null) {
                 handler.accept(entity);
             }
@@ -524,6 +563,19 @@ public class EntityDescriptor {
                 asBaseEntity(entity).persistedData.put(p, p.getValueAsCopy(entity));
             }
         }
+    }
+
+    private List<Consumer<Object>> getSortedAfterSaveHandlers() {
+        if (sortedAfterSaveHandlers == null) {
+            synchronized (this) {
+                if (afterSaveHandlerCollector != null) {
+                    sortedAfterSaveHandlers = afterSaveHandlerCollector.getData();
+                    afterSaveHandlerCollector = null;
+                }
+            }
+        }
+
+        return sortedAfterSaveHandlers;
     }
 
     private BaseEntity<?> asBaseEntity(Object entity) {
@@ -542,7 +594,7 @@ public class EntityDescriptor {
      */
     public List<String> validate(Object entity) {
         List<String> warnings = new ArrayList<>();
-        for (BiConsumer<Object, Consumer<String>> validator : validateHandlers) {
+        for (BiConsumer<Object, Consumer<String>> validator : getSortedValidateHandlers()) {
             if (validator != null) {
                 validator.accept(entity, warnings::add);
             }
@@ -562,7 +614,7 @@ public class EntityDescriptor {
      * @return <tt>true</tt> if there are validation warnings, <tt>false</tt> otherwise
      */
     public boolean hasValidationWarnings(Object entity) {
-        for (BiConsumer<Object, Consumer<String>> validator : validateHandlers) {
+        for (BiConsumer<Object, Consumer<String>> validator : getSortedValidateHandlers()) {
             ValueHolder<Boolean> hasWarnings = ValueHolder.of(false);
             validator.accept(entity, warning -> hasWarnings.accept(true));
             if (Boolean.TRUE.equals(hasWarnings.get())) {
@@ -573,6 +625,33 @@ public class EntityDescriptor {
         return false;
     }
 
+    private List<BiConsumer<Object, Consumer<String>>> getSortedValidateHandlers() {
+        if (sortedValidateHandlers == null) {
+            synchronized (this) {
+                if (onValidateHandlerCollector != null) {
+                    sortedValidateHandlers = onValidateHandlerCollector.getData();
+                    onValidateHandlerCollector = null;
+                }
+            }
+        }
+
+        return sortedValidateHandlers;
+    }
+
+    /**
+     * Invokes all <tt>rejectDeleteHandlers</tt> for the given entity.
+     *
+     * @param entity the entity which is about to be deleted
+     */
+    protected void invokeRejectDeleteHandlers(Object entity) {
+        TaskContext context = TaskContext.get();
+        for (Consumer<Object> handler : rejectDeleteHandlers) {
+            if (handler != null && context.isActive()) {
+                handler.accept(entity);
+            }
+        }
+    }
+
     /**
      * Invokes all <tt>beforeDeleteHandlers</tt> and then all <tt>cascadeDeleteHandlers</tt> for the given entity.
      *
@@ -580,12 +659,17 @@ public class EntityDescriptor {
      */
     public void beforeDelete(Object entity) {
         TaskContext context = TaskContext.get();
+        for (Consumer<Object> handler : rejectDeleteHandlers) {
+            if (handler != null && context.isActive()) {
+                handler.accept(entity);
+            }
+        }
         for (Property property : properties.values()) {
             if (context.isActive()) {
                 property.onBeforeDelete(entity);
             }
         }
-        for (Consumer<Object> handler : beforeDeleteHandlers) {
+        for (Consumer<Object> handler : getSortedBeforeDeleteHandlers()) {
             if (handler != null && context.isActive()) {
                 handler.accept(entity);
             }
@@ -595,6 +679,19 @@ public class EntityDescriptor {
                 handler.accept(entity);
             }
         }
+    }
+
+    private List<Consumer<Object>> getSortedBeforeDeleteHandlers() {
+        if (sortedBeforeDeleteHandlers == null) {
+            synchronized (this) {
+                if (beforeDeleteHandlerCollector != null) {
+                    sortedBeforeDeleteHandlers = beforeDeleteHandlerCollector.getData();
+                    beforeDeleteHandlerCollector = null;
+                }
+            }
+        }
+
+        return sortedBeforeDeleteHandlers;
     }
 
     /**
@@ -608,12 +705,28 @@ public class EntityDescriptor {
     }
 
     /**
+     * Adds a reject handler for entities managed by this descriptor.
+     *
+     * @param handler the handler to add
+     */
+    public void addRejectDeleteHandler(Consumer<Object> handler) {
+        rejectDeleteHandlers.add(handler);
+    }
+
+    /**
      * Adds a before delete handler for entities managed by this descriptor.
      *
      * @param handler the handler to add
      */
     public void addBeforeDeleteHandler(Consumer<Object> handler) {
-        beforeDeleteHandlers.add(handler);
+        if (beforeDeleteHandlerCollector == null) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("Cannot provide a before-delete-handler, as the sorted list was"
+                                                    + " already computed. Descriptor: %s", getType().getName())
+                            .handle();
+        }
+        beforeDeleteHandlerCollector.add(Priorized.DEFAULT_PRIORITY, handler);
     }
 
     /**
@@ -622,7 +735,14 @@ public class EntityDescriptor {
      * @param handler the handler to add
      */
     public void addValidationHandler(BiConsumer<Object, Consumer<String>> handler) {
-        validateHandlers.add(handler);
+        if (onValidateHandlerCollector == null) {
+            throw Exceptions.handle()
+                            .to(Mixing.LOG)
+                            .withSystemErrorMessage("Cannot provide an on-validate-handler, as the sorted list was"
+                                                    + " already computed. Descriptor: %s", getType().getName())
+                            .handle();
+        }
+        onValidateHandlerCollector.add(Priorized.DEFAULT_PRIORITY, handler);
     }
 
     /**
@@ -634,11 +754,24 @@ public class EntityDescriptor {
         for (Property property : properties.values()) {
             property.onAfterDelete(entity);
         }
-        for (Consumer<Object> handler : afterDeleteHandlers) {
+        for (Consumer<Object> handler : getSortedAfterDeleteHandlers()) {
             if (handler != null) {
                 handler.accept(entity);
             }
         }
+    }
+
+    private List<Consumer<Object>> getSortedAfterDeleteHandlers() {
+        if (sortedAfterDeleteHandlers == null) {
+            synchronized (this) {
+                if (afterDeleteHandlerCollector != null) {
+                    sortedAfterDeleteHandlers = afterDeleteHandlerCollector.getData();
+                    afterDeleteHandlerCollector = null;
+                }
+            }
+        }
+
+        return sortedAfterDeleteHandlers;
     }
 
     /**
@@ -725,21 +858,46 @@ public class EntityDescriptor {
 
     private static void processMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
         if (method.isAnnotationPresent(BeforeSave.class)) {
-            handleBeforeSaveMethod(descriptor, accessPath, method);
+            assertNotYetCollected(descriptor.beforeSaveHandlerCollector,
+                                  BeforeSave.class.getSimpleName(),
+                                  descriptor.getType().getName(),
+                                  method);
+            descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),
+                                                      createInvokeHandler(accessPath, method));
         }
         if (method.isAnnotationPresent(AfterSave.class)) {
-            descriptor.afterSaveHandlers.add(createInvokeHandler(accessPath, method));
+            assertNotYetCollected(descriptor.afterSaveHandlerCollector,
+                                  AfterSave.class.getSimpleName(),
+                                  descriptor.getType().getName(),
+                                  method);
+            descriptor.afterSaveHandlerCollector.add(method.getAnnotation(AfterSave.class).priority(),
+                                                     createInvokeHandler(accessPath, method));
         }
         if (method.isAnnotationPresent(BeforeDelete.class)) {
-            descriptor.beforeDeleteHandlers.add(createInvokeHandler(accessPath, method));
+            assertNotYetCollected(descriptor.beforeDeleteHandlerCollector,
+                                  BeforeDelete.class.getSimpleName(),
+                                  descriptor.getType().getName(),
+                                  method);
+            descriptor.beforeDeleteHandlerCollector.add(method.getAnnotation(BeforeDelete.class).priority(),
+                                                        createInvokeHandler(accessPath, method));
             handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(AfterDelete.class)) {
-            descriptor.afterDeleteHandlers.add(createInvokeHandler(accessPath, method));
+            assertNotYetCollected(descriptor.afterDeleteHandlerCollector,
+                                  AfterDelete.class.getSimpleName(),
+                                  descriptor.getType().getName(),
+                                  method);
+            descriptor.afterDeleteHandlerCollector.add(method.getAnnotation(AfterDelete.class).priority(),
+                                                       createInvokeHandler(accessPath, method));
             handleComplexDelete(descriptor, method);
         }
         if (method.isAnnotationPresent(OnValidate.class)) {
-            descriptor.validateHandlers.add(createValidator(accessPath, method));
+            assertNotYetCollected(descriptor.onValidateHandlerCollector,
+                                  OnValidate.class.getSimpleName(),
+                                  descriptor.getType().getName(),
+                                  method);
+            descriptor.onValidateHandlerCollector.add(method.getAnnotation(OnValidate.class).priority(),
+                                                      createValidator(accessPath, method));
         }
     }
 
@@ -838,19 +996,21 @@ public class EntityDescriptor {
         }
     }
 
-    private static void handleBeforeSaveMethod(EntityDescriptor descriptor, AccessPath accessPath, Method method) {
-        if (descriptor.beforeSaveHandlerCollector == null) {
+    private static void assertNotYetCollected(PriorityCollector<?> priorityCollector,
+                                              String annotationName,
+                                              String className,
+                                              Method method) {
+        if (priorityCollector == null) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
-                            .withSystemErrorMessage("Cannot provide a before-save-handler, as the sorted list was"
+                            .withSystemErrorMessage("Cannot provide a %s-handler, as the sorted list was"
                                                     + " already computed. Descriptor: %s, Method: %s.%s",
-                                                    descriptor.getType().getName(),
+                                                    annotationName,
+                                                    className,
                                                     method.getDeclaringClass().getName(),
                                                     method.getName())
                             .handle();
         }
-        descriptor.beforeSaveHandlerCollector.add(method.getAnnotation(BeforeSave.class).priority(),
-                                                  createInvokeHandler(accessPath, method));
     }
 
     private static void warnOnWrongVisibility(Method method) {

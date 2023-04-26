@@ -31,7 +31,7 @@ public @interface BeforeSave {
     /**
      * Determines the execution order of all before save handlers.
      *
-     * @return the execution priority. Handlers will be executed in an ascending order, the one with the lowest value
+     * @return the execution priority. Handlers will be executed in ascending order, the one with the lowest value
      * will be executed first.
      */
     int priority() default Priorized.DEFAULT_PRIORITY;

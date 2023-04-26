@@ -19,7 +19,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>dev-34.0.0</sirius.kernel>
+        <sirius.kernel>dev-35.3.0</sirius.kernel>
     </properties>
 
     <repositories>

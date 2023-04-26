@@ -151,7 +151,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     @Override
-    public void iterate(Predicate<E> resultHandler) {
+    protected void doIterate(Predicate<E> resultHandler) {
         if (forceFail) {
             return;
         }
@@ -181,8 +181,8 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     private class MongoQuerySpliterator extends PullBasedSpliterator<E> {
 
         private final String relation;
+        private final TaskContext taskContext = TaskContext.get();
         private String lastId = null;
-        private TaskContext taskContext = TaskContext.get();
 
         protected MongoQuerySpliterator(String relation) {
             this.relation = relation;

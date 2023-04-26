@@ -238,7 +238,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
 
                 getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
             } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-                getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+                getReferencedDescriptor().addRejectDeleteHandler(this::onDeleteReject);
             }
         } catch (Exception e) {
             Mixing.LOG.WARN("Error when linking property %s of %s: %s (%s)",

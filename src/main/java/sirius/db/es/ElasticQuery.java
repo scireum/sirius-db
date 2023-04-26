@@ -147,6 +147,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private FunctionScoreBuilder functionScore;
 
+    private NearestNeighborsSearch nearestNeighborsSearch;
+
     private String routing;
     private boolean unrouted;
 
@@ -297,6 +299,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         copy.additionalDescriptors = additionalDescriptors;
+
+        if (nearestNeighborsSearch != null) {
+            copy.nearestNeighborsSearch = nearestNeighborsSearch.copy();
+        }
 
         return copy;
     }
@@ -500,6 +506,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (constraint != null) {
             return filter(constraint.toJSON());
         }
+
+        return this;
+    }
+
+    /**
+     * Executes a nearest neighbor search for a given vector field.
+     *
+     * @param nearestNeighborsSearch the search to execute
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> knn(NearestNeighborsSearch nearestNeighborsSearch) {
+        this.nearestNeighborsSearch = nearestNeighborsSearch;
 
         return this;
     }
@@ -889,6 +907,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         applyQuery(payload);
 
+        if (nearestNeighborsSearch != null) {
+            payload.put("knn", nearestNeighborsSearch.build());
+        }
+
         if (sorts != null && !sorts.isEmpty()) {
             payload.put(KEY_SORT, sorts);
 
@@ -1048,7 +1070,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @SuppressWarnings("unchecked")
     @Override
-    public void iterate(Predicate<E> handler) {
+    protected void doIterate(Predicate<E> handler) {
         if (forceFail) {
             return;
         }
