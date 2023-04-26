@@ -302,6 +302,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
+        private List<Object> sortValuesOfLastEntityDuringFetch = null;
         private final TaskContext taskContext = TaskContext.get();
         private final SmartQuery<E> adjustedQuery;
 
@@ -323,6 +324,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             List<E> block = queryNextBlock();
             if (!block.isEmpty()) {
                 lastValue = block.get(block.size() - 1);
+                sortValuesOfLastEntityDuringFetch = getValues(lastValue);
             }
             return block.iterator();
         }
@@ -360,6 +362,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return adjusted;
         }
 
+        private List<Object> getValues(E entity) {
+            return Tuple.firsts(adjustedQuery.orderBys).stream().map(field -> getPropertyValue(field, entity)).toList();
+        }
+
         private List<E> queryNextBlock() {
             SmartQuery<E> effectiveQuery = adjustedQuery.copy().limit(MAX_LIST_SIZE);
 
@@ -368,6 +374,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             }
             CompoundValue leftHandSide = new CompoundValue();
             CompoundValue rightHandSide = new CompoundValue();
+
+            List<Object> sortValuesOfLastEntity = getValues(lastValue);
+            if (!sortValuesOfLastEntityDuringFetch.equals(sortValuesOfLastEntity)) {
+                OMA.LOG.WARN(
+                        "Entity '%s' was changed while streaming over it. This is very likely to cause bad result sets, including infinity loops.\nPrevious values: %s\nCurrent values: %s",
+                        lastValue,
+                        sortValuesOfLastEntityDuringFetch,
+                        sortValuesOfLastEntity);
+            }
 
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
