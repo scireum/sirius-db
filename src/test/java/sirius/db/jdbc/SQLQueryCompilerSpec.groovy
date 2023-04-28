@@ -293,4 +293,15 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         queryCompiler.compile().toString() == "(firstname = x AND orderNumber = 1)"
     }
 
+    def "compiling 'foo - bar' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "foo - bar",
+                Arrays.asList((QueryField.eq(TestEntity.FIRSTNAME))))
+        then:
+        queryCompiler.compile().toString() == "(firstname = foo AND firstname = bar)"
+    }
+
 }
