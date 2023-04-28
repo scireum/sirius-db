@@ -19,6 +19,7 @@ import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.properties.LocalTimeProperty;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -178,7 +179,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     /**
      * Determines if the compiler was put into "debug mode".
      * <p>
-     * This can switched on by putting "??" in front of a query. Subsequent callers of the compiler can then
+     * This can be switched on by putting "??" in front of a query. Subsequent callers of the compiler can then
      * log the parsed query to help when tracing down problems.
      *
      * @return <tt>true</tt> if the compiler was put into debug mode, <tt>false</tt> otherwise
@@ -413,7 +414,7 @@ public abstract class QueryCompiler<C extends Constraint> {
      * an operation is created via {@link #parseOperation(Mapping, Property)}.
      * <p>
      * If the property cannot be resolved, the given <tt>token</tt> is passed into {@link #compileCustomField(String)}
-     * so that a sub class of the compiler can generate a constraint for a virtual field. If this also doesn't yield
+     * so that a subclass of the compiler can generate a constraint for a virtual field. If this also doesn't yield
      * a constraint, a regular search in the default fields is generated. This might be necessarry so that tokens like
      * an:value can be used as search term as long as no property named "an" exists.
      *
