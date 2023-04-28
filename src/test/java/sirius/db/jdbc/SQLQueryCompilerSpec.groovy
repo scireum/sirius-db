@@ -281,4 +281,16 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         then:
         queryCompiler.compile().toString() == "is = chat"
     }
+
+    def "compiling a field with OR in its name works"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname: x orderNumber: 1",
+                Collections.emptyList())
+        then:
+        queryCompiler.compile().toString() == "(firstname = x AND orderNumber = 1)"
+    }
+
 }

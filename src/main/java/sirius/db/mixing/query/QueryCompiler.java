@@ -209,7 +209,8 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     private boolean isAtOR() {
-        return reader.current().is('o', 'O') && reader.next().is('r', 'R');
+        return reader.current().is('o', 'O') && reader.next().is('r', 'R') && (reader.next(2).isWhitespace()
+                                                                               || reader.next(2).is('('));
     }
 
     private C parseAND() {
@@ -242,8 +243,13 @@ public abstract class QueryCompiler<C extends Constraint> {
         return reader.current().is('&') && reader.next().is('&');
     }
 
+    @SuppressWarnings("java:S1067")
+    @Explain("We rather keep things in one check here...")
     private boolean isAtAND() {
-        return reader.current().is('a', 'A') && reader.next().is('n', 'N') && reader.next(2).is('d', 'D');
+        return reader.current().is('a', 'A')
+               && reader.next().is('n', 'N')
+               && reader.next(2).is('d', 'D')
+               && (reader.next(2).isWhitespace() || reader.next(2).is('('));
     }
 
     private C parseExpression() {
