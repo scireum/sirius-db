@@ -250,7 +250,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         return reader.current().is('a', 'A')
                && reader.next().is('n', 'N')
                && reader.next(2).is('d', 'D')
-               && (reader.next(2).isWhitespace() || reader.next(2).is('('));
+               && (reader.next(3).isWhitespace() || reader.next(3).is('('));
     }
 
     private C parseExpression() {

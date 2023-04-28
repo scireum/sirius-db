@@ -26,9 +26,11 @@ public class TestEntity extends SQLEntity {
     public static final Mapping AGE = Mapping.named("age");
     private int age;
 
-
     public static final Mapping ORDER_NUMBER = Mapping.named("orderNumber");
-    private int orderNumber;
+    private int orderNumber = 0;
+
+    public static final Mapping ANDX = Mapping.named("andx");
+    private int andx = 0;
 
     public String getFirstname() {
         return firstname;
