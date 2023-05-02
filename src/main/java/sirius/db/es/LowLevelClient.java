@@ -409,7 +409,9 @@ public class LowLevelClient {
      * @param ttlSeconds   the ttl of the scroll cursor in seconds
      * @param query        the query to execute
      * @return the response of the call
+     * @deprecated The scroll API is deprecated by elastic. Try to use the search_after API with a point in time instead.
      */
+    @Deprecated(since = "2023/04/28")
     public JSONObject createScroll(String alias,
                                    String routing,
                                    int from,
@@ -431,7 +433,9 @@ public class LowLevelClient {
      * @param ttlSeconds the ttl of the scroll cursor in seconds
      * @param scrollId   the id of the scroll cursor
      * @return the response of the call
+     * @deprecated The scroll API is deprecated by elastic. Try to use the search_after API with a point in time instead.
      */
+    @Deprecated(since = "2023/04/28")
     public JSONObject continueScroll(int ttlSeconds, String scrollId) {
         return performGet().data(new JSONObject().fluentPut("scroll", ttlSeconds + "s")
                                                  .fluentPut("scroll_id", scrollId))
@@ -444,7 +448,9 @@ public class LowLevelClient {
      *
      * @param scrollId the id of the scroll cursor
      * @return the response of the call
+     * @deprecated The scroll API is deprecated by elastic. Try to use the search_after API with a point in time instead.
      */
+    @Deprecated(since = "2023/04/28")
     public JSONObject closeScroll(String scrollId) {
         return performDelete().data(new JSONObject().fluentPut("scroll_id", scrollId))
                               .execute("/_search/scroll")

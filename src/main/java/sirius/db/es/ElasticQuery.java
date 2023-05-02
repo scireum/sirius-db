@@ -1292,7 +1292,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * cursor to fetch the results block-wise.
      *
      * @param handler the result handler as passed to {@link #iterate(Predicate)}
+     * @deprecated Use a PIT (point in time) query with searchAfter instead.
      */
+    @Deprecated(since = "2023/04/28")
     private void scroll(Predicate<E> handler) {
         try {
             if (sorts == null || sorts.isEmpty()) {
@@ -1349,7 +1351,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param firstResponse the first response we received when creating the scroll query.
      * @return the last response we received when iterating over the scroll query
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "deprecation"})
     private JSONObject executeScroll(Predicate<E> handler, JSONObject firstResponse) {
         long lastScroll = 0;
         JSONObject scrollResponse = firstResponse;
