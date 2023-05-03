@@ -464,6 +464,7 @@ public class LowLevelClient {
      * @param routing   the routing to create the PIT for
      * @param keepAlive how long the PIT should live (initially)
      * @return the id of the PIT
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units">Elastic time units</a>
      */
     public String createPit(String alias, String routing, String keepAlive) {
         return performPost().routing(routing)

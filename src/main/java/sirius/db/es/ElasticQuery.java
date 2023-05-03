@@ -117,6 +117,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_VERSION_CONFLICTS = "version_conflicts";
     private static final String KEY_FAILURES = "failures";
     private static final Mapping SCORE = Mapping.named("_score");
+    /**
+     * The elastic PIT timeout to use with streamBlockwise.
+     * <p>
+     * This timeout / TTL keeps the PIT open. Using a high time is not a problem here, because it gets closed after the
+     * stream is consumed, so we rather try to choose a high timeout to avoid issues with prematurely closed PITs.
+     */
+    public static final String STREAM_BLOCKWISE_PID_TTL = "30m";
 
     @Part
     private static Elastic elastic;
@@ -1445,13 +1452,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             if (pit == null) {
                 // first call to this method
                 orderAsc(ElasticEntity.ID);
-                pit = client.createPit(alias, filterRouting, "30m");
+                pit = client.createPit(alias, filterRouting, STREAM_BLOCKWISE_PID_TTL);
             } else {
                 searchAfter(searchAfter);
             }
 
-            JSONObject payload =
-                    buildPayload().fluentPut("pit", new JSONObject(Map.of("id", pit, "keep_alive", "30m")));
+            JSONObject payload = buildPayload().fluentPut("pit",
+                                                          new JSONObject(Map.of("id",
+                                                                                pit,
+                                                                                "keep_alive",
+                                                                                STREAM_BLOCKWISE_PID_TTL)));
             int maxResults = filterRouting != null ? MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD : MAX_SCROLL_RESULTS_PER_SHARD;
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
