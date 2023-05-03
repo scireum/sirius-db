@@ -1075,7 +1075,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return;
         }
         if (useScrolling()) {
-            scroll(handler);
+            streamBlockwise().takeWhile(handler).forEach(e -> {
+            });
             return;
         }
 
