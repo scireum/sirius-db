@@ -1423,9 +1423,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     private class ElasticScrollingSpliterator extends PullBasedSpliterator<E> {
-        private long lastScroll = 0;
-        private String scrollId = null;
         private final TaskContext taskContext = TaskContext.get();
+        private String pit = null;
+        private List<String> searchAfter = null;
 
         @Override
         public int characteristics() {
@@ -1439,32 +1439,32 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return null;
             }
 
-            JSONObject scrollResponse =
-                    scrollId == null ? pullFirstBlock() : client.continueScroll(SCROLL_TTL_SECONDS, scrollId);
-            scrollId = scrollResponse.getString(KEY_SCROLL_ID);
-            lastScroll = performScrollMonitoring(lastScroll);
-            return scrollResponse.getJSONObject(KEY_HITS)
-                                 .getJSONArray(KEY_HITS)
-                                 .stream()
-                                 .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
-                                 .iterator();
-        }
-
-        private JSONObject pullFirstBlock() {
+            String alias = computeEffectiveIndexName(elastic::determineReadAlias);
             String filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
-            return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
-                                       filterRouting,
-                                       0,
-                                       filterRouting != null ?
-                                       MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
-                                       MAX_SCROLL_RESULTS_PER_SHARD,
-                                       SCROLL_TTL_SECONDS,
-                                       buildPayload());
+            if (pit == null) {
+                // first call to this method
+                orderAsc(ElasticEntity.ID);
+                pit = client.createPit(alias, filterRouting, "30m");
+            } else {
+                searchAfter(searchAfter);
+            }
+
+            JSONObject payload =
+                    buildPayload().fluentPut("pit", new JSONObject(Map.of("id", pit, "keep_alive", "30m")));
+            int maxResults = filterRouting != null ? MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD : MAX_SCROLL_RESULTS_PER_SHARD;
+            response = client.search("", null, 0, maxResults, payload);
+            searchAfter = getLastSortValues();
+
+            return response.getJSONObject(KEY_HITS)
+                           .getJSONArray(KEY_HITS)
+                           .stream()
+                           .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
+                           .iterator();
         }
 
         private void close() {
-            if (scrollId != null) {
-                client.closeScroll(scrollId);
+            if (pit != null) {
+                client.closePit(pit);
             }
         }
     }
