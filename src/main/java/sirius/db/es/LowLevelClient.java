@@ -458,6 +458,33 @@ public class LowLevelClient {
     }
 
     /**
+     * Creates a point in time (PIT) for the given alias and routing.
+     *
+     * @param alias     the alias to create the PIT for
+     * @param routing   the routing to create the PIT for
+     * @param keepAlive how long the PIT should live (initially)
+     * @return the id of the PIT
+     */
+    public String createPit(String alias, String routing, String keepAlive) {
+        return performPost().routing(routing)
+                            .withParam("keep_alive", keepAlive)
+                            .execute(alias + "/_pit")
+                            .response()
+                            .getString("id");
+    }
+
+    /**
+     * Closes the given PIT manually.
+     * <p>
+     * This allows ES to free the needed resources earlier than the PIT would expire.
+     *
+     * @param pit the id of the PIT to close
+     */
+    public void closePit(String pit) {
+        performDelete().data(new JSONObject().fluentPut("id", pit)).execute("/_pit");
+    }
+
+    /**
      * Determines if a given query has at least one result.
      *
      * @param alias   the alias which determines the indices to search in
