@@ -555,8 +555,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Permits to rewrite the internal filters of a query.
      * <p>
-     * Actually this will iterate over all {@link BoolQueryBuilder#filter} of the internal query and apply the given
-     * predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed internally.
+     * Actually this will iterate over all {@link BoolQueryBuilder#filter(ElasticConstraint)} of the internal query and
+     * apply the given predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed
+     * internally.
      * <p>
      * This can e.g. be used to move internal filters into {@link #postFilter(JSONObject)}.
      *

@@ -308,10 +308,10 @@ public class LowLevelClient {
     }
 
     /**
-     * Returns the names of the indexed which are aliased with the given alias.
+     * Checks whether an index for this alias exists.
      *
      * @param alias the given alias
-     * @return a list of indexes which are aliased with the given alias
+     * @return true if the index exists
      */
     public boolean aliasExists(String alias) {
         try {
