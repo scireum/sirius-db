@@ -120,7 +120,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * This timeout / TTL keeps the PIT open. Using a high time is not a problem here, because it gets closed after the
      * stream is consumed, so we rather try to choose a high timeout to avoid issues with prematurely closed PITs.
      */
-    public static final String STREAM_BLOCKWISE_PID_TTL = "30m";
+    private static final String STREAM_BLOCKWISE_PID_TTL = "30m";
+    private static final String KEY_PIT = "pit";
+    private static final String KEY_PIT_ID = "id";
+    private static final String KEY_PIT_KEEP_ALIVE = "keep_alive";
 
     @Part
     private static Elastic elastic;
@@ -1079,7 +1082,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return;
         }
         if (useScrolling()) {
-            streamBlockwise().takeWhile(handler).forEach(e -> {
+            streamBlockwise().takeWhile(handler).forEach(ignored -> {
             });
             return;
         }
@@ -1397,10 +1400,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 searchAfter(searchAfter);
             }
 
-            JSONObject payload = buildPayload().fluentPut("pit",
-                                                          new JSONObject(Map.of("id",
+            JSONObject payload = buildPayload().fluentPut(KEY_PIT,
+                                                          new JSONObject(Map.of(KEY_PIT_ID,
                                                                                 pit,
-                                                                                "keep_alive",
+                                                                                KEY_PIT_KEEP_ALIVE,
                                                                                 STREAM_BLOCKWISE_PID_TTL)));
             int maxResults = filterRouting != null ? MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD : MAX_SCROLL_RESULTS_PER_SHARD;
             response = client.search("", null, 0, maxResults, payload);
