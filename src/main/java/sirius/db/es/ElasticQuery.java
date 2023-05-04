@@ -22,9 +22,7 @@ import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
-import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.PullBasedSpliterator;
-import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -84,7 +82,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     public static final String SHARD_DOC_ID = "_shard_doc";
 
     private static final String KEY_SCROLL_ID = "_scroll_id";
-    private static final String KEY_DOC_ID = "_doc";
 
     private static final String KEY_FIELD = "field";
     private static final String KEY_SIZE = "size";
@@ -1293,63 +1290,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                   .map(JSONObject.class::cast)
                                   .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
                                   .collect(Collectors.toList());
-    }
-
-    /**
-     * For larger queries, we use a scroll query in Elasticsearch, which provides kind of a
-     * cursor to fetch the results block-wise.
-     *
-     * @param handler the result handler as passed to {@link #iterate(Predicate)}
-     * @deprecated Use a PIT (point in time) query with searchAfter instead.
-     */
-    @Deprecated(since = "2023/04/28")
-    private void scroll(Predicate<E> handler) {
-        try {
-            if (sorts == null || sorts.isEmpty()) {
-                // If no explicit search order is given, we sort by _doc which improves the performance
-                // according to the Elasticsearch documentation.
-                orderAsc(Mapping.named(KEY_DOC_ID));
-            }
-
-            String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
-
-            JSONObject scrollResponse = client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
-                                                            filteredRouting,
-                                                            0,
-                                                            filteredRouting != null ?
-                                                            MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
-                                                            MAX_SCROLL_RESULTS_PER_SHARD,
-                                                            SCROLL_TTL_SECONDS,
-                                                            buildPayload());
-            try {
-                TaskContext ctx = TaskContext.get();
-                RateLimit rateLimit = RateLimit.timeInterval(1, TimeUnit.SECONDS);
-                Limit effectiveLimit = new Limit(skip, limit);
-                scrollResponse = executeScroll(entity -> {
-                    // Check if the user aborted processing...
-                    if (rateLimit.check() && !ctx.isActive()) {
-                        return false;
-                    }
-
-                    // If we are still skipping items, quickly process the next one...
-                    if (!effectiveLimit.nextRow()) {
-                        return true;
-                    }
-
-                    // Process entity, abort if the handler isn't interested in continuing...
-                    if (!handler.test(entity)) {
-                        return false;
-                    }
-
-                    // Let the limit decide if we should continue or not...
-                    return effectiveLimit.shouldContinue();
-                }, scrollResponse);
-            } finally {
-                client.closeScroll(scrollResponse.getString(KEY_SCROLL_ID));
-            }
-        } catch (Exception t) {
-            throw Exceptions.handle(Elastic.LOG, t);
-        }
     }
 
     /**
