@@ -8,8 +8,9 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 
 /**
  * Represents a bucket of an aggregation result.
@@ -20,11 +21,11 @@ public class Bucket {
     private static final String KEY_DOC_COUNT = "doc_count";
 
     private final String key;
-    private JSONObject data;
+    private ObjectNode data;
 
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
-    protected Bucket(String key, JSONObject data) {
+    protected Bucket(String key, ObjectNode data) {
         this.key = key;
         this.data = data;
     }
@@ -39,7 +40,7 @@ public class Bucket {
             return key;
         }
 
-        return data.getString(KEY_KEY);
+        return data.get(KEY_KEY).asText();
     }
 
     /**
@@ -52,7 +53,7 @@ public class Bucket {
      * @return the aggregated source value
      */
     public String getKey(String name) {
-        return data.getJSONObject(KEY_KEY).getString(name);
+        return data.get(KEY_KEY).get(name).asText();
     }
 
     /**
@@ -61,17 +62,17 @@ public class Bucket {
      * @return the doc count
      */
     public int getDocCount() {
-        return data.getIntValue(KEY_DOC_COUNT);
+        return data.get(KEY_DOC_COUNT).asInt();
     }
 
     /**
-     * Returns the raw {@link JSONObject} of this bucket.
+     * Returns the raw {@link ObjectNode} of this bucket.
      *
-     * @return the raw {@link JSONObject}
+     * @return the raw {@link ObjectNode}
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
-    public JSONObject getJSONObject() {
+    public ObjectNode withObject() {
         return data;
     }
 
@@ -82,6 +83,6 @@ public class Bucket {
      * @return the collected result for the given sub aggregation
      */
     public AggregationResult getSubAggregation(String name) {
-        return AggregationResult.of(data.getJSONObject(name));
+        return AggregationResult.of(Json.getObject(data, name));
     }
 }

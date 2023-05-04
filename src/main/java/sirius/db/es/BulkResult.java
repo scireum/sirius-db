@@ -8,8 +8,9 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Json;
 import sirius.kernel.health.Exceptions;
 
 import java.util.Collections;
@@ -32,7 +33,7 @@ public class BulkResult {
     private static final String RESPONSE_CAUSED_BY = "caused_by";
     private static final String RESPONSE_KEY_ERRORS = "errors";
 
-    private final JSONObject bulkResponse;
+    private final ObjectNode bulkResponse;
     private Set<String> failedIds;
     private String failureMessage;
 
@@ -43,7 +44,7 @@ public class BulkResult {
      *                     empty response may be created if {@link BulkContext#commit()} was called without any
      *                     queued commands
      */
-    public BulkResult(JSONObject bulkResponse) {
+    public BulkResult(ObjectNode bulkResponse) {
         this.bulkResponse = bulkResponse;
     }
 
@@ -53,7 +54,7 @@ public class BulkResult {
      * @return <tt>true</tt> if all commands were successfully executed
      */
     public boolean isSuccessful() {
-        return bulkResponse == null || !bulkResponse.getBooleanValue(RESPONSE_KEY_ERRORS);
+        return bulkResponse == null || !bulkResponse.get(RESPONSE_KEY_ERRORS).asBoolean();
     }
 
     /**
@@ -91,22 +92,24 @@ public class BulkResult {
     protected void digestResponse() {
         StringBuilder failureMessageBuilder = new StringBuilder();
         this.failedIds = new HashSet<>();
-        JSONArray items = bulkResponse.getJSONArray(RESPONSE_KEY_ITEMS);
+        ArrayNode items = Json.getArray(bulkResponse, RESPONSE_KEY_ITEMS);
 
         for (int i = 0; i < items.size(); i++) {
-            JSONObject current = getObject(items.getJSONObject(i));
-            JSONObject error = current.getJSONObject(RESPONSE_KEY_ERROR);
-            if (error != null) {
-                failedIds.add(current.getString(BulkContext.KEY_ID));
+            ObjectNode current = getObject((ObjectNode) items.get(i));
+            if (current.has(RESPONSE_KEY_ERROR)) {
+                ObjectNode error = Json.getObject(current, RESPONSE_KEY_ERROR);
+                failedIds.add(current.get(BulkContext.KEY_ID).asText());
                 failureMessageBuilder.append("index: ")
-                                     .append(error.getString(RESPONSE_INDEX))
+                                     .append(error.get(RESPONSE_INDEX).asText())
                                      .append(" type: ")
-                                     .append(error.getString(RESPONSE_TYPE))
+                                     .append(error.get(RESPONSE_TYPE).asText())
                                      .append(" reason: ")
-                                     .append(error.getString(RESPONSE_REASON));
-                if (error.getJSONObject(RESPONSE_CAUSED_BY) != null) {
+                                     .append(error.get(RESPONSE_REASON).asText());
+                if (error.has(RESPONSE_CAUSED_BY)) {
                     failureMessageBuilder.append(" cause: ")
-                                         .append(error.getJSONObject(RESPONSE_CAUSED_BY).getString(RESPONSE_REASON));
+                                         .append(Json.getObject(error, RESPONSE_CAUSED_BY)
+                                                     .get(RESPONSE_REASON)
+                                                     .asText());
                 }
                 failureMessageBuilder.append("\n");
             }
@@ -115,23 +118,23 @@ public class BulkResult {
         this.failureMessage = failureMessageBuilder.toString();
     }
 
-    private JSONObject getObject(JSONObject currentObject) {
-        JSONObject object = currentObject.getJSONObject(BulkContext.COMMAND_INDEX);
+    private ObjectNode getObject(ObjectNode currentObject) {
+        ObjectNode object = Json.getObject(currentObject, BulkContext.COMMAND_INDEX);
         if (object != null) {
             return object;
         }
 
-        object = currentObject.getJSONObject(BulkContext.COMMAND_DELETE);
+        object = Json.getObject(currentObject, BulkContext.COMMAND_DELETE);
         if (object != null) {
             return object;
         }
 
-        object = currentObject.getJSONObject(BulkContext.COMMAND_CREATE);
+        object = Json.getObject(currentObject, BulkContext.COMMAND_CREATE);
         if (object != null) {
             return object;
         }
 
-        object = currentObject.getJSONObject(BulkContext.COMMAND_UPDATE);
+        object = Json.getObject(currentObject, BulkContext.COMMAND_UPDATE);
         if (object != null) {
             return object;
         }

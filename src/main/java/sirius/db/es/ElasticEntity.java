@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
@@ -18,6 +18,7 @@ import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.di.std.Part;
 
 import javax.annotation.Nullable;
@@ -70,7 +71,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     protected long seqNo = 0;
 
     @Transient
-    private JSONObject searchHit;
+    private ObjectNode searchHit;
 
     @Transient
     private Set<String> matchedQueries;
@@ -117,7 +118,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
 
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("We only pass the result JSON along internally and want to avoid an extra copy.")
-    protected void setSearchHit(JSONObject searchHit) {
+    protected void setSearchHit(ObjectNode searchHit) {
         this.searchHit = searchHit;
     }
 
@@ -141,12 +142,15 @@ public abstract class ElasticEntity extends BaseEntity<String> {
             return Collections.emptySet();
         }
 
-        JSONArray matchedQueriesArray = searchHit.getJSONArray(MATCHED_QUERIES);
+        ArrayNode matchedQueriesArray = Json.getArray(searchHit, MATCHED_QUERIES);
         if (matchedQueriesArray == null) {
             return Collections.emptySet();
         }
 
-        return matchedQueriesArray.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toSet());
+        return Json.streamEntries(matchedQueriesArray)
+                   .filter(Objects::nonNull)
+                   .map(String::valueOf)
+                   .collect(Collectors.toSet());
     }
 
     /**
@@ -157,17 +161,17 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the total number of inner hits
      */
     public int getTotalInnerHits(String name) {
-        JSONObject innerHits = getSearchHit().getJSONObject(INNER_HITS);
+        ObjectNode innerHits = Json.getObject(getSearchHit(), INNER_HITS);
         if (innerHits == null) {
             return 0;
         }
 
-        innerHits = innerHits.getJSONObject(name);
+        innerHits = Json.getObject(innerHits, name);
         if (innerHits == null) {
             return 0;
         }
 
-        return innerHits.getJSONObject("hits").getJSONObject("total").getIntValue("value");
+        return innerHits.at("/hits/total/value").asInt();
     }
 
     /**
@@ -189,21 +193,19 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      */
     @SuppressWarnings("unchecked")
     public <E extends ElasticEntity> List<E> getInnerHits(Class<E> type, String name) {
-        JSONObject innerHits = getSearchHit().getJSONObject(INNER_HITS);
+        ObjectNode innerHits = Json.getObject(getSearchHit(), INNER_HITS);
         if (innerHits == null) {
             return Collections.emptyList();
         }
 
-        innerHits = innerHits.getJSONObject(name);
+        innerHits = Json.getObject(innerHits, name);
         if (innerHits == null) {
             return Collections.emptyList();
         }
 
-        return (List<E>) innerHits.getJSONObject("hits")
-                                  .getJSONArray("hits")
-                                  .stream()
-                                  .map(innerHit -> Elastic.make(getDescriptor(), (JSONObject) innerHit))
-                                  .toList();
+        return (List<E>) Json.streamEntries(innerHits.withArray("/hits/hits"))
+                             .map(innerHit -> Elastic.make(getDescriptor(), (ObjectNode) innerHit))
+                             .toList();
     }
 
     /**
@@ -227,7 +229,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
             return 0f;
         }
 
-        return searchHit.getFloatValue(FIELD_SCORE);
+        return searchHit.get(FIELD_SCORE).floatValue();
     }
 
     /**
@@ -248,7 +250,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     @Nullable
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
-    public JSONObject getSearchHit() {
+    public ObjectNode getSearchHit() {
         return searchHit;
     }
 

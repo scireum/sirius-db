@@ -8,7 +8,8 @@
 
 package sirius.db.qdrant;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Json;
 
 /**
  * Represents a single match returned by a {@link Search}.
@@ -16,7 +17,7 @@ import com.alibaba.fastjson.JSONObject;
 public class Match {
 
     private final String id;
-    private final JSONObject payload;
+    private final ObjectNode payload;
 
     private final float score;
 
@@ -25,10 +26,10 @@ public class Match {
      *
      * @param match the match as returned by qdrant
      */
-    public Match(JSONObject match) {
-        this.id = match.getString("id");
-        this.score = match.getFloat("score");
-        this.payload = match.getJSONObject("payload");
+    public Match(ObjectNode match) {
+        this.id = match.get("id").asText();
+        this.score = match.get("score").floatValue();
+        this.payload = match.withObject("/payload");
     }
 
     public String getId() {
@@ -44,7 +45,7 @@ public class Match {
      * @return the value of the field or <tt>null</tt> if the field is not present
      */
     public <T> T getPayload(Class<T> fieldType, String field) {
-        return fieldType.cast(payload.get(field));
+        return fieldType.cast(Json.convertToJavaObject(payload.get(field)));
     }
 
     public float getScore() {

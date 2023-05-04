@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
@@ -21,6 +21,7 @@ import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringIntMap;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 
@@ -69,7 +70,7 @@ public class StringIntMapProperty extends BaseMapProperty implements ESPropertyI
     protected Object transformToElastic(Object object) {
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
-                                   .map(e -> new JSONObject().fluentPut(KEY, e.getKey()).fluentPut(VALUE, e.getValue()))
+                                   .map(e -> Json.createObject().putPOJO(KEY, e.getKey()).putPOJO(VALUE, e.getValue()))
                                    .toList();
     }
 
@@ -91,7 +92,7 @@ public class StringIntMapProperty extends BaseMapProperty implements ESPropertyI
     }
 
     @Override
-    public void describeProperty(JSONObject description) {
+    public void describeProperty(ObjectNode description) {
         ESOption indexed = Optional.ofNullable(getClass().getAnnotation(IndexMode.class))
                                    .map(IndexMode::indexed)
                                    .orElse(ESOption.ES_DEFAULT);
@@ -103,10 +104,10 @@ public class StringIntMapProperty extends BaseMapProperty implements ESPropertyI
         }
         transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
 
-        JSONObject properties = new JSONObject();
-        properties.put(KEY, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
-        properties.put(VALUE, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, "integer"));
-        description.put("properties", properties);
+        ObjectNode properties = Json.createObject();
+        properties.set(KEY, Json.createObject().put(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
+        properties.set(VALUE, Json.createObject().put(IndexMappings.MAPPING_TYPE, "integer"));
+        description.set("properties", properties);
         description.put("dynamic", false);
     }
 }

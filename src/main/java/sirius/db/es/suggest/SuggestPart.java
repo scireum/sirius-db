@@ -8,7 +8,8 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Json;
 
 import java.util.Collections;
 import java.util.List;
@@ -98,19 +99,18 @@ public class SuggestPart {
     }
 
     /**
-     * Build a suggest part from the given {@link JSONObject}.
+     * Build a suggest part from the given {@link ObjectNode}.
      *
      * @param part the JSON object
      * @return the newly created suggest part
      */
-    public static SuggestPart makeSuggestPart(JSONObject part) {
-        SuggestPart suggestPart = new SuggestPart(part.getString(PARAM_TEXT),
-                                                  part.getIntValue(PARAM_OFFSET),
-                                                  part.getIntValue(PARAM_LENGTH));
+    public static SuggestPart makeSuggestPart(ObjectNode part) {
+        SuggestPart suggestPart = new SuggestPart(part.get(PARAM_TEXT).asText(),
+                                                  part.get(PARAM_OFFSET).asInt(),
+                                                  part.get(PARAM_LENGTH).asInt());
 
-        suggestPart.withOptions(part.getJSONArray(PARAM_OPTIONS)
-                                    .stream()
-                                    .map(JSONObject.class::cast)
+        suggestPart.withOptions(Json.streamEntries(Json.getArray(part, PARAM_OPTIONS))
+                                    .map(ObjectNode.class::cast)
                                     .map(SuggestOption::makeSuggestOption)
                                     .collect(Collectors.toList()));
 

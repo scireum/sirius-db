@@ -8,10 +8,11 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.ElasticQuery;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 
 /**
  * Helper class which generates term and phrase suggesters for elasticsearch which can be used via
@@ -39,7 +40,7 @@ public class SuggestBuilder {
     private String name;
     private String text;
 
-    private JSONObject body = new JSONObject();
+    private ObjectNode body = Json.createObject();
 
     /**
      * Creates a new suggest builder.
@@ -76,7 +77,7 @@ public class SuggestBuilder {
      * @return the builder itself for fluent method calls
      */
     public SuggestBuilder addBodyParameter(String name, Object value) {
-        this.body.put(name, value);
+        this.body.putPOJO(name, value);
         return this;
     }
 
@@ -89,7 +90,7 @@ public class SuggestBuilder {
      */
     public SuggestBuilder highlight(String preTag, String postTag) {
         return addBodyParameter(PARAM_HIGHLIGHT,
-                                new JSONObject().fluentPut(PARAM_PRE_TAG, preTag).fluentPut(PARAM_POST_TAG, postTag));
+                                Json.createObject().put(PARAM_PRE_TAG, preTag).put(PARAM_POST_TAG, postTag));
     }
 
     /**
@@ -106,17 +107,17 @@ public class SuggestBuilder {
      */
     public SuggestBuilder collate(BoolQueryBuilder query, boolean prune) {
         return addBodyParameter(PARAM_COLLATE,
-                                new JSONObject().fluentPut(PARAM_QUERY,
-                                                           new JSONObject().fluentPut(PARAM_SOURCE, query.build()))
-                                                .fluentPut(PARAM_PRUNE, prune));
+                                Json.createObject()
+                                    .put(PARAM_PRUNE, prune)
+                                    .set(PARAM_QUERY, Json.createObject().set(PARAM_SOURCE, query.build())));
     }
 
     /**
-     * Generates a {@link JSONObject} that represents this suggester.
+     * Generates an {@link ObjectNode} that represents this suggester.
      *
      * @return the suggester as a JSON object
      */
-    public JSONObject build() {
-        return new JSONObject().fluentPut(PARAM_TEXT, text).fluentPut(type, body);
+    public ObjectNode build() {
+        return Json.createObject().put(PARAM_TEXT, text).set(type, body);
     }
 }

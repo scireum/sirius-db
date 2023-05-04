@@ -8,9 +8,10 @@
 
 package sirius.db.qdrant;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.util.Tensors;
 import sirius.kernel.commons.Hasher;
+import sirius.kernel.commons.Json;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,11 +64,11 @@ public class Point {
         return this;
     }
 
-    protected JSONObject toJson() {
-        JSONObject json = new JSONObject();
+    protected ObjectNode toJson() {
+        ObjectNode json = Json.createObject();
         json.put("id", id);
-        json.put("vector", vector);
-        json.put("payload", payload);
+        json.putPOJO("vector", vector);
+        json.putPOJO("payload", payload);
 
         return json;
     }

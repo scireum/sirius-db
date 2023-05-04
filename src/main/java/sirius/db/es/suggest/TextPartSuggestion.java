@@ -8,7 +8,8 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Json;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,12 +34,14 @@ public class TextPartSuggestion {
      *
      * @param json a JSON snipped as returned by ES
      */
-    public TextPartSuggestion(JSONObject json) {
-        this.text = json.getString(PARAM_TEXT);
-        this.offset = json.getIntValue(PARAM_OFFSET);
-        this.length = json.getIntValue(PARAM_LENGTH);
-        this.termSuggestions =
-                json.getJSONArray(PARAM_OPTIONS).stream().map(JSONObject.class::cast).map(TermSuggestion::new).toList();
+    public TextPartSuggestion(ObjectNode json) {
+        this.text = json.get(PARAM_TEXT).asText();
+        this.offset = json.get(PARAM_OFFSET).asInt();
+        this.length = json.get(PARAM_LENGTH).asInt();
+        this.termSuggestions = Json.streamEntries(Json.getArray(json, PARAM_OPTIONS))
+                                   .map(ObjectNode.class::cast)
+                                   .map(TermSuggestion::new)
+                                   .toList();
     }
 
     /**

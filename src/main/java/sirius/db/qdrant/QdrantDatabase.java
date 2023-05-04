@@ -8,10 +8,10 @@
 
 package sirius.db.qdrant;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.async.Operation;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.health.Exceptions;
@@ -73,13 +73,13 @@ public class QdrantDatabase {
                                 .build();
     }
 
-    protected HttpResponse<String> executeRaw(Method method, String uri, @Nullable JSONObject input) {
+    protected HttpResponse<String> executeRaw(Method method, String uri, @Nullable ObjectNode input) {
         Watch watch = Watch.start();
         try (Operation operation = new Operation(() -> "qdrant: " + method.name() + ": " + uri,
                                                  DEFAULT_OPERATION_TIMEOUT)) {
             HttpRequest.Builder requestBuilder = getHeader(uri);
             if (input != null) {
-                requestBuilder.method(method.name(), HttpRequest.BodyPublishers.ofString(input.toJSONString()));
+                requestBuilder.method(method.name(), HttpRequest.BodyPublishers.ofString(Json.write(input)));
             } else {
                 requestBuilder.method(method.name(), HttpRequest.BodyPublishers.noBody());
             }
@@ -113,7 +113,7 @@ public class QdrantDatabase {
                                               + uri)).header(HEADER_CONTENT_TYPE, CONTENT_TYPE_APPLICATION_JSON);
     }
 
-    protected JSONObject execute(Method method, String uri, @Nullable JSONObject input) {
+    protected ObjectNode execute(Method method, String uri, @Nullable ObjectNode input) {
         HttpResponse<String> response = executeRaw(method, uri, input);
         if (response.statusCode() != HttpURLConnection.HTTP_OK) {
             throw Exceptions.handle()
@@ -122,7 +122,7 @@ public class QdrantDatabase {
                                                     response.body())
                             .handle();
         }
-        return JSON.parseObject(response.body());
+        return Json.parseObject(response.body());
     }
 
     /**
@@ -135,10 +135,9 @@ public class QdrantDatabase {
     public void createCollection(String collection, int dimensions, Similarity similarity) {
         execute(Method.PUT,
                 URI_PREFIX_COLLECTIONS + collection,
-                new JSONObject().fluentPut("name", collection)
-                                .fluentPut("vectors",
-                                           new JSONObject().fluentPut("size", dimensions)
-                                                           .fluentPut("distance", similarity.getName())));
+                Json.createObject()
+                    .put("name", collection)
+                    .set("vectors", Json.createObject().put("size", dimensions).put("distance", similarity.getName())));
     }
 
     /**
@@ -184,12 +183,12 @@ public class QdrantDatabase {
      * @param points     the points to upsert
      */
     public void upsert(String collection, List<Point> points) {
-        JSONArray pointArray = new JSONArray();
+        ArrayNode pointArray = Json.createArray();
         points.stream().map(Point::toJson).forEach(pointArray::add);
 
         execute(Method.PUT,
                 URI_PREFIX_COLLECTIONS + collection + "/points?wait=true",
-                new JSONObject().fluentPut("points", pointArray));
+                Json.createObject().set("points", pointArray));
     }
 
     /**
@@ -202,7 +201,7 @@ public class QdrantDatabase {
     public long countPoints(String collection, boolean exact) {
         return execute(Method.POST,
                        URI_PREFIX_COLLECTIONS + collection + "/points/count",
-                       new JSONObject().fluentPut("exact", exact)).getJSONObject("result").getLong("count");
+                       Json.createObject().put("exact", exact)).at("/result/count").asLong();
     }
 
     /**
@@ -214,7 +213,7 @@ public class QdrantDatabase {
     public void deletePoints(String collection, List<String> pointIds) {
         execute(Method.POST,
                 URI_PREFIX_COLLECTIONS + collection + "/points/delete",
-                new JSONObject().fluentPut("points", pointIds));
+                Json.createObject().putPOJO("points", pointIds));
     }
 
     /**

@@ -8,6 +8,7 @@
 
 package sirius.db.es
 
+
 import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
@@ -146,18 +147,12 @@ class ElasticQuerySpec extends BaseSpecification {
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(aggregation)
         query.computeAggregations()
+        def buckets = query.getRawAggregations().withArray("/test/keys/buckets")
         then:
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").size() == 3
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").getJSONObject(0)
-             .getString("key") == "1"
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").getJSONObject(1)
-             .getString("key") == "2"
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").getJSONObject(2)
-             .getString("key") == "test"
+        buckets.size() == 3
+        buckets.get(0).get("key").asText() == "1"
+        buckets.get(1).get("key").asText() == "2"
+        buckets.get(2).get("key").asText() == "test"
     }
 
     def "muli-level nested aggregations work"() {
@@ -177,14 +172,11 @@ class ElasticQuerySpec extends BaseSpecification {
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
                                                              .addSubAggregation(filterAggregation))
         query.computeAggregations()
+
+        def buckets = query.getRawAggregations().withArray("/test/filter/keys/buckets")
         then:
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("filter").getJSONObject("keys")
-             .getJSONArray("buckets").size() == 1
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("filter").getJSONObject("keys")
-             .getJSONArray("buckets").getJSONObject(0)
-             .getString("key") == "3"
+        buckets.size() == 1
+        buckets.get(0).get("key").asText() == "3"
 
     }
 

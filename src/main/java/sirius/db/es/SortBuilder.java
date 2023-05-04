@@ -8,9 +8,10 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 
 /**
  * Helper class which generates sorts for elasticsearch which can be used via {@link ElasticQuery#sort(SortBuilder)}.
@@ -65,7 +66,7 @@ public class SortBuilder {
     }
 
     private String field;
-    private JSONObject body = new JSONObject();
+    private ObjectNode body = Json.createObject();
 
     private SortBuilder(String field) {
         this.field = field;
@@ -107,7 +108,7 @@ public class SortBuilder {
      * @return the builder itself for fluent method calls
      */
     public SortBuilder addBodyParameter(String name, Object value) {
-        this.body.put(name, value);
+        this.body.putPOJO(name, value);
         return this;
     }
 
@@ -140,8 +141,7 @@ public class SortBuilder {
      */
     public SortBuilder nested(Mapping path, ElasticConstraint filter) {
         return addBodyParameter("nested",
-                                new JSONObject().fluentPut("path", path.toString())
-                                                .fluentPut("filter", filter.toJSON()));
+                                Json.createObject().put("path", path.toString()).set("filter", filter.toJSON()));
     }
 
     /**
@@ -149,10 +149,10 @@ public class SortBuilder {
      *
      * @return the json representation of the current builder.
      */
-    public JSONObject build() {
-        JSONObject builder = new JSONObject();
+    public ObjectNode build() {
+        ObjectNode builder = Json.createObject();
 
-        builder.put(field, body);
+        builder.set(field, body);
 
         return builder;
     }

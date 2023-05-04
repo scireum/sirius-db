@@ -8,7 +8,7 @@
 
 package sirius.db.es.constraints;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.kernel.commons.Explain;
@@ -21,7 +21,7 @@ import sirius.kernel.commons.Explain;
  */
 public class ElasticConstraint extends Constraint {
 
-    private JSONObject constraint;
+    private ObjectNode constraint;
 
     /**
      * Creates a new constraint represented as JSON.
@@ -30,7 +30,7 @@ public class ElasticConstraint extends Constraint {
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("Deep copy of a JSON object is too expensive here as it is mostly an internal API")
-    public ElasticConstraint(JSONObject constraint) {
+    public ElasticConstraint(ObjectNode constraint) {
         this.constraint = constraint;
     }
 
@@ -46,7 +46,7 @@ public class ElasticConstraint extends Constraint {
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("Deep copy of a JSON object is too expensive here as it is mostly an internal API")
-    public JSONObject toJSON() {
+    public ObjectNode toJSON() {
         return constraint;
     }
 

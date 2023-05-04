@@ -8,14 +8,15 @@
 
 package sirius.db.es.types;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
@@ -23,6 +24,7 @@ import sirius.kernel.health.Exceptions;
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -85,7 +87,7 @@ public class DenseVectorProperty extends Property implements ESPropertyInfo {
     }
 
     @Override
-    public void describeProperty(JSONObject description) {
+    public void describeProperty(ObjectNode description) {
         DenseVector referenceVector = getDenseVector(getDescriptor().getReferenceInstance());
         description.put("type", "dense_vector");
         description.put("dims", referenceVector.dimensions);
@@ -130,8 +132,11 @@ public class DenseVectorProperty extends Property implements ESPropertyInfo {
 
     @Override
     protected Object transformFromElastic(Value object) {
-        if (object.get() instanceof JSONArray array) {
-            return array.toArray();
+        if (object.get() instanceof ArrayNode array) {
+            return Json.convertToList(array, Object.class).toArray();
+        }
+        if (object.get() instanceof List<?> list) {
+            return list.toArray();
         }
         if (object.get() instanceof Object[] array) {
             return array;

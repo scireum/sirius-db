@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
@@ -25,6 +25,7 @@ import sirius.db.mixing.Property;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -243,12 +244,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
 
     @Override
     protected void createEntity(ElasticEntity entity, EntityDescriptor entityDescriptor) throws Exception {
-        JSONObject data = new JSONObject();
+        ObjectNode data = Json.createObject();
         String id = determineId(entity);
         entity.setId(id);
         toJSON(entityDescriptor, entity, data);
 
-        JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
+        ObjectNode response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         id,
                                                         determineRouting(entityDescriptor,
                                                                          entity,
@@ -257,8 +258,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         null,
                                                         data);
         if (entityDescriptor.isVersioned()) {
-            entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
-            entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
+            entity.setPrimaryTerm(response.get(RESPONSE_PRIMARY_TERM).asLong());
+            entity.setSeqNo(response.get(RESPONSE_SEQ_NO).asLong());
         }
     }
 
@@ -289,14 +290,14 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @Override
     protected void updateEntity(ElasticEntity entity, boolean force, EntityDescriptor entityDescriptor)
             throws Exception {
-        JSONObject data = new JSONObject();
+        ObjectNode data = Json.createObject();
         boolean changed = toJSON(entityDescriptor, entity, data);
 
         if (!changed) {
             return;
         }
 
-        JSONObject response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
+        ObjectNode response = getLowLevelClient().index(determineWriteAlias(entityDescriptor),
                                                         determineId(entity),
                                                         determineRouting(entityDescriptor,
                                                                          entity,
@@ -306,8 +307,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         data);
 
         if (entityDescriptor.isVersioned()) {
-            entity.setPrimaryTerm(response.getLong(RESPONSE_PRIMARY_TERM));
-            entity.setSeqNo(response.getLong(RESPONSE_SEQ_NO));
+            entity.setPrimaryTerm(response.get(RESPONSE_PRIMARY_TERM).asLong());
+            entity.setSeqNo(response.get(RESPONSE_SEQ_NO).asLong());
         }
     }
 
@@ -319,10 +320,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @param data             the target JSON to fill
      * @return <tt>true</tt> if at least on property has changed, <tt>false</tt> otherwise
      */
-    protected boolean toJSON(EntityDescriptor entityDescriptor, ElasticEntity entity, JSONObject data) {
+    protected boolean toJSON(EntityDescriptor entityDescriptor, ElasticEntity entity, ObjectNode data) {
         boolean changed = false;
         for (Property property : entityDescriptor.getProperties()) {
-            data.put(property.getPropertyName(), property.getValueForDatasource(Elastic.class, entity));
+            data.putPOJO(property.getPropertyName(), property.getValueForDatasource(Elastic.class, entity));
             changed |= entityDescriptor.isChanged(entity, property);
         }
         return changed;
@@ -442,7 +443,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                             .handle();
         }
 
-        getLowLevelClient().createOrMoveAlias(determineReadAlias(entityDescriptor), writeIndexName).toJSONString();
+        Json.write(getLowLevelClient().createOrMoveAlias(determineReadAlias(entityDescriptor), writeIndexName));
         writeIndexTable.remove(entityDescriptor);
     }
 
@@ -523,19 +524,20 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @param data             the JSON data to transform
      * @return a new entity based on the given data
      */
-    protected static ElasticEntity make(EntityDescriptor entityDescriptor, JSONObject data) {
-        String id = data.getString(ID_FIELD);
+    protected static ElasticEntity make(EntityDescriptor entityDescriptor, ObjectNode data) {
+        String id = data.get(ID_FIELD).asText();
 
         try {
-            JSONObject source = data.getJSONObject(RESPONSE_SOURCE);
-            ElasticEntity result =
-                    (ElasticEntity) entityDescriptor.make(Elastic.class, null, key -> Value.of(source.get(key)));
+            ObjectNode source = Json.getObject(data, RESPONSE_SOURCE);
+            ElasticEntity result = (ElasticEntity) entityDescriptor.make(Elastic.class,
+                                                                         null,
+                                                                         key -> Json.convertToValue(source.get(key)));
             result.setSearchHit(data);
             result.setId(id);
 
             if (entityDescriptor.isVersioned()) {
-                result.setPrimaryTerm(data.getLong(RESPONSE_PRIMARY_TERM));
-                result.setSeqNo(data.getLong(RESPONSE_SEQ_NO));
+                result.setPrimaryTerm(data.get(RESPONSE_PRIMARY_TERM).asLong());
+                result.setSeqNo(data.get(RESPONSE_SEQ_NO).asLong());
             }
 
             return result;
@@ -563,11 +565,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected <E extends ElasticEntity> Optional<E> findEntity(Object id,
                                                                EntityDescriptor entityDescriptor,
                                                                Function<String, Value> context) throws Exception {
-        JSONObject obj = getLowLevelClient().get(determineReadAlias(entityDescriptor),
+        ObjectNode obj = getLowLevelClient().get(determineReadAlias(entityDescriptor),
                                                  id.toString(),
                                                  determineRoutingForFind(id, entityDescriptor, context),
                                                  true);
-        if (obj == null || !Boolean.TRUE.equals(obj.getBoolean(RESPONSE_FOUND))) {
+        if (obj == null || !Boolean.TRUE.equals(obj.get(RESPONSE_FOUND).asBoolean())) {
             return Optional.empty();
         }
 
@@ -747,11 +749,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     @SuppressWarnings("java:S1168")
     @Explain("We don't really return a map or collection here, so null is more expected than an empty json object")
-    public static JSONObject copyJSON(JSONObject json) {
+    public static ObjectNode copyJSON(ObjectNode json) {
         if (json == null) {
             return null;
         }
 
-        return json.clone();
+        return Json.clone(json);
     }
 }

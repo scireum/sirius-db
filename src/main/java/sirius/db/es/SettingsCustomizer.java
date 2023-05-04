@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.kernel.di.std.AutoRegister;
 
@@ -28,5 +28,5 @@ public interface SettingsCustomizer {
      * @param settingsObject the <tt>settings</tt> object which will be passed to Elasticsearch when creating a new
      *                       index.
      */
-    void customizeSettings(EntityDescriptor descriptor, JSONObject settingsObject);
+    void customizeSettings(EntityDescriptor descriptor, ObjectNode settingsObject);
 }

@@ -8,9 +8,10 @@
 
 package sirius.db.es.constraints;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,13 +74,13 @@ public class NestedQuery {
         BoolQueryBuilder builder = new BoolQueryBuilder();
         innerQueries.forEach(builder::must);
 
-        JSONObject query = builder.build();
+        ObjectNode query = builder.build();
         if (query == null) {
             return null;
         }
 
-        JSONObject result = new JSONObject();
-        result.put("nested", new JSONObject().fluentPut("path", path.toString()).fluentPut("query", query));
+        ObjectNode result = Json.createObject();
+        result.set("nested", Json.createObject().put("path", path.toString()).set("query", query));
 
         return new ElasticConstraint(result);
     }

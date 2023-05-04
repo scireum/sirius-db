@@ -8,7 +8,7 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Represents an option in an Elasticsearch suggest response.
@@ -98,21 +98,21 @@ public class SuggestOption {
     }
 
     /**
-     * Build a suggest option from the given {@link JSONObject}.
+     * Build a suggest option from the given {@link ObjectNode}.
      *
      * @param option the JSON object
      * @return the newly created suggest option
      */
-    public static SuggestOption makeSuggestOption(JSONObject option) {
+    public static SuggestOption makeSuggestOption(ObjectNode option) {
         SuggestOption suggestOption =
-                new SuggestOption(option.getString(PARAM_TEXT), option.getFloatValue(PARAM_SCORE));
+                new SuggestOption(option.get(PARAM_TEXT).asText(), option.get(PARAM_SCORE).floatValue());
 
-        if (option.containsKey(PARAM_HIGHLIGHTED)) {
-            suggestOption.withHighlighted(option.getString(PARAM_HIGHLIGHTED));
+        if (option.has(PARAM_HIGHLIGHTED)) {
+            suggestOption.withHighlighted(option.get(PARAM_HIGHLIGHTED).asText());
         }
 
-        if (option.containsKey(PARAM_COLLATE_MATCH)) {
-            suggestOption.withCollateMatch(option.getBooleanValue(PARAM_COLLATE_MATCH));
+        if (option.has(PARAM_COLLATE_MATCH)) {
+            suggestOption.withCollateMatch(option.get(PARAM_COLLATE_MATCH).asBoolean());
         }
 
         return suggestOption;

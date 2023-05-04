@@ -8,8 +8,10 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.DateRange;
@@ -22,6 +24,7 @@ import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.RateLimit;
@@ -139,9 +142,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private BoolQueryBuilder postFilters;
 
     private String collapseBy;
-    private List<JSONObject> collapseByInnerHits;
+    private List<ObjectNode> collapseByInnerHits;
 
-    private List<JSONObject> sorts;
+    private List<ObjectNode> sorts;
 
     private List<String> searchAfter;
 
@@ -154,9 +157,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private boolean explain;
 
-    private Map<String, JSONObject> suggesters;
+    private Map<String, ObjectNode> suggesters;
 
-    private JSONObject response;
+    private ObjectNode response;
 
     /**
      * Used to describe inner hits which are determined for field collapsing.
@@ -164,11 +167,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Note that there is no <tt>build()</tt> method, as the constructor already applies the object to the query.
      */
     public class InnerHitsBuilder {
-        private final JSONObject json;
-        private List<JSONObject> sorts;
+        private final ObjectNode json;
+        private List<ObjectNode> sorts;
 
         protected InnerHitsBuilder(String name, int size) {
-            this.json = new JSONObject().fluentPut(KEY_NAME, name).fluentPut(KEY_SIZE, size);
+            this.json = Json.createObject().put(KEY_NAME, name).put(KEY_SIZE, size);
             ElasticQuery.this.collapseByInnerHits = autoinit(ElasticQuery.this.collapseByInnerHits);
             ElasticQuery.this.collapseByInnerHits.add(json);
         }
@@ -182,9 +185,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         public InnerHitsBuilder orderByAsc(String field) {
             if (this.sorts == null) {
                 this.sorts = new ArrayList<>();
-                this.json.put(KEY_SORT, sorts);
+                this.json.putPOJO(KEY_SORT, sorts);
             }
-            this.sorts.add(new JSONObject().fluentPut(field, KEY_ASC));
+            this.sorts.add(Json.createObject().put(field, KEY_ASC));
             return this;
         }
 
@@ -207,9 +210,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         public InnerHitsBuilder orderByDesc(String field) {
             if (this.sorts == null) {
                 this.sorts = new ArrayList<>();
-                this.json.put(KEY_SORT, sorts);
+                this.json.putPOJO(KEY_SORT, sorts);
             }
-            this.sorts.add(new JSONObject().fluentPut(field, KEY_DESC));
+            this.sorts.add(Json.createObject().put(field, KEY_DESC));
             return this;
         }
 
@@ -221,7 +224,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
          * @return the builder itself for fluent method calls
          */
         public InnerHitsBuilder addParameter(String name, Object value) {
-            this.json.put(name, value);
+            this.json.putPOJO(name, value);
             return this;
         }
     }
@@ -295,7 +298,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             copy.suggesters = this.suggesters.entrySet()
                                              .stream()
                                              .collect(Collectors.toMap(Map.Entry::getKey,
-                                                                       entry -> entry.getValue().clone()));
+                                                                       entry -> Json.clone(entry.getValue())));
         }
 
         copy.additionalDescriptors = additionalDescriptors;
@@ -394,17 +397,17 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        JSONArray jsonArray = getRawResponse().getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
+        ArrayNode jsonArray = getRawResponse().withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS));
         if (jsonArray == null || jsonArray.isEmpty()) {
             return Collections.emptyList();
         }
 
-        JSONArray sortArray = jsonArray.getJSONObject(jsonArray.size() - 1).getJSONArray(KEY_SORT);
+        ArrayNode sortArray = jsonArray.withArray(Strings.apply("/%d/%s", jsonArray.size() - 1, KEY_SORT));
         if (sortArray == null) {
             return Collections.emptyList();
         }
 
-        return sortArray.stream().map(Object::toString).toList();
+        return Json.streamEntries(sortArray).map(Object::toString).toList();
     }
 
     /**
@@ -416,7 +419,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the last sort value within this result
      */
     public String getLastSortValue() {
-        if (limit > 0 && getRawResponse().getJSONObject(KEY_HITS).getJSONArray(KEY_HITS).size() < limit) {
+        if (limit > 0 && getRawResponse().withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS)).size() < limit) {
             return "-";
         }
 
@@ -429,7 +432,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> must(JSONObject filter) {
+    public ElasticQuery<E> must(ObjectNode filter) {
         if (filter != null) {
             if (queryBuilder == null) {
                 queryBuilder = new BoolQueryBuilder();
@@ -459,7 +462,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> mustNot(JSONObject filter) {
+    public ElasticQuery<E> mustNot(ObjectNode filter) {
         if (filter != null) {
             if (queryBuilder == null) {
                 queryBuilder = new BoolQueryBuilder();
@@ -489,9 +492,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param filter the filter to add
      * @return the query itself for fluent method calls
-     * @see BoolQueryBuilder#filter(JSONObject)
+     * @see BoolQueryBuilder#filter(ObjectNode)
      */
-    public ElasticQuery<E> filter(JSONObject filter) {
+    public ElasticQuery<E> filter(ObjectNode filter) {
         if (filter != null) {
             if (queryBuilder == null) {
                 queryBuilder = new BoolQueryBuilder();
@@ -528,7 +531,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> postFilter(JSONObject filter) {
+    public ElasticQuery<E> postFilter(ObjectNode filter) {
         if (filter != null) {
             if (postFilters == null) {
                 postFilters = new BoolQueryBuilder();
@@ -558,13 +561,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Actually this will iterate over all {@link BoolQueryBuilder#filter} of the internal query and apply the given
      * predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed internally.
      * <p>
-     * This can e.g. be used to move internal filters into {@link #postFilter(JSONObject)}.
+     * This can e.g. be used to move internal filters into {@link #postFilter(ObjectNode)}.
      *
      * @param shouldRemove  the predicate to determine which filters to transform
      * @param removeHandler the callback to transform / process the filter
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> rewriteFilters(Predicate<JSONObject> shouldRemove, Consumer<JSONObject> removeHandler) {
+    public ElasticQuery<E> rewriteFilters(Predicate<ObjectNode> shouldRemove, Consumer<ObjectNode> removeHandler) {
         queryBuilder.removeFilterIf(constraint -> {
             if (shouldRemove.test(constraint)) {
                 removeHandler.accept(constraint);
@@ -593,7 +596,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> sort(JSONObject sortSpec) {
+    public ElasticQuery<E> sort(ObjectNode sortSpec) {
         this.sorts = autoinit(this.sorts);
         sorts.add(sortSpec);
         return this;
@@ -606,8 +609,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> sort(Mapping field, JSONObject sortSpec) {
-        return sort(new JSONObject().fluentPut(field.toString(), sortSpec));
+    public ElasticQuery<E> sort(Mapping field, ObjectNode sortSpec) {
+        return sort(Json.createObject().set(field.toString(), sortSpec));
     }
 
     /**
@@ -618,7 +621,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderAsc(Mapping field) {
-        return sort(field, new JSONObject().fluentPut(KEY_ORDER, KEY_ASC));
+        return sort(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
     }
 
     /**
@@ -629,7 +632,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderDesc(Mapping field) {
-        return sort(field, new JSONObject().fluentPut(KEY_ORDER, KEY_DESC));
+        return sort(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
     }
 
     /**
@@ -819,13 +822,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @see AggregationResult#forEachBucket(Consumer)
      */
     public ElasticQuery<E> addDateAggregation(String name, Mapping field, List<DateRange> ranges) {
-        List<JSONObject> transformedRanges = ranges.stream().map(range -> {
-            JSONObject result = new JSONObject().fluentPut(KEY_KEY, range.getKey());
+        List<ObjectNode> transformedRanges = ranges.stream().map(range -> {
+            ObjectNode result = Json.createObject().put(KEY_KEY, range.getKey());
             if (range.getFrom() != null) {
-                result.fluentPut(KEY_FROM, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getFrom()));
+                result.put(KEY_FROM, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getFrom()));
             }
             if (range.getUntil() != null) {
-                result.fluentPut(KEY_TO, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
+                result.put(KEY_TO, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(range.getUntil()));
             }
             return result;
         }).toList();
@@ -845,7 +848,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @deprecated Use {@link Elastic#suggest(Class)}
      */
     @Deprecated(forRemoval = true)
-    public ElasticQuery<E> suggest(String name, JSONObject suggest) {
+    public ElasticQuery<E> suggest(String name, ObjectNode suggest) {
         if (this.suggesters == null) {
             this.suggesters = new HashMap<>();
         }
@@ -895,8 +898,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the query as JSON
      */
-    private JSONObject buildPayload() {
-        JSONObject payload = new JSONObject();
+    private ObjectNode buildPayload() {
+        ObjectNode payload = Json.createObject();
         if (descriptor.isVersioned()) {
             payload.put(KEY_SEQ_NO_PRIMARY_TERM, true);
         }
@@ -908,37 +911,37 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         applyQuery(payload);
 
         if (nearestNeighborsSearch != null) {
-            payload.put("knn", nearestNeighborsSearch.build());
+            payload.set("knn", nearestNeighborsSearch.build());
         }
 
         if (sorts != null && !sorts.isEmpty()) {
-            payload.put(KEY_SORT, sorts);
+            payload.putPOJO(KEY_SORT, sorts);
 
             if (searchAfter != null && !searchAfter.isEmpty()) {
-                payload.put(KEY_SEARCH_AFTER, searchAfter);
+                payload.putPOJO(KEY_SEARCH_AFTER, searchAfter);
             }
         }
 
         if (aggregations != null) {
-            JSONObject aggs = new JSONObject();
-            aggregations.forEach(agg -> aggs.put(agg.getName(), agg.build()));
-            payload.put(KEY_AGGS, aggs);
+            ObjectNode aggs = Json.createObject();
+            aggregations.forEach(agg -> aggs.set(agg.getName(), agg.build()));
+            payload.set(KEY_AGGS, aggs);
         }
 
         if (postFilters != null) {
-            payload.put(KEY_POST_FILTER, postFilters.build());
+            payload.set(KEY_POST_FILTER, postFilters.build());
         }
 
         if (Strings.isFilled(collapseBy)) {
-            JSONObject collapse = new JSONObject().fluentPut(KEY_FIELD, collapseBy);
+            ObjectNode collapse = Json.createObject().put(KEY_FIELD, collapseBy);
             if (collapseByInnerHits != null) {
-                collapse.put(KEY_INNER_HITS, collapseByInnerHits);
+                collapse.putPOJO(KEY_INNER_HITS, collapseByInnerHits);
             }
-            payload.put(KEY_COLLAPSE, collapse);
+            payload.set(KEY_COLLAPSE, collapse);
         }
 
         if (suggesters != null && !suggesters.isEmpty()) {
-            payload.put(KEY_SUGGEST, new JSONObject().fluentPutAll(suggesters));
+            payload.set(KEY_SUGGEST, Json.createObject().setAll(suggesters));
         }
 
         return payload;
@@ -947,13 +950,13 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Creates a copy of the filters of this query.
      * <p>
-     * This might be used e.g. in {@link sirius.db.es.suggest.SuggesterBuilder#collate(JSONObject, boolean)}.
+     * This might be used e.g. in {@link sirius.db.es.suggest.SuggesterBuilder#collate(ObjectNode, boolean)}.
      *
      * @return a copy of the filters of this query
      */
-    public JSONObject getFilters() {
+    public ObjectNode getFilters() {
         if (queryBuilder == null) {
-            return new JSONObject();
+            return Json.createObject();
         }
 
         return queryBuilder.build();
@@ -967,15 +970,15 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param payload the existing payload to add the query to
      */
-    private void applyQuery(JSONObject payload) {
+    private void applyQuery(ObjectNode payload) {
         if (functionScore != null) {
             if (queryBuilder != null) {
-                payload.put(KEY_QUERY, functionScore.apply(queryBuilder.build()));
+                payload.set(KEY_QUERY, functionScore.apply(queryBuilder.build()));
             } else {
-                payload.put(KEY_QUERY, functionScore.build());
+                payload.set(KEY_QUERY, functionScore.build());
             }
         } else if (queryBuilder != null) {
-            payload.put(KEY_QUERY, queryBuilder.build());
+            payload.set(KEY_QUERY, queryBuilder.build());
         }
     }
 
@@ -984,11 +987,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the query as JSON
      */
-    private JSONObject buildSimplePayload() {
-        JSONObject payload = new JSONObject();
+    private ObjectNode buildSimplePayload() {
+        ObjectNode payload = Json.createObject();
 
         if (queryBuilder != null) {
-            payload.put(KEY_QUERY, queryBuilder.build());
+            payload.set(KEY_QUERY, queryBuilder.build());
         }
 
         return payload;
@@ -1002,10 +1005,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        JSONObject countResponse = client.count(computeEffectiveIndexName(elastic::determineReadAlias),
+        ObjectNode countResponse = client.count(computeEffectiveIndexName(elastic::determineReadAlias),
                                                 filteredRouting,
                                                 buildSimplePayload());
-        return countResponse.getLong(KEY_COUNT);
+        return countResponse.get(KEY_COUNT).asLong();
     }
 
     /**
@@ -1062,10 +1065,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-        JSONObject existsResponse = client.exists(computeEffectiveIndexName(elastic::determineReadAlias),
+        ObjectNode existsResponse = client.exists(computeEffectiveIndexName(elastic::determineReadAlias),
                                                   filteredRouting,
                                                   buildSimplePayload());
-        return existsResponse.getJSONObject(KEY_HITS).getJSONObject(KEY_TOTAL).getIntValue(KEY_VALUE) >= 1;
+        return existsResponse.at(Strings.apply("/%s/%s", KEY_HITS, KEY_TOTAL)).get(KEY_VALUE).asInt() >= 1;
     }
 
     @SuppressWarnings("unchecked")
@@ -1086,8 +1089,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                       skip,
                                       limit,
                                       buildPayload());
-        for (Object obj : this.response.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS)) {
-            if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
+        for (Object obj : this.response.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS))) {
+            if (!handler.test((E) Elastic.make(descriptor, (ObjectNode) obj))) {
                 return;
             }
         }
@@ -1132,14 +1135,14 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Returns the aggregations as a {@link JSONObject}.
+     * Returns the aggregations as an {@link ObjectNode}.
      * <p>
      * Note that the query has to be executed before calling this method.
      *
      * @return the response as JSON
      */
-    public JSONObject getRawAggregations() {
-        return getRawResponse().getJSONObject(KEY_AGGREGATIONS);
+    public ObjectNode getRawAggregations() {
+        return Json.getObject(getRawResponse(), KEY_AGGREGATIONS);
     }
 
     /**
@@ -1161,10 +1164,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Nonnull
     public AggregationResult getAggregation(String name) {
-        JSONObject object = getRawAggregations();
+        ObjectNode object = getRawAggregations();
         for (String aggregationName : name.split("\\.")) {
-            Object child = object.get(aggregationName);
-            if (!(child instanceof JSONObject childObject)) {
+            JsonNode child = object.get(aggregationName);
+            if (!(child instanceof ObjectNode childObject)) {
                 return AggregationResult.of(null);
             } else {
                 object = childObject;
@@ -1175,7 +1178,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Returns the response as a {@link JSONObject}.
+     * Returns the response as an {@link ObjectNode}.
      * <p>
      * Note that the query has to be executed before calling this method.
      *
@@ -1183,7 +1186,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
-    public JSONObject getRawResponse() {
+    public ObjectNode getRawResponse() {
         if (response == null) {
             if (useScrolling()) {
                 throw Exceptions.handle()
@@ -1214,7 +1217,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the total number of this (even when only {@link #computeAggregations()} was used).
      */
     public long getTotalHits() {
-        return getRawResponse().getJSONObject("hits").getJSONObject(KEY_TOTAL).getLong(KEY_VALUE);
+        return getRawResponse().at(Strings.apply("/hits/%s/%s", KEY_TOTAL, KEY_VALUE)).asLong();
     }
 
     /**
@@ -1235,7 +1238,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the total number of shards which have been queried
      */
     public long getNumShards() {
-        return getRawResponse().getJSONObject("_shards").getLong(KEY_TOTAL);
+        return getRawResponse().at("/_shards/" + KEY_TOTAL).asLong();
     }
 
     /**
@@ -1274,17 +1277,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                           buildPayload());
         }
 
-        JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
+        ObjectNode responseSuggestions = Json.getObject(response, KEY_SUGGEST);
 
         if (responseSuggestions == null) {
             return Collections.emptyList();
         }
 
-        return responseSuggestions.getJSONArray(name)
-                                  .stream()
-                                  .map(JSONObject.class::cast)
-                                  .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
-                                  .collect(Collectors.toList());
+        return Json.streamEntries(responseSuggestions.withArray(JsonPointer.SEPARATOR + name))
+                   .map(ObjectNode.class::cast)
+                   .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
+                   .collect(Collectors.toList());
     }
 
     /**
@@ -1303,7 +1305,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
             String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
 
-            JSONObject scrollResponse = client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
+            ObjectNode scrollResponse = client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
                                                             filteredRouting,
                                                             0,
                                                             filteredRouting != null ?
@@ -1335,7 +1337,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                     return effectiveLimit.shouldContinue();
                 }, scrollResponse);
             } finally {
-                client.closeScroll(scrollResponse.getString(KEY_SCROLL_ID));
+                client.closeScroll(scrollResponse.get(KEY_SCROLL_ID).asText());
             }
         } catch (Exception t) {
             throw Exceptions.handle(Elastic.LOG, t);
@@ -1350,24 +1352,24 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the last response we received when iterating over the scroll query
      */
     @SuppressWarnings("unchecked")
-    private JSONObject executeScroll(Predicate<E> handler, JSONObject firstResponse) {
+    private ObjectNode executeScroll(Predicate<E> handler, ObjectNode firstResponse) {
         long lastScroll = 0;
-        JSONObject scrollResponse = firstResponse;
+        ObjectNode scrollResponse = firstResponse;
         while (true) {
             // we keep on executing queries until es returns an empty list of results...
-            JSONArray hits = scrollResponse.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
+            ArrayNode hits = scrollResponse.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS));
             if (hits.isEmpty()) {
                 return scrollResponse;
             }
 
             for (Object obj : hits) {
-                if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
+                if (!handler.test((E) Elastic.make(descriptor, (ObjectNode) obj))) {
                     return scrollResponse;
                 }
             }
 
             lastScroll = performScrollMonitoring(lastScroll);
-            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.getString(KEY_SCROLL_ID));
+            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.get(KEY_SCROLL_ID).asText());
         }
     }
 
@@ -1437,18 +1439,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return null;
             }
 
-            JSONObject scrollResponse =
+            ObjectNode scrollResponse =
                     scrollId == null ? pullFirstBlock() : client.continueScroll(SCROLL_TTL_SECONDS, scrollId);
-            scrollId = scrollResponse.getString(KEY_SCROLL_ID);
+            scrollId = scrollResponse.get(KEY_SCROLL_ID).asText();
             lastScroll = performScrollMonitoring(lastScroll);
-            return scrollResponse.getJSONObject(KEY_HITS)
-                                 .getJSONArray(KEY_HITS)
-                                 .stream()
-                                 .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
-                                 .iterator();
+            return Json.streamEntries(scrollResponse.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS)))
+                       .map(obj -> (E) Elastic.make(descriptor, (ObjectNode) obj))
+                       .iterator();
         }
 
-        private JSONObject pullFirstBlock() {
+        private ObjectNode pullFirstBlock() {
             String filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
             return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
                                        filterRouting,
@@ -1491,7 +1491,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * Use this for larger result sets where integrity and constraints do not matter or are managed manually.
      *
      * @throws OptimisticLockException               if one of the documents was modified during the runtime of the truncate
-     * @throws sirius.kernel.health.HandledException if the {@linkplain LowLevelClient#deleteByQuery(String, String, JSONObject) deleteByQuery}
+     * @throws sirius.kernel.health.HandledException if the {@linkplain LowLevelClient#deleteByQuery(String, String, ObjectNode) deleteByQuery}
      *                                               request aborted due to any unrecoverable errors during the process
      */
     public void tryTruncate() throws OptimisticLockException {
@@ -1500,19 +1500,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         String filteredRouting = checkRouting(Elastic.RoutingAccessMode.WRITE);
-        JSONObject deleteByQueryResponse = elastic.getLowLevelClient()
+        ObjectNode deleteByQueryResponse = elastic.getLowLevelClient()
                                                   .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
                                                                  filteredRouting,
                                                                  buildSimplePayload());
-        if (Boolean.TRUE.equals(deleteByQueryResponse.getBoolean(KEY_TIMED_OUT))
-            || deleteByQueryResponse.getIntValue(KEY_VERSION_CONFLICTS) > 0) {
-            Elastic.LOG.WARN("Truncate timed out or had version conflicts:\n" + deleteByQueryResponse.toJSONString());
+        if (Boolean.TRUE.equals(deleteByQueryResponse.get(KEY_TIMED_OUT).asBoolean())
+            || deleteByQueryResponse.get(KEY_VERSION_CONFLICTS).asInt() > 0) {
+            Elastic.LOG.WARN("Truncate timed out or had version conflicts:\n" + Json.write(deleteByQueryResponse));
             throw new OptimisticLockException();
         }
-        if (deleteByQueryResponse.getJSONArray(KEY_FAILURES) != null
-            && !deleteByQueryResponse.getJSONArray(KEY_FAILURES).isEmpty()) {
-            Elastic.LOG.SEVERE("Truncate aborted due to unrecoverable error(s):\n"
-                               + deleteByQueryResponse.toJSONString());
+        ArrayNode failures = deleteByQueryResponse.withArray(JsonPointer.SEPARATOR + KEY_FAILURES);
+        if (failures != null && !failures.isEmpty()) {
+            Elastic.LOG.SEVERE("Truncate aborted due to unrecoverable error(s):\n" + Json.write(deleteByQueryResponse));
             throw Exceptions.createHandled()
                             .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s)!")
                             .handle();
