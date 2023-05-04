@@ -1401,10 +1401,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             }
 
             JSONObject payload = buildPayload().fluentPut(KEY_PIT,
-                                                          new JSONObject(Map.of(KEY_PIT_ID,
-                                                                                pit,
-                                                                                KEY_PIT_KEEP_ALIVE,
-                                                                                STREAM_BLOCKWISE_PID_TTL)));
+                                                          Map.of(KEY_PIT_ID,
+                                                                 pit,
+                                                                 KEY_PIT_KEEP_ALIVE,
+                                                                 STREAM_BLOCKWISE_PID_TTL));
             int maxResults = filterRouting != null ? MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD : MAX_SCROLL_RESULTS_PER_SHARD;
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
