@@ -120,7 +120,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * This timeout / TTL keeps the PIT open. Using a high time is not a problem here, because it gets closed after the
      * stream is consumed, so we rather try to choose a high timeout to avoid issues with prematurely closed PITs.
      */
-    private static final String STREAM_BLOCKWISE_PID_TTL = "30m";
+    private static final String STREAM_BLOCKWISE_PIT_TTL = "30m";
     private static final String KEY_PIT = "pit";
     private static final String KEY_PIT_ID = "id";
     private static final String KEY_PIT_KEEP_ALIVE = "keep_alive";
@@ -1395,7 +1395,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             if (pit == null) {
                 // first call to this method
                 orderAsc(ElasticEntity.ID);
-                pit = client.createPit(alias, filterRouting, STREAM_BLOCKWISE_PID_TTL);
+                pit = client.createPit(alias, filterRouting, STREAM_BLOCKWISE_PIT_TTL);
             } else {
                 searchAfter(searchAfter);
             }
@@ -1403,8 +1403,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             JSONObject payload = buildPayload().fluentPut(KEY_PIT,
                                                           Map.of(KEY_PIT_ID,
                                                                  pit,
-                                                                 KEY_PIT_KEEP_ALIVE,
-                                                                 STREAM_BLOCKWISE_PID_TTL));
+                                                                 KEY_PIT_KEEP_ALIVE, STREAM_BLOCKWISE_PIT_TTL));
             int maxResults = filterRouting != null ? MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD : MAX_SCROLL_RESULTS_PER_SHARD;
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
