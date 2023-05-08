@@ -49,7 +49,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -311,7 +310,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
         @Override
         public int characteristics() {
-            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
+            return NONNULL | IMMUTABLE | ORDERED;
         }
 
         @Override
