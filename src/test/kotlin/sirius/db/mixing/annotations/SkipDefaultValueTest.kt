@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
-import sirius.db.mongo.SkipDefaultTestEntity
 import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 import kotlin.test.assertEquals
@@ -42,7 +41,7 @@ class SkipDefaultValueTest {
 
         // Also, only the id (and _id) is persisted in Mongo.
         assertEquals(
-            2, mongo.find()
+                2, mongo.find()
                 .where(SkipDefaultTestEntity.ID, test.id)
                 .singleIn(SkipDefaultTestEntity::class.java).get().underlyingObject.keys.size
         )
@@ -74,9 +73,9 @@ class SkipDefaultValueTest {
 
         // Also, all fields are persisted in Mongo.
         assertEquals(
-            7, mongo.find().where(SkipDefaultTestEntity.ID, test.id).singleIn(
+                7, mongo.find().where(SkipDefaultTestEntity.ID, test.id).singleIn(
                 SkipDefaultTestEntity::class.java
-            ).get().underlyingObject.keys.size
+        ).get().underlyingObject.keys.size
         )
     }
 
@@ -117,7 +116,7 @@ class SkipDefaultValueTest {
 
         // Also, only the id (and _id) is persisted in Mongo.
         assertEquals(
-            2, mongo.find().where(SkipDefaultTestEntity.ID, test.id)
+                2, mongo.find().where(SkipDefaultTestEntity.ID, test.id)
                 .singleIn(SkipDefaultTestEntity::class.java).get().underlyingObject.keys.size
         )
     }

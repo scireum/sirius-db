@@ -6,13 +6,11 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.mongo;
+package sirius.db.mixing.annotations;
 
-import sirius.db.mixing.annotations.DefaultValue;
-import sirius.db.mixing.annotations.NullAllowed;
-import sirius.db.mixing.annotations.SkipDefaultValue;
 import sirius.db.mixing.types.StringList;
 import sirius.db.mixing.types.StringMap;
+import sirius.db.mongo.MongoEntity;
 
 public class SkipDefaultTestEntity extends MongoEntity {
 
