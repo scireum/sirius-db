@@ -410,6 +410,102 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
+     * Makes the queried entities available as a stream.
+     * <p>
+     * {@code stream()} works a lot like {@link #iterateAll}, except you have the full freedom the stream framework
+     * provides.
+     * <p>
+     * Note that the database connection is kept open during the processing of the stream. If you are doing a time
+     * intense task, you might want to use {@link #streamBlockwise()} or {@link #streamList()} instead.
+     * You do not need to close the returned stream; the resource management is handled by java, and the underlying JDBC
+     * ResultSet is closed automatically when the stream is consumed.
+     *
+     * @return a stream of matched elements.
+     */
+    public Stream<E> stream() {
+        if (forceFail) {
+            return Stream.empty();
+        }
+
+        // the flatMap is needed to ensure that the split::close is actually called, because no-one calls the Stream.close() manually.
+        return Stream.of(new Object()).flatMap(ignored -> {
+            ResultSetSpliterator split = new ResultSetSpliterator();
+            return StreamSupport.stream(split, false).onClose(split::close);
+        });
+    }
+
+    private class ResultSetSpliterator implements Spliterator<E>, AutoCloseable {
+        private final Compiler compiler = compileSELECT();
+        private final TaskContext tc = TaskContext.get();
+        private final boolean nativeLimit = db.hasCapability(Capability.LIMIT);
+        private final Limit limit = getLimit();
+        private Watch watch;
+        private Connection connection;
+        private PreparedStatement statement;
+        private ResultSet resultSet;
+        private Set<String> columns;
+
+        private synchronized void init() throws SQLException {
+            if (watch != null) {
+                return;
+            }
+            watch = Watch.start();
+            connection = db.getConnection();
+            statement = compiler.prepareStatement(connection);
+            tuneStatement(statement, limit, nativeLimit);
+            resultSet = statement.executeQuery();
+            columns = dbs.readColumns(resultSet);
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public boolean tryAdvance(Consumer<? super E> action) {
+            try {
+                init();
+                if (resultSet.next() && tc.isActive()) {
+                    if (nativeLimit || limit.nextRow()) {
+                        SQLEntity e = makeEntity(descriptor, null, columns, resultSet);
+                        compiler.executeJoinFetches(e, columns, resultSet);
+                        action.accept((E) e);
+                    }
+                    return nativeLimit || limit.shouldContinue();
+                }
+                return false;
+            } catch (Exception e) {
+                throw queryError(compiler, e);
+            }
+        }
+
+        @Override
+        public Spliterator<E> trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public int characteristics() {
+            return IMMUTABLE | NONNULL | ORDERED;
+        }
+
+        @Override
+        public void close() {
+            //noinspection EmptyTryBlock
+            try (var c = connection; var s = statement; var rs = resultSet) {
+                // only use this to close the delegated resources
+            } catch (SQLException e) {
+                throw queryError(compiler, e);
+            }
+            if (Microtiming.isEnabled()) {
+                watch.submitMicroTiming("OMA", "ITERATE: " + compiler.getQuery());
+            }
+        }
+    }
+
+    /**
      * Creates a sql constraint for sorting purposes.
      * </p>
      * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
