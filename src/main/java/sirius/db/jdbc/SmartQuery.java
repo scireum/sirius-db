@@ -457,9 +457,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * @return {@code true} if the sorted list starts with null values
      */
     private boolean nullValuesFirst(boolean sortAscending) {
-        return ((db == null && sortAscending)
-                || (db != null && sortAscending && db.hasCapability(Capability.NULLS_FIRST))
-                || (db != null && !sortAscending && !db.hasCapability(Capability.NULLS_FIRST)));
+        if (db == null) {
+            // should be only true in tests
+            return sortAscending;
+        }
+        if (sortAscending) {
+            return db.hasCapability(Capability.NULLS_FIRST);
+        } else {
+            return !db.hasCapability(Capability.NULLS_FIRST);
+        }
     }
 
     @Override
