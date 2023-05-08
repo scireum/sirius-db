@@ -9,9 +9,9 @@ To learn more about what SIRIUS is please refer to documentation of the [kernel 
 Provides access to popular databases like **JDBC/SQL, MongoDB, Redis or Elasticsearch**.
 
 For each database a *low level interface* is provided which combines configuration, monitoring,
-metrics and debugging with best performance possible.
+metrics and debugging with the best performance possible.
 
-Additionally a mapping layer is provided for JDBC, MongoDB and Elasticsearch, which is called 
+Additionally, a mapping layer is provided for JDBC, MongoDB and Elasticsearch, which is called 
 [Mixing](src/main/java/sirius/db/mixing).
 
 If you want to use **sirius-db** in a web environment (in conjunction with **sirius-web**) have a look
@@ -27,7 +27,7 @@ at [sirius-biz](https://github.com/scireum/sirius-biz) which provides a lot of h
 * Metrics and Monitoring of all database operations - note that **sirius-web** provides a 
   [UI](https://github.com/scireum/sirius-web/tree/master/src/main/java/sirius/web/health) to display these stats 
   and timings
-* Automatic reporting for slow or inefficient database opertions 
+* Automatic reporting for slow or inefficient database operations 
 
 ## Important files of this module: 
 
@@ -40,11 +40,11 @@ at [sirius-biz](https://github.com/scireum/sirius-biz) which provides a lot of h
 Provides a database independent mapping framework which can be extended by user code.
 * [JDBC](src/main/java/sirius/db/jdbc)\
 Provides a both, a low-level interface which adds configuration- and resource management to JDBC while still
-delivering its raw performance. Also a high-level mapper based on **Mixing** is provided.
+delivering its raw performance. Also, a high-level mapper based on **Mixing** is provided.
 * [ES](src/main/java/sirius/db/es)\
 Provides a HTTP based client for Elasticsearch which utilizes **Mixing** to provide a high-level API.
 * [Mongo](src/main/java/sirius/db/mongo)\
 Provides a both, a low-level interface which adds configuration- and resource management to the plain MongoDB driver whil still
-delivering its raw performance. Also a high-level mapper based on **Mixing** is provided.
+delivering its raw performance. Also, a high-level mapper based on **Mixing** is provided.
 * [Redis](src/main/java/sirius/db/redis)\
 Contains a helper framework which provides configuration- and resource management when talking to one or more Redis servers.
