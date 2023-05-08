@@ -32,7 +32,7 @@ at [sirius-biz](https://github.com/scireum/sirius-biz) which provides a lot of h
 ## Important files of this module: 
 
 * [Default configuration](src/main/resources/component-db.conf)
-* [Maven setup](pom.xml)
+* [Gradle setup](build.gradle.kts)
 
 ## Frameworks
 
