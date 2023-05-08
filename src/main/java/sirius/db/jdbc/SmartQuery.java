@@ -372,8 +372,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 boolean sortAscending = sorting.getSecond().booleanValue();
                 Object value = getPropertyValue(sortColumn, lastValue);
 
-                SQLConstraint currentColumConstraint = createSqlConstraintForSortingColumn(sortAscending, sortColumn,
-                        value, previousSortingColumns);
+                SQLConstraint currentColumConstraint =
+                        createSqlConstraintForSortingColumn(sortAscending, sortColumn, value, previousSortingColumns);
                 sortingFilterConstraint = OMA.FILTERS.or(sortingFilterConstraint, currentColumConstraint);
 
                 previousSortingColumns.put(sortColumn, value);
@@ -415,17 +415,20 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * returns false e.g. NULL != 'any' returns false.
      * Therefore, comparisons with NULL values must be treated specially.
      *
-     * @param sortAscending decides whether the sorting direction is descending or ascending
-     * @param column the column to be used for sorting
-     * @param value the value of the column
+     * @param sortAscending          decides whether the sorting direction is descending or ascending
+     * @param column                 the column to be used for sorting
+     * @param value                  the value of the column
      * @param previousSortingColumns all columns that should be sorted before the current one
      * @return {@link SQLConstraint} which can be used to map a level of sorting.
      */
-    SQLConstraint createSqlConstraintForSortingColumn(boolean sortAscending, Mapping column, Object value,
+    SQLConstraint createSqlConstraintForSortingColumn(boolean sortAscending,
+                                                      Mapping column,
+                                                      Object value,
                                                       Map<Mapping, Object> previousSortingColumns) {
         SQLConstraint sortingStep = null;
         for (Map.Entry<Mapping, Object> previousColumn : previousSortingColumns.entrySet()) {
-            sortingStep = OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
+            sortingStep =
+                    OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
         }
 
         if (value == null) {
@@ -434,11 +437,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         if (nullValuesFirst(sortAscending)) {
             return OMA.FILTERS.and(sortingStep, OMA.FILTERS.gt(column, value));
         } else {
-            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
+            return OMA.FILTERS.and(sortingStep,
+                                   OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
         }
     }
 
-    private SQLConstraint createConstraintForSortingWithNull(boolean sortAscending, SQLConstraint sortingStep,
+    private SQLConstraint createConstraintForSortingWithNull(boolean sortAscending,
+                                                             SQLConstraint sortingStep,
                                                              Mapping column) {
         if (nullValuesFirst(sortAscending)) {
             return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
