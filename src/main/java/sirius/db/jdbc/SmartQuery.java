@@ -256,7 +256,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Deletes all matches using the {@link OMA#delete(SQLEntity)}.
+     * Deletes all matches using the {@link OMA#delete(BaseEntity)}.
      * <p>
      * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
      * the results until the timeout ({@link #queryIterateTimeout} is reached). In this case, we abort the
@@ -448,10 +448,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Indicates whether null values are listed before or after non-null values.
-     * </p>
+     * Indicates whether null values are listed before or after non-null values when executing this query.
+     * <p>
      * Both the sort order and the implementation in the database tell us whether we will get a
-     * list where the null values are at the beginning or at the end.
+     * result where the null values are at the beginning or at the end.
      *
      * @param sortAscending decides whether the sorting direction is descending or ascending
      * @return {@code true} if the sorted list starts with null values
