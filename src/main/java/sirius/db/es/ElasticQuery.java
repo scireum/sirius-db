@@ -33,11 +33,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,22 +49,6 @@ import java.util.stream.StreamSupport;
  * @param <E> the type of entities to be queried
  */
 public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E, ElasticConstraint> {
-
-    /**
-     * Contains the default number of buckets being collected and reported for an aggregation.
-     *
-     * @deprecated moved to {@link AggregationBuilder}
-     */
-    @Deprecated(forRemoval = true)
-    public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
-
-    /**
-     * This is the timeout we specify for elastic search for a scroll requests.
-     * <p>
-     * This essentially instructs ES to keep a scroll response open for the given timeout
-     */
-    private static final int SCROLL_TTL_SECONDS = 60 * 60;
-
     /**
      * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD} entities at once and hope to
      * process them within {@link #SCROLL_TTL_SECONDS}.
@@ -80,8 +62,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
 
     public static final String SHARD_DOC_ID = "_shard_doc";
-
-    private static final String KEY_SCROLL_ID = "_scroll_id";
 
     private static final String KEY_FIELD = "field";
     private static final String KEY_SIZE = "size";
@@ -844,35 +824,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Adds a suggester.
-     *
-     * @param name    the name of the suggester
-     * @param suggest a JSON object describing a suggest requirement
-     * @return the query itself for fluent method calls
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> suggest(String name, JSONObject suggest) {
-        if (this.suggesters == null) {
-            this.suggesters = new HashMap<>();
-        }
-        suggesters.put(name, suggest);
-        return this;
-    }
-
-    /**
-     * Adds a suggester.
-     *
-     * @param suggestBuilder a suggest builder
-     * @return the query itself for fluent method calls
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> suggest(sirius.db.es.suggest.SuggestBuilder suggestBuilder) {
-        return suggest(suggestBuilder.getName(), suggestBuilder.build());
-    }
-
-    /**
      * Specifies the routing value to use.
      * <p>
      * For routed entities it is highly recommended supplying a routing value as it greatly improves the
@@ -1244,110 +1195,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     public long getNumShards() {
         return getRawResponse().getJSONObject("_shards").getLong(KEY_TOTAL);
-    }
-
-    /**
-     * Returns all suggest options for the suggester with the given name.
-     *
-     * @param name the name of the suggester
-     * @return a list of suggest options
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public List<sirius.db.es.suggest.SuggestOption> getSuggestOptions(String name) {
-        return getSuggestParts(name).stream().flatMap(part -> part.getOptions().stream()).collect(Collectors.toList());
-    }
-
-    /**
-     * Returns all suggest parts for the suggester with the given name.
-     * <p>
-     * This is mainly used for term suggesters where every term receives their own suggestions.
-     *
-     * @param name the name of the suggester
-     * @return a list of suggest parts
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
-        if (forceFail) {
-            return Collections.emptyList();
-        }
-        if (response == null) {
-            String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
-
-            this.response = client.search(computeEffectiveIndexName(elastic::determineReadAlias),
-                                          filteredRouting,
-                                          skip,
-                                          limit,
-                                          buildPayload());
-        }
-
-        JSONObject responseSuggestions = response.getJSONObject(KEY_SUGGEST);
-
-        if (responseSuggestions == null) {
-            return Collections.emptyList();
-        }
-
-        return responseSuggestions.getJSONArray(name)
-                                  .stream()
-                                  .map(JSONObject.class::cast)
-                                  .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
-                                  .collect(Collectors.toList());
-    }
-
-    /**
-     * Loops over the scroll cursor until either processing is aborted or all entities have been read.
-     *
-     * @param handler       the handler which processes the entity and determines if we should continue
-     * @param firstResponse the first response we received when creating the scroll query.
-     * @return the last response we received when iterating over the scroll query
-     */
-    @SuppressWarnings({"unchecked", "deprecation"})
-    private JSONObject executeScroll(Predicate<E> handler, JSONObject firstResponse) {
-        long lastScroll = 0;
-        JSONObject scrollResponse = firstResponse;
-        while (true) {
-            // we keep on executing queries until es returns an empty list of results...
-            JSONArray hits = scrollResponse.getJSONObject(KEY_HITS).getJSONArray(KEY_HITS);
-            if (hits.isEmpty()) {
-                return scrollResponse;
-            }
-
-            for (Object obj : hits) {
-                if (!handler.test((E) Elastic.make(descriptor, (JSONObject) obj))) {
-                    return scrollResponse;
-                }
-            }
-
-            lastScroll = performScrollMonitoring(lastScroll);
-            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.getString(KEY_SCROLL_ID));
-        }
-    }
-
-    /**
-     * As a scroll cursor can experience a timeout, we monitor the call interval and emit a warning if a timeout might
-     * have occurred.
-     *
-     * @param lastScroll the timestamp when the last scroll was executed
-     * @return the next timestamp
-     */
-    private long performScrollMonitoring(long lastScroll) {
-        long now = System.currentTimeMillis();
-        if (lastScroll > 0) {
-            long deltaInSeconds = TimeUnit.SECONDS.convert(now - lastScroll, TimeUnit.MILLISECONDS);
-            // Warn if processing of one scroll took longer thant our keep alive....
-            if (deltaInSeconds > SCROLL_TTL_SECONDS) {
-                Exceptions.handle()
-                          .withSystemErrorMessage(
-                                  "A scroll query against elasticsearch took too long to process its data! "
-                                  + "The result is probably inconsistent! Query: %s\n%s",
-                                  this,
-                                  ExecutionPoint.snapshot())
-                          .to(Elastic.LOG)
-                          .handle();
-            }
-        }
-        return now;
     }
 
     @Override
