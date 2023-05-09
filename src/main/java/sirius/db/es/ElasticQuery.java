@@ -25,7 +25,6 @@ import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
-import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
@@ -1251,19 +1250,18 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 searchAfter(searchAfter);
             }
 
-            JSONObject payload = buildPayload().fluentPut(KEY_PIT,
-                                                          Map.of(KEY_PIT_ID,
-                                                                 pit,
-                                                                 KEY_PIT_KEEP_ALIVE, STREAM_BLOCKWISE_PIT_TTL));
+            ObjectNode payload = buildPayload().putPOJO(KEY_PIT,
+                                                        Map.of(KEY_PIT_ID,
+                                                               pit,
+                                                               KEY_PIT_KEEP_ALIVE,
+                                                               STREAM_BLOCKWISE_PIT_TTL));
             int maxResults = filterRouting != null ? BLOCK_SIZE_FOR_SINGLE_SHARD : BLOCK_SIZE_PER_SHARD;
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
 
-            return response.getJSONObject(KEY_HITS)
-                           .getJSONArray(KEY_HITS)
-                           .stream()
-                           .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
-                           .iterator();
+            return Json.streamEntries(response.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS)))
+                       .map(obj -> (E) Elastic.make(descriptor, (ObjectNode) obj))
+                       .iterator();
         }
 
         private void close() {

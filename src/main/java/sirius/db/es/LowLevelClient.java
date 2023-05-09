@@ -412,7 +412,8 @@ public class LowLevelClient {
                             .withParam("keep_alive", keepAlive)
                             .execute(alias + "/_pit")
                             .response()
-                            .getString("id");
+                            .get("id")
+                            .asText();
     }
 
     /**
@@ -423,7 +424,7 @@ public class LowLevelClient {
      * @param pit the id of the PIT to close
      */
     public void closePit(String pit) {
-        performDelete().data(new JSONObject().fluentPut("id", pit)).execute("/_pit");
+        performDelete().data(Json.createObject().put("id", pit)).execute("/_pit");
     }
 
     /**
