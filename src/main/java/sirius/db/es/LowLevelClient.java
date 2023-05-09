@@ -400,64 +400,6 @@ public class LowLevelClient {
     }
 
     /**
-     * Creates a scroll search.
-     *
-     * @param alias        the alias which determines the indices to search in
-     * @param routing      the routing to use
-     * @param from         the number of items to skip
-     * @param sizePerShard the maximal number of results per shard
-     * @param ttlSeconds   the ttl of the scroll cursor in seconds
-     * @param query        the query to execute
-     * @return the response of the call
-     * @deprecated The scroll API is deprecated by elastic. Try to use the search_after API with a point in time instead.
-     */
-    @Deprecated(since = "2023/04/28")
-    public JSONObject createScroll(String alias,
-                                   String routing,
-                                   int from,
-                                   int sizePerShard,
-                                   int ttlSeconds,
-                                   JSONObject query) {
-        return performGet().routing(routing)
-                           .withParam("size", sizePerShard)
-                           .withParam("from", from)
-                           .withParam("scroll", ttlSeconds + "s")
-                           .data(query)
-                           .execute(alias + API_SEARCH)
-                           .response();
-    }
-
-    /**
-     * Continues a scroll query.
-     *
-     * @param ttlSeconds the ttl of the scroll cursor in seconds
-     * @param scrollId   the id of the scroll cursor
-     * @return the response of the call
-     * @deprecated The scroll API is deprecated by elastic. Try to use the search_after API with a point in time instead.
-     */
-    @Deprecated(since = "2023/04/28")
-    public JSONObject continueScroll(int ttlSeconds, String scrollId) {
-        return performGet().data(new JSONObject().fluentPut("scroll", ttlSeconds + "s")
-                                                 .fluentPut("scroll_id", scrollId))
-                           .execute("/_search/scroll")
-                           .response();
-    }
-
-    /**
-     * Closes a scroll query.
-     *
-     * @param scrollId the id of the scroll cursor
-     * @return the response of the call
-     * @deprecated The scroll API is deprecated by elastic. Try to use the search_after API with a point in time instead.
-     */
-    @Deprecated(since = "2023/04/28")
-    public JSONObject closeScroll(String scrollId) {
-        return performDelete().data(new JSONObject().fluentPut("scroll_id", scrollId))
-                              .execute("/_search/scroll")
-                              .response();
-    }
-
-    /**
      * Creates a point in time (PIT) for the given alias and routing.
      *
      * @param alias     the alias to create the PIT for
