@@ -308,10 +308,10 @@ public class LowLevelClient {
     }
 
     /**
-     * Returns the names of the indexed which are aliased with the given alias.
+     * Checks whether an index for this alias exists.
      *
      * @param alias the given alias
-     * @return a list of indexes which are aliased with the given alias
+     * @return true if the index exists
      */
     public boolean aliasExists(String alias) {
         try {
@@ -400,55 +400,31 @@ public class LowLevelClient {
     }
 
     /**
-     * Creates a scroll search.
+     * Creates a point in time (PIT) for the given alias and routing.
      *
-     * @param alias        the alias which determines the indices to search in
-     * @param routing      the routing to use
-     * @param from         the number of items to skip
-     * @param sizePerShard the maximal number of results per shard
-     * @param ttlSeconds   the ttl of the scroll cursor in seconds
-     * @param query        the query to execute
-     * @return the response of the call
+     * @param alias     the alias to create the PIT for
+     * @param routing   the routing to create the PIT for
+     * @param keepAlive how long the PIT should live (initially)
+     * @return the id of the PIT
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units">Elastic time units</a>
      */
-    public JSONObject createScroll(String alias,
-                                   String routing,
-                                   int from,
-                                   int sizePerShard,
-                                   int ttlSeconds,
-                                   JSONObject query) {
-        return performGet().routing(routing)
-                           .withParam("size", sizePerShard)
-                           .withParam("from", from)
-                           .withParam("scroll", ttlSeconds + "s")
-                           .data(query)
-                           .execute(alias + API_SEARCH)
-                           .response();
+    public String createPit(String alias, String routing, String keepAlive) {
+        return performPost().routing(routing)
+                            .withParam("keep_alive", keepAlive)
+                            .execute(alias + "/_pit")
+                            .response()
+                            .getString("id");
     }
 
     /**
-     * Continues a scroll query.
+     * Closes the given PIT manually.
+     * <p>
+     * This allows ES to free the needed resources earlier than the PIT would expire.
      *
-     * @param ttlSeconds the ttl of the scroll cursor in seconds
-     * @param scrollId   the id of the scroll cursor
-     * @return the response of the call
+     * @param pit the id of the PIT to close
      */
-    public JSONObject continueScroll(int ttlSeconds, String scrollId) {
-        return performGet().data(new JSONObject().fluentPut("scroll", ttlSeconds + "s")
-                                                 .fluentPut("scroll_id", scrollId))
-                           .execute("/_search/scroll")
-                           .response();
-    }
-
-    /**
-     * Closes a scroll query.
-     *
-     * @param scrollId the id of the scroll cursor
-     * @return the response of the call
-     */
-    public JSONObject closeScroll(String scrollId) {
-        return performDelete().data(new JSONObject().fluentPut("scroll_id", scrollId))
-                              .execute("/_search/scroll")
-                              .response();
+    public void closePit(String pit) {
+        performDelete().data(new JSONObject().fluentPut("id", pit)).execute("/_pit");
     }
 
     /**

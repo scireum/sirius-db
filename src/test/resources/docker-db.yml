@@ -2,7 +2,7 @@ version: "2"
 
 services:
   redis:
-    image: redis:6.2.6-alpine
+    image: redis:7.0.11-alpine
     ports:
     - "6379"
     hostname: redis
@@ -20,7 +20,7 @@ services:
     hostname: qdrant
 
   mariadb:
-    image: mariadb:10.3.30-focal
+    image: mariadb:10.11.2-jammy
     ports:
     - "3306"
     environment:

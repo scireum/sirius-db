@@ -11,7 +11,8 @@ package sirius.db.es
 import com.alibaba.fastjson.JSONObject
 import org.junit.jupiter.api.Tag
 import sirius.db.es.constraints.BoolQueryBuilder
-import sirius.db.es.suggest.SuggestBuilder
+
+import sirius.db.es.suggest.SuggesterBuilder
 import sirius.kernel.BaseSpecification
 import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
@@ -43,23 +44,27 @@ class SuggestSpec extends BaseSpecification {
         }
         and:
         elastic.refresh(SuggestTestEntity.class)
-        def suggestParts = elastic.select(SuggestTestEntity.class)
-                                  .suggest(new SuggestBuilder(SuggestBuilder.TYPE_TERM, "test")
-                                                   .on(SuggestTestEntity.CONTENT, "HSS dril bitt"))
-                                  .getSuggestParts("test")
+        def suggestParts = elastic.suggest(SuggestTestEntity.class)
+                                  .withTermSuggester("test", SuggestTestEntity.CONTENT, "HSS dril bitt")
+                                  .execute()
+                                  .getSuggestions("test")
         then:
         suggestParts.size() == 3
-        suggestParts.get(0).getOptions().size() == 0
-        suggestParts.get(1).getOptions().size() == 2
-        suggestParts.get(2).getOptions().size() == 1
+        suggestParts.get(0).getTermSuggestions().size() == 0
+        suggestParts.get(1).getTermSuggestions().size() == 2
+        suggestParts.get(2).getTermSuggestions().size() == 1
         and:
         suggestParts
                 .get(1)
-                .getOptions().stream().anyMatch({ option -> option.getText().equalsIgnoreCase("drill") } as Predicate)
+                .getTermSuggestions()
+                .stream()
+                .anyMatch({ option -> option.getText().equalsIgnoreCase("drill") } as Predicate)
         suggestParts
                 .get(1)
-                .getOptions().stream().anyMatch({ option -> option.getText().equalsIgnoreCase("dill") } as Predicate)
-        suggestParts.get(2).getOptions().get(0).getText().equalsIgnoreCase("bit")
+                .getTermSuggestions()
+                .stream()
+                .anyMatch({ option -> option.getText().equalsIgnoreCase("dill") } as Predicate)
+        suggestParts.get(2).getTermSuggestions().get(0).getText().equalsIgnoreCase("bit")
     }
 
     def "phrase suggest works"() {
@@ -76,10 +81,11 @@ class SuggestSpec extends BaseSpecification {
         }
         and:
         elastic.refresh(SuggestTestEntity.class)
-        def suggestOptions = elastic.select(SuggestTestEntity.class)
-                                    .suggest(new SuggestBuilder(SuggestBuilder.TYPE_PHRASE, "test")
-                                                     .on(SuggestTestEntity.CONTENT, "dril potatoes"))
-                                    .getSuggestOptions("test")
+        def suggestOptions = elastic.suggest(SuggestTestEntity.class)
+                                    .withSuggester(new SuggesterBuilder(SuggesterBuilder.TYPE_PHRASE, "test")
+                                                           .on(SuggestTestEntity.CONTENT).forText("dril potatoes"))
+                                    .execute()
+                                    .getSingleTermSuggestions("test")
         then:
         suggestOptions.size() == 2
         and:
@@ -119,12 +125,15 @@ class SuggestSpec extends BaseSpecification {
 
         and:
         elastic.refresh(SuggestTestEntity.class)
-        def suggestOptions = elastic.select(SuggestTestEntity.class)
-                                    .suggest(new SuggestBuilder(SuggestBuilder.TYPE_PHRASE, "test")
-                                                     .on(SuggestTestEntity.CONTENT, "Sals Kartoffeln")
-                                                     .collate(new BoolQueryBuilder().must(matchPhrase)
-                                                                                    .must(matchShop), true))
-                                    .getSuggestOptions("test")
+        def suggestOptions = elastic.suggest(SuggestTestEntity.class)
+                                    .withSuggester(new SuggesterBuilder(SuggesterBuilder.TYPE_PHRASE, "test")
+                                                           .on(SuggestTestEntity.CONTENT).forText("Sals Kartoffeln")
+                                                           .collate(new BoolQueryBuilder().must(matchPhrase)
+                                                                                          .must(matchShop)
+                                                                                          .build(),
+                                                                    true))
+                                    .execute()
+                                    .getSingleTermSuggestions("test")
         then:
         suggestOptions.size() == 3
         and:
