@@ -51,8 +51,6 @@ class ElasticQuerySpec extends BaseSpecification {
         and:
         Strings.isFilled(entities.get(0).getId())
         and:
-        entities.get(0).getSeqNo() == 0
-        and:
         entities.get(0).getValue() == "SELECT"
         when:
         entities = elastic.select(QueryTestEntity.class).

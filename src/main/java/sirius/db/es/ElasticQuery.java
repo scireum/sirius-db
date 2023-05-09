@@ -27,7 +27,6 @@ import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.PullBasedSpliterator;
-import sirius.kernel.commons.RateLimit;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
@@ -38,12 +37,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -57,38 +53,19 @@ import java.util.stream.StreamSupport;
  * @param <E> the type of entities to be queried
  */
 public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E, ElasticConstraint> {
+    /**
+     * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #BLOCK_SIZE_FOR_SINGLE_SHARD}
+     * entities at once and hope to process them within {@link #STREAM_BLOCKWISE_PIT_TTL}.
+     */
+    private static final int BLOCK_SIZE_FOR_SINGLE_SHARD = 800;
 
     /**
-     * Contains the default number of buckets being collected and reported for an aggregation.
-     *
-     * @deprecated moved to {@link AggregationBuilder}
+     * If we fetch from many shards, we fetch up to {@link #BLOCK_SIZE_PER_SHARD} entities per shards and hope to
+     * process them within {@link #STREAM_BLOCKWISE_PIT_TTL}.
      */
-    @Deprecated(forRemoval = true)
-    public static final int DEFAULT_TERM_AGGREGATION_BUCKET_COUNT = 25;
-
-    /**
-     * This is the timeout we specify for elastic search for a scroll requests.
-     * <p>
-     * This essentially instructs ES to keep a scroll response open for the given timeout
-     */
-    private static final int SCROLL_TTL_SECONDS = 60 * 60;
-
-    /**
-     * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD} entities at once and hope to
-     * process them within {@link #SCROLL_TTL_SECONDS}.
-     */
-    private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 800;
-
-    /**
-     * If we fetch from many shards, we fetch up to {@link #MAX_SCROLL_RESULTS_PER_SHARD} entities per shards and hope to process them within
-     * {@link #SCROLL_TTL_SECONDS}.
-     */
-    private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
+    private static final int BLOCK_SIZE_PER_SHARD = 100;
 
     public static final String SHARD_DOC_ID = "_shard_doc";
-
-    private static final String KEY_SCROLL_ID = "_scroll_id";
-    private static final String KEY_DOC_ID = "_doc";
 
     private static final String KEY_FIELD = "field";
     private static final String KEY_SIZE = "size";
@@ -121,6 +98,16 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private static final String KEY_VERSION_CONFLICTS = "version_conflicts";
     private static final String KEY_FAILURES = "failures";
     private static final Mapping SCORE = Mapping.named("_score");
+    /**
+     * The elastic PIT timeout to use with streamBlockwise.
+     * <p>
+     * This timeout / TTL keeps the PIT open. Using a high time is not a problem here, because it gets closed after the
+     * stream is consumed, so we rather try to choose a high timeout to avoid issues with prematurely closed PITs.
+     */
+    private static final String STREAM_BLOCKWISE_PIT_TTL = "30m";
+    private static final String KEY_PIT = "pit";
+    private static final String KEY_PIT_ID = "id";
+    private static final String KEY_PIT_KEEP_ALIVE = "keep_alive";
 
     @Part
     private static Elastic elastic;
@@ -558,8 +545,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     /**
      * Permits to rewrite the internal filters of a query.
      * <p>
-     * Actually this will iterate over all {@link BoolQueryBuilder#filter} of the internal query and apply the given
-     * predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed internally.
+     * Actually this will iterate over all {@link BoolQueryBuilder#filter(ElasticConstraint)} of the internal query and
+     * apply the given predicate. If this returns <tt>true</tt>, the filter will be supplied to the consumer and removed
+     * internally.
      * <p>
      * This can e.g. be used to move internal filters into {@link #postFilter(ObjectNode)}.
      *
@@ -840,35 +828,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Adds a suggester.
-     *
-     * @param name    the name of the suggester
-     * @param suggest a JSON object describing a suggest requirement
-     * @return the query itself for fluent method calls
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> suggest(String name, ObjectNode suggest) {
-        if (this.suggesters == null) {
-            this.suggesters = new HashMap<>();
-        }
-        suggesters.put(name, suggest);
-        return this;
-    }
-
-    /**
-     * Adds a suggester.
-     *
-     * @param suggestBuilder a suggest builder
-     * @return the query itself for fluent method calls
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> suggest(sirius.db.es.suggest.SuggestBuilder suggestBuilder) {
-        return suggest(suggestBuilder.getName(), suggestBuilder.build());
-    }
-
-    /**
      * Specifies the routing value to use.
      * <p>
      * For routed entities it is highly recommended supplying a routing value as it greatly improves the
@@ -1077,8 +1036,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (forceFail) {
             return;
         }
-        if (useScrolling()) {
-            scroll(handler);
+        if (accessBlockWise()) {
+            streamBlockwise().takeWhile(handler).forEach(ignored -> {
+            });
             return;
         }
 
@@ -1097,14 +1057,14 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Determines if this query should use scrolling.
+     * Determines if this query should access the result block-wise.
      * <p>
-     * The limit needs to be greater than <tt>{@link #MAX_LIST_SIZE} + 1</tt> for scrolling because we query
+     * The limit needs to be greater than <tt>{@link #MAX_LIST_SIZE} + 1</tt> for block-wise access because we query
      * <tt>{@link #MAX_LIST_SIZE} + 1</tt> elements when not explicitly setting a limit.
      *
-     * @return <tt>true</tt> if this query should scroll
+     * @return <tt>true</tt> if this query should use block-wise access, <tt>false</tt> otherwise
      */
-    private boolean useScrolling() {
+    private boolean accessBlockWise() {
         return limit == 0 || limit > MAX_LIST_SIZE + 1;
     }
 
@@ -1188,11 +1148,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public ObjectNode getRawResponse() {
         if (response == null) {
-            if (useScrolling()) {
+            if (accessBlockWise()) {
                 throw Exceptions.handle()
                                 .to(Mixing.LOG)
                                 .withSystemErrorMessage(
-                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when scrolling!",
+                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when iterating block-wise!",
                                         descriptor.getType().getSimpleName())
                                 .handle();
             } else {
@@ -1241,164 +1201,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return getRawResponse().at("/_shards/" + KEY_TOTAL).asLong();
     }
 
-    /**
-     * Returns all suggest options for the suggester with the given name.
-     *
-     * @param name the name of the suggester
-     * @return a list of suggest options
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public List<sirius.db.es.suggest.SuggestOption> getSuggestOptions(String name) {
-        return getSuggestParts(name).stream().flatMap(part -> part.getOptions().stream()).collect(Collectors.toList());
-    }
-
-    /**
-     * Returns all suggest parts for the suggester with the given name.
-     * <p>
-     * This is mainly used for term suggesters where every term receives their own suggestions.
-     *
-     * @param name the name of the suggester
-     * @return a list of suggest parts
-     * @deprecated Use {@link Elastic#suggest(Class)}
-     */
-    @Deprecated(forRemoval = true)
-    public List<sirius.db.es.suggest.SuggestPart> getSuggestParts(String name) {
-        if (forceFail) {
-            return Collections.emptyList();
-        }
-        if (response == null) {
-            String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
-
-            this.response = client.search(computeEffectiveIndexName(elastic::determineReadAlias),
-                                          filteredRouting,
-                                          skip,
-                                          limit,
-                                          buildPayload());
-        }
-
-        ObjectNode responseSuggestions = Json.getObject(response, KEY_SUGGEST);
-
-        if (responseSuggestions == null) {
-            return Collections.emptyList();
-        }
-
-        return Json.streamEntries(responseSuggestions.withArray(JsonPointer.SEPARATOR + name))
-                   .map(ObjectNode.class::cast)
-                   .map(sirius.db.es.suggest.SuggestPart::makeSuggestPart)
-                   .collect(Collectors.toList());
-    }
-
-    /**
-     * For larger queries, we use a scroll query in Elasticsearch, which provides kind of a
-     * cursor to fetch the results block-wise.
-     *
-     * @param handler the result handler as passed to {@link #iterate(Predicate)}
-     */
-    private void scroll(Predicate<E> handler) {
-        try {
-            if (sorts == null || sorts.isEmpty()) {
-                // If no explicit search order is given, we sort by _doc which improves the performance
-                // according to the Elasticsearch documentation.
-                orderAsc(Mapping.named(KEY_DOC_ID));
-            }
-
-            String filteredRouting = checkRouting(Elastic.RoutingAccessMode.READ);
-
-            ObjectNode scrollResponse = client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
-                                                            filteredRouting,
-                                                            0,
-                                                            filteredRouting != null ?
-                                                            MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
-                                                            MAX_SCROLL_RESULTS_PER_SHARD,
-                                                            SCROLL_TTL_SECONDS,
-                                                            buildPayload());
-            try {
-                TaskContext ctx = TaskContext.get();
-                RateLimit rateLimit = RateLimit.timeInterval(1, TimeUnit.SECONDS);
-                Limit effectiveLimit = new Limit(skip, limit);
-                scrollResponse = executeScroll(entity -> {
-                    // Check if the user aborted processing...
-                    if (rateLimit.check() && !ctx.isActive()) {
-                        return false;
-                    }
-
-                    // If we are still skipping items, quickly process the next one...
-                    if (!effectiveLimit.nextRow()) {
-                        return true;
-                    }
-
-                    // Process entity, abort if the handler isn't interested in continuing...
-                    if (!handler.test(entity)) {
-                        return false;
-                    }
-
-                    // Let the limit decide if we should continue or not...
-                    return effectiveLimit.shouldContinue();
-                }, scrollResponse);
-            } finally {
-                client.closeScroll(scrollResponse.get(KEY_SCROLL_ID).asText());
-            }
-        } catch (Exception t) {
-            throw Exceptions.handle(Elastic.LOG, t);
-        }
-    }
-
-    /**
-     * Loops over the scroll cursor until either processing is aborted or all entities have been read.
-     *
-     * @param handler       the handler which processes the entity and determines if we should continue
-     * @param firstResponse the first response we received when creating the scroll query.
-     * @return the last response we received when iterating over the scroll query
-     */
-    @SuppressWarnings("unchecked")
-    private ObjectNode executeScroll(Predicate<E> handler, ObjectNode firstResponse) {
-        long lastScroll = 0;
-        ObjectNode scrollResponse = firstResponse;
-        while (true) {
-            // we keep on executing queries until es returns an empty list of results...
-            ArrayNode hits = scrollResponse.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS));
-            if (hits.isEmpty()) {
-                return scrollResponse;
-            }
-
-            for (Object obj : hits) {
-                if (!handler.test((E) Elastic.make(descriptor, (ObjectNode) obj))) {
-                    return scrollResponse;
-                }
-            }
-
-            lastScroll = performScrollMonitoring(lastScroll);
-            scrollResponse = client.continueScroll(SCROLL_TTL_SECONDS, scrollResponse.get(KEY_SCROLL_ID).asText());
-        }
-    }
-
-    /**
-     * As a scroll cursor can experience a timeout, we monitor the call interval and emit a warning if a timeout might
-     * have occurred.
-     *
-     * @param lastScroll the timestamp when the last scroll was executed
-     * @return the next timestamp
-     */
-    private long performScrollMonitoring(long lastScroll) {
-        long now = System.currentTimeMillis();
-        if (lastScroll > 0) {
-            long deltaInSeconds = TimeUnit.SECONDS.convert(now - lastScroll, TimeUnit.MILLISECONDS);
-            // Warn if processing of one scroll took longer thant our keep alive....
-            if (deltaInSeconds > SCROLL_TTL_SECONDS) {
-                Exceptions.handle()
-                          .withSystemErrorMessage(
-                                  "A scroll query against elasticsearch took too long to process its data! "
-                                  + "The result is probably inconsistent! Query: %s\n%s",
-                                  this,
-                                  ExecutionPoint.snapshot())
-                          .to(Elastic.LOG)
-                          .handle();
-            }
-        }
-        return now;
-    }
-
     @Override
     public Stream<E> streamBlockwise() {
         if (forceFail) {
@@ -1417,19 +1219,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         // almost no stream is wrapped in a proper try-with-resources - and even IntelliJ doesn't care if the
         // stream remains open. However, Stream.flatMap has this nice guarantee of closing any incoming stream
         // automatically...
-        ElasticScrollingSpliterator spliterator = new ElasticScrollingSpliterator();
+        ElasticBlockWiseSpliterator spliterator = new ElasticBlockWiseSpliterator();
         return Stream.of(StreamSupport.stream(spliterator, false).onClose(spliterator::close))
                      .flatMap(Function.identity());
     }
 
-    private class ElasticScrollingSpliterator extends PullBasedSpliterator<E> {
-        private long lastScroll = 0;
-        private String scrollId = null;
+    private class ElasticBlockWiseSpliterator extends PullBasedSpliterator<E> {
         private final TaskContext taskContext = TaskContext.get();
+        private String pit = null;
+        private List<String> searchAfter = null;
 
         @Override
         public int characteristics() {
-            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
+            return NONNULL | IMMUTABLE;
         }
 
         @SuppressWarnings("unchecked")
@@ -1439,30 +1241,34 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return null;
             }
 
-            ObjectNode scrollResponse =
-                    scrollId == null ? pullFirstBlock() : client.continueScroll(SCROLL_TTL_SECONDS, scrollId);
-            scrollId = scrollResponse.get(KEY_SCROLL_ID).asText();
-            lastScroll = performScrollMonitoring(lastScroll);
-            return Json.streamEntries(scrollResponse.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS)))
-                       .map(obj -> (E) Elastic.make(descriptor, (ObjectNode) obj))
-                       .iterator();
-        }
-
-        private ObjectNode pullFirstBlock() {
+            String alias = computeEffectiveIndexName(elastic::determineReadAlias);
             String filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
-            return client.createScroll(computeEffectiveIndexName(elastic::determineReadAlias),
-                                       filterRouting,
-                                       0,
-                                       filterRouting != null ?
-                                       MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD :
-                                       MAX_SCROLL_RESULTS_PER_SHARD,
-                                       SCROLL_TTL_SECONDS,
-                                       buildPayload());
+            if (pit == null) {
+                // first call to this method
+                orderAsc(ElasticEntity.ID);
+                pit = client.createPit(alias, filterRouting, STREAM_BLOCKWISE_PIT_TTL);
+            } else {
+                searchAfter(searchAfter);
+            }
+
+            JSONObject payload = buildPayload().fluentPut(KEY_PIT,
+                                                          Map.of(KEY_PIT_ID,
+                                                                 pit,
+                                                                 KEY_PIT_KEEP_ALIVE, STREAM_BLOCKWISE_PIT_TTL));
+            int maxResults = filterRouting != null ? BLOCK_SIZE_FOR_SINGLE_SHARD : BLOCK_SIZE_PER_SHARD;
+            response = client.search("", null, 0, maxResults, payload);
+            searchAfter = getLastSortValues();
+
+            return response.getJSONObject(KEY_HITS)
+                           .getJSONArray(KEY_HITS)
+                           .stream()
+                           .map(obj -> (E) Elastic.make(descriptor, (JSONObject) obj))
+                           .iterator();
         }
 
         private void close() {
-            if (scrollId != null) {
-                client.closeScroll(scrollId);
+            if (pit != null) {
+                client.closePit(pit);
             }
         }
     }
