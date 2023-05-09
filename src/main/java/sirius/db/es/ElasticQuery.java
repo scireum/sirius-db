@@ -50,16 +50,16 @@ import java.util.stream.StreamSupport;
  */
 public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>, E, ElasticConstraint> {
     /**
-     * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD} entities at once and hope to
-     * process them within {@link #SCROLL_TTL_SECONDS}.
+     * If we only fetch from a single shard (as we use a routing), we fetch up to {@link #BLOCK_SIZE_FOR_SINGLE_SHARD}
+     * entities at once and hope to process them within {@link #STREAM_BLOCKWISE_PIT_TTL}.
      */
-    private static final int MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD = 800;
+    private static final int BLOCK_SIZE_FOR_SINGLE_SHARD = 800;
 
     /**
-     * If we fetch from many shards, we fetch up to {@link #MAX_SCROLL_RESULTS_PER_SHARD} entities per shards and hope to process them within
-     * {@link #SCROLL_TTL_SECONDS}.
+     * If we fetch from many shards, we fetch up to {@link #BLOCK_SIZE_PER_SHARD} entities per shards and hope to
+     * process them within {@link #STREAM_BLOCKWISE_PIT_TTL}.
      */
-    private static final int MAX_SCROLL_RESULTS_PER_SHARD = 100;
+    private static final int BLOCK_SIZE_PER_SHARD = 100;
 
     public static final String SHARD_DOC_ID = "_shard_doc";
 
@@ -1032,7 +1032,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         if (forceFail) {
             return;
         }
-        if (useScrolling()) {
+        if (accessBlockWise()) {
             streamBlockwise().takeWhile(handler).forEach(ignored -> {
             });
             return;
@@ -1053,14 +1053,14 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Determines if this query should use scrolling.
+     * Determines if this query should access the result block-wise.
      * <p>
-     * The limit needs to be greater than <tt>{@link #MAX_LIST_SIZE} + 1</tt> for scrolling because we query
+     * The limit needs to be greater than <tt>{@link #MAX_LIST_SIZE} + 1</tt> for block-wise access because we query
      * <tt>{@link #MAX_LIST_SIZE} + 1</tt> elements when not explicitly setting a limit.
      *
-     * @return <tt>true</tt> if this query should scroll
+     * @return <tt>true</tt> if this query should use block-wise access, <tt>false</tt> otherwise
      */
-    private boolean useScrolling() {
+    private boolean accessBlockWise() {
         return limit == 0 || limit > MAX_LIST_SIZE + 1;
     }
 
@@ -1144,11 +1144,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public JSONObject getRawResponse() {
         if (response == null) {
-            if (useScrolling()) {
+            if (accessBlockWise()) {
                 throw Exceptions.handle()
                                 .to(Mixing.LOG)
                                 .withSystemErrorMessage(
-                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when scrolling!",
+                                        "Error while reading entities of type '%s': 'getRawResponse' cannot be accessed when iterating block-wise!",
                                         descriptor.getType().getSimpleName())
                                 .handle();
             } else {
@@ -1215,12 +1215,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         // almost no stream is wrapped in a proper try-with-resources - and even IntelliJ doesn't care if the
         // stream remains open. However, Stream.flatMap has this nice guarantee of closing any incoming stream
         // automatically...
-        ElasticScrollingSpliterator spliterator = new ElasticScrollingSpliterator();
+        ElasticBlockWiseSpliterator spliterator = new ElasticBlockWiseSpliterator();
         return Stream.of(StreamSupport.stream(spliterator, false).onClose(spliterator::close))
                      .flatMap(Function.identity());
     }
 
-    private class ElasticScrollingSpliterator extends PullBasedSpliterator<E> {
+    private class ElasticBlockWiseSpliterator extends PullBasedSpliterator<E> {
         private final TaskContext taskContext = TaskContext.get();
         private String pit = null;
         private List<String> searchAfter = null;
@@ -1251,7 +1251,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                           Map.of(KEY_PIT_ID,
                                                                  pit,
                                                                  KEY_PIT_KEEP_ALIVE, STREAM_BLOCKWISE_PIT_TTL));
-            int maxResults = filterRouting != null ? MAX_SCROLL_RESULTS_FOR_SINGLE_SHARD : MAX_SCROLL_RESULTS_PER_SHARD;
+            int maxResults = filterRouting != null ? BLOCK_SIZE_FOR_SINGLE_SHARD : BLOCK_SIZE_PER_SHARD;
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
 
