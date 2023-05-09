@@ -19,6 +19,7 @@ import sirius.db.mixing.properties.LocalDateTimeProperty;
 import sirius.db.mixing.properties.LocalTimeProperty;
 import sirius.db.mixing.query.constraints.Constraint;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -178,7 +179,7 @@ public abstract class QueryCompiler<C extends Constraint> {
     /**
      * Determines if the compiler was put into "debug mode".
      * <p>
-     * This can switched on by putting "??" in front of a query. Subsequent callers of the compiler can then
+     * This can be switched on by putting "??" in front of a query. Subsequent callers of the compiler can then
      * log the parsed query to help when tracing down problems.
      *
      * @return <tt>true</tt> if the compiler was put into debug mode, <tt>false</tt> otherwise
@@ -209,7 +210,8 @@ public abstract class QueryCompiler<C extends Constraint> {
     }
 
     private boolean isAtOR() {
-        return reader.current().is('o', 'O') && reader.next().is('r', 'R');
+        return reader.current().is('o', 'O') && reader.next().is('r', 'R') && (reader.next(2).isWhitespace()
+                                                                               || reader.next(2).is('('));
     }
 
     private C parseAND() {
@@ -242,16 +244,30 @@ public abstract class QueryCompiler<C extends Constraint> {
         return reader.current().is('&') && reader.next().is('&');
     }
 
+    @SuppressWarnings("java:S1067")
+    @Explain("We rather keep things in one check here...")
     private boolean isAtAND() {
-        return reader.current().is('a', 'A') && reader.next().is('n', 'N') && reader.next(2).is('d', 'D');
+        return reader.current().is('a', 'A')
+               && reader.next().is('n', 'N')
+               && reader.next(2).is('d', 'D')
+               && (reader.next(3).isWhitespace() || reader.next(3).is('('));
     }
 
     private C parseExpression() {
         skipWhitespace();
 
-        if (reader.current().is('!') || reader.current().is('-')) {
-            reader.consume();
-            return factory.not(parseExpression());
+        if ((reader.current().is('!') || reader.current().is('-'))) {
+            if (reader.next().isWhitespace() ||reader.next()
+                                                     .isEndOfInput()) {
+                // If there is a single "-" or "!" in a string like "foo - bar", we simly skip the dash
+                // as it is ignored by the indexing tokenizer anyway...
+                reader.consume();
+                return null;
+            } else {
+                // A "-" or "!" right before a field name starts a negation...
+                reader.consume();
+                return factory.not(parseExpression());
+            }
         }
 
         if (reader.current().is('(')) {
@@ -398,7 +414,7 @@ public abstract class QueryCompiler<C extends Constraint> {
      * an operation is created via {@link #parseOperation(Mapping, Property)}.
      * <p>
      * If the property cannot be resolved, the given <tt>token</tt> is passed into {@link #compileCustomField(String)}
-     * so that a sub class of the compiler can generate a constraint for a virtual field. If this also doesn't yield
+     * so that a subclass of the compiler can generate a constraint for a virtual field. If this also doesn't yield
      * a constraint, a regular search in the default fields is generated. This might be necessarry so that tokens like
      * an:value can be used as search term as long as no property named "an" exists.
      *

@@ -89,6 +89,28 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         queryCompiler.compile().toString() == "NOT(firstname IS NULL)"
     }
 
+    def "compiling 'firstname:X OR lastname:Y' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname:X OR lastname:Y",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "(firstname = X OR lastname = Y)"
+    }
+
+    def "compiling 'firstname:X AND lastname:Y' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname:X AND lastname:Y",
+                Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
+        then:
+        queryCompiler.compile().toString() == "(firstname = X AND lastname = Y)"
+    }
+
     def "compiling '!firstname:X OR lastname:Y' works as expected"() {
         when:
         SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
@@ -281,4 +303,38 @@ class SQLQueryCompilerSpec extends BaseSpecification {
         then:
         queryCompiler.compile().toString() == "is = chat"
     }
+
+    def "compiling a field with OR in its name works"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname: x orderNumber: 1",
+                Collections.emptyList())
+        then:
+        queryCompiler.compile().toString() == "(firstname = x AND orderNumber = 1)"
+    }
+
+    def "compiling a field with AND in its name works"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "firstname: x andx: 1",
+                Collections.emptyList())
+        then:
+        queryCompiler.compile().toString() == "(firstname = x AND andx = 1)"
+    }
+
+    def "compiling 'foo - bar' works as expected"() {
+        when:
+        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity.class),
+                "foo - bar",
+                Arrays.asList((QueryField.eq(TestEntity.FIRSTNAME))))
+        then:
+        queryCompiler.compile().toString() == "(firstname = foo AND firstname = bar)"
+    }
+
 }
