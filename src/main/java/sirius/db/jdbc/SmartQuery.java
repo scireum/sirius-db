@@ -302,7 +302,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
-        private List<Object> sortValuesOfLastEntityDuringFetch = null;
+        private List<Object> orderByValuesOfLastEntityDuringFetch = null;
         private final TaskContext taskContext = TaskContext.get();
         private final SmartQuery<E> adjustedQuery;
 
@@ -324,7 +324,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             List<E> block = queryNextBlock();
             if (!block.isEmpty()) {
                 lastValue = block.get(block.size() - 1);
-                sortValuesOfLastEntityDuringFetch = getValues(lastValue);
+                orderByValuesOfLastEntityDuringFetch = extractOrderByValues(lastValue);
             }
             return block.iterator();
         }
@@ -362,7 +362,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return adjusted;
         }
 
-        private List<Object> getValues(E entity) {
+        private List<Object> extractOrderByValues(E entity) {
             return Tuple.firsts(adjustedQuery.orderBys).stream().map(field -> getPropertyValue(field, entity)).toList();
         }
 
@@ -373,13 +373,13 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 return effectiveQuery.queryList();
             }
 
-            List<Object> sortValuesOfLastEntity = getValues(lastValue);
-            if (!sortValuesOfLastEntityDuringFetch.equals(sortValuesOfLastEntity)) {
+            List<Object> orderByValuesOfLastEntity = extractOrderByValues(lastValue);
+            if (!orderByValuesOfLastEntityDuringFetch.equals(orderByValuesOfLastEntity)) {
                 OMA.LOG.WARN(
                         "Entity '%s' was changed while streaming over it. This is very likely to cause bad result sets, including infinity loops.\nPrevious values: %s\nCurrent values: %s",
                         lastValue,
-                        sortValuesOfLastEntityDuringFetch,
-                        sortValuesOfLastEntity);
+                        orderByValuesOfLastEntityDuringFetch,
+                        orderByValuesOfLastEntity);
             }
 
             SQLConstraint sortingFilterConstraint = null;
