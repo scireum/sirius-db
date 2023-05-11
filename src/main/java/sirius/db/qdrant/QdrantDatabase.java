@@ -8,6 +8,7 @@
 
 package sirius.db.qdrant;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -40,6 +41,7 @@ public class QdrantDatabase {
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
     private static final String CONTENT_TYPE_APPLICATION_JSON = "application/json";
     protected static final String URI_PREFIX_COLLECTIONS = "/collections/";
+    private static final JsonPointer RESULT_COUNT_POINTER = Json.createPointer("result", "count");
 
     /**
      * Specifies the similarity functions supported by qdrant.
@@ -203,7 +205,7 @@ public class QdrantDatabase {
         ObjectNode response = execute(Method.POST,
                                       URI_PREFIX_COLLECTIONS + collection + "/points/count",
                                       Json.createObject().put("exact", exact));
-        return Json.tryGetAt(response, Json.createPointer("result", "count")).map(JsonNode::asLong).orElse(0L);
+        return Json.tryGetAt(response, RESULT_COUNT_POINTER).map(JsonNode::asLong).orElse(0L);
     }
 
     /**
