@@ -162,7 +162,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the total number of inner hits
      */
     public int getTotalInnerHits(String name) {
-        return Json.tryGetAt(getSearchHit(), Json.createPointer(INNER_HITS, name, "hits", "total", "value"))
+        return Json.tryGetAt(getSearchHit(), Json.createPointer(INNER_HITS, name, "hits/total/value"))
                    .map(JsonNode::asInt)
                    .orElse(0);
     }
