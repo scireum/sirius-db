@@ -150,7 +150,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
 
         return Json.streamEntries(matchedQueriesArray)
                    .filter(Objects::nonNull)
-                   .map(String::valueOf)
+                   .map(JsonNode::asText)
                    .collect(Collectors.toSet());
     }
 

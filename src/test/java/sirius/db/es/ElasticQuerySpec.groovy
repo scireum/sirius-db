@@ -307,6 +307,29 @@ class ElasticQuerySpec extends BaseSpecification {
                .queryOne().getId() == entity.getId()
     }
 
+    def "namedOr query and match detection works"() {
+        setup:
+        QueryTestEntity entity = new QueryTestEntity()
+        entity.setValue("NAMED-OR")
+        entity.setCounter(1)
+        elastic.update(entity)
+        and:
+        QueryTestEntity entity2 = new QueryTestEntity()
+        entity2.setValue("NAMED-OR")
+        entity2.setCounter(2)
+        elastic.update(entity2)
+        and:
+        elastic.refresh(QueryTestEntity.class)
+        when:
+        def result = elastic.select(QueryTestEntity.class)
+                           .eq(QueryTestEntity.VALUE, "NAMED-OR")
+                           .where(Elastic.FILTERS.namedOr("namedOr", Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 1),
+                                                          Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 2))).queryList()
+        then:
+        result.size() == 2
+        result.get(0).isMatchedNamedQuery("namedOr")
+    }
+
     def "field value score queries work"() {
         when:
         for (int i = 0; i < 100; i++) {
