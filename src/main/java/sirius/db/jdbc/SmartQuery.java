@@ -301,6 +301,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
+        private List<Object> orderByValuesOfLastEntityDuringFetch = null;
         private final TaskContext taskContext = TaskContext.get();
         private final SmartQuery<E> adjustedQuery;
 
@@ -322,6 +323,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             List<E> block = queryNextBlock();
             if (!block.isEmpty()) {
                 lastValue = block.get(block.size() - 1);
+                orderByValuesOfLastEntityDuringFetch = extractOrderByValues(lastValue);
             }
             return block.iterator();
         }
@@ -359,12 +361,26 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return adjusted;
         }
 
+        private List<Object> extractOrderByValues(E entity) {
+            return Tuple.firsts(adjustedQuery.orderBys).stream().map(field -> getPropertyValue(field, entity)).toList();
+        }
+
         private List<E> queryNextBlock() {
             SmartQuery<E> effectiveQuery = adjustedQuery.copy().limit(MAX_LIST_SIZE);
 
             if (lastValue == null) {
                 return effectiveQuery.queryList();
             }
+
+            List<Object> orderByValuesOfLastEntity = extractOrderByValues(lastValue);
+            if (!orderByValuesOfLastEntityDuringFetch.equals(orderByValuesOfLastEntity)) {
+                throw new IllegalStateException(Strings.apply(
+                        "Entity '%s' was changed while streaming over it. This is very likely to cause bad result sets, including infinity loops, and is not supported.\nPrevious values: %s\nCurrent values: %s",
+                        lastValue,
+                        orderByValuesOfLastEntityDuringFetch,
+                        orderByValuesOfLastEntity));
+            }
+
             SQLConstraint sortingFilterConstraint = null;
             Map<Mapping, Object> previousSortingColumns = new HashMap<>();
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
