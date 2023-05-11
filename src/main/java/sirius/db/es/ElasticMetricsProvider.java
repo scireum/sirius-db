@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.metrics.MetricProvider;
@@ -37,11 +37,11 @@ public class ElasticMetricsProvider implements MetricProvider {
                              "Elasticsearch Call Duration",
                              elastic.callDuration.getAndClear(),
                              "ms");
-            JSONObject health = elastic.getLowLevelClient().clusterHealth();
+            ObjectNode health = elastic.getLowLevelClient().clusterHealth();
             collector.metric("es_unassigned_shards",
                              "es-unassigned-shards",
                              "ES Unassigned Shards",
-                             health.getIntValue("unassigned_shards"),
+                             health.path("unassigned_shards").asInt(),
                              null);
         }
     }

@@ -8,7 +8,7 @@
 
 package sirius.db.util;
 
-import com.alibaba.fastjson.JSONArray;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.nio.ByteBuffer;
 import java.util.Base64;
@@ -43,10 +43,10 @@ public class Tensors {
      * @param vector the JSON array to extract the float array from
      * @return the extracted float array
      */
-    public static float[] fromJSON(JSONArray vector) {
+    public static float[] fromJSON(ArrayNode vector) {
         float[] result = new float[vector.size()];
         for (int i = 0; i < vector.size(); i++) {
-            result[i] = vector.getFloat(i) == null ? 0 : vector.getFloat(i);
+            result[i] = vector.path(i).floatValue();
         }
 
         return result;

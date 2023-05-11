@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.Elastic;
@@ -27,6 +27,7 @@ import sirius.db.mongo.Doc;
 import sirius.db.mongo.Mango;
 import sirius.db.mongo.Mongo;
 import sirius.db.mongo.MongoEntity;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -36,6 +37,7 @@ import sirius.kernel.nls.NLS;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -157,12 +159,12 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
 
             return result;
         } else if (mapperType == Elastic.class) {
-            List<JSONObject> result = new ArrayList<>();
+            List<ObjectNode> result = new ArrayList<>();
 
             for (Nested obj : (List<Nested>) object) {
-                JSONObject inner = new JSONObject();
+                ObjectNode inner = Json.createObject();
                 for (Property property : getNestedDescriptor().getProperties()) {
-                    inner.put(property.getPropertyName(), property.getValueForDatasource(Elastic.class, obj));
+                    inner.putPOJO(property.getPropertyName(), property.getValueForDatasource(Elastic.class, obj));
                 }
                 result.add(inner);
             }
@@ -189,7 +191,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
         List<Nested> result = new ArrayList<>();
         Object obj = object.get();
         if (obj instanceof List) {
-            for (JSONObject doc : (List<JSONObject>) obj) {
+            for (LinkedHashMap<String, String> doc : (List<LinkedHashMap<String, String>>) obj) {
                 try {
                     result.add((Nested) getNestedDescriptor().make(Elastic.class, null, key -> Value.of(doc.get(key))));
                 } catch (Exception e) {
@@ -220,7 +222,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
     }
 
     @Override
-    public void describeProperty(JSONObject description) {
+    public void describeProperty(ObjectNode description) {
         ESOption indexed = Optional.ofNullable(getClass().getAnnotation(IndexMode.class))
                                    .map(IndexMode::indexed)
                                    .orElse(ESOption.ES_DEFAULT);
@@ -233,7 +235,7 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
 
         transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
 
-        JSONObject properties = new JSONObject();
+        ObjectNode properties = Json.createObject();
         for (Property property : getNestedDescriptor().getProperties()) {
             if (!(property instanceof ESPropertyInfo esPropertyInfo)) {
                 Exceptions.handle()
@@ -247,11 +249,11 @@ public class NestedListProperty extends Property implements ESPropertyInfo {
                                                   property.getName())
                           .handle();
             } else {
-                JSONObject propertyInfo = new JSONObject();
+                ObjectNode propertyInfo = Json.createObject();
                 esPropertyInfo.describeProperty(propertyInfo);
-                properties.put(property.getPropertyName(), propertyInfo);
+                properties.set(property.getPropertyName(), propertyInfo);
             }
         }
-        description.put("properties", properties);
+        description.set("properties", properties);
     }
 }

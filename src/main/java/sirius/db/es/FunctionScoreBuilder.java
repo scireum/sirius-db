@@ -8,9 +8,9 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 
 import java.time.Duration;
@@ -53,7 +53,7 @@ public class FunctionScoreBuilder {
     protected static final FunctionScoreBuilder RANDOM_SCORE = new FunctionScoreBuilder().random().replaceScore();
 
     private Map<String, Object> parameters = new HashMap<>();
-    private List<JSONObject> functions = new ArrayList<>();
+    private List<ObjectNode> functions = new ArrayList<>();
 
     /**
      * Adds the given parameter to the query.
@@ -70,10 +70,10 @@ public class FunctionScoreBuilder {
     /**
      * Adds the given function to the query.
      *
-     * @param function the function as {@link JSONObject}
+     * @param function the function as {@link ObjectNode}
      * @return the builder itself for fluent method calls
      */
-    public FunctionScoreBuilder function(JSONObject function) {
+    public FunctionScoreBuilder function(ObjectNode function) {
         functions.add(function);
         return this;
     }
@@ -95,7 +95,7 @@ public class FunctionScoreBuilder {
      * @return the builder itself for fluent method calls
      */
     public FunctionScoreBuilder random() {
-        functions.add(new JSONObject().fluentPut("random_score", new JSONObject()));
+        functions.add(Json.createObject().set("random_score", Json.createObject()));
         return this;
     }
 
@@ -106,10 +106,9 @@ public class FunctionScoreBuilder {
      * @return the builder itself for fluent method calls
      */
     public FunctionScoreBuilder script(String script) {
-        return function(new JSONObject().fluentPut("script_score",
-                                                   new JSONObject().fluentPut("script",
-                                                                              new JSONObject().fluentPut("source",
-                                                                                                         script))));
+        return function(Json.createObject()
+                            .set("script_score",
+                                 Json.createObject().set("script", Json.createObject().put("source", script))));
     }
 
     /**
@@ -122,10 +121,12 @@ public class FunctionScoreBuilder {
      * @see #maxFieldValueFunction(Mapping, float) if the value needs to be limited by a lower bound
      */
     public FunctionScoreBuilder fieldValueFunction(Mapping field, float factor, float missing) {
-        return function(new JSONObject().fluentPut(FUNCTION_FIELD_VALUE_FACTOR,
-                                                   new JSONObject().fluentPut(FIELD_FIELD, field.toString())
-                                                                   .fluentPut(FIELD_FACTOR, factor)
-                                                                   .fluentPut(FIELD_MISSING, missing)));
+        return function(Json.createObject()
+                            .set(FUNCTION_FIELD_VALUE_FACTOR,
+                                 Json.createObject()
+                                     .put(FIELD_FIELD, field.toString())
+                                     .put(FIELD_FACTOR, factor)
+                                     .put(FIELD_MISSING, missing)));
     }
 
     /**
@@ -137,7 +138,9 @@ public class FunctionScoreBuilder {
      * @see #fieldValueFunction(Mapping, float, float)
      */
     public FunctionScoreBuilder maxFieldValueFunction(Mapping field, float minValue) {
-        return script(Strings.apply("Math.max(%2$s, doc['%1$s'].size() == 0 ? %2$s : doc['%1$s'].value)", field, minValue));
+        return script(Strings.apply("Math.max(%2$s, doc['%1$s'].size() == 0 ? %2$s : doc['%1$s'].value)",
+                                    field,
+                                    minValue));
     }
 
     private FunctionScoreBuilder dateTimeDecayFunction(String function,
@@ -146,13 +149,13 @@ public class FunctionScoreBuilder {
                                                        Duration scale,
                                                        Duration offset,
                                                        float decay) {
-        JSONObject settings = new JSONObject().fluentPut(FIELD_ORIGIN,
-                                                         DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(origin.atZone(
-                                                                 ZoneId.systemDefault())))
-                                              .fluentPut(FIELD_SCALE, scale.getSeconds() + SUFFIX_SECONDS)
-                                              .fluentPut(FIELD_OFFSET, offset.getSeconds() + SUFFIX_SECONDS)
-                                              .fluentPut(FIELD_DECAY, decay);
-        return function(new JSONObject().fluentPut(function, new JSONObject().fluentPut(field.toString(), settings)));
+        ObjectNode settings = Json.createObject()
+                                  .put(FIELD_ORIGIN,
+                                       DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(origin.atZone(ZoneId.systemDefault())))
+                                  .put(FIELD_SCALE, scale.getSeconds() + SUFFIX_SECONDS)
+                                  .put(FIELD_OFFSET, offset.getSeconds() + SUFFIX_SECONDS)
+                                  .put(FIELD_DECAY, decay);
+        return function(Json.createObject().set(function, Json.createObject().set(field.toString(), settings)));
     }
 
     /**
@@ -225,26 +228,26 @@ public class FunctionScoreBuilder {
      * Applies the given query to the function score query and returns the newly created query.
      *
      * @param query the query to apply
-     * @return the function score query as {@link JSONObject}
+     * @return the function score query as {@link ObjectNode}
      */
-    public JSONObject apply(JSONObject query) {
-        return new JSONObject().fluentPut(FUNCTION_SCORE,
-                                          new JSONObject().fluentPut(FIELD_QUERY, query)
-                                                          .fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<>(functions)))
-                                                          .fluentPutAll(parameters));
+    public ObjectNode apply(ObjectNode query) {
+        ObjectNode scoreObject = Json.createObject();
+        scoreObject.set(FIELD_QUERY, query);
+        scoreObject.set(FIELD_FUNCTIONS, Json.createArray().addAll(functions));
+        parameters.forEach(scoreObject::putPOJO);
+        return Json.createObject().set(FUNCTION_SCORE, scoreObject);
     }
 
     /**
      * Builds the function score query.
      *
-     * @return the function score query as {@link JSONObject}
+     * @return the function score query as {@link ObjectNode}
      */
-    public JSONObject build() {
-        return new JSONObject().fluentPut(FUNCTION_SCORE,
-                                          new JSONObject().fluentPut(FIELD_FUNCTIONS,
-                                                                     new JSONArray(new ArrayList<>(functions)))
-                                                          .fluentPutAll(parameters));
+    public ObjectNode build() {
+        ObjectNode scoreObject = Json.createObject();
+        scoreObject.set(FIELD_FUNCTIONS, Json.createArray().addAll(functions));
+        parameters.forEach(scoreObject::putPOJO);
+        return Json.createObject().set(FUNCTION_SCORE, scoreObject);
     }
 
     /**

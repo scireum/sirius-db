@@ -8,10 +8,11 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 
 import javax.annotation.Nonnull;
 
@@ -59,7 +60,7 @@ public class NearestNeighborsSearch {
      * @param filter the filter constraint to apply
      * @return the search itself for fluent method calls
      */
-    public NearestNeighborsSearch filter(JSONObject filter) {
+    public NearestNeighborsSearch filter(ObjectNode filter) {
         if (filter != null) {
             if (filterBuilder == null) {
                 filterBuilder = new BoolQueryBuilder();
@@ -92,15 +93,15 @@ public class NearestNeighborsSearch {
         return copy;
     }
 
-    protected JSONObject build() {
-        JSONObject result = new JSONObject();
+    protected ObjectNode build() {
+        ObjectNode result = Json.createObject();
         result.put("field", field.getName());
         result.put("k", numResults);
         result.put("num_candidates", numCandidates);
         if (filterBuilder != null) {
-            result.put("filter", filterBuilder.build());
+            result.set("filter", filterBuilder.build());
         }
-        result.put("query_vector", queryVector);
+        result.putPOJO("query_vector", queryVector);
 
         return result;
     }

@@ -8,9 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -24,6 +22,7 @@ import sirius.db.DB;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
@@ -57,10 +56,10 @@ class RequestBuilder {
     private String method;
     private RestClient restClient;
     private Map<String, String> params;
-    private JSONObject data;
+    private ObjectNode data;
     private String rawData;
     private HttpEntity responseEntity;
-    private JSONObject responseObject;
+    private ObjectNode responseObject;
     private Function<ResponseException, HttpEntity> customExceptionHandler;
 
     @Part
@@ -83,7 +82,7 @@ class RequestBuilder {
         return this;
     }
 
-    protected RequestBuilder data(JSONObject data) {
+    protected RequestBuilder data(ObjectNode data) {
         this.data = data;
         return this;
     }
@@ -166,9 +165,11 @@ class RequestBuilder {
             }
         }
 
-        JSONObject error = extractErrorJSON(e);
+        ObjectNode error = extractErrorJSON(e);
         if (e.getResponse().getStatusLine().getStatusCode() == 409) {
-            throw new OptimisticLockException(error == null ? e.getMessage() : error.getString(PARAM_REASON), e);
+            throw new OptimisticLockException(error != null ?
+                                              Json.tryValueString(error, PARAM_REASON).orElse(e.getMessage()) :
+                                              e.getMessage(), e);
         }
 
         throw Exceptions.handle()
@@ -176,8 +177,12 @@ class RequestBuilder {
                         .error(e)
                         .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
                                                 e.getResponse().getHost(),
-                                                error == null ? "unknown" : error.getString(PARAM_REASON),
-                                                error == null ? "-" : error.getString(PARAM_TYPE))
+                                                error != null ?
+                                                Json.tryValueString(error, PARAM_REASON).orElse("unknown") :
+                                                "unknown",
+                                                error != null ?
+                                                Json.tryValueString(error, PARAM_TYPE).orElse("-") :
+                                                "-")
                         .handle();
     }
 
@@ -187,7 +192,7 @@ class RequestBuilder {
 
     private Optional<String> buildContent() {
         if (data != null) {
-            return Optional.of(JSON.toJSONString(data, SerializerFeature.DisableCircularReferenceDetect));
+            return Optional.of(Json.write(data));
         }
         if (rawData != null) {
             return Optional.of(rawData);
@@ -239,10 +244,10 @@ class RequestBuilder {
                          .handle();
     }
 
-    protected JSONObject extractErrorJSON(ResponseException e) {
+    protected ObjectNode extractErrorJSON(ResponseException e) {
         try {
-            JSONObject response = JSON.parseObject(EntityUtils.toString(e.getResponse().getEntity()));
-            return response.getJSONObject(PARAM_ERROR);
+            ObjectNode response = Json.parseObject(EntityUtils.toString(e.getResponse().getEntity()));
+            return Json.getObject(response, PARAM_ERROR);
         } catch (IOException ex) {
             Exceptions.handle(Elastic.LOG, ex);
             throw Exceptions.handle()
@@ -254,14 +259,14 @@ class RequestBuilder {
         }
     }
 
-    protected JSONObject response() {
+    protected ObjectNode response() {
         try {
             if (responseObject == null) {
                 if (responseEntity == null) {
                     throw new IllegalStateException("No response is available before making a request.");
                 }
 
-                responseObject = JSON.parseObject(EntityUtils.toString(responseEntity));
+                responseObject = Json.parseObject(EntityUtils.toString(responseEntity));
             }
 
             return responseObject;

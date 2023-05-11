@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.Elastic;
@@ -24,6 +24,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.types.StringLocalDateTimeMap;
 import sirius.db.mongo.Mongo;
 import sirius.db.mongo.QueryBuilder;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -107,9 +108,10 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
     protected Object transformToElastic(Object object) {
         return ((Map<?, ?>) object).entrySet()
                                    .stream()
-                                   .map(e -> new JSONObject().fluentPut(StringMapProperty.KEY, e.getKey())
-                                                             .fluentPut(StringMapProperty.VALUE,
-                                                                        Elastic.FILTERS.transform(e.getValue())))
+                                   .map(e -> Json.createObject()
+                                                 .putPOJO(StringMapProperty.KEY, e.getKey())
+                                                 .putPOJO(StringMapProperty.VALUE,
+                                                          Elastic.FILTERS.transform(e.getValue())))
                                    .toList();
     }
 
@@ -141,7 +143,7 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
     }
 
     @Override
-    public void describeProperty(JSONObject description) {
+    public void describeProperty(ObjectNode description) {
         ESOption indexed = Optional.ofNullable(getClass().getAnnotation(IndexMode.class))
                                    .map(IndexMode::indexed)
                                    .orElse(ESOption.ES_DEFAULT);
@@ -153,10 +155,10 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
         }
         transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
 
-        JSONObject properties = new JSONObject();
-        properties.put(StringMapProperty.KEY,
-                       new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
-        properties.put(StringMapProperty.VALUE, new JSONObject().fluentPut(IndexMappings.MAPPING_TYPE, "date"));
-        description.put("properties", properties);
+        ObjectNode properties = Json.createObject();
+        properties.set(StringMapProperty.KEY,
+                       Json.createObject().put(IndexMappings.MAPPING_TYPE, IndexMappings.MAPPING_TYPE_KEWORD));
+        properties.set(StringMapProperty.VALUE, Json.createObject().put(IndexMappings.MAPPING_TYPE, "date"));
+        description.set("properties", properties);
     }
 }

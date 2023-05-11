@@ -8,6 +8,7 @@
 
 package sirius.db.es
 
+
 import sirius.db.es.properties.ESStringListEntity
 import sirius.db.es.properties.ESStringMapEntity
 import sirius.db.mixing.Mapping
@@ -144,18 +145,12 @@ class ElasticQuerySpec extends BaseSpecification {
                            .eq(ESStringMapEntity.ID, entity.getId())
                            .addAggregation(aggregation)
         query.computeAggregations()
+        def buckets = query.getRawAggregations().withArray("/test/keys/buckets")
         then:
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").size() == 3
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").getJSONObject(0)
-             .getString("key") == "1"
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").getJSONObject(1)
-             .getString("key") == "2"
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("keys").getJSONArray("buckets").getJSONObject(2)
-             .getString("key") == "test"
+        buckets.size() == 3
+        buckets.get(0).path("key").asText() == "1"
+        buckets.get(1).path("key").asText() == "2"
+        buckets.get(2).path("key").asText() == "test"
     }
 
     def "muli-level nested aggregations work"() {
@@ -175,14 +170,11 @@ class ElasticQuerySpec extends BaseSpecification {
                            .addAggregation(AggregationBuilder.createNested(ESStringMapEntity.MAP, "test")
                                                              .addSubAggregation(filterAggregation))
         query.computeAggregations()
+
+        def buckets = query.getRawAggregations().withArray("/test/filter/keys/buckets")
         then:
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("filter").getJSONObject("keys")
-             .getJSONArray("buckets").size() == 1
-        query.getRawAggregations().getJSONObject("test")
-             .getJSONObject("filter").getJSONObject("keys")
-             .getJSONArray("buckets").getJSONObject(0)
-             .getString("key") == "3"
+        buckets.size() == 1
+        buckets.get(0).path("key").asText() == "3"
 
     }
 
@@ -313,6 +305,29 @@ class ElasticQuerySpec extends BaseSpecification {
                .eq(ESStringListEntity.ID, entity.getId())
                .where(Elastic.FILTERS.allInField(ESStringListEntity.LIST, ["1", "2"]))
                .queryOne().getId() == entity.getId()
+    }
+
+    def "namedOr query and match detection works"() {
+        setup:
+        QueryTestEntity entity = new QueryTestEntity()
+        entity.setValue("NAMED-OR")
+        entity.setCounter(1)
+        elastic.update(entity)
+        and:
+        QueryTestEntity entity2 = new QueryTestEntity()
+        entity2.setValue("NAMED-OR")
+        entity2.setCounter(2)
+        elastic.update(entity2)
+        and:
+        elastic.refresh(QueryTestEntity.class)
+        when:
+        def result = elastic.select(QueryTestEntity.class)
+                           .eq(QueryTestEntity.VALUE, "NAMED-OR")
+                           .where(Elastic.FILTERS.namedOr("namedOr", Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 1),
+                                                          Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 2))).queryList()
+        then:
+        result.size() == 2
+        result.get(0).isMatchedNamedQuery("namedOr")
     }
 
     def "field value score queries work"() {

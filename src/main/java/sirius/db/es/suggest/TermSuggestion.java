@@ -8,7 +8,8 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Json;
 
 /**
  * Represents a suggestion for a single term of the given input text.
@@ -30,11 +31,11 @@ public class TermSuggestion {
      *
      * @param json a JSON snipped as returned by ES
      */
-    public TermSuggestion(JSONObject json) {
-        this.text = json.getString(PARAM_TEXT);
-        this.score = json.getFloatValue(PARAM_SCORE);
-        this.highlighted = json.getString(PARAM_HIGHLIGHTED);
-        this.collateMatch = json.getBooleanValue(PARAM_COLLATE_MATCH);
+    public TermSuggestion(ObjectNode json) {
+        this.text = Json.tryValueString(json, PARAM_TEXT).orElse(null);
+        this.score = json.path(PARAM_SCORE).floatValue();
+        this.highlighted = Json.tryValueString(json, PARAM_HIGHLIGHTED).orElse(null);
+        this.collateMatch = json.path(PARAM_COLLATE_MATCH).asBoolean();
     }
 
     /**

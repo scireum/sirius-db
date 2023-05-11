@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.elasticsearch.client.Request;
@@ -17,6 +17,7 @@ import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -158,12 +159,12 @@ public class LowLevelClient {
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
-    public JSONObject index(String index,
+    public ObjectNode index(String index,
                             String id,
                             @Nullable String routing,
                             @Nullable Long primaryTerm,
                             @Nullable Long seqNo,
-                            JSONObject data) throws OptimisticLockException {
+                            ObjectNode data) throws OptimisticLockException {
         return performPut().routing(routing)
                            .primaryTerm(primaryTerm)
                            .seqNo(seqNo)
@@ -181,7 +182,7 @@ public class LowLevelClient {
      * @param withSource <tt>true</tt> to also load the <tt>_source</tt> of the document, <tt>false</tt> otherwise
      * @return the response of the call
      */
-    public JSONObject get(String index, String id, @Nullable String routing, boolean withSource) {
+    public ObjectNode get(String index, String id, @Nullable String routing, boolean withSource) {
         return performGet().withCustomErrorHandler(this::handleNotFoundAsResponse)
                            .routing(routing)
                            .disable("_source", withSource)
@@ -200,7 +201,7 @@ public class LowLevelClient {
      * @return the response of the call
      * @throws OptimisticLockException in case of an optimistic locking error (wrong version provided)
      */
-    public JSONObject delete(String index, String id, String routing, Long primaryTerm, Long seqNo)
+    public ObjectNode delete(String index, String id, String routing, Long primaryTerm, Long seqNo)
             throws OptimisticLockException {
         return performDelete().withCustomErrorHandler(this::handleNotFoundAsResponse)
                               .routing(routing)
@@ -227,7 +228,7 @@ public class LowLevelClient {
      * @return the response of the call
      * @throws OptimisticLockException if one of the documents was modified during the runtime of the deletion query
      */
-    public JSONObject deleteByQuery(String alias, @Nullable String routing, JSONObject query)
+    public ObjectNode deleteByQuery(String alias, @Nullable String routing, ObjectNode query)
             throws OptimisticLockException {
         return performPost().routing(routing).data(query).tryExecute(alias + API_DELETE_BY_QUERY).response();
     }
@@ -242,7 +243,7 @@ public class LowLevelClient {
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject search(String alias, @Nullable String routing, int from, int size, JSONObject query) {
+    public ObjectNode search(String alias, @Nullable String routing, int from, int size, ObjectNode query) {
         return performGet().routing(routing)
                            .withParam("size", size)
                            .withParam("from", from)
@@ -261,16 +262,12 @@ public class LowLevelClient {
      * @return the ID of the background task within Elasticsearch
      */
     public String startReindex(String sourceIndexName, String destinationIndexName) {
-        JSONObject response = performPost().data(new JSONObject().fluentPut("source",
-                                                                            new JSONObject().fluentPut(PARAM_INDEX,
-                                                                                                       sourceIndexName))
-                                                                 .fluentPut("dest",
-                                                                            new JSONObject().fluentPut(PARAM_INDEX,
-                                                                                                       destinationIndexName)))
-                                           .execute(API_REINDEX)
-                                           .response();
+        ObjectNode reindexJson = Json.createObject();
+        reindexJson.set("source", Json.createObject().put(PARAM_INDEX, sourceIndexName));
+        reindexJson.set("dest", Json.createObject().put(PARAM_INDEX, destinationIndexName));
+        ObjectNode response = performPost().data(reindexJson).execute(API_REINDEX).response();
 
-        return response.getString("task");
+        return Json.tryValueString(response, "task").orElse(null);
     }
 
     /**
@@ -280,7 +277,7 @@ public class LowLevelClient {
      * @return <tt>true</tt> if the task is alive and active, <tt>false</tt> otherwise
      */
     public boolean checkTaskActivity(String taskId) {
-        JSONObject response =
+        ObjectNode response =
                 performGet().execute(API_TASK_INFO + Strings.urlEncode(taskId)).withCustomErrorHandler(ex -> {
                     try {
                         if (ex.getResponse().getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
@@ -293,7 +290,7 @@ public class LowLevelClient {
                     }
                 }).response();
 
-        return !response.containsKey("notFound") && !response.getBooleanValue("completed");
+        return !response.has("notFound") && !response.required("completed").asBoolean();
     }
 
     /**
@@ -303,7 +300,7 @@ public class LowLevelClient {
      * @param alias     the alias to apply
      * @return the response of the call
      */
-    public JSONObject addAlias(String indexName, String alias) {
+    public ObjectNode addAlias(String indexName, String alias) {
         return performPut().execute("/" + indexName + API_ALIAS + "/" + alias).response();
     }
 
@@ -351,7 +348,9 @@ public class LowLevelClient {
             } else {
                 return null;
             }
-        }).execute(API_ALIAS + "/" + aliasName).response().forEach((indexName, info) -> indexNames.add(indexName));
+        }).execute(API_ALIAS + "/" + aliasName).response().properties().forEach(indexNameToInfo -> {
+            indexNames.add(indexNameToInfo.getKey());
+        });
 
         if (indexNames.isEmpty()) {
             return Optional.empty();
@@ -379,24 +378,24 @@ public class LowLevelClient {
      * @param destination the index to which the alias should point
      * @return the response of the call
      */
-    public JSONObject createOrMoveAlias(String alias, String destination) {
+    public ObjectNode createOrMoveAlias(String alias, String destination) {
         if (!indexExists(destination)) {
             throw Exceptions.handle()
                             .withSystemErrorMessage("There exists no index with name '%s'", destination)
                             .handle();
         }
 
-        JSONArray actions = new JSONArray();
+        ArrayNode actions = Json.createArray();
 
-        JSONObject add = new JSONObject().fluentPut(PARAM_INDEX, destination).fluentPut(PARAM_ALIAS, alias);
-        actions.add(new JSONObject().fluentPut(ACTON_ADD, add));
+        ObjectNode add = Json.createObject().put(PARAM_INDEX, destination).put(PARAM_ALIAS, alias);
+        actions.add(Json.createObject().set(ACTON_ADD, add));
 
         resolveIndexForAlias(alias).ifPresent(oldIndex -> {
-            JSONObject remove = new JSONObject().fluentPut(PARAM_INDEX, oldIndex).fluentPut(PARAM_ALIAS, alias);
-            actions.add(new JSONObject().fluentPut(ACTION_REMOVE, remove));
+            ObjectNode remove = Json.createObject().put(PARAM_INDEX, oldIndex).put(PARAM_ALIAS, alias);
+            actions.add(Json.createObject().set(ACTION_REMOVE, remove));
         });
 
-        return performPost().data(new JSONObject().fluentPut(PARAM_ACTIONS, actions)).execute(API_ALIASES).response();
+        return performPost().data(Json.createObject().set(PARAM_ACTIONS, actions)).execute(API_ALIASES).response();
     }
 
     /**
@@ -409,11 +408,9 @@ public class LowLevelClient {
      * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units">Elastic time units</a>
      */
     public String createPit(String alias, String routing, String keepAlive) {
-        return performPost().routing(routing)
-                            .withParam("keep_alive", keepAlive)
-                            .execute(alias + "/_pit")
-                            .response()
-                            .getString("id");
+        ObjectNode response =
+                performPost().routing(routing).withParam("keep_alive", keepAlive).execute(alias + "/_pit").response();
+        return Json.tryValueString(response, "id").orElse(null);
     }
 
     /**
@@ -424,7 +421,7 @@ public class LowLevelClient {
      * @param pit the id of the PIT to close
      */
     public void closePit(String pit) {
-        performDelete().data(new JSONObject().fluentPut("id", pit)).execute("/_pit");
+        performDelete().data(Json.createObject().put("id", pit)).execute("/_pit");
     }
 
     /**
@@ -435,7 +432,7 @@ public class LowLevelClient {
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject exists(String alias, String routing, JSONObject query) {
+    public ObjectNode exists(String alias, String routing, ObjectNode query) {
         return performGet().routing(routing)
                            .withParam("size", 0)
                            .withParam("terminate_after", 1)
@@ -452,7 +449,7 @@ public class LowLevelClient {
      * @param query   the query to execute
      * @return the response of the call
      */
-    public JSONObject count(String alias, String routing, JSONObject query) {
+    public ObjectNode count(String alias, String routing, ObjectNode query) {
         return performGet().routing(routing).data(query).execute(alias + "/_count").response();
     }
 
@@ -463,7 +460,7 @@ public class LowLevelClient {
      * @return the response of the call
      * @see BulkContext
      */
-    public JSONObject bulk(List<JSONObject> bulkData) {
+    public ObjectNode bulk(List<ObjectNode> bulkData) {
         return bulkWithRefresh(bulkData, Refresh.FALSE);
     }
 
@@ -477,9 +474,9 @@ public class LowLevelClient {
      */
     @SuppressWarnings("squid:S1612")
     @Explain("Due to method overloading the compiler cannot deduce which method to pick")
-    public JSONObject bulkWithRefresh(List<JSONObject> bulkData, Refresh refresh) {
+    public ObjectNode bulkWithRefresh(List<ObjectNode> bulkData, Refresh refresh) {
         return performPost().withParam(PARAM_REFRESH, refresh.name().toLowerCase())
-                            .rawData(bulkData.stream().map(obj -> obj.toJSONString()).collect(Collectors.joining("\n"))
+                            .rawData(bulkData.stream().map(obj -> Json.write(obj)).collect(Collectors.joining("\n"))
                                      + "\n")
                             .execute(API_BULK)
                             .response();
@@ -494,17 +491,18 @@ public class LowLevelClient {
      * @param settingsCustomizer a callback which may further extend the settings object passed to Elasticsearch
      * @return the response of the call
      */
-    public JSONObject createIndex(String index,
+    public ObjectNode createIndex(String index,
                                   int numberOfShards,
                                   int numberOfReplicas,
-                                  @Nullable Consumer<JSONObject> settingsCustomizer) {
-        JSONObject indexObj = new JSONObject().fluentPut(PARAM_NUMBER_OF_SHARDS, numberOfShards)
-                                              .fluentPut(PARAM_NUMBER_OF_REPLICAS, numberOfReplicas);
-        JSONObject settingsObj = new JSONObject().fluentPut(PARAM_INDEX, indexObj);
+                                  @Nullable Consumer<ObjectNode> settingsCustomizer) {
+        ObjectNode indexObj = Json.createObject()
+                                  .put(PARAM_NUMBER_OF_SHARDS, numberOfShards)
+                                  .put(PARAM_NUMBER_OF_REPLICAS, numberOfReplicas);
+        ObjectNode settingsObj = Json.createObject().set(PARAM_INDEX, indexObj);
         if (settingsCustomizer != null) {
             settingsCustomizer.accept(settingsObj);
         }
-        JSONObject input = new JSONObject().fluentPut(PARAM_SETTINGS, settingsObj);
+        ObjectNode input = Json.createObject().set(PARAM_SETTINGS, settingsObj);
         return performPut().data(input).execute(index).response();
     }
 
@@ -515,7 +513,7 @@ public class LowLevelClient {
      * @param data  the mapping to create
      * @return the response of the call
      */
-    public JSONObject putMapping(String index, JSONObject data) {
+    public ObjectNode putMapping(String index, ObjectNode data) {
         return performPut().data(data).execute(index + API_MAPPING).response();
     }
 
@@ -568,7 +566,7 @@ public class LowLevelClient {
      * @param index the index to fetch the settings for
      * @return a JSON object as returned by <tt>/index/_settings</tt>
      */
-    public JSONObject indexSettings(String index) {
+    public ObjectNode indexSettings(String index) {
         return performGet().execute(index + API_SETTINGS).response();
     }
 
@@ -577,7 +575,7 @@ public class LowLevelClient {
      *
      * @return a JSON object as returned by <tt>/_cluster/health</tt>
      */
-    public JSONObject clusterHealth() {
+    public ObjectNode clusterHealth() {
         return performGet().execute(API_CLUSTER_HEALTH).response();
     }
 
@@ -586,7 +584,7 @@ public class LowLevelClient {
      *
      * @return a JSON object as returned by <tt>/_stats</tt>
      */
-    public JSONObject indexStats() {
+    public ObjectNode indexStats() {
         return performGet().execute(API_STATS).response();
     }
 }
