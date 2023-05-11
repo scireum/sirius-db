@@ -525,7 +525,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @return a new entity based on the given data
      */
     protected static ElasticEntity make(EntityDescriptor entityDescriptor, ObjectNode data) {
-        String id = data.get(ID_FIELD).asText();
+        String id = Json.tryValueString(data, ID_FIELD).orElse(null);
 
         try {
             ObjectNode source = Json.getObject(data, RESPONSE_SOURCE);
@@ -565,15 +565,15 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     protected <E extends ElasticEntity> Optional<E> findEntity(Object id,
                                                                EntityDescriptor entityDescriptor,
                                                                Function<String, Value> context) throws Exception {
-        ObjectNode obj = getLowLevelClient().get(determineReadAlias(entityDescriptor),
-                                                 id.toString(),
-                                                 determineRoutingForFind(id, entityDescriptor, context),
-                                                 true);
-        if (obj == null || !Boolean.TRUE.equals(obj.get(RESPONSE_FOUND).asBoolean())) {
+        ObjectNode jsonEntity = getLowLevelClient().get(determineReadAlias(entityDescriptor),
+                                                        id.toString(),
+                                                        determineRoutingForFind(id, entityDescriptor, context),
+                                                        true);
+        if (jsonEntity == null || !Boolean.TRUE.equals(jsonEntity.get(RESPONSE_FOUND).asBoolean())) {
             return Optional.empty();
         }
 
-        E result = (E) make(entityDescriptor, obj);
+        E result = (E) make(entityDescriptor, jsonEntity);
         return Optional.of(result);
     }
 

@@ -9,6 +9,8 @@
 package sirius.db.es;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Json;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.metrics.MetricProvider;
@@ -41,7 +43,7 @@ public class ElasticMetricsProvider implements MetricProvider {
             collector.metric("es_unassigned_shards",
                              "es-unassigned-shards",
                              "ES Unassigned Shards",
-                             health.get("unassigned_shards").asInt(),
+                             Json.getValueAmount(health, "unassigned_shards").orElse(Amount.ZERO).intValue(),
                              null);
         }
     }

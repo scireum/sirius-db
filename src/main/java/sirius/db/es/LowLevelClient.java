@@ -267,7 +267,7 @@ public class LowLevelClient {
         reindexJson.set("dest", Json.createObject().put(PARAM_INDEX, destinationIndexName));
         ObjectNode response = performPost().data(reindexJson).execute(API_REINDEX).response();
 
-        return response.get("task").asText();
+        return Json.tryValueString(response, "task").orElse(null);
     }
 
     /**
@@ -408,12 +408,9 @@ public class LowLevelClient {
      * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units">Elastic time units</a>
      */
     public String createPit(String alias, String routing, String keepAlive) {
-        return performPost().routing(routing)
-                            .withParam("keep_alive", keepAlive)
-                            .execute(alias + "/_pit")
-                            .response()
-                            .get("id")
-                            .asText();
+        ObjectNode response =
+                performPost().routing(routing).withParam("keep_alive", keepAlive).execute(alias + "/_pit").response();
+        return Json.tryValueString(response, "id").orElse(null);
     }
 
     /**

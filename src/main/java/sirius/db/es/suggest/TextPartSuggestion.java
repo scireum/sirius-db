@@ -35,7 +35,7 @@ public class TextPartSuggestion {
      * @param json a JSON snipped as returned by ES
      */
     public TextPartSuggestion(ObjectNode json) {
-        this.text = json.get(PARAM_TEXT).asText();
+        this.text = Json.tryValueString(json, PARAM_TEXT).orElse(null);
         this.offset = json.get(PARAM_OFFSET).asInt();
         this.length = json.get(PARAM_LENGTH).asInt();
         this.termSuggestions = Json.streamEntries(Json.getArray(json, PARAM_OPTIONS))

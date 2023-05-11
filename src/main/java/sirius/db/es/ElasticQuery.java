@@ -8,7 +8,6 @@
 
 package sirius.db.es;
 
-import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -383,17 +382,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        ArrayNode jsonArray = getRawResponse().withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS));
-        if (jsonArray == null || jsonArray.isEmpty()) {
+        ArrayNode jsonHits = Json.getArrayAt(getRawResponse(), Json.createPointer(KEY_HITS, KEY_HITS));
+
+        if (jsonHits.isEmpty()) {
             return Collections.emptyList();
         }
 
-        ArrayNode sortArray = jsonArray.withArray(Strings.apply("/%d/%s", jsonArray.size() - 1, KEY_SORT));
-        if (sortArray == null) {
+        ArrayNode jsonSorts = Json.getArrayAt(jsonHits, Json.createPointer(jsonHits.size() - 1, KEY_SORT));
+
+        if (jsonSorts.isEmpty()) {
             return Collections.emptyList();
         }
 
-        return Json.streamEntries(sortArray).map(Object::toString).toList();
+        return Json.streamEntries(jsonSorts).map(Object::toString).toList();
     }
 
     /**
@@ -405,7 +406,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the last sort value within this result
      */
     public String getLastSortValue() {
-        if (limit > 0 && getRawResponse().withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS)).size() < limit) {
+        if (limit > 0 && Json.getArrayAt(getRawResponse(), Json.createPointer(KEY_HITS, KEY_HITS)).size() < limit) {
             return "-";
         }
 
@@ -1026,7 +1027,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         ObjectNode existsResponse = client.exists(computeEffectiveIndexName(elastic::determineReadAlias),
                                                   filteredRouting,
                                                   buildSimplePayload());
-        return existsResponse.at(Strings.apply("/%s/%s", KEY_HITS, KEY_TOTAL)).get(KEY_VALUE).asInt() >= 1;
+        return Json.tryGetAt(existsResponse, Json.createPointer(KEY_HITS, KEY_TOTAL, KEY_VALUE))
+                   .map(JsonNode::asInt)
+                   .orElse(0) >= 1;
     }
 
     @SuppressWarnings("unchecked")
@@ -1048,7 +1051,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                       skip,
                                       limit,
                                       buildPayload());
-        for (Object obj : this.response.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS))) {
+        for (JsonNode obj : Json.getArrayAt(this.response, Json.createPointer(KEY_HITS, KEY_HITS))) {
             if (!handler.test((E) Elastic.make(descriptor, (ObjectNode) obj))) {
                 return;
             }
@@ -1176,7 +1179,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the total number of this (even when only {@link #computeAggregations()} was used).
      */
     public long getTotalHits() {
-        return getRawResponse().at(Strings.apply("/hits/%s/%s", KEY_TOTAL, KEY_VALUE)).asLong();
+        return Json.tryGetAt(getRawResponse(), Json.createPointer("hits", KEY_TOTAL, KEY_VALUE))
+                   .map(JsonNode::asLong)
+                   .orElse(0L);
     }
 
     /**
@@ -1197,7 +1202,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the total number of shards which have been queried
      */
     public long getNumShards() {
-        return getRawResponse().at("/_shards/" + KEY_TOTAL).asLong();
+        return Json.tryGetAt(getRawResponse(), Json.createPointer("_shards", KEY_TOTAL))
+                   .map(JsonNode::asLong)
+                   .orElse(0L);
     }
 
     @Override
@@ -1259,8 +1266,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
 
-            return Json.streamEntries(response.withArray(Strings.apply("/%s/%s", KEY_HITS, KEY_HITS)))
-                       .map(obj -> (E) Elastic.make(descriptor, (ObjectNode) obj))
+            return Json.streamEntries(Json.getArrayAt(response, Json.createPointer(KEY_HITS, KEY_HITS)))
+                       .map(entry -> (E) Elastic.make(descriptor, (ObjectNode) entry))
                        .iterator();
         }
 
@@ -1313,8 +1320,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             Elastic.LOG.WARN("Truncate timed out or had version conflicts:\n" + Json.write(deleteByQueryResponse));
             throw new OptimisticLockException();
         }
-        ArrayNode failures = deleteByQueryResponse.withArray(JsonPointer.SEPARATOR + KEY_FAILURES);
-        if (failures != null && !failures.isEmpty()) {
+        ArrayNode failures = Json.getArray(deleteByQueryResponse, KEY_FAILURES);
+        if (!failures.isEmpty()) {
             Elastic.LOG.SEVERE("Truncate aborted due to unrecoverable error(s):\n" + Json.write(deleteByQueryResponse));
             throw Exceptions.createHandled()
                             .withSystemErrorMessage("Truncate aborted due to unrecoverable error(s)!")

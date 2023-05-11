@@ -27,9 +27,9 @@ public class Match {
      * @param match the match as returned by qdrant
      */
     public Match(ObjectNode match) {
-        this.id = match.get("id").asText();
+        this.id = Json.tryValueString(match, "id").orElse(null);
         this.score = match.get("score").floatValue();
-        this.payload = match.withObject("/payload");
+        this.payload = Json.getObject(match, "payload");
     }
 
     public String getId() {

@@ -15,7 +15,6 @@ import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Tuple;
-import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -136,7 +135,7 @@ public class AggregationResult {
      * @return the after key object or an empty optional if the end of the aggregation has been reached
      */
     public Optional<ObjectNode> getAfterKey() {
-        return Optional.ofNullable(Json.getObject(data, "after_key"));
+        return Json.tryGetObject(data, "after_key");
     }
 
     /**
@@ -163,7 +162,7 @@ public class AggregationResult {
      * @return the cardinality computed by this aggregation
      */
     public Optional<Integer> getCardinality() {
-        return Value.of(data.get(KEY_VALUE)).asOptionalInt();
+        return Json.convertToValue(data.get(KEY_VALUE)).asOptionalInt();
     }
 
     /**
@@ -172,7 +171,7 @@ public class AggregationResult {
      * @return the number of (non-distinct) values computed by this aggregation
      */
     public Optional<Integer> getValueCount() {
-        return Value.of(data.get(KEY_VALUE)).asOptionalInt();
+        return Json.convertToValue(data.get(KEY_VALUE)).asOptionalInt();
     }
 
     /**
@@ -182,7 +181,7 @@ public class AggregationResult {
      * @return the value of the aggregation or an empty <tt>Amount</tt> if no value is present.
      */
     public Amount getValue() {
-        return Json.convertToValue(data.get(KEY_VALUE)).getAmount();
+        return Json.getValueAmount(data, KEY_VALUE);
     }
 
     /**

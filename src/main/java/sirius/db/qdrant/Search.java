@@ -97,8 +97,10 @@ public class Search {
                                                      + collection
                                                      + "/points/search",
                                                      query);
-        ArrayNode points = response.withArray("/result");
-        return Json.streamEntries(points).map(ObjectNode.class::cast).map(Match::new).toList();
+        return Json.streamEntries(Json.getArray(response, "result"))
+                   .map(ObjectNode.class::cast)
+                   .map(Match::new)
+                   .toList();
     }
 
     private ArrayNode buildConstraints(List<Tuple<String, Object>> filters) {

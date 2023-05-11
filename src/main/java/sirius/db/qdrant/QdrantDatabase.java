@@ -8,6 +8,7 @@
 
 package sirius.db.qdrant;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.async.Operation;
@@ -199,9 +200,10 @@ public class QdrantDatabase {
      * @return the number of points in the given collection
      */
     public long countPoints(String collection, boolean exact) {
-        return execute(Method.POST,
-                       URI_PREFIX_COLLECTIONS + collection + "/points/count",
-                       Json.createObject().put("exact", exact)).at("/result/count").asLong();
+        ObjectNode response = execute(Method.POST,
+                                      URI_PREFIX_COLLECTIONS + collection + "/points/count",
+                                      Json.createObject().put("exact", exact));
+        return Json.tryGetAt(response, Json.createPointer("result", "count")).map(JsonNode::asLong).orElse(0L);
     }
 
     /**

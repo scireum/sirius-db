@@ -167,7 +167,9 @@ class RequestBuilder {
 
         ObjectNode error = extractErrorJSON(e);
         if (e.getResponse().getStatusLine().getStatusCode() == 409) {
-            throw new OptimisticLockException(error == null ? e.getMessage() : error.get(PARAM_REASON).asText(), e);
+            throw new OptimisticLockException(error != null ?
+                                              Json.tryValueString(error, PARAM_REASON).orElse(e.getMessage()) :
+                                              e.getMessage(), e);
         }
 
         throw Exceptions.handle()
@@ -175,8 +177,12 @@ class RequestBuilder {
                         .error(e)
                         .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
                                                 e.getResponse().getHost(),
-                                                error == null ? "unknown" : error.get(PARAM_REASON).asText(),
-                                                error == null ? "-" : error.get(PARAM_TYPE).asText())
+                                                error != null ?
+                                                Json.tryValueString(error, PARAM_REASON).orElse("unknown") :
+                                                "unknown",
+                                                error != null ?
+                                                Json.tryValueString(error, PARAM_TYPE).orElse("-") :
+                                                "-")
                         .handle();
     }
 
@@ -186,7 +192,6 @@ class RequestBuilder {
 
     private Optional<String> buildContent() {
         if (data != null) {
-            // TODO DisableCircularReferenceDetect
             return Optional.of(Json.write(data));
         }
         if (rawData != null) {

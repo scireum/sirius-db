@@ -8,6 +8,7 @@
 
 package sirius.db.es;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.mixing.BaseEntity;
@@ -161,17 +162,9 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the total number of inner hits
      */
     public int getTotalInnerHits(String name) {
-        ObjectNode innerHits = Json.getObject(getSearchHit(), INNER_HITS);
-        if (innerHits == null) {
-            return 0;
-        }
-
-        innerHits = Json.getObject(innerHits, name);
-        if (innerHits == null) {
-            return 0;
-        }
-
-        return innerHits.at("/hits/total/value").asInt();
+        return Json.tryGetAt(getSearchHit(), Json.createPointer(INNER_HITS, name, "hits", "total", "value"))
+                   .map(JsonNode::asInt)
+                   .orElse(0);
     }
 
     /**
@@ -193,19 +186,11 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      */
     @SuppressWarnings("unchecked")
     public <E extends ElasticEntity> List<E> getInnerHits(Class<E> type, String name) {
-        ObjectNode innerHits = Json.getObject(getSearchHit(), INNER_HITS);
-        if (innerHits == null) {
-            return Collections.emptyList();
-        }
-
-        innerHits = Json.getObject(innerHits, name);
-        if (innerHits == null) {
-            return Collections.emptyList();
-        }
-
-        return (List<E>) Json.streamEntries(innerHits.withArray("/hits/hits"))
-                             .map(innerHit -> Elastic.make(getDescriptor(), (ObjectNode) innerHit))
-                             .toList();
+        return Json.tryGetArrayAt(getSearchHit(), Json.createPointer(INNER_HITS, name, "hits", "hits"))
+                   .map(jsonHits -> (List<E>) Json.streamEntries(jsonHits)
+                                                  .map(innerHit -> Elastic.make(getDescriptor(), (ObjectNode) innerHit))
+                                                  .toList())
+                   .orElse(Collections.emptyList());
     }
 
     /**

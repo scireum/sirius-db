@@ -9,6 +9,7 @@
 package sirius.db.es;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 
@@ -40,7 +41,7 @@ public class Bucket {
             return key;
         }
 
-        return data.get(KEY_KEY).asText();
+        return Json.tryValueString(data, KEY_KEY).orElse(null);
     }
 
     /**
@@ -53,7 +54,7 @@ public class Bucket {
      * @return the aggregated source value
      */
     public String getKey(String name) {
-        return data.get(KEY_KEY).get(name).asText();
+        return Json.tryGetObject(data, KEY_KEY).flatMap(keyObject -> Json.tryValueString(keyObject, name)).orElse(null);
     }
 
     /**
@@ -62,7 +63,7 @@ public class Bucket {
      * @return the doc count
      */
     public int getDocCount() {
-        return data.get(KEY_DOC_COUNT).asInt();
+        return Json.getValueAmount(data, KEY_DOC_COUNT).orElse(Amount.ZERO).intValue();
     }
 
     /**

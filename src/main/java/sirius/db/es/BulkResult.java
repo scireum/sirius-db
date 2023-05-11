@@ -98,18 +98,17 @@ public class BulkResult {
             ObjectNode current = getObject((ObjectNode) items.get(i));
             if (current.has(RESPONSE_KEY_ERROR)) {
                 ObjectNode error = Json.getObject(current, RESPONSE_KEY_ERROR);
-                failedIds.add(current.get(BulkContext.KEY_ID).asText());
+                Json.tryValueString(current, BulkContext.KEY_ID).ifPresent(failedIds::add);
                 failureMessageBuilder.append("index: ")
-                                     .append(error.get(RESPONSE_INDEX).asText())
+                                     .append(Json.tryValueString(error, RESPONSE_INDEX).orElse(""))
                                      .append(" type: ")
-                                     .append(error.get(RESPONSE_TYPE).asText())
+                                     .append(Json.tryValueString(error, RESPONSE_TYPE).orElse(""))
                                      .append(" reason: ")
-                                     .append(error.get(RESPONSE_REASON).asText());
+                                     .append(Json.tryValueString(error, RESPONSE_REASON).orElse(""));
                 if (error.has(RESPONSE_CAUSED_BY)) {
                     failureMessageBuilder.append(" cause: ")
-                                         .append(Json.getObject(error, RESPONSE_CAUSED_BY)
-                                                     .get(RESPONSE_REASON)
-                                                     .asText());
+                                         .append(Json.tryValueString(Json.getObject(error, RESPONSE_CAUSED_BY),
+                                                                     RESPONSE_REASON).orElse(""));
                 }
                 failureMessageBuilder.append("\n");
             }
@@ -119,27 +118,14 @@ public class BulkResult {
     }
 
     private ObjectNode getObject(ObjectNode currentObject) {
-        ObjectNode object = Json.getObject(currentObject, BulkContext.COMMAND_INDEX);
-        if (object != null) {
-            return object;
-        }
-
-        object = Json.getObject(currentObject, BulkContext.COMMAND_DELETE);
-        if (object != null) {
-            return object;
-        }
-
-        object = Json.getObject(currentObject, BulkContext.COMMAND_CREATE);
-        if (object != null) {
-            return object;
-        }
-
-        object = Json.getObject(currentObject, BulkContext.COMMAND_UPDATE);
-        if (object != null) {
-            return object;
-        }
-
-        throw Exceptions.handle().withSystemErrorMessage("Unknown object type within bulk-response!").handle();
+        return Json.tryGetObject(currentObject, BulkContext.COMMAND_INDEX)
+                   .or(() -> Json.tryGetObject(currentObject, BulkContext.COMMAND_DELETE))
+                   .or(() -> Json.tryGetObject(currentObject, BulkContext.COMMAND_CREATE))
+                   .or(() -> Json.tryGetObject(currentObject, BulkContext.COMMAND_UPDATE))
+                   .orElseThrow(() -> Exceptions.handle()
+                                                .to(Elastic.LOG)
+                                                .withSystemErrorMessage("Unknown object type within bulk-response!")
+                                                .handle());
     }
 
     /**
