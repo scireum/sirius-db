@@ -214,7 +214,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
             return 0f;
         }
 
-        return searchHit.get(FIELD_SCORE).floatValue();
+        return searchHit.path(FIELD_SCORE).floatValue();
     }
 
     /**

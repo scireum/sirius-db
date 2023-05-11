@@ -258,8 +258,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         null,
                                                         data);
         if (entityDescriptor.isVersioned()) {
-            entity.setPrimaryTerm(response.get(RESPONSE_PRIMARY_TERM).asLong());
-            entity.setSeqNo(response.get(RESPONSE_SEQ_NO).asLong());
+            entity.setPrimaryTerm(response.required(RESPONSE_PRIMARY_TERM).asLong());
+            entity.setSeqNo(response.required(RESPONSE_SEQ_NO).asLong());
         }
     }
 
@@ -307,8 +307,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         data);
 
         if (entityDescriptor.isVersioned()) {
-            entity.setPrimaryTerm(response.get(RESPONSE_PRIMARY_TERM).asLong());
-            entity.setSeqNo(response.get(RESPONSE_SEQ_NO).asLong());
+            entity.setPrimaryTerm(response.required(RESPONSE_PRIMARY_TERM).asLong());
+            entity.setSeqNo(response.required(RESPONSE_SEQ_NO).asLong());
         }
     }
 
@@ -536,8 +536,8 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
             result.setId(id);
 
             if (entityDescriptor.isVersioned()) {
-                result.setPrimaryTerm(data.get(RESPONSE_PRIMARY_TERM).asLong());
-                result.setSeqNo(data.get(RESPONSE_SEQ_NO).asLong());
+                result.setPrimaryTerm(data.required(RESPONSE_PRIMARY_TERM).asLong());
+                result.setSeqNo(data.required(RESPONSE_SEQ_NO).asLong());
             }
 
             return result;
@@ -569,7 +569,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                                         id.toString(),
                                                         determineRoutingForFind(id, entityDescriptor, context),
                                                         true);
-        if (jsonEntity == null || !Boolean.TRUE.equals(jsonEntity.get(RESPONSE_FOUND).asBoolean())) {
+        if (jsonEntity == null || !jsonEntity.path(RESPONSE_FOUND).asBoolean()) {
             return Optional.empty();
         }
 

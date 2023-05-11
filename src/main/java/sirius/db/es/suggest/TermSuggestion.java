@@ -33,9 +33,9 @@ public class TermSuggestion {
      */
     public TermSuggestion(ObjectNode json) {
         this.text = Json.tryValueString(json, PARAM_TEXT).orElse(null);
-        this.score = json.get(PARAM_SCORE).floatValue();
+        this.score = json.path(PARAM_SCORE).floatValue();
         this.highlighted = Json.tryValueString(json, PARAM_HIGHLIGHTED).orElse(null);
-        this.collateMatch = json.get(PARAM_COLLATE_MATCH).asBoolean();
+        this.collateMatch = json.path(PARAM_COLLATE_MATCH).asBoolean();
     }
 
     /**

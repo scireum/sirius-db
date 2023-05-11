@@ -36,8 +36,8 @@ public class TextPartSuggestion {
      */
     public TextPartSuggestion(ObjectNode json) {
         this.text = Json.tryValueString(json, PARAM_TEXT).orElse(null);
-        this.offset = json.get(PARAM_OFFSET).asInt();
-        this.length = json.get(PARAM_LENGTH).asInt();
+        this.offset = json.path(PARAM_OFFSET).asInt();
+        this.length = json.path(PARAM_LENGTH).asInt();
         this.termSuggestions = Json.streamEntries(Json.getArray(json, PARAM_OPTIONS))
                                    .map(ObjectNode.class::cast)
                                    .map(TermSuggestion::new)

@@ -63,7 +63,7 @@ public class Bucket {
      * @return the doc count
      */
     public int getDocCount() {
-        return Json.getValueAmount(data, KEY_DOC_COUNT).orElse(Amount.ZERO).intValue();
+        return data.path(KEY_DOC_COUNT).asInt();
     }
 
     /**

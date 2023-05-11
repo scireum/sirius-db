@@ -148,9 +148,9 @@ class ElasticQuerySpec extends BaseSpecification {
         def buckets = query.getRawAggregations().withArray("/test/keys/buckets")
         then:
         buckets.size() == 3
-        buckets.get(0).get("key").asText() == "1"
-        buckets.get(1).get("key").asText() == "2"
-        buckets.get(2).get("key").asText() == "test"
+        buckets.get(0).path("key").asText() == "1"
+        buckets.get(1).path("key").asText() == "2"
+        buckets.get(2).path("key").asText() == "test"
     }
 
     def "muli-level nested aggregations work"() {
@@ -174,7 +174,7 @@ class ElasticQuerySpec extends BaseSpecification {
         def buckets = query.getRawAggregations().withArray("/test/filter/keys/buckets")
         then:
         buckets.size() == 1
-        buckets.get(0).get("key").asText() == "3"
+        buckets.get(0).path("key").asText() == "3"
 
     }
 

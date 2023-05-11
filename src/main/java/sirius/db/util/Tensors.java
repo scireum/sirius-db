@@ -46,7 +46,7 @@ public class Tensors {
     public static float[] fromJSON(ArrayNode vector) {
         float[] result = new float[vector.size()];
         for (int i = 0; i < vector.size(); i++) {
-            result[i] = vector.get(i).isFloat() ? vector.get(i).floatValue() : 0;
+            result[i] = vector.path(i).floatValue();
         }
 
         return result;

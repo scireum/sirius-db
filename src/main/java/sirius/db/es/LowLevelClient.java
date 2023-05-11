@@ -290,7 +290,7 @@ public class LowLevelClient {
                     }
                 }).response();
 
-        return !response.has("notFound") && !response.get("completed").asBoolean();
+        return !response.has("notFound") && !response.required("completed").asBoolean();
     }
 
     /**

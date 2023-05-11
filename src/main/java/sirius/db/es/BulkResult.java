@@ -54,7 +54,7 @@ public class BulkResult {
      * @return <tt>true</tt> if all commands were successfully executed
      */
     public boolean isSuccessful() {
-        return bulkResponse == null || !bulkResponse.get(RESPONSE_KEY_ERRORS).asBoolean();
+        return bulkResponse == null || !bulkResponse.path(RESPONSE_KEY_ERRORS).asBoolean();
     }
 
     /**

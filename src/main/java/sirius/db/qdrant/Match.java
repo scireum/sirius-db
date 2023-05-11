@@ -28,7 +28,7 @@ public class Match {
      */
     public Match(ObjectNode match) {
         this.id = Json.tryValueString(match, "id").orElse(null);
-        this.score = match.get("score").floatValue();
+        this.score = match.path("score").floatValue();
         this.payload = Json.getObject(match, "payload");
     }
 

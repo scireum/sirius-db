@@ -972,7 +972,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         ObjectNode countResponse = client.count(computeEffectiveIndexName(elastic::determineReadAlias),
                                                 filteredRouting,
                                                 buildSimplePayload());
-        return countResponse.get(KEY_COUNT).asLong();
+        return countResponse.required(KEY_COUNT).asLong();
     }
 
     /**
@@ -1314,8 +1314,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                                   .deleteByQuery(computeEffectiveIndexName(elastic::determineWriteAlias),
                                                                  filteredRouting,
                                                                  buildSimplePayload());
-        if (Boolean.TRUE.equals(deleteByQueryResponse.get(KEY_TIMED_OUT).asBoolean())
-            || deleteByQueryResponse.get(KEY_VERSION_CONFLICTS).asInt() > 0) {
+        if (deleteByQueryResponse.path(KEY_TIMED_OUT).asBoolean()
+            || deleteByQueryResponse.path(KEY_VERSION_CONFLICTS).asInt() > 0) {
             Elastic.LOG.WARN("Truncate timed out or had version conflicts:\n" + Json.write(deleteByQueryResponse));
             throw new OptimisticLockException();
         }
