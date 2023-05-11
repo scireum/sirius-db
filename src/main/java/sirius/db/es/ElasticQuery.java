@@ -905,7 +905,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (suggesters != null && !suggesters.isEmpty()) {
-            payload.set(KEY_SUGGEST, Json.createObject().setAll(suggesters));
+            payload.set(KEY_SUGGEST, Json.convertFromMap(suggesters));
         }
 
         return payload;
