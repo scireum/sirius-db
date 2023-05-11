@@ -375,11 +375,11 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
             List<Object> orderByValuesOfLastEntity = extractOrderByValues(lastValue);
             if (!orderByValuesOfLastEntityDuringFetch.equals(orderByValuesOfLastEntity)) {
-                OMA.LOG.WARN(
-                        "Entity '%s' was changed while streaming over it. This is very likely to cause bad result sets, including infinity loops.\nPrevious values: %s\nCurrent values: %s",
+                throw new IllegalStateException(Strings.apply(
+                        "Entity '%s' was changed while streaming over it. This is very likely to cause bad result sets, including infinity loops, and is not supported.\nPrevious values: %s\nCurrent values: %s",
                         lastValue,
                         orderByValuesOfLastEntityDuringFetch,
-                        orderByValuesOfLastEntity);
+                        orderByValuesOfLastEntity));
             }
 
             SQLConstraint sortingFilterConstraint = null;
