@@ -40,7 +40,7 @@ dependencies {
 
     testImplementation("com.clickhouse:clickhouse-jdbc:0.3.2-patch11")
     // Required as the version brought by clickhouse-jdbc contains security issues
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.14.0-rc1")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind")
 }
 
 sonarqube {
