@@ -8,7 +8,7 @@
 
 package sirius.db.es.constraints;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
@@ -16,6 +16,7 @@ import sirius.db.mixing.properties.StringMapProperty;
 import sirius.db.mixing.query.QueryField;
 import sirius.db.mixing.query.constraints.CSVFilter;
 import sirius.db.mixing.query.constraints.FilterFactory;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -74,7 +75,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         return value;
     }
 
-    private ElasticConstraint wrap(JSONObject jsonObject) {
+    private ElasticConstraint wrap(ObjectNode jsonObject) {
         if (jsonObject == null) {
             return null;
         }
@@ -84,7 +85,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint eqValue(Mapping field, Object value) {
-        return wrap(new JSONObject().fluentPut("term", new JSONObject().fluentPut(field.toString(), value)));
+        return wrap(Json.createObject().set("term", Json.createObject().putPOJO(field.toString(), value)));
     }
 
     @Override
@@ -93,10 +94,10 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     }
 
     private ElasticConstraint rangeFilter(Mapping field, String bound, Object value) {
-        return wrap(new JSONObject().fluentPut("range",
-                                               new JSONObject().fluentPut(field.toString(),
-                                                                          new JSONObject().fluentPut(bound,
-                                                                                                     transform(value)))));
+        return wrap(Json.createObject()
+                        .set("range",
+                             Json.createObject()
+                                 .set(field.toString(), Json.createObject().putPOJO(bound, transform(value)))));
     }
 
     @Override
@@ -118,7 +119,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      */
     @Override
     public ElasticConstraint filled(Mapping field) {
-        return wrap(new JSONObject().fluentPut("exists", new JSONObject().fluentPut("field", field.toString())));
+        return wrap(Json.createObject().set("exists", Json.createObject().put("field", field.toString())));
     }
 
     /**
@@ -267,8 +268,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value).fluentPut(PARAM_REWRITE, TOP_TERMS_256);
-        return wrap(new JSONObject().fluentPut(PARAM_PREFIX, new JSONObject().fluentPut(field.toString(), settings)));
+        ObjectNode settings = Json.createObject().put(PARAM_VALUE, value).put(PARAM_REWRITE, TOP_TERMS_256);
+        return wrap(Json.createObject().set(PARAM_PREFIX, Json.createObject().set(field.toString(), settings)));
     }
 
     /**
@@ -285,9 +286,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut(PARAM_QUERY, value);
-        return wrap(new JSONObject().fluentPut(PARAM_MATCH_PHRASE,
-                                               new JSONObject().fluentPut(field.toString(), settings)));
+        ObjectNode settings = Json.createObject().put(PARAM_QUERY, value);
+        return wrap(Json.createObject().set(PARAM_MATCH_PHRASE, Json.createObject().set(field.toString(), settings)));
     }
 
     /**
@@ -302,8 +302,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value);
-        return wrap(new JSONObject().fluentPut(PARAM_REGEXP, new JSONObject().fluentPut(field.toString(), settings)));
+        ObjectNode settings = Json.createObject().put(PARAM_VALUE, value);
+        return wrap(Json.createObject().set(PARAM_REGEXP, Json.createObject().set(field.toString(), settings)));
     }
 
     /**
@@ -318,8 +318,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value);
-        return wrap(new JSONObject().fluentPut(PARAM_WILDCARD, new JSONObject().fluentPut(field.toString(), settings)));
+        ObjectNode settings = Json.createObject().put(PARAM_VALUE, value);
+        return wrap(Json.createObject().set(PARAM_WILDCARD, Json.createObject().set(field.toString(), settings)));
     }
 
     /**
@@ -349,16 +349,15 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
             return null;
         }
 
-        JSONObject settings = new JSONObject().fluentPut(PARAM_VALUE, value)
-                                              .fluentPut(PARAM_FUZZINESS,
-                                                         fuzziness == null ? FUZZINESS_AUTO : fuzziness)
-                                              .fluentPut(PARAM_MAX_EXPANSIONS, maxExpansions)
-                                              .fluentPut(PARAM_PREFIX_LENGTH, prefixLength)
-                                              .fluentPut(PARAM_TRANSPOSITIONS, transpositions)
-                                              .fluentPut(PARAM_REWRITE, rewrite == null ? CONSTANT_SCORE : rewrite);
-        return new ElasticConstraint(new JSONObject().fluentPut(PARAM_FUZZY,
-                                                                new JSONObject().fluentPut(field.toString(),
-                                                                                           settings)));
+        ObjectNode settings = Json.createObject()
+                                  .put(PARAM_VALUE, value)
+                                  .put(PARAM_FUZZINESS, fuzziness == null ? FUZZINESS_AUTO : fuzziness)
+                                  .put(PARAM_MAX_EXPANSIONS, maxExpansions)
+                                  .put(PARAM_PREFIX_LENGTH, prefixLength)
+                                  .put(PARAM_TRANSPOSITIONS, transpositions)
+                                  .put(PARAM_REWRITE, rewrite == null ? CONSTANT_SCORE : rewrite);
+        return new ElasticConstraint(Json.createObject()
+                                         .set(PARAM_FUZZY, Json.createObject().set(field.toString(), settings)));
     }
 
     /**
@@ -367,7 +366,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return a new match_all query.
      */
     public ElasticConstraint matchAll() {
-        return wrap(new JSONObject().fluentPut(PARAM_MATCH_ALL, new JSONObject()));
+        return wrap(Json.createObject().set(PARAM_MATCH_ALL, Json.createObject()));
     }
 
     /**
@@ -376,7 +375,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return a new match_none query.
      */
     public ElasticConstraint matchNone() {
-        return wrap(new JSONObject().fluentPut(PARAM_MATCH_NONE, new JSONObject()));
+        return wrap(Json.createObject().set(PARAM_MATCH_NONE, Json.createObject()));
     }
 
     /**
@@ -391,10 +390,10 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @see ElasticConstraint#withConstantScore(float)
      */
     public ElasticConstraint constantScore(ElasticConstraint constraint, float boost) {
-        JSONObject jsonObject = new JSONObject();
+        ObjectNode jsonObject = Json.createObject();
 
-        jsonObject.put(CONSTANT_SCORE,
-                       new JSONObject().fluentPut(PARAM_FILTER, constraint.toJSON()).fluentPut(PARAM_BOOST, boost));
+        jsonObject.set(CONSTANT_SCORE,
+                       Json.createObject().put(PARAM_BOOST, boost).set(PARAM_FILTER, constraint.toJSON()));
 
         return new ElasticConstraint(jsonObject);
     }

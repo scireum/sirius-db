@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.annotations.CustomSettings;
 import sirius.db.es.annotations.IndexMode;
 import sirius.db.es.annotations.RoutedBy;
@@ -19,6 +19,7 @@ import sirius.db.mixing.properties.BaseMapProperty;
 import sirius.db.mixing.properties.NestedListProperty;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
+import sirius.kernel.commons.Json;
 import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
@@ -238,10 +239,10 @@ public class IndexMappings implements Startable {
      * @param mode             defines the setting which should be used for dynamic mappings
      */
     public void createMapping(EntityDescriptor entityDescriptor, String indexName, DynamicMapping mode) {
-        JSONObject mapping = new JSONObject();
-        JSONObject properties = new JSONObject();
+        ObjectNode mapping = Json.createObject();
+        ObjectNode properties = Json.createObject();
         mapping.put(MAPPING_DYNAMIC, mode.toString());
-        mapping.put("properties", properties);
+        mapping.set("properties", properties);
 
         List<String> excludes = entityDescriptor.getProperties()
                                                 .stream()
@@ -250,7 +251,7 @@ public class IndexMappings implements Startable {
                                                 .toList();
 
         if (!excludes.isEmpty()) {
-            mapping.put("_source", new JSONObject().fluentPut("excludes", excludes));
+            mapping.set("_source", Json.createObject().putPOJO("excludes", excludes));
         }
 
         for (Property property : entityDescriptor.getProperties()) {
@@ -264,13 +265,13 @@ public class IndexMappings implements Startable {
                                   property.getName())
                           .handle();
             } else {
-                JSONObject propertyInfo = new JSONObject();
+                ObjectNode propertyInfo = Json.createObject();
                 esPropertyInfo.describeProperty(propertyInfo);
                 if ((property instanceof BaseMapProperty || property instanceof NestedListProperty)
                     && !esPropertyInfo.doesEnableDynamicMappings()) {
                     propertyInfo.put(MAPPING_DYNAMIC, mode.toString());
                 }
-                properties.put(property.getPropertyName(), propertyInfo);
+                properties.set(property.getPropertyName(), propertyInfo);
             }
         }
 

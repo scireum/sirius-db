@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 
@@ -33,7 +33,7 @@ public interface ESPropertyInfo {
     default void transferOption(String key,
                                 Optional<IndexMode> annotation,
                                 Function<IndexMode, ESOption> mapper,
-                                JSONObject mapping) {
+                                ObjectNode mapping) {
         ESOption option = annotation.map(mapper).orElse(ESOption.ES_DEFAULT);
 
         if (option != ESOption.ES_DEFAULT) {
@@ -56,5 +56,5 @@ public interface ESPropertyInfo {
      *
      * @param description the target JSON to fill
      */
-    void describeProperty(JSONObject description);
+    void describeProperty(ObjectNode description);
 }

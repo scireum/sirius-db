@@ -8,8 +8,9 @@
 
 package sirius.db.qdrant;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Tuple;
 
 import java.util.ArrayList;
@@ -73,39 +74,41 @@ public class Search {
      * @return the matched points ordered by relevance
      */
     public List<Match> execute(int maxResults, String... payloadFields) {
-        JSONArray payloadFieldArray = new JSONArray();
+        ArrayNode payloadFieldArray = Json.createArray();
         Arrays.stream(payloadFields).forEach(payloadFieldArray::add);
 
-        JSONObject query = new JSONObject();
-        query.put("vector", vector);
-        query.put("with_payload", payloadFieldArray);
+        ObjectNode query = Json.createObject();
+        query.putPOJO("vector", vector);
+        query.set("with_payload", payloadFieldArray);
         query.put("limit", maxResults);
 
         if (mustFilters != null || mustNotFilters != null) {
-            JSONObject filterObject = new JSONObject();
+            ObjectNode filterObject = Json.createObject();
             if (mustFilters != null) {
-                filterObject.put("must", buildConstraints(mustFilters));
+                filterObject.set("must", buildConstraints(mustFilters));
             }
             if (mustNotFilters != null) {
-                filterObject.put("must_not", buildConstraints(mustNotFilters));
+                filterObject.set("must_not", buildConstraints(mustNotFilters));
             }
         }
 
-        JSONObject response = qdrantDatabase.execute(QdrantDatabase.Method.POST,
+        ObjectNode response = qdrantDatabase.execute(QdrantDatabase.Method.POST,
                                                      QdrantDatabase.URI_PREFIX_COLLECTIONS
                                                      + collection
                                                      + "/points/search",
                                                      query);
-        JSONArray points = response.getJSONArray("result");
-        return points.stream().map(JSONObject.class::cast).map(Match::new).toList();
+        return Json.streamEntries(Json.getArray(response, "result"))
+                   .map(ObjectNode.class::cast)
+                   .map(Match::new)
+                   .toList();
     }
 
-    private JSONArray buildConstraints(List<Tuple<String, Object>> filters) {
-        JSONArray result = new JSONArray();
+    private ArrayNode buildConstraints(List<Tuple<String, Object>> filters) {
+        ArrayNode result = Json.createArray();
         filters.stream().map(filter -> {
-            JSONObject filterJson = new JSONObject();
+            ObjectNode filterJson = Json.createObject();
             filterJson.put("key", filter.getFirst());
-            filterJson.put("match", new JSONObject().fluentPut("value", filter.getSecond()));
+            filterJson.set("match", Json.createObject().putPOJO("value", filter.getSecond()));
             return filterJson;
         }).forEach(result::add);
 

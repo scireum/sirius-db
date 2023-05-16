@@ -8,13 +8,14 @@
 
 package sirius.db.es
 
-import com.alibaba.fastjson.JSONObject
+
 import org.junit.jupiter.api.Tag
 import sirius.db.es.constraints.BoolQueryBuilder
 
 import sirius.db.es.suggest.SuggesterBuilder
 import sirius.kernel.BaseSpecification
 import sirius.kernel.Tags
+import sirius.kernel.commons.Json
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
@@ -113,12 +114,12 @@ class SuggestSpec extends BaseSpecification {
             elastic.update(entity3)
         }
         and:
-        def matchPhrase = new JSONObject().fluentPut("match",
-                                                     new JSONObject().fluentPut(SuggestTestEntity.CONTENT.getName(),
-                                                                                new JSONObject().fluentPut("query",
-                                                                                                           "{{suggestion}}")
-                                                                                                .fluentPut("operator",
-                                                                                                           "and")))
+        def matchPhrase = Json.createObject().set("match",
+                                                  Json.createObject().set(SuggestTestEntity.CONTENT.getName(),
+                                                                          Json.createObject().put("query",
+                                                                                                  "{{suggestion}}")
+                                                                              .put("operator",
+                                                                                   "and")))
 
         def matchShop = Elastic.FILTERS.eq(SuggestTestEntity.SHOP, 1)
 
