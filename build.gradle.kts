@@ -34,8 +34,6 @@ dependencies {
     // Required as the version brought by elasticsearch-rest-client contains security issues
     api("org.apache.httpcomponents:httpclient:4.5.13")
 
-    api("com.alibaba:fastjson:1.2.83")
-
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.0.6")
 
     testImplementation("com.clickhouse:clickhouse-jdbc:0.3.2-patch11")
