@@ -190,7 +190,22 @@ public abstract class Property extends Composable {
      * for primitive types).
      */
     protected void determineNullability() {
-        this.nullable = !field.getType().isPrimitive() && field.isAnnotationPresent(NullAllowed.class);
+        this.nullable = !field.getType().isPrimitive() && checkNullabilityAnnotation();
+    }
+
+    private boolean checkNullabilityAnnotation() {
+        if (Arrays.stream(field.getDeclaredAnnotations())
+                  .map(Annotation::annotationType)
+                  .map(Class::getSimpleName)
+                  .anyMatch("Nullable"::equals)) {
+            Mixing.LOG.WARN(
+                    "A @Nullable annotation was detected on field %s of entity %s. This is most likely a mistake. Please use @NullAllowed instead.",
+                    field.getName(),
+                    field.getDeclaringClass().getName());
+            // We warn about this, but we still accept it, because the intent of the annotation usage is clear.
+            return true;
+        }
+        return field.isAnnotationPresent(NullAllowed.class);
     }
 
     /**
