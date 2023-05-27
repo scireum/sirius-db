@@ -23,8 +23,6 @@ dependencies {
         }
     }
 
-    api("com.scireum:parsii:5.0.1")
-
     api("org.apache.commons:commons-dbcp2:2.9.0")
 
     api("org.mongodb:mongodb-driver-sync:4.7.1")
