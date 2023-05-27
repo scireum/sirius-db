@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run sirius-db" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="sirius.kernel.Setup"/>
+    <module name="sirius-db.main"/>
+    <option name="PROGRAM_PARAMETERS" value="-Xmx=1G" />
+    <method v="2">
+      <option name="Make" enabled="true"/>
+    </method>
+  </configuration>
+</component>
