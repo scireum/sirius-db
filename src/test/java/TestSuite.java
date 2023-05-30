@@ -21,14 +21,4 @@ import sirius.kernel.TestHelper;
 @RunWith(ScenarioSuite.class)
 @SuiteClasses("**/*Spec.class")
 public class TestSuite {
-
-    @BeforeClass
-    public static void setUp() {
-        TestHelper.setUp(TestSuite.class);
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        TestHelper.tearDown(TestSuite.class);
-    }
 }
