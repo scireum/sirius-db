@@ -10,7 +10,7 @@ plugins {
     id("java-library")
     id("com.scireum.sirius-parent") version "11.0.6"
     id("org.sonarqube") version "3.4.0.2513"
-    id("io.github.joselion.pretty-jupiter") version "2.2.0"
+    id("com.adarshr.test-logger") version "3.2.0"
 }
 
 apply(plugin = "com.scireum.sirius-parent")
@@ -44,4 +44,10 @@ sonarqube {
     properties {
         property("sonar.sourceEncoding", "UTF-8")
     }
+}
+
+testlogger {
+    showSimpleNames = true
+    showStandardStreams = true
+    slowThreshold = 2000
 }
