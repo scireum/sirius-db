@@ -34,7 +34,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -319,10 +318,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param additionalEntitiesToQuery the additional entities to be queried
      * @return the query itself for fluent method calls
      */
-    @SafeVarargs
-    public final ElasticQuery<E> withAdditionalIndices(Class<? extends ElasticEntity>... additionalEntitiesToQuery) {
-        this.additionalDescriptors =
-                Arrays.stream(additionalEntitiesToQuery).map(type -> mixing.getDescriptor(type)).toList();
+    protected final ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
+        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
 
         return this;
     }
@@ -1054,11 +1051,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                       skip,
                                       limit,
                                       buildPayload());
-        for (JsonNode obj : Json.getArrayAt(this.response, HITS_POINTER)) {
-            if (!handler.test((E) Elastic.make(descriptor, (ObjectNode) obj))) {
+        for (JsonNode jsonEntity : Json.getArrayAt(this.response, HITS_POINTER)) {
+            if (!handler.test((E) extractEntity(jsonEntity))) {
                 return;
             }
         }
+    }
+
+    private ElasticEntity extractEntity(JsonNode jsonEntity) {
+        // This is the most common use case, so we handle it first...
+        if (additionalDescriptors == null || additionalDescriptors.isEmpty()) {
+            return Elastic.make(descriptor, (ObjectNode) jsonEntity);
+        }
+
+        String indexName = jsonEntity.get("_index").asText(null);
+        return additionalDescriptors.stream()
+                                    .filter(additionalDescriptor -> additionalDescriptor.getRelationName()
+                                                                                        .equals(indexName))
+                                    .findFirst()
+                                    .map(matchingDescriptor -> Elastic.make(matchingDescriptor,
+                                                                            (ObjectNode) jsonEntity))
+                                    .orElseGet(() -> Elastic.make(descriptor, (ObjectNode) jsonEntity));
     }
 
     /**

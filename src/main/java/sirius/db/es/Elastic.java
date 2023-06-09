@@ -703,6 +703,23 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
+     * Creates a new query which can be used to fetch entities of the given types.
+     * <p>
+     * Note: All entities to query across must extend a common super class.
+     *
+     * @param commonSuperClass the common super class of all entities to query across
+     * @param types            the types of the entities to query across
+     * @param <E>              the generic common type of the entities to query across
+     * @return a new query which can be used to fetch entities of the given types
+     */
+    @SafeVarargs
+    public final <E extends ElasticEntity> ElasticQuery<E> selectMultiple(Class<E> commonSuperClass,
+                                                                          Class<? extends E>... types) {
+        return new ElasticQuery<E>(mixing.getDescriptor(types[0]),
+                                   getLowLevelClient()).withAdditionalIndices(Arrays.stream(types).skip(1));
+    }
+
+    /**
      * Creates a new suggestion query.
      * <p>
      * A suggestion query can be used to generate term or phrase suggestions for a given input text.
