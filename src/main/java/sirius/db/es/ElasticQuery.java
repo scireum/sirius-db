@@ -1051,28 +1051,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                       skip,
                                       limit,
                                       buildPayload());
-        for (JsonNode obj : Json.getArrayAt(this.response, HITS_POINTER)) {
-            // This is the most common use case, so we handle it first...
-            if (additionalDescriptors == null || additionalDescriptors.isEmpty()) {
-                ElasticEntity entity = Elastic.make(descriptor, (ObjectNode) obj);
-                if (!handler.test((E) entity)) {
-                    return;
-                }
-            } else {
-                String indexName = obj.get("_index").asText(null);
-                ElasticEntity entity = additionalDescriptors.stream()
-                                                            .filter(additionalDescriptor -> additionalDescriptor.getRelationName()
-                                                                                                                .equals(indexName))
-                                                            .findFirst()
-                                                            .map(matchingDescriptor -> Elastic.make(matchingDescriptor,
-                                                                                                    (ObjectNode) obj))
-                                                            .orElseGet(() -> Elastic.make(descriptor,
-                                                                                          (ObjectNode) obj));
-                if (!handler.test((E) entity)) {
-                    return;
-                }
+        for (JsonNode jsonEntity : Json.getArrayAt(this.response, HITS_POINTER)) {
+            if (!handler.test((E) extractEntity(jsonEntity))) {
+                return;
             }
         }
+    }
+
+    private ElasticEntity extractEntity(JsonNode jsonEntity) {
+        // This is the most common use case, so we handle it first...
+        if (additionalDescriptors == null || additionalDescriptors.isEmpty()) {
+            return Elastic.make(descriptor, (ObjectNode) jsonEntity);
+        }
+
+        String indexName = jsonEntity.get("_index").asText(null);
+        return additionalDescriptors.stream()
+                                    .filter(additionalDescriptor -> additionalDescriptor.getRelationName()
+                                                                                        .equals(indexName))
+                                    .findFirst()
+                                    .map(matchingDescriptor -> Elastic.make(matchingDescriptor,
+                                                                            (ObjectNode) jsonEntity))
+                                    .orElseGet(() -> Elastic.make(descriptor, (ObjectNode) jsonEntity));
     }
 
     /**
