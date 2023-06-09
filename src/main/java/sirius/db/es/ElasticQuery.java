@@ -34,7 +34,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -1053,8 +1052,25 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                       limit,
                                       buildPayload());
         for (JsonNode obj : Json.getArrayAt(this.response, HITS_POINTER)) {
-            if (!handler.test((E) Elastic.make(descriptor, (ObjectNode) obj))) {
-                return;
+            // This is the mist common use case, so we handle it first...
+            if (additionalDescriptors == null || additionalDescriptors.isEmpty()) {
+                ElasticEntity entity = Elastic.make(descriptor, (ObjectNode) obj);
+                if (!handler.test((E) entity)) {
+                    return;
+                }
+            } else {
+                String indexName = obj.get("_index").asText(null);
+                ElasticEntity entity = additionalDescriptors.stream()
+                                                            .filter(additionalDescriptor -> additionalDescriptor.getRelationName()
+                                                                                                                .equals(indexName))
+                                                            .findFirst()
+                                                            .map(matchingDescriptor -> Elastic.make(matchingDescriptor,
+                                                                                                    (ObjectNode) obj))
+                                                            .orElseGet(() -> Elastic.make(descriptor,
+                                                                                          (ObjectNode) obj));
+                if (!handler.test((E) entity)) {
+                    return;
+                }
             }
         }
     }
