@@ -319,10 +319,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param additionalEntitiesToQuery the additional entities to be queried
      * @return the query itself for fluent method calls
      */
-    @SafeVarargs
-    public final ElasticQuery<E> withAdditionalIndices(Class<? extends ElasticEntity>... additionalEntitiesToQuery) {
-        this.additionalDescriptors =
-                Arrays.stream(additionalEntitiesToQuery).map(type -> mixing.getDescriptor(type)).toList();
+    protected final ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
+        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
 
         return this;
     }
