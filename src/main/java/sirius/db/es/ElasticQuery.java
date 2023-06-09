@@ -1052,7 +1052,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                                       limit,
                                       buildPayload());
         for (JsonNode obj : Json.getArrayAt(this.response, HITS_POINTER)) {
-            // This is the mist common use case, so we handle it first...
+            // This is the most common use case, so we handle it first...
             if (additionalDescriptors == null || additionalDescriptors.isEmpty()) {
                 ElasticEntity entity = Elastic.make(descriptor, (ObjectNode) obj);
                 if (!handler.test((E) entity)) {
