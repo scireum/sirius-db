@@ -224,6 +224,8 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
 
     /**
      * Performs the lookup of the entity with the given id using a secondary node of a DB cluster.
+     * <p>
+     * DBs not supporting this falls back to {@link #find(Class, Serializable)}.
      *
      * @param type the type to search for
      * @param id   the id to lookup
