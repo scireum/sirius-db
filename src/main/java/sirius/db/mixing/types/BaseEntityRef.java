@@ -204,6 +204,15 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     protected abstract Optional<E> find(Class<E> type, I id);
 
     /**
+     * Performs the lookup of the entity with the given id using a secondary node of a DB cluster.
+     *
+     * @param type the type to search for
+     * @param id   the id to lookup
+     * @return the matching entity wrapped as optional or an empty optional of the entity doesn't exist
+     */
+    protected abstract Optional<E> findInSecondary(Class<E> type, I id);
+
+    /**
      * Sets the entity being referenced.
      *
      * @param value the entity being referenced or <tt>null</tt> if no entity is referenced.

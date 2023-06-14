@@ -84,6 +84,11 @@ public class SQLEntityRef<E extends SQLEntity> extends BaseEntityRef<Long, E> {
     }
 
     @Override
+    protected Optional<E> findInSecondary(Class<E> type, Long id) {
+        return oma.findInSecondary(type, id);
+    }
+
+    @Override
     protected Long coerceToId(Object id) {
         try {
             if (id instanceof Long number) {
