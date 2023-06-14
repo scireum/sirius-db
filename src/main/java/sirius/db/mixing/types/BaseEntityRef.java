@@ -169,15 +169,18 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
      */
     public E fetchValue() {
-        if (value == null && id != null) {
-            Optional<E> entity = find(type, id);
-            if (entity.isPresent()) {
-                value = entity.get();
-            } else {
-                id = null;
-            }
-        }
-        return value;
+        return fetchValue(false);
+    }
+
+    /**
+     * Returns the effective entity object which is referenced using a secondary node of a DB cluster.
+     * <p>
+     * Note, this might cause a database lookup if the entity is not prefetched.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E fetchValueFromSecondary() {
+        return fetchValue(true);
     }
 
     /**
@@ -301,5 +304,17 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
         } else {
             return "(empty)";
         }
+    }
+
+    private E fetchValue(boolean useSecondary) {
+        if (value == null && id != null) {
+            Optional<E> entity = useSecondary ? findInSecondary(type, id) : find(type, id);
+            if (entity.isPresent()) {
+                value = entity.get();
+            } else {
+                id = null;
+            }
+        }
+        return value;
     }
 }
