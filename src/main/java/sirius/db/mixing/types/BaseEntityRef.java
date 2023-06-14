@@ -190,11 +190,7 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     public E fetchValueFromSecondary() {
         if (value == null && id != null) {
             Optional<E> entity = findInSecondary(type, id);
-            if (entity.isPresent()) {
-                return entity.get();
-            } else {
-                id = null;
-            }
+            return entity.orElse(null);
         }
         return value;
     }
