@@ -181,6 +181,21 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     }
 
     /**
+     * Returns the effective entity object which is referenced using a secondary node of a DB cluster.
+     * <p>
+     * Note, this values returned by this method will never be cached and a new lookup is always performed.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E fetchValueFromSecondary() {
+        if (value == null && id != null) {
+            Optional<E> entity = findInSecondary(type, id);
+            return entity.orElse(null);
+        }
+        return value;
+    }
+
+    /**
      * Returns the effective entity object which has been referenced, if it was loaded from the database.
      * <p>
      * Note that this will not perform a database lookup but only return the entity if is was already
@@ -202,6 +217,17 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * @return the matching entity wrapped as optional or an empty optional of the entity doesn't exist
      */
     protected abstract Optional<E> find(Class<E> type, I id);
+
+    /**
+     * Performs the lookup of the entity with the given id using a secondary node of a DB cluster.
+     * <p>
+     * DBs not supporting this falls back to {@link #find(Class, Serializable)}.
+     *
+     * @param type the type to search for
+     * @param id   the id to lookup
+     * @return the matching entity wrapped as optional or an empty optional of the entity doesn't exist
+     */
+    protected abstract Optional<E> findInSecondary(Class<E> type, I id);
 
     /**
      * Sets the entity being referenced.

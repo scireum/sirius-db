@@ -69,6 +69,11 @@ public class MongoRef<E extends MongoEntity> extends BaseEntityRef<String, E> {
     }
 
     @Override
+    protected Optional<E> findInSecondary(Class<E> type, String id) {
+        return mango.findInSecondary(type, id);
+    }
+
+    @Override
     protected String coerceToId(Object id) {
         return id.toString();
     }
