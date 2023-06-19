@@ -8,7 +8,6 @@
 
 package sirius.db.mixing.query;
 
-import parsii.tokenizer.LookaheadReader;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
@@ -26,6 +25,7 @@ import sirius.kernel.commons.Value;
 import sirius.kernel.di.GlobalContext;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
+import sirius.kernel.tokenizer.LookaheadReader;
 
 import javax.annotation.Nullable;
 import java.io.StringReader;
