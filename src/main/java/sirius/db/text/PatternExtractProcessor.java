@@ -8,6 +8,8 @@
 
 package sirius.db.text;
 
+import sirius.kernel.commons.Explain;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -19,7 +21,9 @@ import java.util.stream.Stream;
  */
 public class PatternExtractProcessor extends ChainableTokenProcessor {
 
-    private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}.+)@(.+)$");
+    @SuppressWarnings("java:S5852")
+    @Explain("This regex cannot cause catastrophic backtracking.")
+    private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}[^@]+)@(.+)$");
 
     private static class ReplacementPattern {
         int groupIndex = -1;
