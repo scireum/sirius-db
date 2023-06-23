@@ -705,30 +705,37 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Creates a new query which can be used to fetch entities of the given types.
      * <p>
-     * Note: All entities to query across must extend a common super class.
+     * Note: All entities to query across must extend a common super class. But also note, that the
+     * <tt>commonSuperClass</tt> itself is not queried (as it might be an abstract type). All indices to query must
+     * be listed in <tt>type</tt>.
      *
      * @param commonSuperClass the common super class of all entities to query across
      * @param types            the types of the entities to query across
      * @param <E>              the generic common type of the entities to query across
      * @return a new query which can be used to fetch entities of the given types
      */
+    @SuppressWarnings("java:S1172")
+    @Explain("We only need this parameter to make the compiler enforce proper type rules.")
     @SafeVarargs
     public final <E extends ElasticEntity> ElasticQuery<E> selectMultiple(Class<E> commonSuperClass,
                                                                           Class<? extends E>... types) {
-        return new ElasticQuery<E>(mixing.getDescriptor(types[0]),
-                                   getLowLevelClient()).withAdditionalIndices(Arrays.stream(types).skip(1));
+        return selectMultiple(commonSuperClass, Arrays.asList(types));
     }
 
     /**
      * Creates a new query which can be used to fetch entities of the given types.
      * <p>
-     * Note: All entities to query across must extend a common super class.
+     * Note: All entities to query across must extend a common super class. But also note, that the
+     * <tt>commonSuperClass</tt> itself is not queried (as it might be an abstract type). All indices to query must
+     * be listed in <tt>type</tt>.
      *
      * @param commonSuperClass the common super class of all entities to query across
      * @param types            the types of the entities to query across
      * @param <E>              the generic common type of the entities to query across
      * @return a new query which can be used to fetch entities of the given types
      */
+    @SuppressWarnings("java:S1172")
+    @Explain("We only need this parameter to make the compiler enforce proper type rules.")
     public final <E extends ElasticEntity> ElasticQuery<E> selectMultiple(Class<E> commonSuperClass,
                                                                           List<Class<? extends E>> types) {
         return new ElasticQuery<E>(mixing.getDescriptor(types.get(0)),

@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc.constraints;
 
-import sirius.db.jdbc.Databases;
 import sirius.db.jdbc.SQLEntity;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;

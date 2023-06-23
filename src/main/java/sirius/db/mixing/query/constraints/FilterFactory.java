@@ -177,7 +177,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param orEqual if <tt>true</tt>, <tt>field &gt;= value</tt> is used as comparator
      * @return the generated constraint
      */
-    @Nonnull
+    @Nullable
     protected abstract C gtValue(Mapping field, @Nonnull Object value, boolean orEqual);
 
     /**
@@ -264,7 +264,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param orEqual if <tt>true</tt>, <tt>field &lt;= value</tt> is used as comparator
      * @return the generated constraint
      */
-    @Nonnull
+    @Nullable
     protected abstract C ltValue(Mapping field, @Nonnull Object value, boolean orEqual);
 
     /**
@@ -376,7 +376,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param constraint the constraint to invert
      * @return the inverted constraint
      */
-    @Nonnull
+    @Nullable
     protected abstract C invert(@Nonnull C constraint);
 
     /**
@@ -416,7 +416,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param effectiveConstraints the constraints to combine (where each value will be non-null)
      * @return the combined constraint
      */
-    @Nonnull
+    @Nullable
     protected abstract C effectiveAnd(List<C> effectiveConstraints);
 
     /**
@@ -456,7 +456,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param effectiveConstraints the constraints to combine (where each value will be non-null)
      * @return the combined constraint
      */
-    @Nonnull
+    @Nullable
     protected abstract C effectiveOr(List<C> effectiveConstraints);
 
     /**

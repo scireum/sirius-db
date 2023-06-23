@@ -9,7 +9,6 @@
 package sirius.db.es;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 
