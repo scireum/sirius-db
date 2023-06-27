@@ -97,8 +97,8 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.refresh(QueryTestEntity.class)
         def entities = elastic.select(QueryTestEntity.class)
                               .eq(QueryTestEntity.VALUE, "SORT")
-                              .order(SortBuilder.on(QueryTestEntity.COUNTER)
-                                                .order(SortBuilder.Order.DESC))
+                              .orderBy(SortBuilder.on(QueryTestEntity.COUNTER)
+                                                  .order(SortBuilder.Order.DESC))
                               .queryList()
         then:
         entities.size() == 100
