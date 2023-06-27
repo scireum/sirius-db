@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 
@@ -121,10 +120,10 @@ public class AggregationBuilder {
     private static final String MIN_DOC_COUNT = "min_doc_count";
     private static final String AFTER = "after";
 
-    private String name;
-    private String type;
+    private final String name;
+    private final String type;
     private ObjectNode body = Json.createObject();
-    private String path;
+    private final String path;
     private List<AggregationBuilder> subAggregations;
     private List<AggregationBuilder> sourceAggregations;
 
@@ -298,8 +297,6 @@ public class AggregationBuilder {
      * @param body the body to use
      * @return the builder itself for fluent method calls
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("We do not create an extra copy here for performance reasons, as the scope is quite limited")
     public AggregationBuilder withBody(ObjectNode body) {
         this.body = body;
         return this;
