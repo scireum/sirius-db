@@ -23,7 +23,6 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Strings;
@@ -1199,8 +1198,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the response as JSON
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public ObjectNode getRawResponse() {
         if (response == null) {
             if (accessBlockWise()) {
