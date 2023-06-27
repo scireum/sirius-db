@@ -97,6 +97,14 @@ public class AggregationBuilder {
     public static final String VALUE_COUNT = "value_count";
 
     /**
+     * Type string for bucket sort aggregations.
+     *
+     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-pipeline-bucket-sort-aggregation.html">
+     * ElasticSearch reference page for bucket sort aggregations</a>
+     */
+    public static final String BUCKET_SORT = "bucket_sort";
+
+    /**
      * Type string for composite aggregations
      *
      * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html">
@@ -176,6 +184,16 @@ public class AggregationBuilder {
      */
     public static AggregationBuilder createValueCount(String name, Mapping field) {
         return new AggregationBuilder(VALUE_COUNT, null, name).field(field);
+    }
+
+    /**
+     * Creates a bucket sort aggregation builder.
+     *
+     * @param name the name of the aggregation
+     * @return the builder itself for fluent method calls
+     */
+    public static AggregationBuilder createBucketSort(String name, boolean asc) {
+        return new AggregationBuilder(BUCKET_SORT, null, name).field(field);
     }
 
     /**

@@ -14,7 +14,7 @@ import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Json;
 
 /**
- * Helper class which generates sorts for elasticsearch which can be used via {@link ElasticQuery#sort(SortBuilder)}.
+ * Helper class which generates sorts for elasticsearch which can be used via {@link ElasticQuery#order(SortBuilder)}.
  */
 public class SortBuilder {
 

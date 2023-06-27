@@ -575,9 +575,46 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param sortBuilder a sort builder
      * @return the query itself for fluent method calls
+     * @deprecated use {@link #orderBy(SortBuilder)} instead
      */
+    @Deprecated(forRemoval = true)
     public ElasticQuery<E> sort(SortBuilder sortBuilder) {
-        return sort(sortBuilder.build());
+        return orderBy(sortBuilder.build());
+    }
+
+    /**
+     * Adds a sort statement to the query.
+     *
+     * @param sortSpec a JSON object describing a sort requirement
+     * @return the query itself for fluent method calls
+     * @deprecated use {@link #orderBy(ObjectNode)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ElasticQuery<E> sort(ObjectNode sortSpec) {
+        return orderBy(sortSpec);
+    }
+
+    /**
+     * Adds a sort statement for the given field to the query.
+     *
+     * @param field    the field to sort by
+     * @param sortSpec a JSON object describing a sort requirement
+     * @return the query itself for fluent method calls
+     * @deprecated use {@link #orderBy(Mapping, ObjectNode)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ElasticQuery<E> sort(Mapping field, ObjectNode sortSpec) {
+        return orderBy(Json.createObject().set(field.toString(), sortSpec));
+    }
+
+    /**
+     * Adds a sort statement to the query.
+     *
+     * @param sortBuilder a sort builder
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderBy(SortBuilder sortBuilder) {
+        return orderBy(sortBuilder.build());
     }
 
     /**
@@ -586,7 +623,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> sort(ObjectNode sortSpec) {
+    public ElasticQuery<E> orderBy(ObjectNode sortSpec) {
         this.sorts = autoinit(this.sorts);
         sorts.add(sortSpec);
         return this;
@@ -599,8 +636,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> sort(Mapping field, ObjectNode sortSpec) {
-        return sort(Json.createObject().set(field.toString(), sortSpec));
+    public ElasticQuery<E> orderBy(Mapping field, ObjectNode sortSpec) {
+        return orderBy(Json.createObject().set(field.toString(), sortSpec));
     }
 
     /**
@@ -611,7 +648,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderAsc(Mapping field) {
-        return sort(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
+        return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
     }
 
     /**
@@ -622,7 +659,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderDesc(Mapping field) {
-        return sort(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
+        return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
     }
 
     /**
