@@ -17,6 +17,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.db.mongo.Mango;
 import sirius.db.mongo.types.MultiPointLocation;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Permits to store a {@link MultiPointLocation} as location aware "MultiPoint" in MongoDB.
@@ -91,8 +93,9 @@ public class MultiPointLocationProperty extends Property {
         return new Document().append("type", "MultiPoint").append("coordinates", locationList);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "java:S6204"})
     @Override
+    @Explain("The raw value returned here will be re-used within MultiPointLocation and is thus expected to be mutable.")
     public Object transformFromDatasource(Class<? extends BaseMapper<?, ?, ?>> mapperType, Value object) {
         if (mapperType != Mango.class) {
             throw new UnsupportedOperationException(
@@ -104,7 +107,7 @@ public class MultiPointLocationProperty extends Property {
             if (coordinates instanceof List<?>) {
                 return ((List<List<Double>>) coordinates).stream()
                                                          .map(entry -> Tuple.create(entry.get(0), entry.get(1)))
-                                                         .toList();
+                                                         .collect(Collectors.toList());
             }
         }
 
