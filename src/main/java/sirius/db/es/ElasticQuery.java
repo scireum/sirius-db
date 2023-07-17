@@ -205,6 +205,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
+         * Provides a second level of collapsing for the inner hits by the given field.
+         *
+         * @param field the field to collapse inner hits by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder collapseInnerHitsBy(String field) {
+            this.json.putPOJO(KEY_COLLAPSE, Json.createObject().put(KEY_FIELD, field));
+            return this;
+        }
+
+        /**
+         * Provides a second level of collapsing for the inner hits by the given field.
+         *
+         * @param field the field to collapse inner hits by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder collapseInnerHitsBy(Mapping field) {
+            return collapseInnerHitsBy(field.getName());
+        }
+
+        /**
          * Adds a parameter to the inner hit.
          *
          * @param name  the name of the parameter
