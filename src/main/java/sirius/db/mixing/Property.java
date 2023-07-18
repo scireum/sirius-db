@@ -14,10 +14,13 @@ import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Unique;
+import sirius.db.mixing.annotations.ValidatedBy;
 import sirius.db.mongo.Mango;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
+import sirius.kernel.di.GlobalContext;
+import sirius.kernel.di.std.Part;
 import sirius.kernel.di.transformers.Composable;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -38,6 +41,9 @@ import java.util.function.Consumer;
  * It is also responsible for checking the consistency of this field.
  */
 public abstract class Property extends Composable {
+
+    @Part
+    private static GlobalContext globalContext;
 
     /**
      * Contains the effective property name. If the field, for which this property was created, resides
@@ -129,6 +135,8 @@ public abstract class Property extends Composable {
      */
     protected boolean nullable;
 
+    protected PropertyValidator propertyValidator;
+
     /**
      * Creates a new property for the given descriptor, access path and field.
      *
@@ -156,6 +164,7 @@ public abstract class Property extends Composable {
         determineNullability();
         determineLengths();
         determineDefaultValue();
+        determinePropertyValidator();
     }
 
     /**
@@ -191,6 +200,24 @@ public abstract class Property extends Composable {
      */
     protected void determineNullability() {
         this.nullable = !field.getType().isPrimitive() && checkNullabilityAnnotation();
+    }
+
+    /**
+     * Determines the property validator by checking for a {@link PropertyValidator} annotation on the field.
+     */
+    protected void determinePropertyValidator() {
+        if (field.isAnnotationPresent(ValidatedBy.class)) {
+            PropertyValidator validator = globalContext.getPartByType(PropertyValidator.class,
+                                                                      field.getAnnotation(ValidatedBy.class).value());
+            if (validator == null) {
+                Mixing.LOG.WARN("Cannot find validator: %s for field: %s in class: %s",
+                                field.getAnnotation(ValidatedBy.class).value(),
+                                field.getName(),
+                                field.getDeclaringClass().getName());
+            } else {
+                this.propertyValidator = validator;
+            }
+        }
     }
 
     private boolean checkNullabilityAnnotation() {
@@ -689,6 +716,10 @@ public abstract class Property extends Composable {
         Object propertyValue = getValue(entity);
         checkNullability(propertyValue);
 
+        if (propertyValidator != null) {
+            propertyValidator.beforeSave(getValue(entity));
+        }
+
         if (entity instanceof BaseEntity<?> && (((BaseEntity<?>) entity).isNew() || ((BaseEntity<?>) entity).isChanged(
                 nameAsMapping))) {
             // Only enforce uniqueness if the value actually changed...
@@ -705,7 +736,9 @@ public abstract class Property extends Composable {
      * @param validationConsumer the consumer collecting the validation messages
      */
     protected void onValidate(Object entity, Consumer<String> validationConsumer) {
-        // this method does nothing by default
+        if (propertyValidator != null) {
+            propertyValidator.validate(getValue(entity), validationConsumer);
+        }
     }
 
     /**
