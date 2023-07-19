@@ -33,6 +33,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -205,6 +206,27 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
+         * Provides a second level of collapsing for the inner hits by the given field.
+         *
+         * @param field the field to collapse inner hits by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder collapseInnerHitsBy(String field) {
+            this.json.putPOJO(KEY_COLLAPSE, Json.createObject().put(KEY_FIELD, field));
+            return this;
+        }
+
+        /**
+         * Provides a second level of collapsing for the inner hits by the given field.
+         *
+         * @param field the field to collapse inner hits by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder collapseInnerHitsBy(Mapping field) {
+            return collapseInnerHitsBy(field.getName());
+        }
+
+        /**
          * Adds a parameter to the inner hit.
          *
          * @param name  the name of the parameter
@@ -306,6 +328,12 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return list;
     }
 
+    protected ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
+        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
+
+        return this;
+    }
+
     /**
      * Spans the query over the given additional indices.
      * <p>
@@ -317,10 +345,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param additionalEntitiesToQuery the additional entities to be queried
      * @return the query itself for fluent method calls
      */
-    protected final ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
-        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
-
-        return this;
+    @SafeVarargs
+    public final ElasticQuery<E> withAdditionalIndices(Class<? extends E>... additionalEntitiesToQuery) {
+        return withAdditionalIndices(Arrays.stream(additionalEntitiesToQuery));
     }
 
     /**
