@@ -33,7 +33,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -328,12 +327,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         return list;
     }
 
-    protected ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
-        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
-
-        return this;
-    }
-
     /**
      * Spans the query over the given additional indices.
      * <p>
@@ -345,9 +338,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param additionalEntitiesToQuery the additional entities to be queried
      * @return the query itself for fluent method calls
      */
-    @SafeVarargs
-    public final ElasticQuery<E> withAdditionalIndices(Class<? extends E>... additionalEntitiesToQuery) {
-        return withAdditionalIndices(Arrays.stream(additionalEntitiesToQuery));
+    public ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
+        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
+
+        return this;
     }
 
     /**
