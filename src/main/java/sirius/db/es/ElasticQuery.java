@@ -1057,6 +1057,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     private String checkRouting(Elastic.RoutingAccessMode accessMode) {
+        if (descriptor == null) {
+            throw new IllegalStateException("No descriptor present! Use withEffectiveIndices for multi-index queries started via Elastic.selectMultiple()!");
+        }
+
         String filteredRouting = filterRouting(accessMode);
 
         if (elastic.isRouted(descriptor, accessMode)) {
