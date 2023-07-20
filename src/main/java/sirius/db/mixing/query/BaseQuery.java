@@ -76,7 +76,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
     /**
      * Contains the descriptor of the entities being queried.
      */
-    protected final EntityDescriptor descriptor;
+    protected EntityDescriptor descriptor;
 
     /**
      * Creates a new query for entities of the given type.

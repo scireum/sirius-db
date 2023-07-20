@@ -328,18 +328,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Spans the query over the given additional indices.
+     * Spans the query over the given indices.
      * <p>
-     * Note that the given indices are added to the main index / descriptor which is already present. Also, not
+     * Note that the given indices replace the main index / descriptor which is already present. Also, not
      * that all settings (most notably routing) are determined by looking at the main descriptor. Therefore, all
      * additional descriptors must share the same settings. Also note, that all entities / descriptors must share
      * the fields being queried / aggregated for this to make sense.
      *
-     * @param additionalEntitiesToQuery the additional entities to be queried
+     * @param entitiesToQuery the entities to be queried
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
-        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
+    public ElasticQuery<E> withEffectiveIndices(List<Class<? extends E>> entitiesToQuery) {
+        this.descriptor = mixing.getDescriptor(entitiesToQuery.get(0));
+        this.additionalDescriptors = entitiesToQuery.stream().skip(1).map(type -> mixing.getDescriptor(type)).toList();
 
         return this;
     }
@@ -1056,6 +1057,10 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     private String checkRouting(Elastic.RoutingAccessMode accessMode) {
+        if (descriptor == null) {
+            throw new IllegalStateException("No descriptor present! Use withEffectiveIndices for multi-index queries started via Elastic.selectMultiple()!");
+        }
+
         String filteredRouting = filterRouting(accessMode);
 
         if (elastic.isRouted(descriptor, accessMode)) {
