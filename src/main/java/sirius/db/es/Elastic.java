@@ -715,7 +715,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     @SafeVarargs
     @SuppressWarnings("java:S1172")
-    @Explain("We only need to type for the compiler to enforce type safety.")
+    @Explain("We only need the type for the compiler to enforce type safety.")
     public final <E extends ElasticEntity> ElasticQuery<E> selectMultiple(Class<E> commonSuperClass,
                                                                           Class<? extends E>... types) {
         ElasticQuery<E> query = new ElasticQuery<>(null, getLowLevelClient());
