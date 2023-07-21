@@ -165,18 +165,49 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
+         * Adds a sort statement to the query.
+         *
+         * @param sortSpec a JSON object describing a sort requirement
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderBy(ObjectNode sortSpec) {
+            if (this.sorts == null) {
+                this.sorts = new ArrayList<>();
+                this.json.putPOJO(KEY_SORT, sorts);
+            }
+            sorts.add(sortSpec);
+            return this;
+        }
+
+        /**
+         * Adds a sort statement to the query.
+         *
+         * @param sortBuilder a sort builder
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderBy(SortBuilder sortBuilder) {
+            return orderBy(sortBuilder.build());
+        }
+
+        /**
+         * Adds a sort statement for the given field to the query.
+         *
+         * @param field    the field to sort by
+         * @param sortSpec a JSON object describing a sort requirement
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderBy(String field, ObjectNode sortSpec) {
+            return orderBy(Json.createObject().set(field, sortSpec));
+        }
+
+        /**
          * Adds a sorting criterion for the given field, in ascending order.
          *
          * @param field the field to sort by
          * @return the builder itself for fluent method calls
          */
         public InnerHitsBuilder orderByAsc(String field) {
-            if (this.sorts == null) {
-                this.sorts = new ArrayList<>();
-                this.json.putPOJO(KEY_SORT, sorts);
-            }
-            this.sorts.add(Json.createObject().put(field, KEY_ASC));
-            return this;
+            return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
         }
 
         /**
@@ -196,11 +227,51 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
          * @return the builder itself for fluent method calls
          */
         public InnerHitsBuilder orderByDesc(String field) {
+            return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
+        }
+
+        /**
+         * Adds a sorting criterion for the given field, in descending order.
+         *
+         * @param field the field to sort by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByDesc(Mapping field) {
+            return orderByDesc(field.getName());
+        }
+
+        /**
+         * Adds an order by clause which sorts by <tt>_score</tt> ascending.
+         *
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByScoreAsc() {
+            return orderByAsc(SCORE);
+        }
+
+        /**
+         * Adds an order by clause which sorts by <tt>_score</tt> descending.
+         *
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByScoreDesc() {
+            return orderByDesc(SCORE);
+        }
+
+        /**
+         * Applies the same ordering as <b>currently</b> being applied on the underlying query.
+         * <p>
+         * Note that any change or addition of ordering criteria to the underlying query will not be reflected.
+         *
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderNaturally() {
             if (this.sorts == null) {
                 this.sorts = new ArrayList<>();
                 this.json.putPOJO(KEY_SORT, sorts);
             }
-            this.sorts.add(Json.createObject().put(field, KEY_DESC));
+
+            this.sorts.addAll(ElasticQuery.this.sorts);
             return this;
         }
 
@@ -1058,7 +1129,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private String checkRouting(Elastic.RoutingAccessMode accessMode) {
         if (descriptor == null) {
-            throw new IllegalStateException("No descriptor present! Use withEffectiveIndices for multi-index queries started via Elastic.selectMultiple()!");
+            throw new IllegalStateException(
+                    "No descriptor present! Use withEffectiveIndices for multi-index queries started via Elastic.selectMultiple()!");
         }
 
         String filteredRouting = filterRouting(accessMode);
