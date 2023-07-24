@@ -8,10 +8,11 @@
 
 package sirius.db.es.constraints;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticQuery;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 
 import javax.annotation.Nullable;
@@ -25,13 +26,13 @@ import java.util.stream.Collectors;
  */
 public class BoolQueryBuilder {
 
-    private List<JSONObject> must;
-    private List<JSONObject> mustNot;
-    private List<JSONObject> should;
-    private List<JSONObject> filter;
+    private List<ObjectNode> must;
+    private List<ObjectNode> mustNot;
+    private List<ObjectNode> should;
+    private List<ObjectNode> filter;
     private String name;
 
-    private List<JSONObject> autoinit(List<JSONObject> list) {
+    private List<ObjectNode> autoinit(List<ObjectNode> list) {
         if (list == null) {
             return new ArrayList<>();
         }
@@ -45,7 +46,7 @@ public class BoolQueryBuilder {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder must(JSONObject filter) {
+    public BoolQueryBuilder must(ObjectNode filter) {
         if (filter != null) {
             this.must = autoinit(this.must);
             this.must.add(filter);
@@ -70,7 +71,7 @@ public class BoolQueryBuilder {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder mustNot(JSONObject filter) {
+    public BoolQueryBuilder mustNot(ObjectNode filter) {
         if (filter != null) {
             this.mustNot = autoinit(this.mustNot);
             this.mustNot.add(filter);
@@ -95,7 +96,7 @@ public class BoolQueryBuilder {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder should(JSONObject filter) {
+    public BoolQueryBuilder should(ObjectNode filter) {
         if (filter != null) {
             this.should = autoinit(this.should);
             this.should.add(filter);
@@ -122,7 +123,7 @@ public class BoolQueryBuilder {
      * @param filter the filter to add
      * @return the query itself for fluent method calls
      */
-    public BoolQueryBuilder filter(JSONObject filter) {
+    public BoolQueryBuilder filter(ObjectNode filter) {
         if (filter != null) {
             this.filter = autoinit(this.filter);
             this.filter.add(filter);
@@ -144,11 +145,11 @@ public class BoolQueryBuilder {
     }
 
     /**
-     * Removes all filters ({@link #filter(JSONObject)}) for which the given predicate matches.
+     * Removes all filters ({@link #filter(ObjectNode)}) for which the given predicate matches.
      *
      * @param shouldRemove the predicate to determine which filters to remove
      */
-    public void removeFilterIf(Predicate<JSONObject> shouldRemove) {
+    public void removeFilterIf(Predicate<ObjectNode> shouldRemove) {
         if (filter != null) {
             filter.removeIf(shouldRemove);
         }
@@ -172,10 +173,10 @@ public class BoolQueryBuilder {
      *
      * @return the query as constraint
      */
-    @SuppressWarnings("squid:MethodCyclomaticComplexity")
-    @Explain("Splitting this method would most probably increase the complexity.")
+    @SuppressWarnings({"squid:MethodCyclomaticComplexity", "java:S1067"})
+    @Explain("Splitting this method or its constraints would most probably increase the complexity.")
     @Nullable
-    public JSONObject build() {
+    public ObjectNode build() {
         int filters = filter == null ? 0 : filter.size();
         int musts = must == null ? 0 : must.size();
         int mustNots = mustNot == null ? 0 : mustNot.size();
@@ -185,25 +186,25 @@ public class BoolQueryBuilder {
             return null;
         }
 
-        if (musts == 1 && mustNots == 0 && filters == 0 && shoulds == 0) {
+        if (musts == 1 && mustNots == 0 && filters == 0 && shoulds == 0 && Strings.isEmpty(name)) {
             return must.get(0);
         }
 
-        JSONObject query = new JSONObject();
+        ObjectNode query = Json.createObject();
         if (musts > 0) {
-            query.put("must", must);
+            query.putPOJO("must", must);
         }
         if (mustNots > 0) {
-            query.put("must_not", mustNot);
+            query.putPOJO("must_not", mustNot);
         }
         if (shoulds > 0) {
-            query.put("should", should);
+            query.putPOJO("should", should);
         }
         if (filters > 0) {
-            query.put("filter", filter);
+            query.putPOJO("filter", filter);
         }
 
-        JSONObject result = new JSONObject().fluentPut("bool", query);
+        ObjectNode result = Json.createObject().set("bool", query);
         if (Strings.isFilled(name)) {
             query.put("_name", name);
         }

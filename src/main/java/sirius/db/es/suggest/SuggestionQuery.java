@@ -8,12 +8,13 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
 import sirius.db.es.LowLevelClient;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 import sirius.kernel.di.std.Part;
 
 import java.util.ArrayList;
@@ -89,15 +90,15 @@ public class SuggestionQuery<E extends ElasticEntity> {
      * @return the results as returned by ES
      */
     public SuggestionResult execute() {
-        JSONObject response = client.search(elastic.determineReadAlias(descriptor), null, 0, 0, buildPayload());
+        ObjectNode response = client.search(elastic.determineReadAlias(descriptor), null, 0, 0, buildPayload());
         return new SuggestionResult(response);
     }
 
-    private JSONObject buildPayload() {
-        JSONObject payload = new JSONObject();
-        JSONObject suggest = new JSONObject();
-        suggesters.forEach(suggester -> suggest.put(suggester.getName(), suggester.build()));
-        payload.put(KEY_SUGGEST, suggest);
+    private ObjectNode buildPayload() {
+        ObjectNode payload = Json.createObject();
+        ObjectNode suggest = Json.createObject();
+        suggesters.forEach(suggester -> suggest.set(suggester.getName(), suggester.build()));
+        payload.set(KEY_SUGGEST, suggest);
 
         return payload;
     }

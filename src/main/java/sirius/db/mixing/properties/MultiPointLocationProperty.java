@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Permits to store a {@link MultiPointLocation} as location aware "MultiPoint" in MongoDB.
@@ -104,7 +105,7 @@ public class MultiPointLocationProperty extends Property {
             if (coordinates instanceof List<?>) {
                 return ((List<List<Double>>) coordinates).stream()
                                                          .map(entry -> Tuple.create(entry.get(0), entry.get(1)))
-                                                         .toList();
+                                                         .collect(Collectors.toCollection(ArrayList::new));
             }
         }
 

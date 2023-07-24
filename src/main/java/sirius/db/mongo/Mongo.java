@@ -239,7 +239,7 @@ public class Mongo implements Startable, Stoppable {
      * Returns a fluent query builder to find one or more documents in the secondary database.
      * <p>
      * This provides an essential boost in performance, as all nodes of a MongoDB cluster are utilized. However, this
-     * may return stale data if a secondary lags behind. Therefore this data must not be stored back in the primary
+     * may return stale data if a secondary lags behind. Therefore, this data must not be stored back in the primary
      * database. This should rather only be used to serve web requests or other queries where occasional stale date
      * does no harm.
      * <p>

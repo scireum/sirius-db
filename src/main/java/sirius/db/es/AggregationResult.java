@@ -8,12 +8,13 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.commons.Amount;
 import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Tuple;
-import sirius.kernel.commons.Value;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -32,16 +33,16 @@ public class AggregationResult {
 
     private static final String KEY_VALUE = "value";
     private static final String KEY_BUCKETS = "buckets";
-    private static final AggregationResult EMPTY = new AggregationResult(new JSONObject());
+    private static final AggregationResult EMPTY = new AggregationResult(Json.createObject());
 
-    private JSONObject data;
+    private ObjectNode data;
 
     /**
-     * Uses {@link #of(JSONObject)} to generate a new instance while handling <tt>null</tt> values for data gracefully.
+     * Uses {@link #of(ObjectNode)} to generate a new instance while handling <tt>null</tt> values for data gracefully.
      *
      * @param data the raw JSON data to wrap
      */
-    private AggregationResult(JSONObject data) {
+    private AggregationResult(ObjectNode data) {
         this.data = data;
     }
 
@@ -55,7 +56,7 @@ public class AggregationResult {
      * @return a result object representing the given raw JSON
      */
     @Nonnull
-    public static AggregationResult of(@Nullable JSONObject data) {
+    public static AggregationResult of(@Nullable ObjectNode data) {
         if (data == null) {
             return EMPTY;
         }
@@ -69,15 +70,15 @@ public class AggregationResult {
      * @param bucketConsumer the consumer to be invoked for each bucket in the aggregation
      */
     public void forEachBucket(Consumer<Bucket> bucketConsumer) {
-        Object buckets = data.get(KEY_BUCKETS);
+        JsonNode buckets = data.get(KEY_BUCKETS);
 
-        if (buckets instanceof JSONArray array) {
-            for (Object bucket : array) {
-                bucketConsumer.accept(new Bucket(null, (JSONObject) bucket));
+        if (buckets instanceof ArrayNode array) {
+            for (JsonNode bucket : array) {
+                bucketConsumer.accept(new Bucket(null, (ObjectNode) bucket));
             }
-        } else if (buckets instanceof JSONObject object) {
-            for (Map.Entry<String, Object> entry : object.entrySet()) {
-                bucketConsumer.accept(new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
+        } else if (buckets instanceof ObjectNode object) {
+            for (Map.Entry<String, JsonNode> entry : object.properties()) {
+                bucketConsumer.accept(new Bucket(entry.getKey(), (ObjectNode) entry.getValue()));
             }
         }
     }
@@ -113,15 +114,15 @@ public class AggregationResult {
      * @return the bucket in this result or an empty optional if there is no bucket
      */
     public Optional<Bucket> getFirstBucket() {
-        Object buckets = data.get(KEY_BUCKETS);
+        JsonNode buckets = data.get(KEY_BUCKETS);
 
-        if (buckets instanceof JSONArray array && !array.isEmpty()) {
-            return Optional.of(new Bucket(null, (JSONObject) array.get(0)));
-        } else if (buckets instanceof JSONObject object) {
-            return object.entrySet()
+        if (buckets instanceof ArrayNode array && !array.isEmpty()) {
+            return Optional.of(new Bucket(null, (ObjectNode) array.get(0)));
+        } else if (buckets instanceof ObjectNode object) {
+            return object.properties()
                          .stream()
                          .findFirst()
-                         .map(entry -> new Bucket(entry.getKey(), (JSONObject) entry.getValue()));
+                         .map(entry -> new Bucket(entry.getKey(), (ObjectNode) entry.getValue()));
         } else {
             return Optional.empty();
         }
@@ -133,8 +134,8 @@ public class AggregationResult {
      *
      * @return the after key object or an empty optional if the end of the aggregation has been reached
      */
-    public Optional<JSONObject> getAfterKey() {
-        return Optional.ofNullable(data.getJSONObject("after_key"));
+    public Optional<ObjectNode> getAfterKey() {
+        return Json.tryGetObject(data, "after_key");
     }
 
     /**
@@ -147,12 +148,12 @@ public class AggregationResult {
      */
     @Nullable
     public String getCompoundAfterKey() {
-        JSONObject afterKey = getAfterKey().orElse(null);
+        ObjectNode afterKey = getAfterKey().orElse(null);
         if (afterKey == null) {
             return null;
         }
 
-        return Base64.getEncoder().encodeToString(afterKey.toJSONString().getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(Json.write(afterKey).getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -161,7 +162,7 @@ public class AggregationResult {
      * @return the cardinality computed by this aggregation
      */
     public Optional<Integer> getCardinality() {
-        return Value.of(data.get(KEY_VALUE)).asOptionalInt();
+        return Json.convertToValue(data.get(KEY_VALUE)).asOptionalInt();
     }
 
     /**
@@ -170,7 +171,7 @@ public class AggregationResult {
      * @return the number of (non-distinct) values computed by this aggregation
      */
     public Optional<Integer> getValueCount() {
-        return Value.of(data.get(KEY_VALUE)).asOptionalInt();
+        return Json.convertToValue(data.get(KEY_VALUE)).asOptionalInt();
     }
 
     /**
@@ -180,7 +181,7 @@ public class AggregationResult {
      * @return the value of the aggregation or an empty <tt>Amount</tt> if no value is present.
      */
     public Amount getValue() {
-        return Value.of(data.get(KEY_VALUE)).getAmount();
+        return Json.getValueAmount(data, KEY_VALUE);
     }
 
     /**
@@ -191,17 +192,17 @@ public class AggregationResult {
      */
     @Nonnull
     public AggregationResult getSubAggregation(String name) {
-        return AggregationResult.of(data.getJSONObject(name));
+        return AggregationResult.of(Json.getObject(data, name));
     }
 
     /**
-     * Returns the raw {@link JSONObject} of this aggregation result.
+     * Returns the raw {@link ObjectNode} of this aggregation result.
      *
-     * @return the raw {@link JSONObject}
+     * @return the raw {@link ObjectNode}
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
-    public JSONObject getJSONObject() {
+    public ObjectNode getJSONObject() {
         return data;
     }
 }

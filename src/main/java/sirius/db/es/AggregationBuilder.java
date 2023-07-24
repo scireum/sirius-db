@@ -8,12 +8,12 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
-import sirius.kernel.commons.Explain;
+import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
 
 import javax.annotation.Nullable;
@@ -120,10 +120,10 @@ public class AggregationBuilder {
     private static final String MIN_DOC_COUNT = "min_doc_count";
     private static final String AFTER = "after";
 
-    private String name;
-    private String type;
-    private JSONObject body = new JSONObject();
-    private String path;
+    private final String name;
+    private final String type;
+    private ObjectNode body = Json.createObject();
+    private final String path;
     private List<AggregationBuilder> subAggregations;
     private List<AggregationBuilder> sourceAggregations;
 
@@ -238,7 +238,11 @@ public class AggregationBuilder {
      * @return the builder itself for fluent method calls
      */
     public AggregationBuilder addBodyParameter(String name, Object value) {
-        this.body.put(name, value);
+        if (value instanceof JsonNode jsonNode) {
+            this.body.set(name, jsonNode);
+        } else {
+            this.body.putPOJO(name, value);
+        }
         return this;
     }
 
@@ -279,8 +283,8 @@ public class AggregationBuilder {
      */
     public AggregationBuilder withCompoundAfterKey(@Nullable String afterKey) {
         if (Strings.isFilled(afterKey)) {
-            JSONObject afterKeyObject =
-                    JSON.parseObject(new String(Base64.getDecoder().decode(afterKey), StandardCharsets.UTF_8));
+            ObjectNode afterKeyObject =
+                    Json.parseObject(new String(Base64.getDecoder().decode(afterKey), StandardCharsets.UTF_8));
             addBodyParameter(AFTER, afterKeyObject);
         }
 
@@ -293,9 +297,7 @@ public class AggregationBuilder {
      * @param body the body to use
      * @return the builder itself for fluent method calls
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("We do not create an extra copy here for performance reasons, as the scope is quite limited")
-    public AggregationBuilder withBody(JSONObject body) {
+    public AggregationBuilder withBody(ObjectNode body) {
         this.body = body;
         return this;
     }
@@ -380,26 +382,26 @@ public class AggregationBuilder {
      *
      * @return the json representation of the current builder.
      */
-    public JSONObject build() {
-        JSONObject builder = new JSONObject();
+    public ObjectNode build() {
+        ObjectNode builder = Json.createObject();
 
         if (Strings.isFilled(path)) {
-            builder.put(NESTED, new JSONObject().fluentPut(NESTED_PATH, path));
+            builder.set(NESTED, Json.createObject().put(NESTED_PATH, path));
         } else {
-            builder.put(type, body);
+            builder.set(type, body);
         }
 
         if (subAggregations != null) {
-            JSONObject subAggs = new JSONObject();
-            subAggregations.forEach(subAggregation -> subAggs.put(subAggregation.getName(), subAggregation.build()));
-            builder.put(AGGREGATIONS, subAggs);
+            ObjectNode subAggs = Json.createObject();
+            subAggregations.forEach(subAggregation -> subAggs.set(subAggregation.getName(), subAggregation.build()));
+            builder.set(AGGREGATIONS, subAggs);
         }
 
         if (sourceAggregations != null) {
-            JSONArray sourceAggs = new JSONArray();
-            sourceAggregations.forEach(sourceAgg -> sourceAggs.add(new JSONObject().fluentPut(sourceAgg.getName(),
-                                                                                              sourceAgg.build())));
-            body.put("sources", sourceAggs);
+            ArrayNode sourceAggs = Json.createArray();
+            sourceAggregations.forEach(sourceAgg -> sourceAggs.add(Json.createObject()
+                                                                       .set(sourceAgg.getName(), sourceAgg.build())));
+            body.set("sources", sourceAggs);
         }
 
         return builder;

@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
@@ -81,7 +81,7 @@ public class ElasticRefProperty extends BaseEntityRefProperty<String, ElasticEnt
     }
 
     @Override
-    public void describeProperty(JSONObject description) {
+    public void describeProperty(ObjectNode description) {
         description.put(IndexMappings.MAPPING_TYPE, "keyword");
         transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
         transferOption(IndexMappings.MAPPING_INDEX, getAnnotation(IndexMode.class), IndexMode::indexed, description);

@@ -8,8 +8,9 @@
 
 package sirius.db.es;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.mixing.EntityDescriptor;
+import sirius.kernel.commons.Json;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 
@@ -53,7 +54,7 @@ public class BulkContext implements Closeable {
 
     private final LowLevelClient.Refresh refresh;
     private LowLevelClient client;
-    private List<JSONObject> commands;
+    private List<ObjectNode> commands;
 
     @Part
     private static Elastic elastic;
@@ -119,15 +120,15 @@ public class BulkContext implements Closeable {
 
         ed.beforeSave(entity);
 
-        JSONObject meta = builtMetadata(entity, force, ed);
-        JSONObject data = new JSONObject();
+        ObjectNode meta = builtMetadata(entity, force, ed);
+        ObjectNode data = Json.createObject();
         boolean changed = elastic.toJSON(ed, entity, data);
 
         if (!changed) {
             return;
         }
 
-        commands.add(new JSONObject().fluentPut(COMMAND_INDEX, meta));
+        commands.add(Json.createObject().set(COMMAND_INDEX, meta));
         commands.add(data);
         autocommit();
     }
@@ -138,8 +139,8 @@ public class BulkContext implements Closeable {
         }
     }
 
-    private JSONObject builtMetadata(ElasticEntity entity, boolean force, EntityDescriptor ed) {
-        JSONObject meta = new JSONObject();
+    private ObjectNode builtMetadata(ElasticEntity entity, boolean force, EntityDescriptor ed) {
+        ObjectNode meta = Json.createObject();
 
         if (!force && !entity.isNew() && ed.isVersioned()) {
             meta.put(KEY_PRIMARY_TERM, entity.getPrimaryTerm());
@@ -165,8 +166,8 @@ public class BulkContext implements Closeable {
         EntityDescriptor entityDescriptor = entity.getDescriptor();
         entityDescriptor.beforeDelete(entity);
 
-        JSONObject meta = builtMetadata(entity, force, entityDescriptor);
-        commands.add(new JSONObject().fluentPut(COMMAND_DELETE, meta));
+        ObjectNode meta = builtMetadata(entity, force, entityDescriptor);
+        commands.add(Json.createObject().set(COMMAND_DELETE, meta));
         autocommit();
     }
 
@@ -182,7 +183,7 @@ public class BulkContext implements Closeable {
         }
 
         try {
-            JSONObject bulkResponse = client.bulkWithRefresh(commands, refresh);
+            ObjectNode bulkResponse = client.bulkWithRefresh(commands, refresh);
             if (Elastic.LOG.isFINE()) {
                 Elastic.LOG.FINE(bulkResponse);
             }

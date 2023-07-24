@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
@@ -150,7 +150,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     }
 
     @Override
-    public void describeProperty(JSONObject description) {
+    public void describeProperty(ObjectNode description) {
         description.put("type", "keyword");
         transferOption(IndexMappings.MAPPING_STORED, getAnnotation(IndexMode.class), IndexMode::stored, description);
         transferOption(IndexMappings.MAPPING_INDEX, getAnnotation(IndexMode.class), IndexMode::indexed, description);
@@ -209,7 +209,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             } else if (deleteHandler == BaseEntityRef.OnDelete.SET_NULL) {
                 getReferencedDescriptor().addCascadeDeleteHandler(this::onDeleteSetNull);
             } else if (deleteHandler == BaseEntityRef.OnDelete.REJECT) {
-                getReferencedDescriptor().addBeforeDeleteHandler(this::onDeleteReject);
+                getReferencedDescriptor().addRejectDeleteHandler(this::onDeleteReject);
             }
         } catch (Exception e) {
             Mixing.LOG.WARN("Error when linking property %s of %s: %s (%s)",

@@ -2,7 +2,7 @@ version: "2"
 
 services:
   redis:
-    image: redis:6.2.6-alpine
+    image: redis:7.0.11-alpine
     ports:
     - "6379"
     hostname: redis
@@ -13,8 +13,14 @@ services:
     - "27017"
     hostname: mongo
 
+  qdrant:
+    image: qdrant/qdrant:v1.1.0
+    ports:
+    - "6333"
+    hostname: qdrant
+
   mariadb:
-    image: mariadb:10.3.30-focal
+    image: mariadb:10.11.2-jammy
     ports:
     - "3306"
     environment:
@@ -27,7 +33,7 @@ services:
     - "9000"
     hostname: clickhouse
   elasticsearch:
-    image: elasticsearch:8.4.1
+    image: elasticsearch:8.7.1
     ports:
     - "9200"
     environment:

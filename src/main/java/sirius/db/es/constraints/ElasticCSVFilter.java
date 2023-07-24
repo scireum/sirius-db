@@ -8,7 +8,7 @@
 
 package sirius.db.es.constraints;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.constraints.CSVFilter;
@@ -46,7 +46,7 @@ class ElasticCSVFilter extends CSVFilter<ElasticConstraint> {
             bqb.should(Elastic.FILTERS.notFilled(field));
         }
 
-        JSONObject result = bqb.build();
+        ObjectNode result = bqb.build();
         if (result == null) {
             return null;
         }

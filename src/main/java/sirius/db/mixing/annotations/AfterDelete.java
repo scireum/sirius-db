@@ -9,6 +9,7 @@
 package sirius.db.mixing.annotations;
 
 import sirius.db.mixing.Mixable;
+import sirius.kernel.di.std.Priorized;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -23,4 +24,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface AfterDelete {
+
+    /**
+     * Determines the execution order of all after delete handlers.
+     *
+     * @return the execution priority. Handlers will be executed in ascending order, the one with the lowest value
+     * will be executed first.
+     */
+    int priority() default Priorized.DEFAULT_PRIORITY;
 }

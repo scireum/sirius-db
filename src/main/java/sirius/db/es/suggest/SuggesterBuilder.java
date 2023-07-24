@@ -8,10 +8,11 @@
 
 package sirius.db.es.suggest;
 
-import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticQuery;
 import sirius.db.mixing.Mapping;
+import sirius.kernel.commons.Json;
 
 /**
  * Helper class which generates term and phrase suggesters for Elasticsearch which can be used via
@@ -53,7 +54,7 @@ public class SuggesterBuilder {
     private String name;
     private String text;
 
-    private JSONObject body = new JSONObject();
+    private ObjectNode body = Json.createObject();
 
     /**
      * Creates a new suggest builder.
@@ -99,7 +100,7 @@ public class SuggesterBuilder {
      * @return the builder itself for fluent method calls
      */
     public SuggesterBuilder withBodyParameter(String name, Object value) {
-        this.body.put(name, value);
+        this.body.putPOJO(name, value);
         return this;
     }
 
@@ -134,7 +135,7 @@ public class SuggesterBuilder {
      */
     public SuggesterBuilder highlight(String preTag, String postTag) {
         return withBodyParameter(PARAM_HIGHLIGHT,
-                                 new JSONObject().fluentPut(PARAM_PRE_TAG, preTag).fluentPut(PARAM_POST_TAG, postTag));
+                                 Json.createObject().put(PARAM_PRE_TAG, preTag).put(PARAM_POST_TAG, postTag));
     }
 
     /**
@@ -152,11 +153,11 @@ public class SuggesterBuilder {
      * @return the builder itself for fluent method calls
      * @see TermSuggestion#isCollateMatch() for checking if a option matched the query
      */
-    public SuggesterBuilder collate(JSONObject query, boolean prune) {
+    public SuggesterBuilder collate(ObjectNode query, boolean prune) {
         return withBodyParameter(PARAM_COLLATE,
-                                 new JSONObject().fluentPut(PARAM_QUERY,
-                                                            new JSONObject().fluentPut(PARAM_SOURCE, query))
-                                                 .fluentPut(PARAM_PRUNE, prune));
+                                 Json.createObject()
+                                     .put(PARAM_PRUNE, prune)
+                                     .set(PARAM_QUERY, Json.createObject().set(PARAM_SOURCE, query)));
     }
 
     /**
@@ -176,11 +177,11 @@ public class SuggesterBuilder {
     }
 
     /**
-     * Generates a {@link JSONObject} that represents this suggester.
+     * Generates an {@link ObjectNode} that represents this suggester.
      *
      * @return the suggester as a JSON object
      */
-    public JSONObject build() {
-        return new JSONObject().fluentPut(PARAM_TEXT, text).fluentPut(type, body);
+    public ObjectNode build() {
+        return Json.createObject().put(PARAM_TEXT, text).set(type, body);
     }
 }

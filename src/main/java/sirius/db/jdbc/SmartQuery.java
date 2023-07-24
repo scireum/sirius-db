@@ -8,7 +8,6 @@
 
 package sirius.db.jdbc;
 
-import sirius.db.jdbc.constraints.CompoundValue;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
@@ -44,12 +43,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -256,7 +255,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Deletes all matches using the {@link OMA#delete(SQLEntity)}.
+     * Deletes all matches using the {@link OMA#delete(BaseEntity)}.
      * <p>
      * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
      * the results until the timeout ({@link #queryIterateTimeout} is reached). In this case, we abort the
@@ -270,8 +269,8 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return;
         }
         AtomicBoolean continueDeleting = new AtomicBoolean(true);
-        TaskContext context = TaskContext.get();
-        while (continueDeleting.get() && context.isActive()) {
+        TaskContext taskContext = TaskContext.get();
+        while (continueDeleting.get() && taskContext.isActive()) {
             continueDeleting.set(false);
             Timeout timeout = new Timeout(queryIterateTimeout);
             iterate(entity -> {
@@ -302,6 +301,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private class SmartQuerySpliterator extends PullBasedSpliterator<E> {
         private E lastValue = null;
+        private List<Object> orderByValuesOfLastEntityDuringFetch = null;
         private final TaskContext taskContext = TaskContext.get();
         private final SmartQuery<E> adjustedQuery;
 
@@ -311,7 +311,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
         @Override
         public int characteristics() {
-            return Spliterator.NONNULL | Spliterator.IMMUTABLE;
+            return NONNULL | IMMUTABLE | ORDERED;
         }
 
         @Override
@@ -323,6 +323,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             List<E> block = queryNextBlock();
             if (!block.isEmpty()) {
                 lastValue = block.get(block.size() - 1);
+                orderByValuesOfLastEntityDuringFetch = extractOrderByValues(lastValue);
             }
             return block.iterator();
         }
@@ -360,31 +361,40 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return adjusted;
         }
 
+        private List<Object> extractOrderByValues(E entity) {
+            return Tuple.firsts(adjustedQuery.orderBys).stream().map(field -> getPropertyValue(field, entity)).toList();
+        }
+
         private List<E> queryNextBlock() {
             SmartQuery<E> effectiveQuery = adjustedQuery.copy().limit(MAX_LIST_SIZE);
 
             if (lastValue == null) {
                 return effectiveQuery.queryList();
             }
-            CompoundValue leftHandSide = new CompoundValue();
-            CompoundValue rightHandSide = new CompoundValue();
 
+            List<Object> orderByValuesOfLastEntity = extractOrderByValues(lastValue);
+            if (!orderByValuesOfLastEntityDuringFetch.equals(orderByValuesOfLastEntity)) {
+                throw new IllegalStateException(Strings.apply(
+                        "Entity '%s' was changed while streaming over it. This is very likely to cause bad result sets, including infinity loops, and is not supported.\nPrevious values: %s\nCurrent values: %s",
+                        lastValue,
+                        orderByValuesOfLastEntityDuringFetch,
+                        orderByValuesOfLastEntity));
+            }
+
+            SQLConstraint sortingFilterConstraint = null;
+            Map<Mapping, Object> previousSortingColumns = new HashMap<>();
             for (Tuple<Mapping, Boolean> sorting : effectiveQuery.orderBys) {
                 Mapping sortColumn = sorting.getFirst();
                 boolean sortAscending = sorting.getSecond().booleanValue();
                 Object value = getPropertyValue(sortColumn, lastValue);
-                if (sortAscending) {
-                    // the order by is ascending -> COLUMN > lastvalue.column
-                    leftHandSide.addComponent(sortColumn);
-                    rightHandSide.addComponent(value);
-                } else {
-                    // the order by is descending -> lastvalue.column > COLUMN
-                    leftHandSide.addComponent(value);
-                    rightHandSide.addComponent(sortColumn);
-                }
-            }
 
-            return effectiveQuery.where(OMA.FILTERS.gt(leftHandSide, rightHandSide)).queryList();
+                SQLConstraint currentColumConstraint =
+                        createSqlConstraintForSortingColumn(sortAscending, sortColumn, value, previousSortingColumns);
+                sortingFilterConstraint = OMA.FILTERS.or(sortingFilterConstraint, currentColumConstraint);
+
+                previousSortingColumns.put(sortColumn, value);
+            }
+            return effectiveQuery.where(sortingFilterConstraint).queryList();
         }
 
         private Object getPropertyValue(Mapping mapping, BaseEntity<?> entity) {
@@ -396,20 +406,85 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             if (mapping.getParent() != null) {
                 BaseEntity<?> parentEntity = findParent(mapping.getParent(), entity);
                 if (parentEntity.getDescriptor()
-                                .getProperty(mapping.getParent().getName()) instanceof BaseEntityRefProperty<?, ?, ?> ref) {
+                                .getProperty(mapping.getParent()
+                                                    .getName()) instanceof BaseEntityRefProperty<?, ?, ?> ref) {
                     BaseEntityRef<?, ?> entityRef = ref.getEntityRef(parentEntity);
-                return entityRef.getValueIfPresent().orElseThrow(() -> {
-                    return new IllegalArgumentException(Strings.apply(
-                            "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
-                            entityRef.getUniqueObjectName(),
+                    return entityRef.getValueIfPresent().orElseThrow(() -> {
+                        return new IllegalArgumentException(Strings.apply(
+                                "The BaseEntityRef `%s` is not loaded, but is requested by the mapping `%s`.",
+                                entityRef.getUniqueObjectName(),
                                 mapping.getParent()));
-                });
+                    });
                 } else {
                     throw new IllegalArgumentException(Strings.apply("You cannot join on the non-ref property `%s`",
                                                                      mapping.getParent()));
-            }
+                }
             }
             return entity;
+        }
+    }
+
+    /**
+     * Creates a sql constraint for sorting purposes.
+     * </p>
+     * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
+     * returns false e.g. NULL != 'any' returns false.
+     * Therefore, comparisons with NULL values must be treated specially.
+     *
+     * @param sortAscending          decides whether the sorting direction is descending or ascending
+     * @param column                 the column to be used for sorting
+     * @param value                  the value of the column
+     * @param previousSortingColumns all columns that should be sorted before the current one
+     * @return {@link SQLConstraint} which can be used to map a level of sorting.
+     */
+    SQLConstraint createSqlConstraintForSortingColumn(boolean sortAscending,
+                                                      Mapping column,
+                                                      Object value,
+                                                      Map<Mapping, Object> previousSortingColumns) {
+        SQLConstraint sortingStep = null;
+        for (Map.Entry<Mapping, Object> previousColumn : previousSortingColumns.entrySet()) {
+            sortingStep =
+                    OMA.FILTERS.and(sortingStep, OMA.FILTERS.eq(previousColumn.getKey(), previousColumn.getValue()));
+        }
+
+        if (value == null) {
+            return createConstraintForSortingWithNull(sortAscending, sortingStep, column);
+        }
+        if (nullValuesFirst(sortAscending)) {
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.gt(column, value));
+        } else {
+            return OMA.FILTERS.and(sortingStep,
+                                   OMA.FILTERS.or(OMA.FILTERS.lt(column, value), OMA.FILTERS.eq(column, null)));
+        }
+    }
+
+    private SQLConstraint createConstraintForSortingWithNull(boolean sortAscending,
+                                                             SQLConstraint sortingStep,
+                                                             Mapping column) {
+        if (nullValuesFirst(sortAscending)) {
+            return OMA.FILTERS.and(sortingStep, OMA.FILTERS.ne(column, null));
+        }
+        return null;
+    }
+
+    /**
+     * Indicates whether null values are listed before or after non-null values when executing this query.
+     * <p>
+     * Both the sort order and the implementation in the database tell us whether we will get a
+     * result where the null values are at the beginning or at the end.
+     *
+     * @param sortAscending decides whether the sorting direction is descending or ascending
+     * @return {@code true} if the sorted list starts with null values
+     */
+    private boolean nullValuesFirst(boolean sortAscending) {
+        if (db == null) {
+            // should be only true in tests
+            return sortAscending;
+        }
+        if (sortAscending) {
+            return db.hasCapability(Capability.NULLS_FIRST);
+        } else {
+            return !db.hasCapability(Capability.NULLS_FIRST);
         }
     }
 
@@ -456,7 +531,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @Override
-    public void iterate(Predicate<E> handler) {
+    protected void doIterate(Predicate<E> handler) {
         if (forceFail) {
             return;
         }
@@ -481,15 +556,17 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     @SuppressWarnings("unchecked")
-    protected void execIterate(Predicate<E> handler, Compiler compiler, Limit limit, boolean nativeLimit, ResultSet rs)
-            throws Exception {
-        TaskContext tc = TaskContext.get();
-        Set<String> columns = dbs.readColumns(rs);
-        while (rs.next() && tc.isActive()) {
+    protected void execIterate(Predicate<E> handler,
+                               Compiler compiler,
+                               Limit limit,
+                               boolean nativeLimit,
+                               ResultSet resultSet) throws Exception {
+        Set<String> columns = dbs.readColumns(resultSet);
+        while (resultSet.next()) {
             if (nativeLimit || limit.nextRow()) {
-                SQLEntity e = makeEntity(descriptor, null, columns, rs);
-                compiler.executeJoinFetches(e, columns, rs);
-                if (!handler.test((E) e)) {
+                SQLEntity entity = makeEntity(descriptor, null, columns, resultSet);
+                compiler.executeJoinFetches(entity, columns, resultSet);
+                if (!handler.test((E) entity)) {
                     return;
                 }
             }
