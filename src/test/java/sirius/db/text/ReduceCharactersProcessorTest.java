@@ -16,8 +16,8 @@ public class ReduceCharactersProcessorTest extends TokenProcessorTest {
     public void testTokenizing() {
         assertExactTokenizing("Hello", new ReduceCharacterProcessor(), "Hello");
         assertExactTokenizing("Höllo", new ReduceCharacterProcessor(), "Hoello");
-        assertExactTokenizing("ÄHölloÜ", new ReduceCharacterProcessor(), "AeHoelloUe");
-        assertExactTokenizing("ÄÖßÜ", new ReduceCharacterProcessor(), "AeOessUe");
+        assertExactTokenizing("ÄHölloÜ", new ReduceCharacterProcessor(), "AEHoelloUE");
+        assertExactTokenizing("ÄÖßÜ", new ReduceCharacterProcessor(), "AEOEssUE");
         assertExactTokenizing("Hüüllüü", new ReduceCharacterProcessor(), "Hueuellueue");
         assertExactTokenizing(" Hüü llüü ", new ReduceCharacterProcessor(), " Hueue llueue ");
     }
