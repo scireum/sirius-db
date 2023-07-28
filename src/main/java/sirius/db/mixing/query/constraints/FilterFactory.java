@@ -376,7 +376,7 @@ public abstract class FilterFactory<C extends Constraint> {
      * @param constraint the constraint to invert
      * @return the inverted constraint
      */
-    @Nullable
+    @Nonnull
     protected abstract C invert(@Nonnull C constraint);
 
     /**
