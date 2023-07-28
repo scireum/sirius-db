@@ -23,7 +23,6 @@ import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.TaskContext;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Strings;
@@ -166,18 +165,49 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         /**
+         * Adds a sort statement to the query.
+         *
+         * @param sortSpec a JSON object describing a sort requirement
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderBy(ObjectNode sortSpec) {
+            if (this.sorts == null) {
+                this.sorts = new ArrayList<>();
+                this.json.putPOJO(KEY_SORT, sorts);
+            }
+            sorts.add(sortSpec);
+            return this;
+        }
+
+        /**
+         * Adds a sort statement to the query.
+         *
+         * @param sortBuilder a sort builder
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderBy(SortBuilder sortBuilder) {
+            return orderBy(sortBuilder.build());
+        }
+
+        /**
+         * Adds a sort statement for the given field to the query.
+         *
+         * @param field    the field to sort by
+         * @param sortSpec a JSON object describing a sort requirement
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderBy(String field, ObjectNode sortSpec) {
+            return orderBy(Json.createObject().set(field, sortSpec));
+        }
+
+        /**
          * Adds a sorting criterion for the given field, in ascending order.
          *
          * @param field the field to sort by
          * @return the builder itself for fluent method calls
          */
         public InnerHitsBuilder orderByAsc(String field) {
-            if (this.sorts == null) {
-                this.sorts = new ArrayList<>();
-                this.json.putPOJO(KEY_SORT, sorts);
-            }
-            this.sorts.add(Json.createObject().put(field, KEY_ASC));
-            return this;
+            return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
         }
 
         /**
@@ -197,12 +227,73 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
          * @return the builder itself for fluent method calls
          */
         public InnerHitsBuilder orderByDesc(String field) {
+            return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
+        }
+
+        /**
+         * Adds a sorting criterion for the given field, in descending order.
+         *
+         * @param field the field to sort by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByDesc(Mapping field) {
+            return orderByDesc(field.getName());
+        }
+
+        /**
+         * Adds an order by clause which sorts by <tt>_score</tt> ascending.
+         *
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByScoreAsc() {
+            return orderByAsc(SCORE);
+        }
+
+        /**
+         * Adds an order by clause which sorts by <tt>_score</tt> descending.
+         *
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderByScoreDesc() {
+            return orderByDesc(SCORE);
+        }
+
+        /**
+         * Applies the same ordering as <b>currently</b> being applied on the underlying query.
+         * <p>
+         * Note that any change or addition of ordering criteria to the underlying query will not be reflected.
+         *
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder orderNaturally() {
             if (this.sorts == null) {
                 this.sorts = new ArrayList<>();
                 this.json.putPOJO(KEY_SORT, sorts);
             }
-            this.sorts.add(Json.createObject().put(field, KEY_DESC));
+
+            this.sorts.addAll(ElasticQuery.this.sorts);
             return this;
+        }
+
+        /**
+         * Provides a second level of collapsing for the inner hits by the given field.
+         *
+         * @param field the field to collapse inner hits by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder collapseInnerHitsBy(String field) {
+            this.json.putPOJO(KEY_COLLAPSE, Json.createObject().put(KEY_FIELD, field));
+            return this;
+        }
+
+        /**
+         * Provides a second level of collapsing for the inner hits by the given field.
+         *
+         * @param field the field to collapse inner hits by
+         * @return the builder itself for fluent method calls
+         */
+        public InnerHitsBuilder collapseInnerHitsBy(Mapping field) {
+            return collapseInnerHitsBy(field.getName());
         }
 
         /**
@@ -308,18 +399,19 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     /**
-     * Spans the query over the given additional indices.
+     * Spans the query over the given indices.
      * <p>
-     * Note that the given indices are added to the main index / descriptor which is already present. Also, not
+     * Note that the given indices replace the main index / descriptor which is already present. Also, not
      * that all settings (most notably routing) are determined by looking at the main descriptor. Therefore, all
      * additional descriptors must share the same settings. Also note, that all entities / descriptors must share
      * the fields being queried / aggregated for this to make sense.
      *
-     * @param additionalEntitiesToQuery the additional entities to be queried
+     * @param entitiesToQuery the entities to be queried
      * @return the query itself for fluent method calls
      */
-    protected final ElasticQuery<E> withAdditionalIndices(Stream<Class<? extends E>> additionalEntitiesToQuery) {
-        this.additionalDescriptors = additionalEntitiesToQuery.map(type -> mixing.getDescriptor(type)).toList();
+    public ElasticQuery<E> withEffectiveIndices(List<Class<? extends E>> entitiesToQuery) {
+        this.descriptor = mixing.getDescriptor(entitiesToQuery.get(0));
+        this.additionalDescriptors = entitiesToQuery.stream().skip(1).map(type -> mixing.getDescriptor(type)).toList();
 
         return this;
     }
@@ -575,9 +667,46 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @param sortBuilder a sort builder
      * @return the query itself for fluent method calls
+     * @deprecated use {@link #orderBy(SortBuilder)} instead
      */
+    @Deprecated(forRemoval = true)
     public ElasticQuery<E> sort(SortBuilder sortBuilder) {
-        return sort(sortBuilder.build());
+        return orderBy(sortBuilder.build());
+    }
+
+    /**
+     * Adds a sort statement to the query.
+     *
+     * @param sortSpec a JSON object describing a sort requirement
+     * @return the query itself for fluent method calls
+     * @deprecated use {@link #orderBy(ObjectNode)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ElasticQuery<E> sort(ObjectNode sortSpec) {
+        return orderBy(sortSpec);
+    }
+
+    /**
+     * Adds a sort statement for the given field to the query.
+     *
+     * @param field    the field to sort by
+     * @param sortSpec a JSON object describing a sort requirement
+     * @return the query itself for fluent method calls
+     * @deprecated use {@link #orderBy(Mapping, ObjectNode)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public ElasticQuery<E> sort(Mapping field, ObjectNode sortSpec) {
+        return orderBy(Json.createObject().set(field.toString(), sortSpec));
+    }
+
+    /**
+     * Adds a sort statement to the query.
+     *
+     * @param sortBuilder a sort builder
+     * @return the query itself for fluent method calls
+     */
+    public ElasticQuery<E> orderBy(SortBuilder sortBuilder) {
+        return orderBy(sortBuilder.build());
     }
 
     /**
@@ -586,7 +715,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> sort(ObjectNode sortSpec) {
+    public ElasticQuery<E> orderBy(ObjectNode sortSpec) {
         this.sorts = autoinit(this.sorts);
         sorts.add(sortSpec);
         return this;
@@ -599,8 +728,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param sortSpec a JSON object describing a sort requirement
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> sort(Mapping field, ObjectNode sortSpec) {
-        return sort(Json.createObject().set(field.toString(), sortSpec));
+    public ElasticQuery<E> orderBy(Mapping field, ObjectNode sortSpec) {
+        return orderBy(Json.createObject().set(field.toString(), sortSpec));
     }
 
     /**
@@ -611,7 +740,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderAsc(Mapping field) {
-        return sort(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
+        return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_ASC));
     }
 
     /**
@@ -622,7 +751,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      */
     @Override
     public ElasticQuery<E> orderDesc(Mapping field) {
-        return sort(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
+        return orderBy(field, Json.createObject().put(KEY_ORDER, KEY_DESC));
     }
 
     /**
@@ -999,6 +1128,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     }
 
     private String checkRouting(Elastic.RoutingAccessMode accessMode) {
+        if (descriptor == null) {
+            throw new IllegalStateException(
+                    "No descriptor present! Use withEffectiveIndices for multi-index queries started via Elastic.selectMultiple()!");
+        }
+
         String filteredRouting = filterRouting(accessMode);
 
         if (elastic.isRouted(descriptor, accessMode)) {
@@ -1066,8 +1200,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
         String indexName = jsonEntity.get("_index").asText(null);
         return additionalDescriptors.stream()
-                                    .filter(additionalDescriptor -> additionalDescriptor.getRelationName()
-                                                                                        .equals(indexName))
+                                    .filter(additionalDescriptor -> Strings.areEqual(elastic.determineEffectiveIndex(
+                                            additionalDescriptor), indexName))
                                     .findFirst()
                                     .map(matchingDescriptor -> Elastic.make(matchingDescriptor,
                                                                             (ObjectNode) jsonEntity))
@@ -1162,8 +1296,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      *
      * @return the response as JSON
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public ObjectNode getRawResponse() {
         if (response == null) {
             if (accessBlockWise()) {

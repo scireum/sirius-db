@@ -97,8 +97,8 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.refresh(QueryTestEntity.class)
         def entities = elastic.select(QueryTestEntity.class)
                               .eq(QueryTestEntity.VALUE, "SORT")
-                              .sort(SortBuilder.on(QueryTestEntity.COUNTER)
-                                               .order(SortBuilder.Order.DESC))
+                              .orderBy(SortBuilder.on(QueryTestEntity.COUNTER)
+                                                  .order(SortBuilder.Order.DESC))
                               .queryList()
         then:
         entities.size() == 100
@@ -322,9 +322,9 @@ class ElasticQuerySpec extends BaseSpecification {
         elastic.refresh(QueryTestEntity.class)
         when:
         def result = elastic.select(QueryTestEntity.class)
-                           .eq(QueryTestEntity.VALUE, "NAMED-OR")
-                           .where(Elastic.FILTERS.namedOr("namedOr", Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 1),
-                                                          Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 2))).queryList()
+                            .eq(QueryTestEntity.VALUE, "NAMED-OR")
+                            .where(Elastic.FILTERS.namedOr("namedOr", Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 1),
+                                                           Elastic.FILTERS.eq(QueryTestEntity.COUNTER, 2))).queryList()
         then:
         result.size() == 2
         result.get(0).isMatchedNamedQuery("namedOr")

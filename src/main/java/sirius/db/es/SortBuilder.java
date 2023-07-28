@@ -14,7 +14,7 @@ import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Json;
 
 /**
- * Helper class which generates sorts for elasticsearch which can be used via {@link ElasticQuery#sort(SortBuilder)}.
+ * Helper class which generates sorts for elasticsearch which can be used via {@link ElasticQuery#orderBy(SortBuilder)}.
  */
 public class SortBuilder {
 
@@ -65,8 +65,8 @@ public class SortBuilder {
         MEDIAN
     }
 
-    private String field;
-    private ObjectNode body = Json.createObject();
+    private final String field;
+    private final ObjectNode body = Json.createObject();
 
     private SortBuilder(String field) {
         this.field = field;

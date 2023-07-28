@@ -173,8 +173,8 @@ public class BoolQueryBuilder {
      *
      * @return the query as constraint
      */
-    @SuppressWarnings("squid:MethodCyclomaticComplexity")
-    @Explain("Splitting this method would most probably increase the complexity.")
+    @SuppressWarnings({"squid:MethodCyclomaticComplexity", "java:S1067"})
+    @Explain("Splitting this method or its constraints would most probably increase the complexity.")
     @Nullable
     public ObjectNode build() {
         int filters = filter == null ? 0 : filter.size();
@@ -186,7 +186,7 @@ public class BoolQueryBuilder {
             return null;
         }
 
-        if (musts == 1 && mustNots == 0 && filters == 0 && shoulds == 0) {
+        if (musts == 1 && mustNots == 0 && filters == 0 && shoulds == 0 && Strings.isEmpty(name)) {
             return must.get(0);
         }
 
