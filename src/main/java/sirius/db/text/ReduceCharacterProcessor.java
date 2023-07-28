@@ -8,9 +8,8 @@
 
 package sirius.db.text;
 
+import sirius.kernel.commons.StringCleanup;
 import sirius.kernel.commons.Strings;
-
-import java.util.Set;
 
 /**
  * Reduces characters to a simpler representation.
@@ -19,20 +18,8 @@ import java.util.Set;
  */
 public class ReduceCharacterProcessor extends ChainableTokenProcessor {
 
-    /**
-     * Replaces ligatures and umlautes by their classical counterparts.
-     *
-     * @param term the term to replace all ligatures and umlauts in
-     * @return the processed term with all ligatures and umlauts replaced.
-     * @deprecated Use {@link Strings#reduceCharacters(String)} or {@link Strings#cleanup(String, Set)} instead.
-     */
-    @Deprecated
-    public static String reduceCharacters(String term) {
-        return Strings.reduceCharacters(term);
-    }
-
     @Override
     public void accept(String token) {
-        emit(Strings.reduceCharacters(token));
+        emit(Strings.cleanup(token, StringCleanup::reduceCharacters));
     }
 }
