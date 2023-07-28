@@ -56,6 +56,12 @@
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
             <version>4.2.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.json</groupId>
+                    <artifactId>json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
