@@ -717,7 +717,7 @@ public abstract class Property extends Composable {
         checkNullability(propertyValue);
 
         if (propertyValidator != null) {
-            propertyValidator.beforeSave(getValue(entity));
+            propertyValidator.beforeSave(this, getValue(entity));
         }
 
         if (entity instanceof BaseEntity<?> && (((BaseEntity<?>) entity).isNew() || ((BaseEntity<?>) entity).isChanged(
@@ -737,7 +737,7 @@ public abstract class Property extends Composable {
      */
     protected void onValidate(Object entity, Consumer<String> validationConsumer) {
         if (propertyValidator != null) {
-            propertyValidator.validate(getValue(entity), validationConsumer);
+            propertyValidator.validate(this, getValue(entity), validationConsumer);
         }
     }
 

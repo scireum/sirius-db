@@ -25,7 +25,7 @@ public interface PropertyValidator extends Named {
      * @param value              the value to validate
      * @param validationConsumer can be used to report validation errors
      */
-    void validate(Object value, Consumer<String> validationConsumer);
+    void validate(Property property, Object value, Consumer<String> validationConsumer);
 
     /**
      * Validates the given value and reports any warnings/errors to the given consumer.
@@ -34,5 +34,5 @@ public interface PropertyValidator extends Named {
      *
      * @param value the value to validate
      */
-    void beforeSave(Object value);
+    void beforeSave(Property property, Object value);
 }

@@ -8,6 +8,7 @@
 
 package sirius.db.mongo.validators;
 
+import sirius.db.mixing.Property;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.health.Exceptions;
 
@@ -17,14 +18,14 @@ import java.util.function.Consumer;
 @Register
 public class StringTestPropertyValidator implements sirius.db.mixing.PropertyValidator {
     @Override
-    public void validate(Object value, Consumer<String> validationConsumer) {
+    public void validate(Property property, Object value, Consumer<String> validationConsumer) {
         if (isInvalidTestString(value)) {
             validationConsumer.accept("Invalid value!");
         }
     }
 
     @Override
-    public void beforeSave(Object value) {
+    public void beforeSave(Property property, Object value) {
         if (isInvalidTestString(value)) {
             throw Exceptions.createHandled().withSystemErrorMessage("Invalid value!").handle();
         }
