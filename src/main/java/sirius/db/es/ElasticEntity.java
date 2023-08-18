@@ -144,10 +144,6 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         }
 
         ArrayNode matchedQueriesArray = Json.getArray(searchHit, MATCHED_QUERIES);
-        if (matchedQueriesArray == null) {
-            return Collections.emptySet();
-        }
-
         return Json.streamEntries(matchedQueriesArray)
                    .filter(Objects::nonNull)
                    .map(JsonNode::asText)

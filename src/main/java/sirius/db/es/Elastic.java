@@ -713,9 +713,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * @param <E>              the generic common type of the entities to query across
      * @return a new query which can be used to fetch entities of the given types
      */
-    @SafeVarargs
     @SuppressWarnings("java:S1172")
-    @Explain("We only need the type for the compiler to enforce type safety.")
+    @Explain("We only need this parameter to make the compiler enforce proper type rules.")
+    @SafeVarargs
     public final <E extends ElasticEntity> ElasticQuery<E> selectMultiple(Class<E> commonSuperClass,
                                                                           Class<? extends E>... types) {
         ElasticQuery<E> query = new ElasticQuery<>(null, getLowLevelClient());
