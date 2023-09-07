@@ -136,6 +136,12 @@ public abstract class Property extends Composable {
     protected boolean nullable;
 
     protected PropertyValidator propertyValidator;
+
+    /**
+     * Determines if the {@link #propertyValidator} should be also executed when the value has not changed.
+     * <p>
+     * This is only relevant when a validator was specified via {@link ValidatedBy}.
+     */
     protected boolean strictValidation = true;
 
     /**
