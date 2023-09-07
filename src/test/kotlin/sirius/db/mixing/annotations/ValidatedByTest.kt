@@ -54,9 +54,7 @@ class ValidatedByTest {
         mango.update(test)
 
         // Set the strict field to an invalid value directly in the database.
-        mongo.update()
-                .where(ValidatedByTestEntity.ID, test.id)
-                .set(ValidatedByTestEntity.STRICT_STRING_TEST, "invalid")
+        mongo.update().where(ValidatedByTestEntity.ID, test.id).set(ValidatedByTestEntity.STRICT_STRING_TEST, "invalid")
                 .executeForOne(ValidatedByTestEntity::class.java)
 
         // Retrieve it back from Mongo.
@@ -82,8 +80,7 @@ class ValidatedByTest {
         mango.update(test)
 
         // Set the strict field to an invalid value directly in the database.
-        mongo.update()
-                .where(ValidatedByTestEntity.ID, test.id)
+        mongo.update().where(ValidatedByTestEntity.ID, test.id)
                 .set(ValidatedByTestEntity.LENIENT_STRING_TEST, "invalid")
                 .executeForOne(ValidatedByTestEntity::class.java)
 
