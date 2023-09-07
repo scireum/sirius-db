@@ -31,4 +31,15 @@ public @interface ValidatedBy {
      * Specifies the validator to use.
      */
     Class<? extends PropertyValidator> value();
+
+    /**
+     * Specifies if the validator should be invoked in strict mode. Strict mode means that the validator gets
+     * always executed. Non-strict mode means that the validator is only executed if the property value has changed.
+     * <p>
+     * The non-strict mode might be useful e.g. for properties that have persisted legacy data which is not valid
+     * and when validity is not mandatory.
+     *
+     * @return <tt>true</tt> for strict validation, <tt>false</tt> otherwise
+     */
+    boolean strictValidation() default true;
 }

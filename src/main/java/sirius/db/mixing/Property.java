@@ -138,6 +138,13 @@ public abstract class Property extends Composable {
     protected PropertyValidator propertyValidator;
 
     /**
+     * Determines if the {@link #propertyValidator} should be also executed when the value has not changed.
+     * <p>
+     * This is only relevant when a validator was specified via {@link ValidatedBy}.
+     */
+    protected boolean strictValidation = true;
+
+    /**
      * Creates a new property for the given descriptor, access path and field.
      *
      * @param descriptor the descriptor which owns the property
@@ -215,6 +222,7 @@ public abstract class Property extends Composable {
                                 field.getName(),
                                 field.getDeclaringClass().getName());
             } else {
+                this.strictValidation = field.getAnnotation(ValidatedBy.class).strictValidation();
                 this.propertyValidator = validator;
             }
         }
@@ -716,12 +724,14 @@ public abstract class Property extends Composable {
         Object propertyValue = getValue(entity);
         checkNullability(propertyValue);
 
-        if (propertyValidator != null) {
+        boolean valueChanged = entity instanceof BaseEntity<?> && (((BaseEntity<?>) entity).isNew()
+                                                                   || ((BaseEntity<?>) entity).isChanged(nameAsMapping));
+        if (propertyValidator != null && (strictValidation || valueChanged)) {
+            // Only enforce validity if the value actually changed or in strict validation mode
             propertyValidator.beforeSave(this, getValue(entity));
         }
 
-        if (entity instanceof BaseEntity<?> && (((BaseEntity<?>) entity).isNew() || ((BaseEntity<?>) entity).isChanged(
-                nameAsMapping))) {
+        if (valueChanged) {
             // Only enforce uniqueness if the value actually changed...
             checkUniqueness(entity, propertyValue);
         }
