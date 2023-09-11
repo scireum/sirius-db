@@ -33,7 +33,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +133,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     private List<ObjectNode> sorts;
 
-    private List<String> searchAfter;
+    private ArrayNode searchAfter;
 
     private FunctionScoreBuilder functionScore;
 
@@ -367,7 +366,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         }
 
         if (searchAfter != null) {
-            copy.searchAfter = new ArrayList<>(searchAfter);
+            copy.searchAfter = Json.createArray().addAll(searchAfter);
         }
 
         if (functionScore != null) {
@@ -436,9 +435,9 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @param searchAfter the last sort values of the previous result
      * @return the query itself for fluent method calls
      */
-    public ElasticQuery<E> searchAfter(List<String> searchAfter) {
+    public ElasticQuery<E> searchAfter(ArrayNode searchAfter) {
         if (searchAfter != null) {
-            this.searchAfter = new ArrayList<>(searchAfter);
+            this.searchAfter = searchAfter;
         }
 
         return this;
@@ -460,35 +459,29 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
                 return this.fail();
             }
 
-            this.searchAfter = Collections.singletonList(searchAfter);
+            this.searchAfter = Json.createArray().add(searchAfter);
         }
 
         return this;
     }
 
     /**
-     * Obtains the list of last sort values to be used with {@link #searchAfter(List)}.
+     * Obtains the list of last sort values to be used with {@link #searchAfter(ArrayNode)}.
      *
      * @return the list of last sort values or an empty list if no results are present
      */
-    public List<String> getLastSortValues() {
+    public ArrayNode getLastSortValues() {
         if (response == null) {
-            return Collections.emptyList();
+            return Json.createArray();
         }
 
         ArrayNode jsonHits = Json.getArrayAt(getRawResponse(), HITS_POINTER);
 
         if (jsonHits.isEmpty()) {
-            return Collections.emptyList();
+            return Json.createArray();
         }
 
-        ArrayNode jsonSorts = Json.getArrayAt(jsonHits, Json.createPointer(jsonHits.size() - 1, KEY_SORT));
-
-        if (jsonSorts.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return Json.streamEntries(jsonSorts).map(JsonNode::asText).toList();
+        return Json.createArray().addAll(Json.getArrayAt(jsonHits, Json.createPointer(jsonHits.size() - 1, KEY_SORT)));
     }
 
     /**
@@ -504,7 +497,11 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return "-";
         }
 
-        return getLastSortValues().stream().filter(Strings::isFilled).findFirst().orElse("-");
+        if (getLastSortValues().isEmpty()) {
+            return "-";
+        } else {
+            return getLastSortValues().get(0).asText("-");
+        }
     }
 
     /**
@@ -1377,7 +1374,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
     private class ElasticBlockWiseSpliterator extends PullBasedSpliterator<E> {
         private final TaskContext taskContext = TaskContext.get();
         private String pit = null;
-        private List<String> searchAfter = null;
+        private ArrayNode searchAfter = null;
 
         @Override
         public int characteristics() {
