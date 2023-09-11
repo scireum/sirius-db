@@ -1395,7 +1395,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             String filterRouting = checkRouting(Elastic.RoutingAccessMode.READ);
             if (pit == null) {
                 // first call to this method
-                orderAsc(ElasticEntity.ID);
+                orderAsc(Mapping.named(SHARD_DOC_ID));
                 pit = client.createPit(alias, filterRouting, STREAM_BLOCKWISE_PIT_TTL);
             } else {
                 searchAfter(searchAfter);
