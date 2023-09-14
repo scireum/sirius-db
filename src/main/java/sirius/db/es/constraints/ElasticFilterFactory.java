@@ -8,6 +8,7 @@
 
 package sirius.db.es.constraints;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.EntityDescriptor;
@@ -21,6 +22,7 @@ import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -58,6 +60,8 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     private static final String PARAM_MATCH_NONE = "match_none";
     private static final String PARAM_FILTER = "filter";
     private static final String PARAM_BOOST = "boost";
+    private static final String PARAM_DIS_MAX = "dis_max";
+    private static final String PARAM_QUERIES = "queries";
 
     @Override
     protected Object customTransform(Object value) {
@@ -136,7 +140,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint invert(ElasticConstraint constraint) {
-        return wrap(new BoolQueryBuilder().mustNot(constraint).build());
+        return new ElasticConstraint(new BoolQueryBuilder().mustNot(constraint).build());
     }
 
     @Override
@@ -396,5 +400,45 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
                        Json.createObject().put(PARAM_BOOST, boost).set(PARAM_FILTER, constraint.toJSON()));
 
         return new ElasticConstraint(jsonObject);
+    }
+
+    /**
+     * Creates a "dis_max" query.
+     * <p>
+     * This is mostly equivalent to {@link #or(List)}. However, instead of summing the scores of each child clause,
+     * the best (max) is picked.
+     *
+     * @param constraints the constraint clauses to add (at least one has to match in order for the query to match)
+     * @return the newly created constraint or <tt>null</tt> if the list was empty or did only contain <tt>null</tt>
+     * constraints
+     */
+    @Nullable
+    public ElasticConstraint maxScore(@Nonnull List<ElasticConstraint> constraints) {
+        List<ElasticConstraint> effectiveConstraints = constraints.stream().filter(Objects::nonNull).toList();
+        if (effectiveConstraints.isEmpty()) {
+            return null;
+        }
+
+        if (effectiveConstraints.size() == 1) {
+            return constraints.get(0);
+        }
+
+        ArrayNode queries = Json.createArray();
+        effectiveConstraints.forEach(constraint -> queries.add(constraint.toJSON()));
+
+        return new ElasticConstraint(Json.createObject()
+                                         .set(PARAM_DIS_MAX, Json.createObject().set(PARAM_QUERIES, queries)));
+    }
+
+    /**
+     * Provides a var-args version of {@link #maxScore(List)}.
+     * 
+     * @param constraints the clauses to match
+     * @return the resulting constraint
+     * @see #maxScore(List) 
+     */
+    @Nullable
+    public ElasticConstraint maxScore(@Nonnull ElasticConstraint... constraints) {
+        return maxScore(Arrays.asList(constraints));
     }
 }
