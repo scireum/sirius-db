@@ -140,7 +140,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     @Override
     protected ElasticConstraint invert(ElasticConstraint constraint) {
-        return wrap(new BoolQueryBuilder().mustNot(constraint).build());
+        return new ElasticConstraint(new BoolQueryBuilder().mustNot(constraint).build());
     }
 
     @Override
