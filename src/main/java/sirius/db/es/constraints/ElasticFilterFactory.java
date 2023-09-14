@@ -429,4 +429,16 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         return new ElasticConstraint(Json.createObject()
                                          .set(PARAM_DIS_MAX, Json.createObject().set(PARAM_QUERIES, queries)));
     }
+
+    /**
+     * Provides a var-args version of {@link #maxScore(List)}.
+     * 
+     * @param constraints the cluases to match
+     * @return the resulting constraint
+     * @see #maxScore(List) 
+     */
+    @Nullable
+    public ElasticConstraint maxScore(@Nonnull ElasticConstraint... constraints) {
+        return maxScore(Arrays.asList(constraints));
+    }
 }
