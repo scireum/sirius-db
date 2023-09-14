@@ -408,7 +408,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * This is mostly equivalent to {@link #or(List)}. However, instead of summing the scores of each child clause,
      * the best (max) is picked.
      *
-     * @param constraints the constraint cluases to add (at leas one has to match in order for the query to match)
+     * @param constraints the constraint clauses to add (at least one has to match in order for the query to match)
      * @return the newly created constraint or <tt>null</tt> if the list was empty or did only contain <tt>null</tt>
      * constraints
      */
@@ -424,7 +424,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         ArrayNode queries = Json.createArray();
-        effectiveConstraints.stream().filter(Objects::nonNull).forEach(q -> queries.add(q.toJSON()));
+        effectiveConstraints.forEach(constraint -> queries.add(constraint.toJSON()));
 
         return new ElasticConstraint(Json.createObject()
                                          .set(PARAM_DIS_MAX, Json.createObject().set(PARAM_QUERIES, queries)));
@@ -433,7 +433,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     /**
      * Provides a var-args version of {@link #maxScore(List)}.
      * 
-     * @param constraints the cluases to match
+     * @param constraints the clauses to match
      * @return the resulting constraint
      * @see #maxScore(List) 
      */
