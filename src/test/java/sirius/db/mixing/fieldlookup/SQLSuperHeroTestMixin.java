@@ -12,6 +12,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Mixable;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.Mixin;
+import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.StringList;
 
 @Mixin(SQLFieldLookUpTestEntity.class)
@@ -22,6 +23,7 @@ public class SQLSuperHeroTestMixin extends Mixable {
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
     @Length(100)
+    @NullAllowed
     private final StringList superPowers = new StringList();
 
     public NameFieldsTestComposite getHeroNames() {
