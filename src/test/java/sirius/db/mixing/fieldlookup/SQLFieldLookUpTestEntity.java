@@ -33,6 +33,7 @@ public class SQLFieldLookUpTestEntity extends SQLEntity {
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
     @Length(100)
+    @NullAllowed
     private final StringList superPowers = new StringList();
 
     public int getAge() {

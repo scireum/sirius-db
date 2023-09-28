@@ -66,4 +66,14 @@ class SQLStringListPropertyEntitySpec extends BaseSpecification {
         e.getMessage() == "Der Wert 'test1,test2,test3,test4' im Feld 'Model.shortStringList' ist mit 23 Zeichen zu " +
                 "lang. Maximal sind 20 Zeichen erlaubt."
     }
+
+    def "test exception is thrown for empty lists, if the list is non null-allowed"() {
+        when:
+        SQLStringListNonNullAllowedPropertyEntity entity = new SQLStringListNonNullAllowedPropertyEntity()
+        and:
+        oma.update(entity)
+        then:
+        def e = thrown(HandledException.class)
+        e.getMessage().contains("'stringList' doesn't have a default value")
+    }
 }
