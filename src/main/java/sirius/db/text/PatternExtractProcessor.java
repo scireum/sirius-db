@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  */
 public class PatternExtractProcessor extends ChainableTokenProcessor {
 
-    private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}.+)@(.+)$");
+    private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}[^@]++)@(.+)$");
 
     private static class ReplacementPattern {
         int groupIndex = -1;
