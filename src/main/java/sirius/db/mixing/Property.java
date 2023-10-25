@@ -306,12 +306,12 @@ public abstract class Property extends Composable {
     }
 
     /**
-     * Returns the name of the property which is shown to the user.
+     * Returns the name of the key used to determine the label of the property.
      * <p>
      * The label can be set in three ways:
      * <ol>
      * <li>
-     * Define an local i18n value for <tt>propertyKey</tt>, which is normally <tt>[entityClass].[compositeName]_[field]</tt>.
+     * Define a local i18n value for <tt>localPropertyKey</tt>, which is normally <tt>[entityClass].[compositeName]_[field]</tt>.
      * So for <tt>com.acme.model.Address.street</tt> in <tt>com.acme.model.Customer</tt> this would be
      * <tt>Customer.address_street</tt>. This can be used to give the same composite field different
      * names of a per-entity basis.
@@ -323,23 +323,39 @@ public abstract class Property extends Composable {
      * <li>
      * Define an i18n value for <tt>alternativePropertyKey</tt>, which is normally <tt>Model.[field]</tt>.
      * So for <tt>com.acme.model.Address.street</tt> this would be <tt>Model.street</tt>. That
-     * way common names across different entities can share the same translation.
+     * way, common names across different entities can share the same translation.
      * </li>
      * </ol>
      *
+     * @return the key used to determine the label of the property
+     */
+    public String getLabelKey() {
+        String currentLanguage = NLS.getCurrentLanguage();
+        if (NLS.exists(localPropertyKey, currentLanguage)) {
+            return localPropertyKey;
+        }
+
+        if (NLS.exists(propertyKey, currentLanguage)) {
+            return propertyKey;
+        }
+
+        if (NLS.exists(alternativePropertyKey, currentLanguage)) {
+            return alternativePropertyKey;
+        }
+
+        return propertyKey;
+    }
+
+    /**
+     * Returns the name of the property which is shown to the user.
+     * <p>
+     *
      * @return the effective label of the property
+     * @see #getLabelKey()
      * @see #getFullLabel()
      */
     public String getLabel() {
-        String currentLanguage = NLS.getCurrentLanguage();
-        String localLabel = NLS.getIfExists(localPropertyKey, currentLanguage).orElse(null);
-        if (Strings.isFilled(localLabel)) {
-            return localLabel;
-        }
-
-        return NLS.getIfExists(propertyKey, currentLanguage)
-                  .orElseGet(() -> NLS.getIfExists(alternativePropertyKey, currentLanguage)
-                                      .orElseGet(() -> NLS.get(propertyKey)));
+        return NLS.get(getLabelKey());
     }
 
     /**
