@@ -349,6 +349,7 @@ public abstract class Property extends Composable {
     /**
      * Returns the name of the property which is shown to the user.
      * <p>
+     * This method relies on {@link #getLabelKey()}. See the documentation there for how the label is determined.
      *
      * @return the effective label of the property
      * @see #getLabelKey()
