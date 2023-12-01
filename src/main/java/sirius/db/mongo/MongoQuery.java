@@ -331,7 +331,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     @Override
     public void delete(@Nullable Consumer<E> entityCallback) {
-        iterateAll(entity -> {
+        streamBlockwise().forEach(entity -> {
             if (entityCallback != null) {
                 entityCallback.accept(entity);
             }
