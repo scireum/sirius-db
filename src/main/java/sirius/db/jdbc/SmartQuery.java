@@ -24,11 +24,9 @@ import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
-import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -39,7 +37,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -63,9 +59,6 @@ import java.util.stream.StreamSupport;
  * @param <E> the generic type of entities being queried
  */
 public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQLConstraint> {
-
-    @ConfigValue("jdbc.queryIterateTimeout")
-    private static Duration queryIterateTimeout;
 
     @Part
     private static OMA oma;
@@ -254,41 +247,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         return copy().fields(SQLEntity.ID).first().isPresent();
     }
 
-    /**
-     * Deletes all matches using the {@link OMA#delete(BaseEntity)}.
-     * <p>
-     * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
-     * the results until the timeout ({@link #queryIterateTimeout} is reached). In this case, we abort the
-     * iteration, execute the query again and continue deleting until all entities are gone.
-     *
-     * @param entityCallback a callback to be invoked for each entity to be deleted
-     */
     @Override
     public void delete(@Nullable Consumer<E> entityCallback) {
-        if (forceFail) {
-            return;
-        }
-        AtomicBoolean continueDeleting = new AtomicBoolean(true);
-        TaskContext taskContext = TaskContext.get();
-        while (continueDeleting.get() && taskContext.isActive()) {
-            continueDeleting.set(false);
-            Timeout timeout = new Timeout(queryIterateTimeout);
-            iterate(entity -> {
-                if (entityCallback != null) {
-                    entityCallback.accept(entity);
-                }
-                oma.delete(entity);
-                if (timeout.isReached()) {
-                    // Timeout has been reached, set the flag so that another delete query is attempted....
-                    continueDeleting.set(true);
-                    // and abort processing the results of this query...
-                    return false;
-                } else {
-                    // Timeout not yet reached, continue deleting...
-                    return true;
-                }
-            });
-        }
+        streamBlockwise().forEach(entity -> {
+            if (entityCallback != null) {
+                entityCallback.accept(entity);
+            }
+
+            oma.delete(entity);
+        });
     }
 
     @Override
