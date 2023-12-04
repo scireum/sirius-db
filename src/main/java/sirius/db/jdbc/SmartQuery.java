@@ -427,7 +427,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     /**
      * Creates a sql constraint for sorting purposes.
      * </p>
-     * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
+     * In MySQL/MariaDB, NULL is considered as a 'missing, unknown value'. Any arithmetic comparison with NULL
      * returns false e.g. NULL != 'any' returns false.
      * Therefore, comparisons with NULL values must be treated specially.
      *

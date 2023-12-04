@@ -32,9 +32,9 @@ public abstract class Query<Q, E extends BaseEntity<?>, C extends Constraint> ex
     }
 
     /**
-     * Applies the given contraints to the query.
+     * Applies the given constraints to the query.
      *
-     * @param constraint the constraint which has to be fullfilled
+     * @param constraint the constraint which has to be fulfilled
      * @return the query itself for fluent method calls
      */
     public abstract Q where(C constraint);
