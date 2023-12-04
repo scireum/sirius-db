@@ -104,7 +104,7 @@ public class MultiPointLocationProperty extends Property {
             Object coordinates = ((Document) object.get()).get("coordinates");
             if (coordinates instanceof List<?>) {
                 return ((List<List<Double>>) coordinates).stream()
-                                                         .map(entry -> Tuple.create(entry.get(0), entry.get(1)))
+                                                         .map(entry -> Tuple.create(entry.getFirst(), entry.get(1)))
                                                          .collect(Collectors.toCollection(ArrayList::new));
             }
         }

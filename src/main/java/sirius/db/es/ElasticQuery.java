@@ -410,7 +410,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
      * @return the query itself for fluent method calls
      */
     public ElasticQuery<E> withEffectiveIndices(List<Class<? extends E>> entitiesToQuery) {
-        this.descriptor = mixing.getDescriptor(entitiesToQuery.get(0));
+        this.descriptor = mixing.getDescriptor(entitiesToQuery.getFirst());
         this.additionalDescriptors = entitiesToQuery.stream().skip(1).map(type -> mixing.getDescriptor(type)).toList();
 
         return this;

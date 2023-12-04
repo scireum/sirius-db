@@ -52,21 +52,21 @@ public class PipelineProcessor extends ChainableTokenProcessor {
 
     @Override
     public void accept(String token) {
-        processors.get(0).accept(token);
+        processors.getFirst().accept(token);
     }
 
     @Override
     public void purge() {
-        processors.get(0).purge();
+        processors.getFirst().purge();
     }
 
     @Override
     public void chain(TokenProcessor downstream) {
-        processors.get(processors.size() - 1).chain(downstream);
+        processors.getLast().chain(downstream);
     }
 
     @Override
     public void chainConsumer(Consumer<String> downstream) {
-        processors.get(processors.size() - 1).chainConsumer(downstream);
+        processors.getLast().chainConsumer(downstream);
     }
 }
