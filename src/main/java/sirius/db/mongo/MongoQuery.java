@@ -209,7 +209,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
             query.allIn(relation, doc -> buffer.add(Mango.make(descriptor, doc)));
 
             if (!buffer.isEmpty()) {
-                lastId = buffer.get(buffer.size() - 1).getId();
+                lastId = buffer.getLast().getId();
             }
 
             return buffer.iterator();

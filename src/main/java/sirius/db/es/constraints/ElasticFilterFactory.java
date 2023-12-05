@@ -420,7 +420,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
         }
 
         if (effectiveConstraints.size() == 1) {
-            return effectiveConstraints.get(0);
+            return effectiveConstraints.getFirst();
         }
 
         ArrayNode queries = Json.createArray();

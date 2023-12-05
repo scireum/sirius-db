@@ -349,7 +349,7 @@ public abstract class BaseQuery<Q, E extends BaseEntity<?>> {
         if (result.size() != 1) {
             return null;
         } else {
-            return result.get(0);
+            return result.getFirst();
         }
     }
 }

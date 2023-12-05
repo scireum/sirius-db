@@ -322,7 +322,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
             List<E> block = queryNextBlock();
             if (!block.isEmpty()) {
-                lastValue = block.get(block.size() - 1);
+                lastValue = block.getLast();
                 orderByValuesOfLastEntityDuringFetch = extractOrderByValues(lastValue);
             }
             return block.iterator();
@@ -760,7 +760,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             List<Mapping> fetchPath = new ArrayList<>();
             Mapping parent = field.getParent();
             while (parent != null) {
-                fetchPath.add(0, parent);
+                fetchPath.addFirst(parent);
                 parent = parent.getParent();
             }
             JoinFetch jf = rootFetch;

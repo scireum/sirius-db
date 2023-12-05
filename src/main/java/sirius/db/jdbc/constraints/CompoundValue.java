@@ -80,7 +80,7 @@ public class CompoundValue {
             }
         }
         if (components.size() == 1) {
-            return Tuple.create(sqlRepresentation.get(0), parameters);
+            return Tuple.create(sqlRepresentation.getFirst(), parameters);
         }
         return Tuple.create("(" + Strings.join(sqlRepresentation, ", ") + ")", parameters);
     }
@@ -88,7 +88,7 @@ public class CompoundValue {
     @Override
     public String toString() {
         if (components.size() == 1) {
-            return Objects.toString(components.get(0));
+            return Objects.toString(components.getFirst());
         }
         return "(" + components.stream().map(Objects::toString).collect(Collectors.joining(", ")) + ")";
     }
