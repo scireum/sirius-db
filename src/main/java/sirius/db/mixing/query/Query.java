@@ -131,6 +131,7 @@ public abstract class Query<Q, E extends BaseEntity<?>, C extends Constraint> ex
      * Deletes all matches using the {@link BaseMapper#delete(BaseEntity)} of the appropriate mapper.
      * <p>
      * Be aware that this might be slow for very large result sets.
+     * Attention: Some implementations (especially mongo) does not support deleting via streamBlockwise with a sort order.
      *
      * @param entityCallback a callback to be invoked for each entity to be deleted
      */
