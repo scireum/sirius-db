@@ -1424,7 +1424,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
 
     @Override
     public void delete(@Nullable Consumer<E> entityCallback) {
-        iterateAll(entity -> {
+        streamBlockwise().forEach(entity -> {
             if (entityCallback != null) {
                 entityCallback.accept(entity);
             }
