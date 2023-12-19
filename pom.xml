@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.scireum</groupId>
         <artifactId>sirius-parent</artifactId>
-        <version>11.2.0</version>
+        <version>11.5.0</version>
     </parent>
     <artifactId>sirius-db</artifactId>
     <version>DEVELOPMENT-SNAPSHOT</version>
@@ -19,7 +19,7 @@
     <url>http://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>dev-40.0.0</sirius.kernel>
+        <sirius.kernel>dev-42.0.0</sirius.kernel>
     </properties>
 
     <repositories>
@@ -45,12 +45,12 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
-            <version>2.9.0</version>
+            <version>2.11.0</version>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>4.7.1</version>
+            <version>4.11.1</version>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
@@ -67,19 +67,12 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>8.4.1</version>
+            <version>8.11.2</version>
         </dependency>
-        <!-- Required as the version brought by elasticsearch-rest-client contains security issues -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.13</version>
-        </dependency>
-
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.0.6</version>
+            <version>3.3.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
