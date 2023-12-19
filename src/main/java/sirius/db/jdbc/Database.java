@@ -353,7 +353,7 @@ public class Database {
             ds.setMaxIdle(maxIdle);
             ds.setTestOnBorrow(testOnBorrow);
             ds.setValidationQuery(validationQuery);
-            ds.setMaxWait(Duration.ofMillis(1000));
+            ds.setMaxWait(Duration.ofSeconds(1));
         }
     }
 

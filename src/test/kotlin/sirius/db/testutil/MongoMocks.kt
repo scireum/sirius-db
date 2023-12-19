@@ -8,7 +8,7 @@
 
 package sirius.db.testutil
 
-import org.mockito.Mockito.spy
+import io.mockk.spyk
 import sirius.db.mixing.types.BaseEntityRef
 import sirius.db.mongo.MongoEntity
 import sirius.db.mongo.types.MongoRef
@@ -23,7 +23,7 @@ class MongoMocks {
          * @param entity which is to be wrapped
          */
         fun <E : MongoEntity> asMongoRef(entity: E): MongoRef<E> {
-            val mongoRef = spy(MongoRef.on(entity.javaClass, BaseEntityRef.OnDelete.IGNORE))
+            val mongoRef = spyk(MongoRef.on(entity.javaClass, BaseEntityRef.OnDelete.IGNORE))
             mongoRef.setValue(entity)
             return mongoRef
         }
