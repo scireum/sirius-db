@@ -8,241 +8,256 @@
 
 package sirius.db.mongo
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
-class MangoSpec extends BaseSpecification {
-
-    @Part
-    private static Mango mango
-
-            @Part
-            private static Mongo mongo
-
-            def "write a test entity and read it back"() {
-        given:
-        MangoTestEntity e = new MangoTestEntity()
-        e.setFirstname("Test")
-        e.setLastname("Entity")
-        e.setAge(12)
-        when:
-        mango.update(e)
-        then:
-        MangoTestEntity readBack = mango.findOrFail(MangoTestEntity.class, e.getId())
-        and:
-        readBack.getFirstname() == "Test"
-        and:
-        readBack.getLastname() == "Entity"
-        and:
-        readBack.getAge() == 12
+@ExtendWith(SiriusExtension::class)
+class MangoTest {
+    companion object {
+        @Part
+        private lateinit var mango: Mango
     }
 
-    def "select not all fields"() {
-        given:
-        MangoTestEntity e = new MangoTestEntity()
-        e.setFirstname("Test2")
-        e.setLastname("Entity2")
-        e.setAge(13)
-        when:
-        mango.update(e)
-        and:
-        MangoTestEntity readBack = mango.select(MangoTestEntity.class)
-                .eq(MangoTestEntity.ID, e.getId())
+    @Test
+    fun `write a test entity and read it back`() {
+        val mangoTestEntity = MangoTestEntity()
+        mangoTestEntity.firstname = "Test"
+        mangoTestEntity.lastname = "Entity"
+        mangoTestEntity.age = 12
+
+        mango.update(mangoTestEntity)
+
+        val readBack = mango.findOrFail(MangoTestEntity::class.java, mangoTestEntity.getId())
+
+        assertEquals("Test", readBack.firstname)
+        assertEquals("Entity", readBack.lastname)
+        assertEquals(12, readBack.age)
+    }
+
+    @Test
+    fun `select not all fields`() {
+        val mangoTestEntity = MangoTestEntity()
+        mangoTestEntity.firstname = "Test2"
+        mangoTestEntity.lastname = "Entity2"
+        mangoTestEntity.age = 13
+
+        mango.update(mangoTestEntity)
+
+        val readBack = mango.select(MangoTestEntity::class.java)
+                .eq(MangoTestEntity.ID, mangoTestEntity.getId())
                 .fields(MangoTestEntity.FIRSTNAME, MangoTestEntity.AGE)
                 .queryFirst()
-                then:
-                readBack != null
-        and:
-        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.ID))
-        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.FIRSTNAME))
-        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.LASTNAME))
-        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(MangoTestEntity.AGE))
-        and:
-        readBack.getFirstname() == "Test2"
-        readBack.getLastname() == null
-        readBack.getAge() == 13
+
+        assertNotEquals(null, readBack)
+        assertFalse {
+            readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(MangoTestEntity.ID))
+        }
+        assertTrue {
+            readBack.descriptor
+                    .isFetched(readBack, readBack.descriptor.getProperty(MangoTestEntity.FIRSTNAME))
+        }
+        assertFalse {
+            readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(MangoTestEntity.LASTNAME))
+        }
+        assertTrue {
+            readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(MangoTestEntity.AGE))
+        }
+        assertEquals("Test2", readBack.firstname)
+        assertEquals(null, readBack.lastname)
+        assertEquals(13, readBack.age)
     }
 
-    def "delete an entity"() {
-        given:
-        MangoTestEntity e = new MangoTestEntity()
-        e.setFirstname("Test")
-        e.setLastname("Entity")
-        e.setAge(12)
-        when:
-        mango.update(e)
-        and:
-        def refreshed = mango.tryRefresh(e)
-        and:
-        mango.delete(e)
-        and:
-        mango.refreshOrFail(e)
-        then:
-        // The first refresh worked
-        refreshed == e
-        and:
-        // But did not return the original entity
-        // but a fresh instance from the DB
-        !refreshed.is(e)
-        and:
-        // The second refresh failed as expected
-        thrown(HandledException)
+    @Test
+    fun `delete an entity`() {
+        val mangoTestEntity = MangoTestEntity()
+        mangoTestEntity.firstname = "Test"
+        mangoTestEntity.lastname = "Entity"
+        mangoTestEntity.age = 12
+
+        mango.update(mangoTestEntity)
+        val refreshed = mango.tryRefresh(mangoTestEntity)
+        mango.delete(mangoTestEntity)
+
+        assertThrows<HandledException> {
+            mango.refreshOrFail(mangoTestEntity)
+
+            // The first refresh worked
+            assertEquals(mangoTestEntity, refreshed)
+            // The second refresh failed as expected
+            refreshed != mangoTestEntity
+        }
     }
 
-    def "optimistic locking works"() {
-        when:
-        MongoLockedTestEntity entity = new MongoLockedTestEntity()
-        entity.setValue("Test")
-        mango.update(entity)
-        and:
-        MongoLockedTestEntity copyOfOriginal = mango.refreshOrFail(entity)
-        and:
-        entity.setValue("Test2")
-        mango.update(entity)
-        and:
-        entity.setValue("Test3")
-        mango.update(entity)
-        and:
-        copyOfOriginal.setValue("Test2")
-        mango.tryUpdate(copyOfOriginal)
-        then:
-        thrown(OptimisticLockException)
-        when:
-        mango.tryDelete(copyOfOriginal)
-        then:
-        thrown(OptimisticLockException)
-        when:
+    @Test
+    fun `optimistic locking works`() {
+        val mongoLockedTestEntity = MongoLockedTestEntity()
+        mongoLockedTestEntity.value = "Test"
+        mango.update(mongoLockedTestEntity)
+
+        val copyOfOriginal = mango.refreshOrFail(mongoLockedTestEntity)
+
+        mongoLockedTestEntity.value = "Test2"
+        mango.update(mongoLockedTestEntity)
+
+        mongoLockedTestEntity.value = "Test3"
+        mango.update(mongoLockedTestEntity)
+
+        copyOfOriginal.value = "Test2"
+
+        assertThrows<OptimisticLockException> { mango.tryUpdate(copyOfOriginal) }
+        assertThrows<OptimisticLockException> { mango.tryDelete(copyOfOriginal) }
+
         mango.forceDelete(copyOfOriginal)
-        MongoLockedTestEntity notFound = mango.find(MongoLockedTestEntity.class, entity.getId()).orElse(null)
-        then:
-        notFound == null
+        val notFound = mango.find(MongoLockedTestEntity::class.java, mongoLockedTestEntity.getId()).orElse(null)
+
+        assertEquals(null, notFound)
     }
 
-    def "unique constraint violations are properly thrown"() {
-        setup:
-        mango.select(MongoUniqueTestEntity.class).eq(MongoUniqueTestEntity.VALUE, "Test").delete()
-                when:
-        MongoUniqueTestEntity entity = new MongoUniqueTestEntity()
-                entity.setValue("Test")
-                mango.update(entity)
-                and:
-                MongoUniqueTestEntity conflictingEntity = new MongoUniqueTestEntity()
-                and:
-                conflictingEntity.setValue("Test")
-                mango.tryUpdate(conflictingEntity)
-                then:
-                thrown(IntegrityConstraintFailedException)
+    @Test
+    fun `unique constraint violations are properly thrown`() {
+        mango.select(
+                MongoUniqueTestEntity::class.java
+        ).eq(MongoUniqueTestEntity.VALUE, "Test").delete()
+
+        val entity = MongoUniqueTestEntity()
+        entity.value = "Test"
+        mango.update(entity)
+
+        val conflictingEntity = MongoUniqueTestEntity()
+
+        conflictingEntity.value = "Test"
+        assertThrows<IntegrityConstraintFailedException> { mango.tryUpdate(conflictingEntity) }
     }
 
-    def "MongoQuery.exists works as expected and leaves the query intact"() {
-        when:
-        mango.select(MangoListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 10; i++) {
-        def entityToCreate = new MangoListTestEntity()
-        entityToCreate.setCounter(i)
-        mango.update(entityToCreate)
-    }
-        and:
-        MongoQuery<MangoListTestEntity> query = mango.
-        select(MangoListTestEntity.class).
-        orderDesc(MangoListTestEntity.COUNTER)
-                then: "simple exists works"
-                query.exists() == true
-                and: "a count after an exists still yields all entities"
-                query.count() == 10
-                and: "a list after an exists still yields all entities"
-                query.queryList().size() == 10
-                and: "a list after an exists still yields all fields"
-                query.queryList().get(0).getCounter() == 9
-                and: "an exists with a filter also works"
-                mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 5).exists() == true
-                and: "an exists with a filter that yields an empty result works"
-                mango.select(MangoListTestEntity.class).eq(MangoListTestEntity.COUNTER, 50).exists() == false
+    @Test
+    fun `MongoQuery exists works as expected and leaves the query intact`() {
+        mango.select(
+                MangoListTestEntity::class.java
+        ).delete()
+
+        for (i in 0..9) {
+            val entityToCreate = MangoListTestEntity()
+            entityToCreate.counter = i
+            mango.update(entityToCreate)
+        }
+
+        val query = mango.select(
+                MangoListTestEntity::class.java
+        ).orderDesc(MangoListTestEntity.COUNTER)
+
+        //simple exists works
+        assertTrue { query.exists() }
+        //a count after an exists still yields all entities
+        assertEquals(10, query.count())
+        //a list after an exists still yields all entities
+        assertEquals(10, query.queryList().size)
+        //a list after an exists still yields all fields
+        assertEquals(9, query.queryList()[0].counter)
+        //an exists with a filter also works
+        assertTrue { mango.select(MangoListTestEntity::class.java).eq(MangoListTestEntity.COUNTER, 5).exists() }
+        //an exists with a filter that yields an empty result works
+        assertFalse { mango.select(MangoListTestEntity::class.java).eq(MangoListTestEntity.COUNTER, 50).exists() }
     }
 
-    def "MongoQuery.streamBlockwise() works in mango"() {
-        when:
-        mango.select(MangoListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 10; i++) {
-        def entityToCreate = new MangoListTestEntity()
-        entityToCreate.setCounter(i)
-        mango.update(entityToCreate)
-    }
-        and:
-        MongoQuery<MangoListTestEntity> query = mango.select(MangoListTestEntity.class)
-                then:
-                query.streamBlockwise().count() == 10
-        when:
-        query.skip(3).limit(0).streamBlockwise().count() == 7
-        then:
-        thrown(UnsupportedOperationException)
+    @Test
+    fun `MongoQuery streamBlockwise() works in mango`() {
+        mango.select(
+                MangoListTestEntity::class.java
+        ).delete()
+
+        for (i in 0..9) {
+            val entityToCreate = MangoListTestEntity()
+            entityToCreate.counter = i
+            mango.update(entityToCreate)
+        }
+
+        val query = mango.select(MangoListTestEntity::class.java)
+
+        assertThrows<UnsupportedOperationException> {
+            assertEquals(10, query.streamBlockwise().count())
+            assertEquals(7, query.skip(3).limit(0).streamBlockwise().count())
+        }
     }
 
-    def "wasCreated() works in mango"() {
-        given:
-        MangoWasCreatedTestEntity e = new MangoWasCreatedTestEntity()
-        e.setValue("test123")
-        when:
-        mango.update(e)
-        then:
-        e.hasJustBeenCreated()
-        and:
-        mango.update(e)
-        then:
-        !e.hasJustBeenCreated()
+    @Test
+    fun `wasCreated() works in mango`() {
+        val testEntity = MangoWasCreatedTestEntity()
+        testEntity.value = "test123"
+
+        mango.update(testEntity)
+        assertTrue { testEntity.hasJustBeenCreated() }
+
+        mango.update(testEntity)
+        assertFalse { testEntity.hasJustBeenCreated() }
     }
 
-    def "a forcefully failed query does not yield any results"() {
-        given:
-        mango.select(MangoListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 3; i++) {
-        def entityToCreate = new MangoListTestEntity()
-        entityToCreate.setCounter(i)
-        mango.update(entityToCreate)
-    }
-        when:
-        def qry = mango.select(MangoListTestEntity.class).fail()
-                def flag = false
-                then:
-                qry.queryList().isEmpty()
-                and:
-                qry.iterateAll({ e -> flag = true })
-        !flag
-        and:
-        qry.count() == 0
-        and:
-        !qry.exists()
+    @Test
+    fun `a forcefully failed query does not yield any results`() {
+        mango.select(
+                MangoListTestEntity::class.java
+        ).delete()
+
+        for (i in 0..2) {
+            val entityToCreate = MangoListTestEntity()
+            entityToCreate.counter = i
+            mango.update(entityToCreate)
+        }
+
+        val query = mango.select(MangoListTestEntity::class.java).fail()
+        var flag = false
+
+        assertTrue { query.queryList().isEmpty() }
+
+        query.iterateAll { flag = true }
+
+        assertFalse { flag }
+        assertEquals(0, query.count())
+        assertFalse { query.exists() }
     }
 
-    def "simple aggregations work"() {
-        when:
-        def mango1 = new MangoAggregationsTestEntity()
-        mango1.setTestInt(30)
+    @Test
+    fun `simple aggregations work`() {
+
+        val mango1 = MangoAggregationsTestEntity()
+        mango1.testInt = 30
         mango.update(mango1)
-        def mango2 = new MangoAggregationsTestEntity()
-        mango2.setTestInt(10)
+        val mango2 = MangoAggregationsTestEntity()
+        mango2.testInt = 10
         mango.update(mango2)
-        def mango3 = new MangoAggregationsTestEntity()
-        mango3.setTestInt(20)
+        val mango3 = MangoAggregationsTestEntity()
+        mango3.testInt = 20
         mango.update(mango3)
-        then:
-        mango.select(MangoAggregationsTestEntity.class).
-        aggregateSum(MangoAggregationsTestEntity.TEST_INT).
-        asInt(0) == 60
-                mango.select(MangoAggregationsTestEntity.class).
-        aggregateAverage(MangoAggregationsTestEntity.TEST_INT).
-        asDouble(0) == 20.0
-                mango.select(MangoAggregationsTestEntity.class).
-        aggregateMin(MangoAggregationsTestEntity.TEST_INT).
-        asInt(0) == 10
-                mango.select(MangoAggregationsTestEntity.class).
-        aggregateMax(MangoAggregationsTestEntity.TEST_INT).
-        asInt(0) == 30
+
+        assertEquals(
+                60, mango.select(
+                MangoAggregationsTestEntity::class.java
+        ).aggregateSum(MangoAggregationsTestEntity.TEST_INT).asInt(0)
+        )
+        assertEquals(
+                20.0,
+                mango.select(MangoAggregationsTestEntity::class.java)
+                        .aggregateAverage(MangoAggregationsTestEntity.TEST_INT)
+                        .asDouble(0.0)
+        )
+        assertEquals(
+                10,
+                mango.select(MangoAggregationsTestEntity::class.java).aggregateMin(MangoAggregationsTestEntity.TEST_INT)
+                        .asInt(0)
+        )
+        assertEquals(
+                30,
+                mango.select(MangoAggregationsTestEntity::class.java).aggregateMax(MangoAggregationsTestEntity.TEST_INT)
+                        .asInt(0)
+        )
     }
 }
