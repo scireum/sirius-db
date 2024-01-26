@@ -8,59 +8,76 @@
 
 package sirius.db.qdrant
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.util.Tensors
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import java.util.stream.Collectors
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class QdrantSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class QdrantTest {
 
-    @Part
-    private static Qdrant qdrant
-
-            def "create collection works"() {
-        when:
-        qdrant.db().createCollection("test", 10, QdrantDatabase.Similarity.COSINE)
-        then:
-        qdrant.db().collectionExists("test")
+    companion object {
+        @Part
+        private lateinit var qdrant: Qdrant
     }
 
-    def "insert works"() {
-        given:
+    @Test
+    fun `create collection works`() {
+
         qdrant.db().deleteCollection("test")
-        and:
+
+        qdrant.db().createCollection("test", 10, QdrantDatabase.Similarity.COSINE)
+
+        assertTrue { qdrant.db().collectionExists("test") }
+    }
+
+    @Test
+    fun `insert works`() {
+
+        qdrant.db().deleteCollection("test")
+
         qdrant.db().ensureCollectionExists("test", 10, QdrantDatabase.Similarity.COSINE)
-        when:
-        qdrant.db().upsert("test", [
-            new Point(Point.deriveId("1"), Tensors.fromList([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])),
-        new Point(Point.deriveId("2"), Tensors.fromList([2, 0, 0, 0, 0, 0, 0, 0, 0, 0])),
-        new Point(Point.deriveId("3"), Tensors.fromList([3, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
-        ])
-        then:
-        qdrant.db().countPoints("test", true) == 3
+
+        qdrant.db().upsert(
+                "test", listOf(
+                Point(
+                        Point.deriveId("1"), Tensors.fromList(listOf(1, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+                ),
+                Point(Point.deriveId("2"), Tensors.fromList(listOf(2, 0, 0, 0, 0, 0, 0, 0, 0, 0))),
+                Point(Point.deriveId("3"), Tensors.fromList(listOf(3, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+        )
+        )
+
+        assertEquals(3, qdrant.db().countPoints("test", true))
     }
 
-    def "query works"() {
-        given:
+    @Test
+    fun `query works`() {
+
         qdrant.db().deleteCollection("test-search")
-        and:
-        qdrant.db().ensureCollectionExists("test-search", 10, QdrantDatabase.Similarity.COSINE)
-        when:
-        qdrant.db().upsert("test-search", [
-            new Point(Point.deriveId("1"), Tensors.fromList([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])).withPayload("x", 1),
-        new Point(Point.deriveId("2"), Tensors.fromList([2, 0, 2, 0, 0, 0, 0, 0, 0, 0])).withPayload("x", 2),
-        new Point(Point.deriveId("3"), Tensors.fromList([3, 0, 3, 0, 7, 0, 0, 0, 0, 0])).withPayload("x", 3)
-        ])
-        and:
-        def result = qdrant.db().query("test-search", Tensors.fromList([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
-                .execute(2, "x").stream()
-                .map { it.getPayload(Integer.class, "x") }
-                .collect { it }
-        then:
-        result.size() == 2
-        and:
-        result.get(0) == 1
-        and:
-        result.get(1) == 2
-    }
 
+        qdrant.db().ensureCollectionExists("test-search", 10, QdrantDatabase.Similarity.COSINE)
+
+        qdrant.db().upsert(
+                "test-search", listOf(
+                Point(
+                        Point.deriveId("1"), Tensors.fromList(listOf(1, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+                ).withPayload("x", 1),
+                Point(Point.deriveId("2"), Tensors.fromList(listOf(2, 0, 2, 0, 0, 0, 0, 0, 0, 0))).withPayload("x", 2),
+                Point(Point.deriveId("3"), Tensors.fromList(listOf(3, 0, 3, 0, 7, 0, 0, 0, 0, 0))).withPayload("x", 3)
+        )
+        )
+        val result = qdrant.db().query("test-search", Tensors.fromList(listOf(1, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+                .execute(2, "x").stream()
+                .map { it.getPayload(Integer::class.java, "x") to it }
+                .collect(Collectors.toList())
+
+        assertEquals(2, result.size)
+        assertEquals(1, result[0].first.toInt())
+        assertEquals(2, result[1].first.toInt())
+    }
 }
