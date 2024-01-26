@@ -27,9 +27,7 @@ class QdrantTest {
 
     @Test
     fun `create collection works`() {
-
         qdrant.db().deleteCollection("test")
-
         qdrant.db().createCollection("test", 10, QdrantDatabase.Similarity.COSINE)
 
         assertTrue { qdrant.db().collectionExists("test") }
@@ -37,11 +35,8 @@ class QdrantTest {
 
     @Test
     fun `insert works`() {
-
         qdrant.db().deleteCollection("test")
-
         qdrant.db().ensureCollectionExists("test", 10, QdrantDatabase.Similarity.COSINE)
-
         qdrant.db().upsert(
                 "test", listOf(
                 Point(
@@ -57,11 +52,8 @@ class QdrantTest {
 
     @Test
     fun `query works`() {
-
         qdrant.db().deleteCollection("test-search")
-
         qdrant.db().ensureCollectionExists("test-search", 10, QdrantDatabase.Similarity.COSINE)
-
         qdrant.db().upsert(
                 "test-search", listOf(
                 Point(
