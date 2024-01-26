@@ -8,355 +8,543 @@
 
 package sirius.db.mongo
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mixing.Mapping
 import sirius.db.mongo.properties.MongoStringListEntity
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import java.util.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class MongoFilterFactorySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class MongoFilterFactoryTest {
+    companion object {
+        @Part
+        private lateinit var mango: Mango
 
-    @Part
-    private static Mango mango
+        @Part
+        private lateinit var mongo: Mongo
 
-            @Part
-            private static Mongo mongo
+        private fun prefixSearch(query: String): Optional<Doc>? {
+            return mongo.find().where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, query))
+                    .singleIn(PrefixTestEntity::class.java)
+        }
 
-            private Optional<PrefixTestEntity> prefixSearch(String query) {
-        return mongo.find().where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, query))
-                .singleIn(PrefixTestEntity.class)
+        private fun textSearch(query: String): Optional<Doc>? {
+            return mongo.find().where(QueryBuilder.FILTERS.text(query))
+                    .singleIn(PrefixTestEntity::class.java)
+        }
     }
 
-    private Optional<PrefixTestEntity> textSearch(String query) {
-        return mongo.find().where(QueryBuilder.FILTERS.text(query))
-                .singleIn(PrefixTestEntity.class)
+    @Test
+    fun `prefix search works`() {
+        val prefixTestEntity = PrefixTestEntity()
+        prefixTestEntity.prefix = "test-1"
+        mango.update(prefixTestEntity)
+
+        assertTrue { prefixSearch("te")!!.isPresent }
+        assertTrue { prefixSearch("test-")!!.isPresent }
+        assertTrue { prefixSearch("Test-1")!!.isPresent }
+        assertTrue { textSearch("Test-1")!!.isPresent }
+        assertTrue { textSearch("Test")!!.isPresent }
+        assertTrue { textSearch("test-1")!!.isPresent }
+        assertFalse { textSearch("te")!!.isPresent }
     }
 
-    def "prefix search works"() {
-        when:
-        PrefixTestEntity test = new PrefixTestEntity()
-        test.setPrefix("test-1")
-        mango.update(test)
-        then:
-        prefixSearch("te").isPresent()
-        and:
-        prefixSearch("test-").isPresent()
-        and:
-        prefixSearch("Test-1").isPresent()
-        and:
-        textSearch("Test-1").isPresent()
-        and:
-        textSearch("Test").isPresent()
-        and:
-        textSearch("test-1").isPresent()
-        and:
-        !textSearch("te").isPresent()
+    @Test
+    fun `prefix with leading number works`() {
+        val prefixTestEntity = PrefixTestEntity()
+        prefixTestEntity.prefix = "1-test"
+        mango.update(prefixTestEntity)
+
+        assertTrue { prefixSearch("1")!!.isPresent }
+        assertTrue { prefixSearch("1-t")!!.isPresent }
+        assertTrue { prefixSearch("1-test")!!.isPresent }
+        assertTrue { prefixSearch("1-TEST")!!.isPresent }
     }
 
-    def "prefix with leading number works"() {
-        when:
-        PrefixTestEntity test = new PrefixTestEntity()
-        test.setPrefix("1-test")
-        mango.update(test)
-        then:
-        prefixSearch("1").isPresent()
-        and:
-        prefixSearch("1-t").isPresent()
-        and:
-        prefixSearch("1-test").isPresent()
-        and:
-        prefixSearch("1-TEST").isPresent()
-    }
+    @Test
+    fun `oneInField query works`() {
+        val mongoStringListEntity = MongoStringListEntity()
+        mongoStringListEntity.list.modify().addAll(listOf("1", "2", "3"))
+        val entityEmpty = MongoStringListEntity()
 
-    def "oneInField query works"() {
-        setup:
-        MongoStringListEntity entity = new MongoStringListEntity()
-        entity.getList().modify().addAll(["1", "2", "3"])
-        MongoStringListEntity entityEmpty = new MongoStringListEntity()
-        when:
-        mango.update(entity)
+        mango.update(mongoStringListEntity)
         mango.update(entityEmpty)
-        then:
-        mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, ["2", "4", "5"]).build())
-                .queryOne().getId() == entity.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, ["2", "3", "4"]).build())
-                .queryOne().getId() == entity.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, ["4", "5", "6"]).build())
-                .count() == 0
-                then:
-                mango.select(MongoStringListEntity.class)
+
+        assertEquals(
+                mongoStringListEntity.id, mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, listOf("2", "4", "5")).build())
+                .queryOne().getId()
+        )
+        assertEquals(
+                mongoStringListEntity.id, mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, listOf("2", "3", "4")).build())
+                .queryOne().getId()
+        )
+        assertEquals(
+                0, mango.select(
+                MongoStringListEntity::class.java
+        )
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, listOf("4", "5", "6")).build())
+                .count()
+        )
+        assertEquals(
+                entityEmpty.id, mango.select(MongoStringListEntity::class.java)
                 .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, ["4", "5", "6"]).orEmpty().build())
-                .queryOne().getId() == entityEmpty.getId()
+                .where(
+                        QueryBuilder.FILTERS.oneInField(MongoStringListEntity.LIST, listOf("4", "5", "6")).orEmpty()
+                                .build()
+                )
+                .queryOne().getId()
+        )
     }
 
-    def "containsAny query works"() {
-        setup:
-        MongoStringListEntity entity = new MongoStringListEntity()
-        entity.getList().modify().addAll(["1", "2", "3"])
-        MongoStringListEntity entityEmpty = new MongoStringListEntity()
-        when:
-        mango.update(entity)
+    @Test
+    fun `containsAny query works`() {
+        val mongoStringListEntity = MongoStringListEntity()
+        mongoStringListEntity.list.modify().addAll(listOf("1", "2", "3"))
+        val entityEmpty = MongoStringListEntity()
+
+        mango.update(mongoStringListEntity)
         mango.update(entityEmpty)
-        then:
-        mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
+
+        assertEquals(
+                mongoStringListEntity.getId(), mango.select(
+                MongoStringListEntity::class.java
+        )
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
                 .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("2,4,5")).build())
-                .queryOne().getId() == entity.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
+                .queryOne().getId()
+        )
+        assertEquals(
+                mongoStringListEntity.getId(), mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
                 .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("2,3,4")).build())
-                .queryOne().getId() == entity.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
+                .queryOne().getId()
+        )
+        assertEquals(
+                0, mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
                 .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).build())
-                .count() == 0
-                then:
-                mango.select(MongoStringListEntity.class)
+                .count()
+        )
+        assertEquals(
+                entityEmpty.id, mango.select(MongoStringListEntity::class.java)
                 .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6")).orEmpty().build())
-                .queryOne().getId() == entityEmpty.getId()
+                .where(
+                        QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST, Value.of("4,5,6"))
+                                .orEmpty().build()
+                )
+                .queryOne().getId()
+        )
     }
 
-    def "complex OR-constraint can be inverted"() {
-        setup:
-        MongoStringListEntity entity = new MongoStringListEntity()
-        entity.getList().modify().addAll(["1", "2", "3", "4"])
-        MongoStringListEntity entityEmpty = new MongoStringListEntity()
-        Mapping fakeField = Mapping.named("fakeField")
-        when:
-        mango.update(entity)
+    @Test
+    fun `complex OR-constraint can be inverted`() {
+        val mongoStringListEntity = MongoStringListEntity()
+        mongoStringListEntity.list.modify().addAll(listOf("1", "2", "3", "4"))
+        val entityEmpty = MongoStringListEntity()
+        val fakeField = Mapping.named("fakeField")
+
+        mango.update(mongoStringListEntity)
         mango.update(entityEmpty)
-        then:
-        mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
-                        Value.of("4,5,6")).build()))
-                .count() == 0
-                then:
-                mango.select(MongoStringListEntity.class)
+
+        assertEquals(
+                0, mango.select(
+                MongoStringListEntity::class.java
+        )
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(
+                        QueryBuilder.FILTERS.not(
+                                QueryBuilder.FILTERS.containsAny(
+                                        MongoStringListEntity.LIST,
+                                        Value.of("4,5,6")
+                                ).build()
+                        )
+                )
+                .count()
+        )
+        assertEquals(
+                entityEmpty.getId(), mango.select(MongoStringListEntity::class.java)
                 .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
-                        Value.of("4,5,6")).build()))
-                .queryOne().getId() == entityEmpty.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
+                .where(
+                        QueryBuilder.FILTERS.not(
+                                QueryBuilder.FILTERS.containsAny(
+                                        MongoStringListEntity.LIST,
+                                        Value.of("4,5,6")
+                                ).build()
+                        )
+                )
+                .queryOne().getId()
+        )
+        assertEquals(
+                0, mango.select(MongoStringListEntity::class.java)
                 .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAny(MongoStringListEntity.LIST,
-                        Value.of("4,5,6")).orEmpty().build()))
-                .count() == 0
-                then:
-                mango.select(MongoStringListEntity.class)
+                .where(
+                        QueryBuilder.FILTERS.not(
+                                QueryBuilder.FILTERS.containsAny(
+                                        MongoStringListEntity.LIST,
+                                        Value.of("4,5,6")
+                                ).orEmpty().build()
+                        )
+                )
+                .count()
+        )
+        assertEquals(
+                entityEmpty.getId(), mango.select(MongoStringListEntity::class.java)
                 .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.or(QueryBuilder.FILTERS.eq(fakeField, "someValue"),
-                        QueryBuilder.FILTERS.eq(fakeField, "otherValue"))))
-                .queryOne().getId() == entityEmpty.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
+                .where(
+                        QueryBuilder.FILTERS.not(
+                                QueryBuilder.FILTERS.or(
+                                        QueryBuilder.FILTERS.eq(fakeField, "someValue"),
+                                        QueryBuilder.FILTERS.eq(fakeField, "otherValue")
+                                )
+                        )
+                )
+                .queryOne().getId()
+        )
+        assertEquals(
+                0, mango.select(MongoStringListEntity::class.java)
                 .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.or(QueryBuilder.FILTERS.eq(fakeField, "someValue"),
-                        QueryBuilder.FILTERS.eq(fakeField, "otherValue"),
-                        QueryBuilder.FILTERS.notExists(fakeField))))
-                .count() == 0
+                .where(
+                        QueryBuilder.FILTERS.not(
+                                QueryBuilder.FILTERS.or(
+                                        QueryBuilder.FILTERS.eq(fakeField, "someValue"),
+                                        QueryBuilder.FILTERS.eq(fakeField, "otherValue"),
+                                        QueryBuilder.FILTERS.notExists(fakeField)
+                                )
+                        )
+                )
+                .count()
+        )
     }
 
-    def "complex AND-constraint cannot be inverted"() {
-        setup:
-        MongoStringListEntity entity = new MongoStringListEntity()
-        entity.getList().modify().addAll(["1", "2", "3"])
-        MongoStringListEntity entityEmpty = new MongoStringListEntity()
-        mango.update(entity)
+    @Test
+    fun `complex AND-constraint cannot be inverted`() {
+        val mongoStringListEntity = MongoStringListEntity()
+        mongoStringListEntity.list.modify().addAll(listOf("1", "2", "3"))
+        val entityEmpty = MongoStringListEntity()
+        mango.update(mongoStringListEntity)
         mango.update(entityEmpty)
-        when:
-        mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entityEmpty.getId())
-                .where(QueryBuilder.FILTERS.not(QueryBuilder.FILTERS.containsAll(MongoStringListEntity.LIST,
-                        Value.of("1,2,3,4")).build()))
-                .queryOne()
-                then:
-                thrown IllegalArgumentException
+
+        assertThrows<IllegalArgumentException> {
+            mango.select(
+                    MongoStringListEntity::class.java
+            )
+                    .eq(MongoEntity.ID, entityEmpty.getId())
+                    .where(
+                            QueryBuilder.FILTERS.not(
+                                    QueryBuilder.FILTERS.containsAll(
+                                            MongoStringListEntity.LIST,
+                                            Value.of("1,2,3,4")
+                                    ).build()
+                            )
+                    )
+                    .queryOne()
+        }
     }
 
-    def "noneInField query works"() {
-        setup:
-        MongoStringListEntity entity = new MongoStringListEntity()
-        entity.getList().modify().addAll(["1", "2", "3"])
-        when:
-        mango.update(entity)
-        then:
-        mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.noneInField(MongoStringListEntity.LIST, ["2"]))
-                .count() == 0
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.noneInField(MongoStringListEntity.LIST, ["5"]))
-                .queryOne().getId() == entity.getId()
+    @Test
+    fun `noneInField query works`() {
+        val mongoStringListEntity = MongoStringListEntity()
+        mongoStringListEntity.list.modify().addAll(listOf("1", "2", "3"))
+
+        mango.update(mongoStringListEntity)
+
+        assertEquals(
+                0, mango.select(
+                MongoStringListEntity::class.java
+        )
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.noneInField(MongoStringListEntity.LIST, listOf("2")))
+                .count()
+        )
+        assertEquals(
+                mongoStringListEntity.id, mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.noneInField(MongoStringListEntity.LIST, listOf("5")))
+                .queryOne().getId()
+        )
     }
 
-    def "allInField query works"() {
-        setup:
-        MongoStringListEntity entity = new MongoStringListEntity()
-        entity.getList().modify().addAll(["1", "2", "3"])
-        when:
-        mango.update(entity)
-        then:
-        mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, ["1", "2", "3", "4"]))
-                .count() == 0
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, ["1", "2", "3"]))
-                .queryOne().getId() == entity.getId()
-                then:
-                mango.select(MongoStringListEntity.class)
-                .eq(MongoEntity.ID, entity.getId())
-                .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, ["1", "2"]))
-                .queryOne().getId() == entity.getId()
+    @Test
+    fun `allInField query works`() {
+        val mongoStringListEntity = MongoStringListEntity()
+        mongoStringListEntity.list.modify().addAll(listOf("1", "2", "3"))
+
+        mango.update(mongoStringListEntity)
+
+        assertEquals(
+                0, mango.select(
+                MongoStringListEntity::class.java
+        )
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, listOf("1", "2", "3", "4")))
+                .count()
+        )
+        assertEquals(
+                mongoStringListEntity.getId(), mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, listOf("1", "2", "3")))
+                .queryOne().getId()
+        )
+        assertEquals(
+                mongoStringListEntity.getId(), mango.select(MongoStringListEntity::class.java)
+                .eq(MongoEntity.ID, mongoStringListEntity.getId())
+                .where(QueryBuilder.FILTERS.allInField(MongoStringListEntity.LIST, listOf("1", "2")))
+                .queryOne().getId()
+        )
     }
 
-    def "automatic 'and' works for fields"() {
-        setup:
-        mango.select(MangoTestEntity.class).delete()
-                when:
-        MangoTestEntity e1 = new MangoTestEntity()
-                e1.setFirstname("AND")
-                e1.setLastname("WORKS")
-                mango.update(e1)
-                then:
-                mongo.find()
+    @Test
+    fun `automatic 'and' works for fields`() {
+        mango.select(
+                MangoTestEntity::class.java
+        ).delete()
+
+        val mangoTestEntity = MangoTestEntity()
+        mangoTestEntity.firstname = "AND"
+        mangoTestEntity.lastname = "WORKS"
+        mango.update(mangoTestEntity)
+
+        assertEquals(
+                1, mongo.find()
                 .where(MangoTestEntity.LASTNAME, "WORKS")
-                .countIn(MangoTestEntity.class) == 1
-                        then:
-                        mongo.find()
-                        .where(MangoTestEntity.LASTNAME, "WORKS")
-                        .where(MangoTestEntity.LASTNAME, "FAILS")
-                        .where(MangoTestEntity.LASTNAME, "FAILS-YET-AGAIN")
-                        .where(MangoTestEntity.LASTNAME, "FAILS-THE-LAST-TIME")
-                        .countIn(MangoTestEntity.class) == 0
-                                then:
-                                mongo.find().where(MangoTestEntity.LASTNAME, "WORKS")
-                                .where(MangoTestEntity.FIRSTNAME, "AND")
-                                .countIn(MangoTestEntity.class) == 1
-                                        then:
-                                        mongo.find()
-                                        .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS"),
-                                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND")))
-                                        .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "FAILS"),
-                                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND")))
-                                        .countIn(MangoTestEntity.class) == 0
-                                                then:
-                                                mongo.find()
-                                                .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS"),
-                                                        QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND")))
-                                                .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS"),
-                                                        QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND")))
-                                                .countIn(MangoTestEntity.class) == 1
+                .countIn(
+                        MangoTestEntity::class.java
+                )
+        )
+        assertEquals(
+                0, mongo.find()
+                .where(MangoTestEntity.LASTNAME, "WORKS")
+                .where(MangoTestEntity.LASTNAME, "FAILS")
+                .where(MangoTestEntity.LASTNAME, "FAILS-YET-AGAIN")
+                .where(MangoTestEntity.LASTNAME, "FAILS-THE-LAST-TIME")
+                .countIn(
+                        MangoTestEntity::class.java
+                )
+        )
+
+        assertEquals(
+                1, mongo.find().where(MangoTestEntity.LASTNAME, "WORKS")
+                .where(MangoTestEntity.FIRSTNAME, "AND")
+                .countIn(
+                        MangoTestEntity::class.java
+                )
+        )
+
+        assertEquals(
+                0, mongo.find()
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.LASTNAME,
+                                        "WORKS"
+                                ),
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.FIRSTNAME,
+                                        "AND"
+                                )
+                        )
+                )
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.LASTNAME,
+                                        "FAILS"
+                                ),
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.FIRSTNAME,
+                                        "AND"
+                                )
+                        )
+                )
+                .countIn(
+                        MangoTestEntity::class.java
+                )
+        )
+
+        assertEquals(
+                1, mongo.find()
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.LASTNAME,
+                                        "WORKS"
+                                ),
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.FIRSTNAME,
+                                        "AND"
+                                )
+                        )
+                )
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.LASTNAME,
+                                        "WORKS"
+                                ),
+                                QueryBuilder.FILTERS.eq(
+                                        MangoTestEntity.FIRSTNAME,
+                                        "AND"
+                                )
+                        )
+                )
+                .countIn(MangoTestEntity::class.java)
+        )
     }
 
-    def "automatic 'and' works for multiple ands"() {
-        when:
-        MangoTestEntity e1 = new MangoTestEntity()
-        e1.setFirstname("AND1")
-        e1.setLastname("WORKS1")
-        mango.update(e1)
-        then:
-        mongo.find()
-                .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
-                        QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")))
-                .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "FAILS"),
-                        QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")))
-                .countIn(MangoTestEntity.class) == 0
-                        then:
-                        mongo.find()
-                        .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
-                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")))
-                        .where(QueryBuilder.FILTERS.and(QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
-                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")))
-                        .countIn(MangoTestEntity.class) == 1
+    @Test
+    fun `automatic 'and' works for multiple ands`() {
+
+        val mangoTestEntity = MangoTestEntity()
+        mangoTestEntity.firstname = "AND1"
+        mangoTestEntity.lastname = "WORKS1"
+        mango.update(mangoTestEntity)
+
+        assertEquals(
+                0, mongo.find()
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")
+                        )
+                )
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "FAILS"),
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")
+                        )
+                )
+                .countIn(
+                        MangoTestEntity::class.java
+                )
+        )
+
+        assertEquals(
+                1, mongo.find()
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")
+                        )
+                )
+                .where(
+                        QueryBuilder.FILTERS.and(
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.LASTNAME, "WORKS1"),
+                                QueryBuilder.FILTERS.eq(MangoTestEntity.FIRSTNAME, "AND1")
+                        )
+                )
+                .countIn(MangoTestEntity::class.java)
+        )
     }
 
-    def "isEmptyList works on List fields"() {
-        setup:
-        mango.select(MangoTestEntity.class).delete()
-                when:
-        MangoTestEntity e1 = new MangoTestEntity()
-                e1.setFirstname("Peter")
-                e1.setLastname("Parker")
-                mango.update(e1)
-                MangoTestEntity e2 = new MangoTestEntity()
-                e2.setFirstname("Spider")
-                e2.setLastname("Man")
-                e2.getSuperPowers().add("Wallcrawling")
-                mango.update(e2)
-                then:
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.isEmptyList(MangoTestEntity.SUPER_POWERS)).count() == 1
+    @Test
+    fun `isEmptyList works on List fields`() {
+        mango.select(
+                MangoTestEntity::class.java
+        ).delete()
+
+        val mangoTestEntity1 = MangoTestEntity()
+        mangoTestEntity1.firstname = "Peter"
+        mangoTestEntity1.lastname = "Parker"
+        mango.update(mangoTestEntity1)
+        val mangoTestEntity2 = MangoTestEntity()
+        mangoTestEntity2.firstname = "Spider"
+        mangoTestEntity2.lastname = "Man"
+        mangoTestEntity2.superPowers.add("Wallcrawling")
+        mango.update(mangoTestEntity2)
+
+        assertEquals(
+                1, mango.select(MangoTestEntity::class.java)
+                .where(QueryBuilder.FILTERS.isEmptyList(MangoTestEntity.SUPER_POWERS)).count()
+        )
     }
 
-    def "forceEmpty works on List fields"() {
-        setup:
-        mango.select(MangoTestEntity.class).delete()
-                when:
-        MangoTestEntity e1 = new MangoTestEntity()
-                e1.setFirstname("Peter")
-                e1.setLastname("Parker")
-                mango.update(e1)
-                MangoTestEntity e2 = new MangoTestEntity()
-                e2.setFirstname("Spider")
-                e2.setLastname("Man")
-                e2.getSuperPowers().add("Wallcrawling")
-                mango.update(e2)
-                then:
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.oneInField(MangoTestEntity.SUPER_POWERS, Collections.emptyList())
-                        .forceEmpty().build()).count() == 1
+    @Test
+    fun `forceEmpty works on List fields`() {
+        mango.select(
+                MangoTestEntity::class.java
+        ).delete()
+
+        val mangoTestEntity1 = MangoTestEntity()
+        mangoTestEntity1.firstname = "Peter"
+        mangoTestEntity1.lastname = "Parker"
+        mango.update(mangoTestEntity1)
+
+        val mangoTestEntity2 = MangoTestEntity()
+        mangoTestEntity2.firstname = "Spider"
+        mangoTestEntity2.lastname = "Man"
+        mangoTestEntity2.superPowers.add("Wallcrawling")
+        mango.update(mangoTestEntity2)
+
+        assertEquals(
+                1, mango.select(MangoTestEntity::class.java)
+                .where(
+                        QueryBuilder.FILTERS.oneInField(MangoTestEntity.SUPER_POWERS, Collections.EMPTY_LIST)
+                                .forceEmpty().build()
+                ).count()
+        )
     }
 
-    def "hasListSize works on List fields"() {
-        setup:
-        mango.select(MangoTestEntity.class).delete()
-                when:
-        MangoTestEntity e1 = new MangoTestEntity()
-                e1.setFirstname("Peter")
-                e1.setLastname("Parker")
-                e1.getSuperPowers().add("Häkeln");
-        e1.getSuperPowers().add("Stricken");
-        e1.getSuperPowers().add("Klöppeln");
-        mango.update(e1)
-        MangoTestEntity e2 = new MangoTestEntity()
-        e2.setFirstname("Spider")
-        e2.setLastname("Man")
-        e2.getSuperPowers().add("Wallcrawling")
-        e2.getSuperPowers().add("Unkrautjäten");
-        e2.getSuperPowers().add("Rasenmähen");
-        e2.getSuperPowers().add("Fensterputzen");
-        mango.update(e2)
-        then:
-        mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 0)).count() == 0
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 1)).count() == 0
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 2)).count() == 0
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 3)).count() == 1
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 4)).count() == 1
-                mango.select(MangoTestEntity.class)
-                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 5)).count() == 0
+    @Test
+    fun `hasListSize works on List fields`() {
+        mango.select(
+                MangoTestEntity::class.java
+        ).delete()
+
+        val mangoTestEntity1 = MangoTestEntity()
+        mangoTestEntity1.firstname = "Peter"
+        mangoTestEntity1.lastname = "Parker"
+        mangoTestEntity1.superPowers.add("Häkeln")
+        mangoTestEntity1.superPowers.add("Stricken")
+        mangoTestEntity1.superPowers.add("Klöppeln")
+        mango.update(mangoTestEntity1)
+
+        val mangoTestEntity2 = MangoTestEntity()
+        mangoTestEntity2.firstname = "Spider"
+        mangoTestEntity2.lastname = "Man"
+        mangoTestEntity2.superPowers.add("Wallcrawling")
+        mangoTestEntity2.superPowers.add("Unkrautjäten")
+        mangoTestEntity2.superPowers.add("Rasenmähen")
+        mangoTestEntity2.superPowers.add("Fensterputzen")
+        mango.update(mangoTestEntity2)
+
+        assertEquals(
+                0, mango.select(
+                MangoTestEntity::class.java
+        )
+                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 0)).count()
+        )
+
+        assertEquals(
+                0, mango.select(MangoTestEntity::class.java)
+                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 1)).count()
+        )
+        assertEquals(
+                0, mango.select(MangoTestEntity::class.java)
+                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 2)).count()
+        )
+        assertEquals(
+                1, mango.select(MangoTestEntity::class.java)
+                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 3)).count()
+        )
+        assertEquals(
+                1, mango.select(MangoTestEntity::class.java)
+                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 4)).count()
+        )
+        assertEquals(
+                0, mango.select(MangoTestEntity::class.java)
+                .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 5)).count()
+        )
     }
 }
