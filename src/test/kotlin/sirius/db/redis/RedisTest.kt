@@ -8,22 +8,26 @@
 
 package sirius.db.redis
 
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
 
-class RedisSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class RedisTest {
 
-    @Part
-    private static Redis redis
-
-            def "basic GET/SET works"() {
-        given:
-        def testString = String.valueOf(System.currentTimeMillis())
-        when:
-        redis.exec({ -> "Setting a test value" }, { db -> db.set("TEST", testString) })
-        then:
-        testString == redis.query({ -> "Getting a test value" }, { db -> db.get("TEST") })
-
+    companion object {
+        @Part
+        private lateinit var redis: Redis
     }
 
+    @Test
+    fun `basic GET SET works`() {
+        val testString = System.currentTimeMillis().toString()
+
+        redis.exec({ -> "Setting a test value" }, { db -> db.set("TEST", testString) })
+
+        assertEquals(redis.query({ -> "Getting a test value" }, { db -> db.get("TEST") }), testString)
+    }
 }
