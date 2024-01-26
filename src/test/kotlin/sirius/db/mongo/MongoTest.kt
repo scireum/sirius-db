@@ -8,101 +8,128 @@
 
 package sirius.db.mongo
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.KeyGenerator
 import sirius.db.mixing.Mapping
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class MongoSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class MongoTest {
+    companion object {
+        @Part
+        private lateinit var mongo: Mongo
 
-    @Part
-    private static Mongo mongo
-
-            @Part
-            private static KeyGenerator keyGen
-
-            def "basic read / write works"() {
-        given:
-        def testString = String.valueOf(System.currentTimeMillis())
-        when:
-        def result = mongo.insert().set("test", testString).set("id", keyGen.generateId()).into("test")
-        then:
-        mongo.find().
-        where("id", result.getString("id")).
-        singleIn("test").
-        map({ d -> d.getString("test") }).
-        orElse(null) == testString
+        @Part
+        private lateinit var keyGen: KeyGenerator
     }
 
-    def "read from secondary works"() {
-        given:
-        def testString = String.valueOf(System.currentTimeMillis())
-        when:
-        def result = mongo.insert().set("test", testString).set("id", keyGen.generateId()).into("test")
-        then:
-        mongo.findInSecondary().
-        where("id", result.getString("id")).
-        singleIn("test").
-        map({ d -> d.getString("test") }).
-        orElse(null) == testString
+    @Test
+    fun `basic read and write works`() {
+        val testString = System.currentTimeMillis().toString()
+        val result = mongo.insert().set("test", testString).set("id", keyGen.generateId()).into("test")
+
+        assertEquals(
+                testString,
+                mongo.find().where("id", result.getString("id")).singleIn("test").map { d -> d.getString("test") }
+                        .orElse(null)
+        )
     }
 
-    def "sort works for singleIn"() {
-        when:
-        def result1 = mongo.insert().set("sortBy", 1).set("id", keyGen.generateId()).into("test")
-        def result2 = mongo.insert().set("sortBy", 3).set("id", keyGen.generateId()).into("test")
-        def result3 = mongo.insert().set("sortBy", 2).set("id", keyGen.generateId()).into("test")
-        then:
-        mongo.find()
+    @Test
+    fun `read from secondary works`() {
+        val testString = System.currentTimeMillis().toString()
+        val result = mongo.insert().set("test", testString).set("id", keyGen.generateId()).into("test")
+
+        assertEquals(
+                testString,
+                mongo.findInSecondary().where("id", result.getString("id")).singleIn("test")
+                        .map { d -> d.getString("test") }
+                        .orElse(null)
+        )
+    }
+
+    @Test
+    fun `sort works for singleIn`() {
+        mongo.insert().set("sortBy", 1).set("id", keyGen.generateId()).into("test")
+        mongo.insert().set("sortBy", 2).set("id", keyGen.generateId()).into("test")
+        val result2 = mongo.insert().set("sortBy", 3).set("id", keyGen.generateId()).into("test")
+
+        assertEquals(result2.getString("id"), mongo.find()
                 .orderByDesc("sortBy")
                 .singleIn("test")
-                .map({ entity -> entity.getString("id") })
-                .orElse(null) == result2.getString("id")
+                .map { entity -> entity.getString("id") }
+                .orElse(null))
     }
 
-    def "aggregation works"() {
-        when:
-        def result1 = mongo.insert().set("filter", 1).set("value", 9).set("id", keyGen.generateId()).into("test2")
-        def result2 = mongo.insert().set("filter", 4).set("value", 29).set("id", keyGen.generateId()).into("test2")
-        def result3 = mongo.insert().set("filter", 2).set("value", 22).set("id", keyGen.generateId()).into("test2")
-        then:
-        mongo.find()
-                .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 5))
-                .aggregateIn("test2", Mapping.named("value"), "\$sum").isNull()
-        then:
-        mongo.find()
-                .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0) == 60
-        and:
-        mongo.find()
+    @Test
+    fun `aggregation works`() {
+        mongo.insert().set("filter", 1).set("value", 9).set("id", keyGen.generateId()).into("test2")
+        mongo.insert().set("filter", 4).set("value", 29).set("id", keyGen.generateId()).into("test2")
+        mongo.insert().set("filter", 2).set("value", 22).set("id", keyGen.generateId()).into("test2")
+
+        assertTrue {
+            mongo.find()
+                    .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 5))
+                    .aggregateIn("test2", Mapping.named("value"), "\$sum").isNull
+        }
+
+        assertEquals(
+                60, mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0)
+        )
+
+        assertEquals(
+                51, mongo.find()
                 .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
-                .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0) == 51
-        and:
-        mongo.find()
-                .aggregateIn("test2", Mapping.named("value"), "\$avg").asDouble(0.0) == 20
-        and:
-        mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$sum").asInt(0)
+        )
+
+        assertEquals(
+                20.0, mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$avg").asDouble(0.0)
+        )
+
+        assertEquals(
+                25.5, mongo.find()
                 .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
-                .aggregateIn("test2", Mapping.named("value"), "\$avg").asDouble(0.0) == 25.5
-        and:
-        mongo.find()
-                .aggregateIn("test2", Mapping.named("value"), "\$min").asInt(0) == 9
-        and:
-        mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$avg").asDouble(0.0)
+        )
+
+        assertEquals(
+                9, mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$min").asInt(0)
+        )
+
+        assertEquals(
+                22, mongo.find()
                 .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
-                .aggregateIn("test2", Mapping.named("value"), "\$min").asInt(0) == 22
-        and:
-        mongo.find()
-                .aggregateIn("test2", Mapping.named("value"), "\$max").asInt(0) == 29
-        and:
-        mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$min").asInt(0)
+        )
+
+        assertEquals(
+                29, mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$max").asInt(0)
+        )
+
+        assertEquals(
+                29, mongo.find()
                 .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
-                .aggregateIn("test2", Mapping.named("value"), "\$max").asInt(0) == 29
-        and:
-        mongo.find()
-                .aggregateIn("test2", Mapping.named("value"), "\$push").get(List.class, []) == [9, 29, 22]
-        and:
-        mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$max").asInt(0)
+        )
+
+        assertEquals(
+                listOf(9, 29, 22), mongo.find()
+                .aggregateIn("test2", Mapping.named("value"), "\$push").get(List::class.java)
+        )
+
+        assertEquals(
+                listOf(29, 22), mongo.find()
                 .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
-                .aggregateIn("test2", Mapping.named("value"), "\$push").get(List.class, []) == [29, 22]
+                .aggregateIn("test2", Mapping.named("value"), "\$push").get(List::class.java)
+        )
     }
 }
