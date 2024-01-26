@@ -9,47 +9,56 @@
 package sirius.db.mongo
 
 import org.junit.jupiter.api.Tag
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
+import java.util.*
+import kotlin.test.assertEquals
 
 @Tag(Tags.NIGHTLY)
-class MangoNightlySpec extends BaseSpecification {
-
-    @Part
-    private static Mango mango
-
-            def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        mango.select(MangoListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 1001; i++) {
-        def entityToCreate = new MangoListTestEntity()
-        entityToCreate.setCounter(i)
-        mango.update(entityToCreate)
-    }
-        when:
-        mango.select(MangoListTestEntity.class).queryList()
-                then:
-                thrown(HandledException)
+@ExtendWith(SiriusExtension::class)
+class MangoNightlyTest {
+    companion object {
+        @Part
+        private lateinit var mango: Mango
     }
 
-    def "a timed out mongo count returns an empty optional"() {
-        when:
-        mango.select(MangoListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 100_000; i++) {
-        def entityToCreate = new MangoListTestEntity()
-        entityToCreate.setCounter(i)
-        mango.update(entityToCreate)
-    }
-        and:
-        MongoQuery<MangoListTestEntity> query = mango
-                .select(MangoListTestEntity.class)
-                then:
-                query.count(true, 1) == Optional.empty()
+    @Test
+    fun `selecting over 1000 entities in queryList throws an exception`() {
+        mango.select(MangoListTestEntity::class.java).delete()
+        for (i in 0..1000) {
+            val entityToCreate = MangoListTestEntity()
+            entityToCreate.counter = i
+            mango.update(entityToCreate)
+        }
+
+        assertThrows<HandledException> { mango.select(MangoListTestEntity::class.java).queryList() }
     }
 
+    @Test
+    fun `a timed out mongo count returns an empty optional`() {
+        mango.select(
+                MangoListTestEntity::class.java
+        ).delete()
 
+        for (i in 0..99_999) {
+            val entityToCreate = MangoListTestEntity()
+            entityToCreate.counter = i
+            mango.update(entityToCreate)
+        }
+        val query = mango
+                .select(
+                        MangoListTestEntity::class.java
+                )
+
+        assertEquals(
+                Optional.empty(), query.count(
+                true, 1
+        )
+        )
+    }
 }
