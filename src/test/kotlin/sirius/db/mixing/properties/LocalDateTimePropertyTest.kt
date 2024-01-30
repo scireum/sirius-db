@@ -8,32 +8,37 @@
 
 package sirius.db.mixing.properties
 
-
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mixing.Mixing
-import sirius.db.mixing.Property
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
-
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
+import kotlin.test.assertEquals
 
-class LocalDateTimePropertySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class LocalDateTimePropertyTest {
+    @Test
+    fun `local date works when transformed`() {
+        val dateTimeProperty = mixing.getDescriptor(DateEntity::class.java).getProperty(DateEntity.LOCAL_DATE_TIME)
+        val localDateTime = LocalDateTime.now()
+        val localDate = localDateTime.toLocalDate()
 
-    @Part
-    private static Mixing mixing
-
-            def "local date works when transformed"() {
-        when:
-        Property dateTimeProperty = mixing.getDescriptor(DateEntity.class).getProperty(DateEntity.LOCAL_DATE_TIME)
-                LocalDateTime localDateTime = LocalDateTime.now()
-                LocalDate localDate = localDateTime.toLocalDate()
-                then:
-                dateTimeProperty.transformValue(Value.of(localDateTime)) == localDateTime.truncatedTo(ChronoUnit.MILLIS)
-                and:
-                dateTimeProperty.transformValue(Value.of(localDate)) == LocalDateTime.of(localDate, LocalTime.MIDNIGHT)
+        assertEquals(
+                localDateTime.truncatedTo(ChronoUnit.MILLIS),
+                dateTimeProperty.transformValue(Value.of(localDateTime))
+        )
+        assertEquals(
+                LocalDateTime.of(localDate, LocalTime.MIDNIGHT),
+                dateTimeProperty.transformValue(Value.of(localDate))
+        )
     }
 
+    companion object {
+        @Part
+        private lateinit var mixing: Mixing
+    }
 }
