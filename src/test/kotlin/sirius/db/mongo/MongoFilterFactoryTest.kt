@@ -17,43 +17,24 @@ import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.jvm.optionals.getOrNull
+import kotlin.test.*
 
 @ExtendWith(SiriusExtension::class)
 class MongoFilterFactoryTest {
-    companion object {
-        @Part
-        private lateinit var mango: Mango
-
-        @Part
-        private lateinit var mongo: Mongo
-
-        private fun prefixSearch(query: String): Optional<Doc>? {
-            return mongo.find().where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, query))
-                    .singleIn(PrefixTestEntity::class.java)
-        }
-
-        private fun textSearch(query: String): Optional<Doc>? {
-            return mongo.find().where(QueryBuilder.FILTERS.text(query))
-                    .singleIn(PrefixTestEntity::class.java)
-        }
-    }
-
     @Test
     fun `prefix search works`() {
         val prefixTestEntity = PrefixTestEntity()
         prefixTestEntity.prefix = "test-1"
         mango.update(prefixTestEntity)
 
-        assertTrue { prefixSearch("te")!!.isPresent }
-        assertTrue { prefixSearch("test-")!!.isPresent }
-        assertTrue { prefixSearch("Test-1")!!.isPresent }
-        assertTrue { textSearch("Test-1")!!.isPresent }
-        assertTrue { textSearch("Test")!!.isPresent }
-        assertTrue { textSearch("test-1")!!.isPresent }
-        assertFalse { textSearch("te")!!.isPresent }
+        assertNotNull(prefixSearch("te"))
+        assertNotNull(prefixSearch("test-"))
+        assertNotNull(prefixSearch("Test-1"))
+        assertNotNull(textSearch("Test-1"))
+        assertNotNull(textSearch("Test"))
+        assertNotNull(textSearch("test-1"))
+        assertNull(textSearch("te"))
     }
 
     @Test
@@ -62,10 +43,10 @@ class MongoFilterFactoryTest {
         prefixTestEntity.prefix = "1-test"
         mango.update(prefixTestEntity)
 
-        assertTrue { prefixSearch("1")!!.isPresent }
-        assertTrue { prefixSearch("1-t")!!.isPresent }
-        assertTrue { prefixSearch("1-test")!!.isPresent }
-        assertTrue { prefixSearch("1-TEST")!!.isPresent }
+        assertNotNull(prefixSearch("1"))
+        assertNotNull(prefixSearch("1-t"))
+        assertNotNull(prefixSearch("1-test"))
+        assertNotNull(prefixSearch("1-TEST"))
     }
 
     @Test
