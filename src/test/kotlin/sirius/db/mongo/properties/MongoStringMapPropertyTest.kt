@@ -8,42 +8,42 @@
 
 package sirius.db.mongo.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
-class MongoStringMapPropertySpec extends BaseSpecification {
-
-    @Part
-    private static Mango mango
-
-            @Part
-            private static Mongo mongo
-
-            def "reading and writing works"() {
-        when:
-        def test = new MongoStringMapEntity()
-        test.getMap().put("Test", "1").put("Foo", "2")
+@ExtendWith(SiriusExtension::class)
+class MongoStringMapPropertyTest {
+    @Test
+    fun `reading and writing works`() {
+        val test = MongoStringMapEntity()
+        test.map.put("Test", "1").put("Foo", "2")
         mango.update(test)
-        def resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 2
-        and:
-        resolved.getMap().get("Test").get() == "1"
-        resolved.getMap().get("Foo").get() == "2"
+        var resolved = mango.refreshOrFail(test)
 
-        when:
-        resolved.getMap().modify().remove("Test")
-        and:
+        assertEquals(2, resolved.map.size())
+        assertEquals("1", resolved.map.get("Test").get())
+        assertEquals("2", resolved.map.get("Foo").get())
+
+        resolved.map.modify().remove("Test")
         mango.update(resolved)
-        and:
         resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 1
-        and:
-        !resolved.getMap().contains("Test")
-        resolved.getMap().get("Foo").get() == "2"
+
+        assertEquals(1, resolved.map.size())
+        assertFalse { resolved.map.containsKey("Test") }
+        assertEquals("2", resolved.map.get("Foo").get())
     }
 
+    companion object {
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var mongo: Mongo
+    }
 }
