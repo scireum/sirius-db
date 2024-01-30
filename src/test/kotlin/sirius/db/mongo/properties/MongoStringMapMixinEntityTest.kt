@@ -8,34 +8,37 @@
 
 package sirius.db.mongo.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
 
+@ExtendWith(SiriusExtension::class)
+class MongoStringMapMixinEntityTest {
+    @Test
+    fun `reading and writing works`() {
+        val test = MongoStringMapMixinEntity()
+        test.`as`(MongoStringMapMixin::class.java).mapInMixin.put("key1", "value1").put("key2", "value2")
+        mango.update(test)
+        val refreshed = mango.refreshOrFail(test)
+        val mixinOfRefreshed = refreshed.`as`(MongoStringMapMixin::class.java)
 
-class MongoStringMapMixinEntitySpec extends BaseSpecification {
+        assertEquals(2, mixinOfRefreshed.mapInMixin.size())
+        assertEquals("value1", mixinOfRefreshed.mapInMixin.get("key1").get())
+        assertEquals("value2", mixinOfRefreshed.mapInMixin.get("key2").get())
 
-    @Part
-    private static Mango mango
+        val queried = mango.find(MongoStringMapMixinEntity::class.java, test.id).get()
+        val mixinOfQueried = queried.`as`(MongoStringMapMixin::class.java)
 
-            def "reading and writing works"() {
-        when:
-        def test = new MongoStringMapMixinEntity()
-        test.as(MongoStringMapMixin.class).getMapInMixin().put("key1", "value1").put("key2", "value2")
-                mango.update(test)
-                def refreshed = mango.refreshOrFail(test)
-                then:
-                def mixinOfRefreshed = refreshed.as(MongoStringMapMixin.class)
-                mixinOfRefreshed.getMapInMixin().size() == 2
-                mixinOfRefreshed.getMapInMixin().get("key1").get() == "value1"
-                mixinOfRefreshed.getMapInMixin().get("key2").get() == "value2"
+        assertEquals(2, mixinOfQueried.mapInMixin.size())
+        assertEquals("value1", mixinOfQueried.mapInMixin.get("key1").get())
+        assertEquals("value2", mixinOfQueried.mapInMixin.get("key2").get())
+    }
 
-                when:
-        def queried = mango.find(MongoStringMapMixinEntity.class, test.getId()).get()
-                then:
-                def mixinOfQueried = queried.as(MongoStringMapMixin.class)
-                mixinOfQueried.getMapInMixin().size() == 2
-                mixinOfQueried.getMapInMixin().get("key1").get() == "value1"
-                mixinOfQueried.getMapInMixin().get("key2").get() == "value2"
+    companion object {
+        @Part
+        private lateinit var mango: Mango
     }
 }
