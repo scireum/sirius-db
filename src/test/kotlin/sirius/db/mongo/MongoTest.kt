@@ -55,8 +55,9 @@ class MongoTest {
     @Test
     fun `sort works for singleIn`() {
         mongo.insert().set("sortBy", 1).set("id", keyGen.generateId()).into("test")
-        mongo.insert().set("sortBy", 2).set("id", keyGen.generateId()).into("test")
         val result2 = mongo.insert().set("sortBy", 3).set("id", keyGen.generateId()).into("test")
+        mongo.insert().set("sortBy", 2).set("id", keyGen.generateId()).into("test")
+
 
         assertEquals(result2.getString("id"), mongo.find()
                 .orderByDesc("sortBy")
