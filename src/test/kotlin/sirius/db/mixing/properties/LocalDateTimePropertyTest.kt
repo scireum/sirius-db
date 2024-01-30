@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 @ExtendWith(SiriusExtension::class)
 class LocalDateTimePropertyTest {
     @Test
-    fun `local date works when transformed`() {
+    fun `local date time works when transformed`() {
         val dateTimeProperty = mixing.getDescriptor(DateEntity::class.java).getProperty(DateEntity.LOCAL_DATE_TIME)
         val localDateTime = LocalDateTime.now()
         val localDate = localDateTime.toLocalDate()
