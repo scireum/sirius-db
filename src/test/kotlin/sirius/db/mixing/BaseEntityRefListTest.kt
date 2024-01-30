@@ -8,56 +8,55 @@
 
 package sirius.db.mixing
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
 import sirius.db.mongo.Mango
-import sirius.kernel.BaseSpecification
-import sirius.kernel.commons.Wait
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
-
 import java.time.Duration
+import kotlin.test.assertFalse
 
-class BaseEntityRefListSpec extends BaseSpecification {
-
-    @Part
-    private static Elastic elastic
-
-            @Part
-            private static Mango mango
-
-            def setupSpec() {
-        elastic.getReadyFuture().await(Duration.ofSeconds(60))
-    }
-
-    def "cascade from Mongo to ES works"() {
-        when:
-        RefListMongoEntity refMongoEntity = new RefListMongoEntity()
+@ExtendWith(SiriusExtension::class)
+class BaseEntityRefListTest {
+    @Test
+    fun `cascade from Mongo to ES works`() {
+        val refMongoEntity = RefListMongoEntity()
         mango.update(refMongoEntity)
-        RefListElasticEntity refElasticEntity = new RefListElasticEntity()
-        refElasticEntity.getRef().add(refMongoEntity.getId())
+        val refElasticEntity = RefListElasticEntity()
+        refElasticEntity.ref.add(refMongoEntity.id)
         elastic.update(refElasticEntity)
-        elastic.refresh(RefListElasticEntity.class)
-                and:
-                mango.delete(refMongoEntity)
-                elastic.refresh(RefListElasticEntity.class)
-                then:
-                !elastic.find(RefListElasticEntity.class, refElasticEntity.getId()).isPresent()
+        elastic.refresh(RefListElasticEntity::class.java)
+        mango.delete(refMongoEntity)
+        elastic.refresh(RefListElasticEntity::class.java)
+
+        assertFalse { (elastic.find(RefListElasticEntity::class.java, refElasticEntity.id).isPresent) }
     }
 
-    def "cascade from ES to Mongo works"() {
-        when:
-        RefListElasticEntity refElasticEntity = new RefListElasticEntity()
+    @Test
+    fun `cascade from ES to Mongo works`() {
+        val refElasticEntity = RefListElasticEntity()
         elastic.update(refElasticEntity)
-        elastic.refresh(RefListElasticEntity.class)
-                RefListMongoEntity refMongoEntity = new RefListMongoEntity()
-                refMongoEntity.getRef().add(refElasticEntity.getId())
-                mango.update(refMongoEntity)
-                and:
-                elastic.delete(refElasticEntity)
-                elastic.refresh(RefListElasticEntity.class)
-                and:
-                def resolved = mango.refreshOrFail(refMongoEntity)
-                then:
-                !resolved.getRef().contains(refElasticEntity.getId())
+        elastic.refresh(RefListElasticEntity::class.java)
+        val refMongoEntity = RefListMongoEntity()
+        refMongoEntity.ref.add(refElasticEntity.id)
+        mango.update(refMongoEntity)
+        elastic.delete(refElasticEntity)
+        elastic.refresh(RefListElasticEntity::class.java)
+        val resolved = mango.refreshOrFail(refMongoEntity)
+
+        assertFalse { resolved.ref.contains(refElasticEntity.id) }
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+
+        @Part
+        private lateinit var mango: Mango
+
+        fun setupSpec() {
+            elastic.readyFuture.await(Duration.ofSeconds(60))
+        }
+    }
 }
