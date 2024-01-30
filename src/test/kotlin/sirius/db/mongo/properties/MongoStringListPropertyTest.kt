@@ -8,66 +8,62 @@
 
 package sirius.db.mongo.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class MongoStringListPropertySpec extends BaseSpecification {
-
-    @Part
-    private static Mango mango
-
-            @Part
-            private static Mongo mongo
-
-            def "reading and writing works for MongoDB"() {
-        when:
-        def test = new MongoStringListEntity()
-        test.getList().add("Test").add("Hello").add("World")
+@ExtendWith(SiriusExtension::class)
+class MongoStringListPropertyTest {
+    @Test
+    fun `reading and writing works for MongoDB`() {
+        val test = MongoStringListEntity()
+        test.list.add("Test").add("Hello").add("World")
         mango.update(test)
-        def resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getList().size() == 3
-        and:
-        resolved.getList().contains("Test")
-        resolved.getList().contains("Hello")
-        resolved.getList().contains("World")
+        var resolved = mango.refreshOrFail(test)
 
-        when:
+        assertEquals(3, resolved.list.size())
+        assertTrue { resolved.list.contains("Test") }
+        assertTrue { resolved.list.contains("Hello") }
+        assertTrue { resolved.list.contains("World") }
+
         mongo.update().pull(MongoStringListEntity.LIST, "Hello").executeFor(resolved)
-        and:
         resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getList().size() == 2
-        and:
-        resolved.getList().contains("Test")
-        !resolved.getList().contains("Hello")
-        resolved.getList().contains("World")
 
-        when:
-        resolved.getList().modify().remove("World")
-        and:
+        assertEquals(2, resolved.list.size())
+        assertTrue { resolved.list.contains("Test") }
+        assertFalse { resolved.list.contains("Hello") }
+        assertTrue { resolved.list.contains("World") }
+
+        resolved.list.modify().remove("World")
         mango.update(resolved)
-        and:
         resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getList().size() == 1
-        and:
-        resolved.getList().contains("Test")
-        !resolved.getList().contains("Hello")
-        !resolved.getList().contains("World")
 
-        when:
-        mongo.update().addEachToSet(MongoStringListEntity.LIST, ["a", "b", "c", "Test"]).executeFor(resolved)
-        and:
+        assertEquals(1, resolved.list.size())
+        assertTrue { resolved.list.contains("Test") }
+        assertFalse { resolved.list.contains("Hello") }
+        assertFalse { resolved.list.contains("World") }
+
+        mongo.update().addEachToSet(MongoStringListEntity.LIST, listOf("a", "b", "c", "Test")).executeFor(resolved)
         resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getList().size() == 4
-        and:
-        resolved.getList().contains("Test")
-        resolved.getList().contains("a")
-        resolved.getList().contains("b")
-        resolved.getList().contains("c")
+
+        assertEquals(4, resolved.list.size())
+        assertTrue { resolved.list.contains("Test") }
+        assertTrue { resolved.list.contains("a") }
+        assertTrue { resolved.list.contains("b") }
+        assertTrue { resolved.list.contains("c") }
+    }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var mongo: Mongo
     }
 }
