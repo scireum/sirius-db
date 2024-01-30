@@ -8,42 +8,38 @@
 
 package sirius.db.mixing.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.properties.ESDataTypesEntity
 import sirius.db.mixing.Mixing
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
+import kotlin.test.assertEquals
 
-class EnumPropertySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class EnumPropertyTest {
+    @Test
+    fun `resolving via enum constants and translations works`() {
+        val property = mixing.getDescriptor(ESDataTypesEntity::class.java).findProperty("enumValue")
+        val esDataTypesEntity = ESDataTypesEntity()
 
-    @Part
-    private static Mixing mixing
+        property?.parseValueFromImport(esDataTypesEntity, Value.of("Test1"))
+        assertEquals(ESDataTypesEntity.TestEnum.Test1,esDataTypesEntity.testEnum)
 
-            def "resolving via enum constants and translations works"() {
-        given:
-        def property = mixing.getDescriptor(ESDataTypesEntity.class).findProperty("enumValue")
-                and:
-                ESDataTypesEntity entity = new ESDataTypesEntity();
-        when: // An enum constant can be resolved by its name...
-        property.parseValueFromImport(entity, Value.of("Test1"))
-        then:
-        entity.getTestEnum() == ESDataTypesEntity.TestEnum.Test1
+        property?.parseValueFromImport(esDataTypesEntity, Value.of("test1"))
+        assertEquals(ESDataTypesEntity.TestEnum.Test1,esDataTypesEntity.testEnum)
 
-        when: // An enum constant can be resolved by its name in lowercase...
-        property.parseValueFromImport(entity, Value.of("test1"))
-        then:
-        entity.getTestEnum() == ESDataTypesEntity.TestEnum.Test1
+        assertThrows<HandledException> { property?.parseValueFromImport(esDataTypesEntity, Value.of("test0")) }
 
-        when: // Invalid values throws an exception
-        property.parseValueFromImport(entity, Value.of("test0"))
-        then:
-        thrown(HandledException)
-        when: // Enum constants can be resolved by their "toString" representation...
-        property.parseValueFromImport(entity, Value.of("test25"))
-        then:
-        entity.getTestEnum() == ESDataTypesEntity.TestEnum.Test2
-
+        property?.parseValueFromImport(esDataTypesEntity, Value.of("test25"))
+        assertEquals(ESDataTypesEntity.TestEnum.Test2,esDataTypesEntity.testEnum)
     }
 
+    companion object {
+        @Part
+        private lateinit var mixing: Mixing
+    }
 }
