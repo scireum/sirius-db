@@ -22,11 +22,6 @@ import kotlin.test.assertEquals
 @Tag(Tags.NIGHTLY)
 @ExtendWith(SiriusExtension::class)
 class MangoNightlyTest {
-    companion object {
-        @Part
-        private lateinit var mango: Mango
-    }
-
     @Test
     fun `selecting over 1000 entities in queryList throws an exception`() {
         mango.select(MangoListTestEntity::class.java).delete()
@@ -60,5 +55,10 @@ class MangoNightlyTest {
                 true, 1
         )
         )
+    }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
     }
 }
