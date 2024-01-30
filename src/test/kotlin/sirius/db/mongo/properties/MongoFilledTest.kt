@@ -8,68 +8,99 @@
 
 package sirius.db.mongo.properties
 
-
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
 import sirius.db.mongo.QueryBuilder
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Strings
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class MongoFilledSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class MongoFilledTest {
+    @Test
+    fun `filled notFilled query works`() {
 
-    @Part
-    private static Mango mango
+        val fieldFilled = MongoFilledEntity()
+        fieldFilled.testField = "test"
+        val fieldNotFilled = MongoFilledEntity()
 
-            @Part
-            private static Mongo mongo
-
-            def "filled/notFilled query works"() {
-        setup:
-        MongoFilledEntity fieldFilled = new MongoFilledEntity()
-        fieldFilled.setTestField("test")
-        MongoFilledEntity fieldNotFilled = new MongoFilledEntity()
-        when:
         mango.update(fieldFilled)
         mango.update(fieldNotFilled)
-        then:
-        mango.select(MongoFilledEntity.class)
+
+        assertEquals(
+                fieldNotFilled.getIdAsString(), mango.select(MongoFilledEntity::class.java)
                 .eq(MongoFilledEntity.TEST_FIELD, null)
-                .queryFirst().getIdAsString() == fieldNotFilled.getIdAsString()
-                mango.select(MongoFilledEntity.class)
+                .queryFirst().getIdAsString()
+        )
+        assertEquals(
+                1, mango.select(MongoFilledEntity::class.java)
                 .eq(MongoFilledEntity.TEST_FIELD, null)
-                .count() == 1
+                .count()
+        )
 
-                mango.select(MongoFilledEntity.class)
+        assertEquals(
+                fieldFilled.getIdAsString(), mango.select(MongoFilledEntity::class.java)
                 .ne(MongoFilledEntity.TEST_FIELD, null)
-                .queryFirst().getIdAsString() == fieldFilled.getIdAsString()
-                mango.select(MongoFilledEntity.class)
+                .queryFirst().getIdAsString()
+        )
+        assertEquals(
+                1, mango.select(MongoFilledEntity::class.java)
                 .ne(MongoFilledEntity.TEST_FIELD, null)
-                .count() == 1
+                .count()
+        )
 
-                mango.select(MongoFilledEntity.class)
+        assertEquals(
+                fieldFilled.getIdAsString(), mango.select(MongoFilledEntity::class.java)
                 .where(QueryBuilder.FILTERS.filled(MongoFilledEntity.TEST_FIELD))
-                .queryFirst().getIdAsString() == fieldFilled.getIdAsString()
-                mango.select(MongoFilledEntity.class)
+                .queryFirst().getIdAsString()
+        )
+        assertEquals(
+                1, mango.select(MongoFilledEntity::class.java)
                 .where(QueryBuilder.FILTERS.filled(MongoFilledEntity.TEST_FIELD))
-                .count() == 1
+                .count()
+        )
 
-                mango.select(MongoFilledEntity.class)
+        assertEquals(
+                fieldNotFilled.getIdAsString(), mango.select(MongoFilledEntity::class.java)
                 .where(QueryBuilder.FILTERS.notFilled(MongoFilledEntity.TEST_FIELD))
-                .queryFirst().getIdAsString() == fieldNotFilled.getIdAsString()
-                mango.select(MongoFilledEntity.class)
+                .queryFirst().getIdAsString()
+        )
+        assertEquals(
+                1, mango.select(MongoFilledEntity::class.java)
                 .where(QueryBuilder.FILTERS.notFilled(MongoFilledEntity.TEST_FIELD))
-                .count() == 1
+                .count()
+        )
 
-                mango.select(MongoFilledEntity.class).
-        where(QueryBuilder.FILTERS
-                .exists(MongoFilledEntity.TEST_FIELD))
-                .queryList().every({ e ->
-                    Strings.areEqual(e.getIdAsString(),
-                            fieldNotFilled.getIdAsString()) || Strings.areEqual(e.getIdAsString(),
-                            fieldFilled.getIdAsString())
-                })
-                mango.select(MongoFilledEntity.class)
-                .where(QueryBuilder.FILTERS.notExists(MongoFilledEntity.TEST_FIELD)).count() == 0
+        assertTrue {
+            mango.select(MongoFilledEntity::class.java).where(
+                    QueryBuilder.FILTERS
+                            .exists(MongoFilledEntity.TEST_FIELD)
+            )
+                    .queryList().any { e ->
+                        Strings.areEqual(
+                                e.getIdAsString(),
+                                fieldNotFilled.getIdAsString()
+                        ) || Strings.areEqual(
+                                e.getIdAsString(),
+                                fieldFilled.getIdAsString()
+                        )
+                    }
+        }
+        assertEquals(
+                0, mango.select(MongoFilledEntity::class.java)
+                .where(QueryBuilder.FILTERS.notExists(MongoFilledEntity.TEST_FIELD)).count()
+        )
+    }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var mongo: Mongo
     }
 }
