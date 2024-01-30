@@ -19,14 +19,6 @@ import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
 class MongoTest {
-    companion object {
-        @Part
-        private lateinit var mongo: Mongo
-
-        @Part
-        private lateinit var keyGen: KeyGenerator
-    }
-
     @Test
     fun `basic read and write works`() {
         val testString = System.currentTimeMillis().toString()
@@ -132,5 +124,13 @@ class MongoTest {
                 .where(QueryBuilder.FILTERS.gte(Mapping.named("filter"), 2))
                 .aggregateIn("test2", Mapping.named("value"), "\$push").get(List::class.java)
         )
+    }
+
+    companion object {
+        @Part
+        private lateinit var mongo: Mongo
+
+        @Part
+        private lateinit var keyGen: KeyGenerator
     }
 }
