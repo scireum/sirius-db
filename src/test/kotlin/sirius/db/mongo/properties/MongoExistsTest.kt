@@ -20,7 +20,7 @@ import sirius.kernel.di.std.Part
 import kotlin.test.assertEquals
 
 @ExtendWith(SiriusExtension::class)
-class MongoExistsSpec {
+class MongoExistsTest {
     @Test
     fun `exists query works`() {
 
