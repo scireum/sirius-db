@@ -8,36 +8,38 @@
 
 package sirius.db.mongo.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
-class MongoStringIntMapPropertySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class MongoStringIntMapPropertyTe {
+    @Test
+    fun `read and write a string int map works`() {
+        val mongoStringIntMapEntity = MongoStringIntMapEntity()
+        mongoStringIntMapEntity.map.put("Test", 1).put("Foo", 2).put("Test", 3)
+        mango.update(mongoStringIntMapEntity)
+        var resolved = mango.refreshOrFail(mongoStringIntMapEntity)
 
-    @Part
-    private static Mango mango
+        assertEquals(2, resolved.map.size())
+        assertEquals(3, resolved.map.get("Test").get())
+        assertEquals(2, resolved.map.get("Foo").get())
 
-            def "read/write a string int map works"() {
-        when:
-        def test = new MongoStringIntMapEntity()
-        test.getMap().put("Test", 1).put("Foo", 2).put("Test", 3)
-        mango.update(test)
-        def resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 2
-        and:
-        resolved.getMap().get("Test").get() == 3
-        resolved.getMap().get("Foo").get() == 2
-        when:
-        resolved.getMap().modify().remove("Test")
-        and:
+        resolved.map.modify().remove("Test")
         mango.update(resolved)
-        and:
-        resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 1
-        and:
-        !resolved.getMap().containsKey("Test")
-        resolved.getMap().get("Foo").get() == 2
+        resolved = mango.refreshOrFail(mongoStringIntMapEntity)
+
+        assertEquals(1, resolved.map.size())
+        assertFalse { resolved.map.containsKey("Test") }
+        assertEquals(2, resolved.map.get("Foo").get())
+    }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
     }
 }
