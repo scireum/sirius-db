@@ -19,14 +19,6 @@ import kotlin.test.assertNotNull
 
 @ExtendWith(SiriusExtension::class)
 class MongoQueryCompilerTest {
-    companion object {
-        @Part
-        private lateinit var mango: Mango
-
-        @Part
-        private lateinit var mixing: Mixing
-    }
-
     @Test
     fun `listField generates an isEmptyListConstraint`() {
         val testEntity = MangoTestEntity()
@@ -59,5 +51,13 @@ class MongoQueryCompilerTest {
                     )
             ).exists()
         }
+    }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var mixing: Mixing
     }
 }
