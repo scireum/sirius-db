@@ -8,29 +8,34 @@
 
 package sirius.db.mongo.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
 
-class MongoAmountPropertySpec extends BaseSpecification {
-
-    @Part
-    private static Mango mango
-
-            private Amount saveAndRead(Amount value) {
-        MongoAmountEntity obj = new MongoAmountEntity()
-        obj.setTestAmount(value)
-        mango.update(obj)
-        obj = mango.refreshOrFail(obj)
-        return obj.getTestAmount()
+@ExtendWith(SiriusExtension::class)
+class MongoAmountPropertyTest {
+    @Test
+    fun `read and write of amount fields works`() {
+        val values = listOf(-3.77, Double.MAX_VALUE, 0.00001, -0.00001)
+        for (value in values) {
+            assertEquals(Amount.of(value), saveAndRead(Amount.of(value)))
+        }
     }
 
-    def "read/write of amount fields works"() {
-        expect:
-        saveAndRead(Amount.of(value)) == Amount.of(value)
+    companion object {
+        @Part
+        private lateinit var mango: Mango
 
-        where:
-        value << [-3.77d, Double.MAX_VALUE, 0.00001d, -0.00001d]
+        private fun saveAndRead(value: Amount): Amount {
+            var mongoAmountEntity = MongoAmountEntity()
+            mongoAmountEntity.testAmount = value
+            mango.update(mongoAmountEntity)
+            mongoAmountEntity = mango.refreshOrFail(mongoAmountEntity)
+            return mongoAmountEntity.testAmount
+        }
     }
 }
