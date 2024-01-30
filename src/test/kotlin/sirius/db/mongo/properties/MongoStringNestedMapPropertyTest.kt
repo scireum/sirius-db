@@ -8,56 +8,58 @@
 
 package sirius.db.mongo.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
 import sirius.db.mongo.Mongo
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class MongoStringNestedMapPropertySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class MongoStringNestedMapPropertyTest {
+    @Test
+    fun `reading and writing works`() {
 
-    @Part
-    private static Mango mango
+        val mongoStringNestedMapEntity = MongoStringNestedMapEntity()
+        val timestamp = LocalDateTime.now().minusDays(2)
+        mongoStringNestedMapEntity.map.put(
+                "X",
+                MongoStringNestedMapEntity.NestedEntity().withValue1("Y").withValue2(timestamp)
+        )
+        mango.update(mongoStringNestedMapEntity)
+        var resolved = mango.refreshOrFail(mongoStringNestedMapEntity)
 
-            @Part
-            private static Mongo mongo
+        assertEquals(1, resolved.map.size())
 
-            def "reading and writing works"() {
-        when:
-        def test = new MongoStringNestedMapEntity()
-        def timestamp = LocalDateTime.now().minusDays(2)
-        test.getMap().put("X", new MongoStringNestedMapEntity.NestedEntity().withValue1("Y").withValue2(timestamp))
-        mango.update(test)
-        def resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 1
-        and:
-        resolved.getMap().containsKey("X")
-        resolved.getMap().get("X").get().getValue1() == "Y"
-        resolved.getMap().get("X").get().getValue2() == timestamp.truncatedTo(ChronoUnit.MILLIS)
+        assertTrue { resolved.map.containsKey("X") }
+        assertEquals("Y", resolved.map.get("X").get().value1)
+        assertEquals(timestamp.truncatedTo(ChronoUnit.MILLIS), resolved.map.get("X").get().value2)
 
-        when:
-        resolved.getMap().modify().get("X").withValue1("ZZZ")
-        and:
+        resolved.map.modify()["X"]?.withValue1("ZZZ")
         mango.update(resolved)
-        and:
-        resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 1
-        and:
-        resolved.getMap().containsKey("X")
-        resolved.getMap().get("X").get().getValue1() == "ZZZ"
+        resolved = mango.refreshOrFail(mongoStringNestedMapEntity)
 
-        when:
-        resolved.getMap().modify().remove("X")
-        and:
+        assertEquals(1, resolved.map.size())
+        assertTrue { resolved.map.containsKey("X") }
+        assertEquals("ZZZ", resolved.map.get("X").get().value1)
+
+        resolved.map.modify().remove("X")
         mango.update(resolved)
-        and:
-        resolved = mango.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 0
+        resolved = mango.refreshOrFail(mongoStringNestedMapEntity)
+
+        assertEquals(0, resolved.map.size())
     }
 
+    companion object {
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var mongo: Mongo
+    }
 }
