@@ -547,4 +547,22 @@ class MongoFilterFactoryTest {
                 .where(QueryBuilder.FILTERS.hasListSize(MangoTestEntity.SUPER_POWERS, 5)).count()
         )
     }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var mongo: Mongo
+
+        private fun prefixSearch(query: String): Doc? {
+            return mongo.find().where(QueryBuilder.FILTERS.prefix(PrefixTestEntity.PREFIX, query))
+                    .singleIn(PrefixTestEntity::class.java).getOrNull()
+        }
+
+        private fun textSearch(query: String): Doc? {
+            return mongo.find().where(QueryBuilder.FILTERS.text(query))
+                    .singleIn(PrefixTestEntity::class.java).getOrNull()
+        }
+    }
 }
