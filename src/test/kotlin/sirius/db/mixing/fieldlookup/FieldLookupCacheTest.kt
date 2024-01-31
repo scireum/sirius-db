@@ -16,25 +16,11 @@ import sirius.db.mixing.Mapping
 import sirius.db.mongo.Mango
 import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
-import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
 class FieldLookupCacheTest {
-
-    companion object {
-        @Part
-        private lateinit var oma: OMA
-
-        @Part
-        private lateinit var mango: Mango
-
-        @Part
-        private lateinit var lookupCache: FieldLookupCache
-    }
-
-
     @Test
     fun `jdbc field lookup works`() {
         val miles = SQLFieldLookUpTestEntity()
@@ -93,20 +79,20 @@ class FieldLookupCacheTest {
                         .inner(NameFieldsTestComposite.LASTNAME)
         )
 
-        assertEquals("Miles",name1.asString())
-        assertEquals("Miles",lookupCache.cache.get(cacheKey).toString())
-        assertEquals("Miles",name2.asString())
-        assertEquals(16,age.asInt(0) )
+        assertEquals("Miles", name1.asString())
+        assertEquals("Miles", lookupCache.cache.get(cacheKey).toString())
+        assertEquals("Miles", name2.asString())
+        assertEquals(16, age.asInt(0))
         assertTrue { cool.asBoolean() }
-        assertEquals(listOf("Agility", "Spider Sense", "Shoot web"),powers.get())
-        assertEquals("Spider",heroFirstName.asString())
-        assertEquals("Man",heroLastName.asString())
+        assertEquals(listOf("Agility", "Spider Sense", "Shoot web"), powers.get())
+        assertEquals("Spider", heroFirstName.asString())
+        assertEquals("Man", heroLastName.asString())
     }
 
     @Test
     fun `mongo field lookup works`() {
 
-        val tony = MongoFieldLookUpTestEntity ()
+        val tony = MongoFieldLookUpTestEntity()
         tony.names.firstname = "Tony"
         tony.names.lastname = "Stark"
         tony.age = 50
@@ -164,13 +150,24 @@ class FieldLookupCacheTest {
                         .inner(NameFieldsTestComposite.LASTNAME)
         )
 
-        assertEquals("Tony",name1.asString())
-        assertEquals("Tony",lookupCache.cache.get(cacheKey).toString())
-        assertEquals("Tony",name2.asString())
+        assertEquals("Tony", name1.asString())
+        assertEquals("Tony", lookupCache.cache.get(cacheKey).toString())
+        assertEquals("Tony", name2.asString())
         assertEquals(50, age.asInt(0))
         assertTrue { cool.asBoolean() }
-        assertEquals(Arrays.asList("Flying", "Lasers", "Money"),powers.get())
-        assertEquals( "Iron",heroFirstName.asString())
-        assertEquals("Man",heroLastName.asString())
+        assertEquals(listOf("Flying", "Lasers", "Money"), powers.get())
+        assertEquals("Iron", heroFirstName.asString())
+        assertEquals("Man", heroLastName.asString())
+    }
+
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+        @Part
+        private lateinit var mango: Mango
+
+        @Part
+        private lateinit var lookupCache: FieldLookupCache
     }
 }
