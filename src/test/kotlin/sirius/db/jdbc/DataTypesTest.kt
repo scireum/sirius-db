@@ -8,48 +8,43 @@
 
 package sirius.db.jdbc
 
-import sirius.db.mixing.Property
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
-
 import java.time.Duration
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class DataTypesSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class DataTypesTest {
+    @Test
+    fun `reading and writing long works`() {
+        var test = DataTypesEntity()
 
-    @Part
-    private static OMA oma
+        test.longValue = Long.MAX_VALUE
 
-            def setupSpec() {
-        oma.getReadyFuture().await(Duration.ofSeconds(60))
-    }
-
-    def "reading and writing long works"() {
-        given:
-        DataTypesEntity test = new DataTypesEntity()
-        when:
-        test.setLongValue(Long.MAX_VALUE)
-        and:
         oma.update(test)
-        and:
+
         test = oma.refreshOrFail(test)
-        then:
-        test.getLongValue() == Long.MAX_VALUE
+
+        assertEquals(Long.MAX_VALUE, test.longValue)
     }
 
-    def "default values work when using parseValue()"() {
-        given:
-        DataTypesEntity test = new DataTypesEntity()
-        Property longValue = test.getDescriptor().getProperty("longValue")
-        Property intValue = test.getDescriptor().getProperty("intValue")
-        Property stringValue = test.getDescriptor().getProperty("stringValue")
-        Property amountValue = test.getDescriptor().getProperty("amountValue")
-        Property boolValue = test.getDescriptor().getProperty("boolValue")
-        Property localTimeValue = test.getDescriptor().getProperty("localTimeValue")
-        Property localDateValue = test.getDescriptor().getProperty("localDateValue")
-        Property enumValue = test.getDescriptor().getProperty("enumValue")
-        when:
+    @Test
+    fun `default values work when using parseValue()`() {
+        var test = DataTypesEntity()
+        val longValue = test.descriptor.getProperty("longValue")
+        val intValue = test.descriptor.getProperty("intValue")
+        val stringValue = test.descriptor.getProperty("stringValue")
+        val amountValue = test.descriptor.getProperty("amountValue")
+        val boolValue = test.descriptor.getProperty("boolValue")
+        val localTimeValue = test.descriptor.getProperty("localTimeValue")
+        val localDateValue = test.descriptor.getProperty("localDateValue")
+        val enumValue = test.descriptor.getProperty("enumValue")
+
         longValue.parseValue(test, Value.of(null))
         intValue.parseValue(test, Value.of(null))
         stringValue.parseValue(test, Value.of(null))
@@ -58,52 +53,63 @@ class DataTypesSpec extends BaseSpecification {
         localTimeValue.parseValue(test, Value.of(null))
         localDateValue.parseValue(test, Value.of(null))
         enumValue.parseValue(test, Value.of(null))
-        and:
+
         oma.update(test)
-        and:
         test = oma.refreshOrFail(test)
-        then:
-        test.getAmountValue() == Amount.of(300)
-        test.getLongValue() == 100L
-        test.getIntValue() == 200
-        test.getStringValue() == "test"
-        test.getBoolValue()
-        test.getLocalTimeValue().getHour() == 10
-        test.getLocalTimeValue().getMinute() == 15
-        test.getLocalTimeValue().getSecond() == 30
-        test.getLocalDateValue().getYear() == 2018
-        test.getLocalDateValue().getMonth().getValue() == 1
-        test.getLocalDateValue().getDayOfMonth() == 1
-        test.getTestEnum() == DataTypesEntity.TestEnum.Test2
+
+        val threeHundred = 300
+        assertEquals(Amount.of(threeHundred), test.amountValue)
+        assertEquals(100L, test.longValue)
+        assertEquals(200, test.intValue)
+        assertEquals("test", test.stringValue)
+        assertTrue { test.boolValue }
+        assertEquals(10, test.localTimeValue.hour)
+        assertEquals(15, test.localTimeValue.minute)
+        assertEquals(30, test.localTimeValue.second)
+        assertEquals(2018, test.localDateValue.year)
+        assertEquals(1, test.localDateValue.month.value)
+        assertEquals(1, test.localDateValue.dayOfMonth)
+        assertEquals(DataTypesEntity.TestEnum.Test2, test.testEnum)
     }
 
-    def "default values work"() {
-        given:
-        DataTypesEntity test = new DataTypesEntity()
-        when:
+    @Test
+    fun `default values work`() {
+
+        var test = DataTypesEntity()
+
         oma.update(test)
-        and:
+
         test = oma.refreshOrFail(test)
-        then:
-        test.getAmountValue() == Amount.of(300)
-        test.getLongValue() == 100L
-        test.getIntValue() == 200
-        test.getStringValue() == "test"
-        test.getBoolValue()
-        test.getLocalTimeValue().getHour() == 10
-        test.getLocalTimeValue().getMinute() == 15
-        test.getLocalTimeValue().getSecond() == 30
-        test.getLocalDateValue().getYear() == 2018
-        test.getLocalDateValue().getMonth().getValue() == 1
-        test.getLocalDateValue().getDayOfMonth() == 1
-        test.getTestEnum() == DataTypesEntity.TestEnum.Test2
+
+        val threeHundred = 300
+        assertEquals(Amount.of(threeHundred), test.amountValue)
+        assertEquals(100L, test.longValue)
+        assertEquals(200, test.intValue)
+        assertEquals("test", test.stringValue)
+        assertTrue { test.boolValue }
+        assertEquals(10, test.localTimeValue.hour)
+        assertEquals(15, test.localTimeValue.minute)
+        assertEquals(30, test.localTimeValue.second)
+        assertEquals(2018, test.localDateValue.year)
+        assertEquals(1, test.localDateValue.month.value)
+        assertEquals(1, test.localDateValue.dayOfMonth)
+        assertEquals(DataTypesEntity.TestEnum.Test2, test.testEnum)
     }
 
-    def "determining the length of enums work"() {
-        when:
-        DataTypesEntity test = new DataTypesEntity()
-        then:
-        test.getDescriptor().getProperty("enumValue").getLength() == 8
-        test.getDescriptor().getProperty("enumValueFixedLength").getLength() == 10
+    @Test
+    fun `determining the length of enums work`() {
+        val test = DataTypesEntity()
+
+        assertEquals(8, test.descriptor.getProperty("enumValue").length)
+        assertEquals(10, test.descriptor.getProperty("enumValueFixedLength").length)
+    }
+
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+        fun setupSpec() {
+            oma.readyFuture.await(Duration.ofSeconds(60))
+        }
     }
 }
