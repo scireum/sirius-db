@@ -8,118 +8,169 @@
 
 package sirius.db.mixing.fieldlookup
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.jdbc.OMA
 import sirius.db.mixing.FieldLookupCache
 import sirius.db.mixing.Mapping
 import sirius.db.mongo.Mango
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import java.util.*
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class FieldLookupCacheSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class FieldLookupCacheTest {
 
-    @Part
-    private static OMA oma
+    companion object {
+        @Part
+        private lateinit var oma: OMA
 
-            @Part
-            private static Mango mango
+        @Part
+        private lateinit var mango: Mango
 
-            @Part
-            private static FieldLookupCache lookupCache
-
-            def "jdbc field lookup works"() {
-        given:
-        SQLFieldLookUpTestEntity miles = new SQLFieldLookUpTestEntity()
-        miles.getNames().setFirstname("Miles")
-        miles.getNames().setLastname("Morales")
-        miles.setAge(16)
-        miles.setCool(true)
-        miles.as(SQLSuperHeroTestMixin.class).getSuperPowers().modify().addAll(Arrays.asList("Agility",
-                "Spider Sense",
-                "Shoot web"))
-                miles.as(SQLSuperHeroTestMixin.class).getHeroNames().setFirstname("Spider")
-        miles.as(SQLSuperHeroTestMixin.class).getHeroNames().setLastname("Man")
-                oma.update(miles)
-                when:
-        def cacheKey = lookupCache.
-        getCacheKey((SQLFieldLookUpTestEntity.class), miles.getId(), SQLFieldLookUpTestEntity.NAMES.inner(
-                NameFieldsTestComposite.FIRSTNAME))
-                def name1 = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                SQLFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME))
-                def name2 = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                SQLFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME))
-                def age = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(), SQLFieldLookUpTestEntity.AGE)
-                def birthday = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                SQLFieldLookUpTestEntity.BIRTHDAY)
-                def cool = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                SQLFieldLookUpTestEntity.COOL)
-                def powers = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                Mapping.mixin(SQLSuperHeroTestMixin.class)
-                        .inner(SQLSuperHeroTestMixin.SUPER_POWERS))
-                        def heroFirstName = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                        Mapping.mixin(SQLSuperHeroTestMixin.class)
-                                .inner(SQLSuperHeroTestMixin.HERO_NAMES)
-                                .inner(NameFieldsTestComposite.FIRSTNAME))
-                                def heroLastName = lookupCache.lookup(SQLFieldLookUpTestEntity.class, miles.getId(),
-                                Mapping.mixin(SQLSuperHeroTestMixin.class)
-                                        .inner(SQLSuperHeroTestMixin.HERO_NAMES)
-                                        .inner(NameFieldsTestComposite.LASTNAME))
-
-                                        then:
-                                        name1.asString() == "Miles"
-                                        lookupCache.cache.get(cacheKey).asString() == "Miles"
-                                        name2.asString() == "Miles"
-                                        age.asInt(0) == 16
-                                !!cool == true
-                                powers.get() == Arrays.asList("Agility", "Spider Sense", "Shoot web")
-                                heroFirstName.asString() == "Spider"
-                                heroLastName.asString() == "Man"
+        @Part
+        private lateinit var lookupCache: FieldLookupCache
     }
 
-    def "mongo field lookup works"() {
-        given:
-        MongoFieldLookUpTestEntity tony = new MongoFieldLookUpTestEntity()
-        tony.getNames().setFirstname("Tony")
-        tony.getNames().setLastname("Stark")
-        tony.setAge(50)
-        tony.setCool(true)
-        tony.as(MongoSuperHeroTestMixin.class).getSuperPowers().modify().addAll(Arrays.asList("Flying",
-                "Lasers",
-                "Money"))
-                tony.as(MongoSuperHeroTestMixin.class).getHeroNames().setFirstname("Iron")
-        tony.as(MongoSuperHeroTestMixin.class).getHeroNames().setLastname("Man")
-                mango.update(tony)
-                when:
-        def cacheKey = lookupCache.
-        getCacheKey((MongoFieldLookUpTestEntity.class), tony.getId(), MongoFieldLookUpTestEntity.NAMES.inner(
-                NameFieldsTestComposite.FIRSTNAME))
-                def name1 = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                MongoFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME))
-                def name2 = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                MongoFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME))
-                def age = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(), MongoFieldLookUpTestEntity.AGE)
-                def birthday = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                MongoFieldLookUpTestEntity.BIRTHDAY)
-                def cool = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                MongoFieldLookUpTestEntity.COOL)
-                def powers = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                Mapping.mixin(MongoSuperHeroTestMixin.class)
-                        .inner(MongoSuperHeroTestMixin.SUPER_POWERS))
-                        def heroFirstName = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                        Mapping.mixin(MongoSuperHeroTestMixin.class)
-                                .inner(MongoSuperHeroTestMixin.HERO_NAMES)
-                                .inner(NameFieldsTestComposite.FIRSTNAME))
-                                def heroLastName = lookupCache.lookup(MongoFieldLookUpTestEntity.class, tony.getId(),
-                                Mapping.mixin(MongoSuperHeroTestMixin.class)
-                                        .inner(MongoSuperHeroTestMixin.HERO_NAMES)
-                                        .inner(NameFieldsTestComposite.LASTNAME))
-                                        then:
-                                        name1.asString() == "Tony"
-                                        lookupCache.cache.get(cacheKey).asString() == "Tony"
-                                        name2.asString() == "Tony"
-                                        age.asInt(0) == 50
-                                !!cool == true
-                                powers.get() == Arrays.asList("Flying", "Lasers", "Money")
-                                heroFirstName.asString() == "Iron"
-                                heroLastName.asString() == "Man"
+
+    @Test
+    fun `jdbc field lookup works`() {
+        val miles = SQLFieldLookUpTestEntity()
+        miles.names.firstname = "Miles"
+        miles.names.lastname = "Morales"
+        miles.age = 16
+        miles.isCool = true
+        miles.`as`(SQLSuperHeroTestMixin::class.java).superPowers.modify().addAll(
+                listOf(
+                        "Agility",
+                        "Spider Sense",
+                        "Shoot web"
+                )
+        )
+        miles.`as`(SQLSuperHeroTestMixin::class.java).heroNames.firstname = "Spider"
+        miles.`as`(SQLSuperHeroTestMixin::class.java).heroNames.lastname = "Man"
+        oma.update(miles)
+
+        val cacheKey = lookupCache.getCacheKey(
+                (SQLFieldLookUpTestEntity::class.java), miles.id, SQLFieldLookUpTestEntity.NAMES.inner(
+                NameFieldsTestComposite.FIRSTNAME
+        )
+        )
+        val name1 = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                SQLFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME)
+        )
+        val name2 = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                SQLFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME)
+        )
+        val age = lookupCache.lookup(SQLFieldLookUpTestEntity::class.java, miles.id, SQLFieldLookUpTestEntity.AGE)
+        val birthday = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                SQLFieldLookUpTestEntity.BIRTHDAY
+        )
+        val cool = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                SQLFieldLookUpTestEntity.COOL
+        )
+        val powers = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                Mapping.mixin(SQLSuperHeroTestMixin::class.java)
+                        .inner(SQLSuperHeroTestMixin.SUPER_POWERS)
+        )
+        val heroFirstName = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                Mapping.mixin(SQLSuperHeroTestMixin::class.java)
+                        .inner(SQLSuperHeroTestMixin.HERO_NAMES)
+                        .inner(NameFieldsTestComposite.FIRSTNAME)
+        )
+        val heroLastName = lookupCache.lookup(
+                SQLFieldLookUpTestEntity::class.java, miles.id,
+                Mapping.mixin(SQLSuperHeroTestMixin::class.java)
+                        .inner(SQLSuperHeroTestMixin.HERO_NAMES)
+                        .inner(NameFieldsTestComposite.LASTNAME)
+        )
+
+        assertEquals("Miles",name1.asString())
+        assertEquals("Miles",lookupCache.cache.get(cacheKey).toString())
+        assertEquals("Miles",name2.asString())
+        assertEquals(16,age.asInt(0) )
+        assertTrue { cool.asBoolean() }
+        assertEquals(listOf("Agility", "Spider Sense", "Shoot web"),powers.get())
+        assertEquals("Spider",heroFirstName.asString())
+        assertEquals("Man",heroLastName.asString())
+    }
+
+    @Test
+    fun `mongo field lookup works`() {
+
+        val tony = MongoFieldLookUpTestEntity ()
+        tony.names.firstname = "Tony"
+        tony.names.lastname = "Stark"
+        tony.age = 50
+        tony.isCool = true
+        tony.`as`(MongoSuperHeroTestMixin::class.java).superPowers.modify().addAll(
+                listOf(
+                        "Flying",
+                        "Lasers",
+                        "Money"
+                )
+        )
+        tony.`as`(MongoSuperHeroTestMixin::class.java).heroNames.firstname = "Iron"
+        tony.`as`(MongoSuperHeroTestMixin::class.java).heroNames.lastname = "Man"
+        mango.update(tony)
+
+
+        val cacheKey = lookupCache.getCacheKey(
+                (MongoFieldLookUpTestEntity::class.java), tony.id, MongoFieldLookUpTestEntity.NAMES.inner(
+                NameFieldsTestComposite.FIRSTNAME
+        )
+        )
+        val name1 = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                MongoFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME)
+        )
+        val name2 = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                MongoFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME)
+        )
+        val age =
+                lookupCache.lookup(MongoFieldLookUpTestEntity::class.java, tony.id, MongoFieldLookUpTestEntity.AGE)
+        val birthday = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                MongoFieldLookUpTestEntity.BIRTHDAY
+        )
+        val cool = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                MongoFieldLookUpTestEntity.COOL
+        )
+        val powers = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                Mapping.mixin(MongoSuperHeroTestMixin::class.java)
+                        .inner(MongoSuperHeroTestMixin.SUPER_POWERS)
+        )
+        val heroFirstName = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                Mapping.mixin(MongoSuperHeroTestMixin::class.java)
+                        .inner(MongoSuperHeroTestMixin.HERO_NAMES)
+                        .inner(NameFieldsTestComposite.FIRSTNAME)
+        )
+        val heroLastName = lookupCache.lookup(
+                MongoFieldLookUpTestEntity::class.java, tony.id,
+                Mapping.mixin(MongoSuperHeroTestMixin::class.java)
+                        .inner(MongoSuperHeroTestMixin.HERO_NAMES)
+                        .inner(NameFieldsTestComposite.LASTNAME)
+        )
+
+        assertEquals("Tony",name1.asString())
+        assertEquals("Tony",lookupCache.cache.get(cacheKey).toString())
+        assertEquals("Tony",name2.asString())
+        assertEquals(50, age.asInt(0))
+        assertTrue { cool.asBoolean() }
+        assertEquals(Arrays.asList("Flying", "Lasers", "Money"),powers.get())
+        assertEquals( "Iron",heroFirstName.asString())
+        assertEquals("Man",heroLastName.asString())
     }
 }
