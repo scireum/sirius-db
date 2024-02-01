@@ -6,13 +6,15 @@
  * http://www.scireum.de - info@scireum.de
  */
 
-package sirius.db.jdbc
+package sirius.database.jdatabasec
 
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.extension.ExtendWith
+import sirius.db.jdbc.Databases
+import sirius.db.jdbc.Row
 import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Limit
 import sirius.kernel.di.std.Part
@@ -28,27 +30,27 @@ class JDBCTest {
     @Order(1)
     @Test
     fun `test database is loaded from config while profile is applied`() {
-        val db = dbs["test"]
-        assertEquals(db.createQuery("SELECT 1").queryList().size, 1)
+        val database = databases["test"]
+        assertEquals(database.createQuery("SELECT 1").queryList().size, 1)
     }
 
     @Order(2)
     @Test
     fun `create table for 'test_a' works`() {
-        val db = dbs["test"]
-        db.createQuery("CREATE TABLE test_a(a CHAR(10), b INT DEFAULT 1)").executeUpdate()
-        assertEquals(db.createQuery("SELECT * FROM test_a").queryList().size, 0)
+        val database = databases["test"]
+        database.createQuery("CREATE TABLE test_a(a CHAR(10), b INT DEFAULT 1)").executeUpdate()
+        assertEquals(database.createQuery("SELECT * FROM test_a").queryList().size, 0)
     }
 
     @Order(3)
     @Test
     fun `insert works on test table 'test_a'`() {
-        val db = dbs["test"]
-        db.insertRow("test_a", mapOf("a" to "Hello"))
-        db.insertRow("test_a", mapOf("a" to "Test", "b" to 2))
-        assertEquals(db.createQuery("SELECT * FROM test_a").queryList().size, 2)
+        val database = databases["test"]
+        database.insertRow("test_a", mapOf("a" to "Hello"))
+        database.insertRow("test_a", mapOf("a" to "Test", "b" to 2))
+        assertEquals(database.createQuery("SELECT * FROM test_a").queryList().size, 2)
         assertEquals(
-                db.createQuery("SELECT * FROM test_a ORDER BY a ASC").queryFirst()!!.getValue("A").asString(),
+                database.createQuery("SELECT * FROM test_a ORDER BY a ASC").queryFirst()!!.getValue("A").asString(),
                 "Hello"
         )
     }
@@ -63,89 +65,89 @@ class JDBCTest {
 
     @Test
     fun `queryList returns all inserted rows`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a")
-        assertEquals(qry.queryList().size, 2)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a")
+        assertEquals(sqlQuery.queryList().size, 2)
     }
 
     @Test
     fun `SQLQuery#queryFirst returns a row`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a ORDER BY a ASC")
-        assertEquals(qry.queryFirst()!!.getValue("a").asString(), "Hello")
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a ORDER BY a ASC")
+        assertEquals(sqlQuery.queryFirst()!!.getValue("a").asString(), "Hello")
     }
 
     @Order(4)
     @Test
     fun `SQLQuery queryFirst returns null for an empty result set`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT a,b FROM test_a WHERE a = 'xxx'")
-        assertNull(qry.queryFirst())
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT a,b FROM test_a WHERE a = 'xxx'")
+        assertNull(sqlQuery.queryFirst())
     }
 
     @Order(5)
     @Test
     fun `SQLQuery first returns an empty optional`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a WHERE a = 'xxx'")
-        assertTrue(qry.first().isEmpty)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a WHERE a = 'xxx'")
+        assertTrue(sqlQuery.first().isEmpty)
     }
 
     @Order(6)
     @Test
     fun `SQLQuery executeUpdate works changes a row`() {
-        val db = dbs["test"]
-        val numberOfRowsChanged = db.createQuery("UPDATE test_a SET a = 'xxx' WHERE a = 'Test'").executeUpdate()
+        val database = databases["test"]
+        val numberOfRowsChanged = database.createQuery("UPDATE test_a SET a = 'xxx' WHERE a = 'Test'").executeUpdate()
         assertEquals(numberOfRowsChanged, 1)
-        assertTrue(db.createQuery("SELECT * FROM test_a WHERE a = 'xxx'").first().isPresent)
+        assertTrue(database.createQuery("SELECT * FROM test_a WHERE a = 'xxx'").first().isPresent)
     }
 
     @Test
     fun `the statement compiler omits an empty clause`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a [WHERE a = \${filter}]").set("filter", null)
-        assertEquals(qry.queryList().size, 2)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a [WHERE a = \${filter}]").set("filter", null)
+        assertEquals(sqlQuery.queryList().size, 2)
     }
 
     @Test
     fun `the statement compiler includes an non empty clause`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a [WHERE a = \${filter}]").set("filter", "Hello")
-        assertEquals(qry.queryList().size, 1)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a [WHERE a = \${filter}]").set("filter", "Hello")
+        assertEquals(sqlQuery.queryList().size, 1)
     }
 
     @Test
     fun `the statement compiler omits a conditional clause`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a [:disabled WHERE a = \${filter}]").set("disabled", false)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a [:disabled WHERE a = \${filter}]").set("disabled", false)
                 .set("filter", null)
-        assertEquals(qry.queryList().size, 2)
+        assertEquals(sqlQuery.queryList().size, 2)
     }
 
     @Test
     fun `the statement compiler includes an active conditional clause`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a [:enabled WHERE a = \${filter}]").set("enabled", true)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a [:enabled WHERE a = \${filter}]").set("enabled", true)
                 .set("filter", "Hello")
-        assertEquals(qry.queryList().size, 1)
+        assertEquals(sqlQuery.queryList().size, 1)
     }
 
     @Test
     fun `the statement compiler expands hash fields correctly`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT * FROM test_a WHERE LOWER(a) LIKE #{filter}").set("filter", "HEL")
-        assertEquals(qry.queryList().size, 1)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT * FROM test_a WHERE LOWER(a) LIKE #{filter}").set("filter", "HEL")
+        assertEquals(sqlQuery.queryList().size, 1)
     }
 
     @Test
     fun `SQLQuery#iterate is evaluated correctly`() {
-        val db = dbs["test"]
-        val qry = db.createQuery("SELECT a,b FROM test_a")
-        qry.iterate({ row -> row.fieldsList.size == 2 }, Limit.UNLIMITED)
+        val database = databases["test"]
+        val sqlQuery = database.createQuery("SELECT a,b FROM test_a")
+        sqlQuery.iterate({ row -> row.fieldsList.size == 2 }, Limit.UNLIMITED)
     }
 
     companion object {
         @Part
-        private lateinit var dbs: Databases
+        private lateinit var databases: Databases
     }
 }
