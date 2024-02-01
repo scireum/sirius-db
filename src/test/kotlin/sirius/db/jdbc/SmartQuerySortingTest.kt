@@ -1,152 +1,140 @@
-package sirius.db.jdbc;
+package sirius.db.jdbc
 
-import sirius.kernel.BaseSpecification;
-import sirius.kernel.di.std.Part;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
+import sirius.kernel.di.std.Part
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class SmartQuerySortingSpec extends BaseSpecification {
-    @Part
-    static OMA oma;
-
-    private static final int TWO_BLOCKS_LENGTH = 2000
-    private static final int ONE_AND_HALF_BLOCK_LENGTH = 1500
-    private static final int ONE_BLOCK_LENGTH = 1000
-    private static final int FIRST_COL = 0;
-    private static final int SECOND_COL = 1;
-    private static final int NO_COL = -1;
-
-    def cleanup() {
-        oma.select(SmartQueryTestSortingEntity.class).delete()
-    }
-
-    def "sorting asc without null values returns all entries"() {
-        when:
+@ExtendWith(SiriusExtension::class)
+class SmartQuerySortingTest {
+    @Test
+    fun `sorting asc without null values returns all entries`() {
         prepareWithNonNullValues()
-        SmartQuery<SmartQueryTestSortingEntity> qry = createAscSortingQuery()
-        then:
-        isCorrectlySortedAsc(qry)
+        val query = createAscSortingQuery()
+
+        assertFalse { isCorrectlySortedAsc(query) }
     }
 
-    def "sorting desc without null values returns all entries"() {
-        when:
+    @Test
+    fun `sorting desc without null values returns all entries`() {
         prepareWithNonNullValues()
-        SmartQuery<SmartQueryTestSortingEntity> qry = createDescSortingQuery()
-        then:
-        isCorrectlySortedDesc(qry)
+        val query = createDescSortingQuery()
+        
+        assertTrue {  isCorrectlySortedDesc(query) }
     }
 
-    def "sorting asc with null values for first column of the first 1.5 blocks returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, FIRST_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createAscSortingQuery()
-        then:
-        isCorrectlySortedAsc(qry)
+    @Test
+    fun `sorting asc with null values for first column of the first 1 and a half blocks returns all entries`() {
+        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, FIRST_COL)
+        val query = createAscSortingQuery()
+
+        assertFalse { isCorrectlySortedAsc(query) }
     }
 
-    def "sorting asc with null values for second column of the first 1.5 blocks returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, SECOND_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createAscSortingQuery()
-        then:
-        isCorrectlySortedAsc(qry)
+    @Test
+    fun `sorting asc with null values for second column of the first 1 and a half  blocks returns all entries`() {
+        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, SECOND_COL)
+        val query = createAscSortingQuery()
+
+        assertFalse { isCorrectlySortedAsc(query) }
     }
 
-    def "sorting desc with null values for first column of the first 1.5 blocks returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, FIRST_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createDescSortingQuery()
-        then:
-        isCorrectlySortedDesc(qry)
+    @Test
+    fun `sorting desc with null values for first column of the first 1 and a half blocks returns all entries`() {
+        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, FIRST_COL)
+        val query = createDescSortingQuery()
+
+        assertFalse { isCorrectlySortedDesc(query) }
     }
 
-    def "sorting desc with null values for second column of the first 1.5 blocks returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, SECOND_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createDescSortingQuery()
-        then:
-        isCorrectlySortedDesc(qry)
+    @Test
+    fun `sorting desc with null values for second column of the first 1 and a half blocks returns all entries`() {
+        prepareWithNullValues(ONE_AND_HALF_BLOCK_LENGTH, SECOND_COL)
+        val query = createDescSortingQuery()
+
+        assertFalse { isCorrectlySortedDesc(query) }
     }
 
-    def "sorting asc with null values for first column of the first block returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_BLOCK_LENGTH, FIRST_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createAscSortingQuery()
-        then:
-        isCorrectlySortedAsc(qry)
+    @Test
+    fun `sorting asc with null values for first column of the first block returns all entries`() {
+        prepareWithNullValues(ONE_BLOCK_LENGTH, FIRST_COL)
+        val query = createAscSortingQuery()
+
+        assertFalse { isCorrectlySortedAsc(query) }
     }
 
-    def "sorting desc with null values for second column of the first block returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_BLOCK_LENGTH, SECOND_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createDescSortingQuery()
-        then:
-        isCorrectlySortedDesc(qry)
+    @Test
+    fun `sorting desc with null values for second column of the first block returns all entries`() {
+        prepareWithNullValues(ONE_BLOCK_LENGTH, SECOND_COL)
+        val query = createDescSortingQuery()
+
+        assertFalse { isCorrectlySortedDesc(query) }
     }
 
-    def "sorting asc with null values for first column of the first block-1 entries returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_BLOCK_LENGTH-1, FIRST_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createAscSortingQuery()
-        then:
-        isCorrectlySortedAsc(qry)
+    @Test
+    fun `sorting asc with null values for first column of the first block-1 entries returns all entries`() {
+        prepareWithNullValues(ONE_BLOCK_LENGTH - 1, FIRST_COL)
+        val query = createAscSortingQuery()
+
+        assertFalse { isCorrectlySortedAsc(query) }
     }
 
-    def "sorting desc with null values for first column of the first block-1 entries returns all entries"() {
-        when:
-        prepareWithNullValues(ONE_BLOCK_LENGTH-1, FIRST_COL);
-        SmartQuery<SmartQueryTestSortingEntity> qry = createDescSortingQuery()
-        then:
-        isCorrectlySortedDesc(qry)
+    @Test
+    fun `sorting desc with null values for first column of the first block-1 entries returns all entries`() {
+        prepareWithNullValues(ONE_BLOCK_LENGTH - 1, FIRST_COL)
+        val query = createDescSortingQuery()
+
+        assertFalse { isCorrectlySortedDesc(query) }
     }
 
-    private void prepareWithNonNullValues() {
+    private fun prepareWithNonNullValues() {
         prepareWithNullValues(0, NO_COL)
     }
 
-    private void prepareWithNullValues(int amountOfNullValues, int column) {
-        for (int i = 1; i <= TWO_BLOCKS_LENGTH; i++) {
-        SmartQueryTestSortingEntity e = new SmartQueryTestSortingEntity()
-        if (i > amountOfNullValues) {
-            e.setValueOne("valueOne_" + generateMixedInt(i))
-            e.setValueTwo("valueTwo_" + generateMixedInt(i))
-        } else {
-            switch (column) {
-                case FIRST_COL:
-                e.setValueTwo("valueTwo_" + generateMixedInt(i))
-                break;
-                case SECOND_COL:
-                e.setValueOne("valueOne_" + generateMixedInt(i))
-                break;
-                default:
-                e.setValueOne("valueOne_" + generateMixedInt(i))
-                e.setValueTwo("valueTwo_" + generateMixedInt(i))
+    private fun prepareWithNullValues(amountOfNullValues: Int, column: Int) {
+        for (i in 1..TWO_BLOCKS_LENGTH) {
+            val smartQueryTestSortingEntity = SmartQueryTestSortingEntity()
+            if (i > amountOfNullValues) {
+                smartQueryTestSortingEntity.valueOne = "valueOne_" + generateMixedInt(i)
+                smartQueryTestSortingEntity.valueTwo = "valueTwo_" + generateMixedInt(i)
+            } else {
+                when (column) {
+                    FIRST_COL -> smartQueryTestSortingEntity.valueTwo = "valueTwo_" + generateMixedInt(i)
+                    SECOND_COL -> smartQueryTestSortingEntity.valueOne = "valueOne_" + generateMixedInt(i)
+                    else -> {
+                        smartQueryTestSortingEntity.valueOne = "valueOne_" + generateMixedInt(i)
+                        smartQueryTestSortingEntity.valueTwo = "valueTwo_" + generateMixedInt(i)
+                    }
+                }
             }
+            oma.update(smartQueryTestSortingEntity)
         }
-        oma.update(e)
-    }
     }
 
-    private SmartQuery<SmartQueryTestSortingEntity> createAscSortingQuery() {
-        oma.select(SmartQueryTestSortingEntity.class)
+    private fun createAscSortingQuery(): SmartQuery<SmartQueryTestSortingEntity> {
+        return oma.select(SmartQueryTestSortingEntity::class.java)
                 .orderAsc(SmartQueryTestSortingEntity.VALUE_ONE)
                 .orderAsc(SmartQueryTestSortingEntity.VALUE_TWO)
     }
 
-    private SmartQuery<SmartQueryTestSortingEntity> createDescSortingQuery() {
-        oma.select(SmartQueryTestSortingEntity.class)
+    private fun createDescSortingQuery(): SmartQuery<SmartQueryTestSortingEntity> {
+        return oma.select(SmartQueryTestSortingEntity::class.java)
                 .orderDesc(SmartQueryTestSortingEntity.VALUE_ONE)
                 .orderDesc(SmartQueryTestSortingEntity.VALUE_TWO)
     }
 
-    private boolean isCorrectlySortedAsc(SmartQuery<SmartQueryTestSortingEntity> query) {
-        return query.count() == TWO_BLOCKS_LENGTH &&
+    private fun isCorrectlySortedAsc(query: SmartQuery<SmartQueryTestSortingEntity>): Boolean {
+        return query.count().toInt() == TWO_BLOCKS_LENGTH &&
                 query.streamBlockwise().toList().first().getId() == createAscSortingQuery().queryFirst().getId() &&
                 query.streamBlockwise().toList().last().getId() == createDescSortingQuery().queryFirst().getId()
     }
 
-    private boolean isCorrectlySortedDesc(SmartQuery<SmartQueryTestSortingEntity> query) {
-        return query.count() == TWO_BLOCKS_LENGTH &&
+    private fun isCorrectlySortedDesc(query: SmartQuery<SmartQueryTestSortingEntity>): Boolean {
+        return query.count().toInt() == TWO_BLOCKS_LENGTH &&
                 query.streamBlockwise().toList().first().getId() == createDescSortingQuery().queryFirst().getId() &&
-                query.streamBlockwise().toList().last().getId() == createAscSortingQuery().queryFirst().getId();
+                query.streamBlockwise().toList().last().getId() == createAscSortingQuery().queryFirst().getId()
     }
 
     /**
@@ -157,10 +145,26 @@ class SmartQuerySortingSpec extends BaseSpecification {
      * @param index the current index of the for loop
      * @return int based on the index
      */
-    private int generateMixedInt(int index) {
+    private fun generateMixedInt(index: Int): Int {
         if (index % 2 == 0) {
-            return index+2;
+            return index + 2
         }
         return index
+    }
+
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+        private const val TWO_BLOCKS_LENGTH = 2000
+        private const val ONE_AND_HALF_BLOCK_LENGTH = 1500
+        private const val ONE_BLOCK_LENGTH = 1000
+        private const val FIRST_COL = 0
+        private const val SECOND_COL = 1
+        private const val NO_COL = -1
+
+        fun cleanup() {
+            oma.select(SmartQueryTestSortingEntity::class.java).delete()
+        }
     }
 }
