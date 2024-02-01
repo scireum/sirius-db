@@ -9,30 +9,32 @@
 package sirius.db.jdbc
 
 import org.junit.jupiter.api.Tag
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 
+@ExtendWith(SiriusExtension::class)
 @Tag(Tags.NIGHTLY)
-class SmartQueryNightlySpec extends BaseSpecification {
+class SmartQueryNightlyTest {
+    @Test
+    fun `selecting over 1000 entities in queryList throws an exception`() {
+        oma.select(ListTestEntity::class.java).delete()
 
-    @Part
-    static OMA oma
+        for (i in 0..1000) {
+            val entityToCreate = ListTestEntity()
+            entityToCreate.counter = i
+            oma.update(entityToCreate)
+        }
 
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        oma.select(ListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 1001; i++) {
-        def entityToCreate = new ListTestEntity()
-        entityToCreate.setCounter(i)
-        oma.update(entityToCreate)
-    }
-        when:
-        oma.select(ListTestEntity.class).queryList()
-                then:
-                thrown(HandledException)
+        assertThrows<HandledException> { oma.select(ListTestEntity::class.java).queryList() }
     }
 
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+    }
 }
