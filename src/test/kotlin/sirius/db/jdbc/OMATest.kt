@@ -8,232 +8,218 @@
 
 package sirius.db.jdbc
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mixing.IntegrityConstraintFailedException
 import sirius.db.mixing.OptimisticLockException
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
-
 import java.time.Duration
+import kotlin.test.*
 
-class OMASpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class OMATest {
+    @Test
+    fun `write a test entity and read it back`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "Test"
+        testEntity.lastname = "Entity"
+        testEntity.age = 12
+        oma.update(testEntity)
 
-    @Part
-    static OMA oma
+        val readBack = oma.findOrFail(TestEntity::class.java, testEntity.getId())
 
-    def setupSpec() {
-        oma.getReadyFuture().await(Duration.ofSeconds(60))
+        assertEquals("Test", readBack.firstname)
+        assertEquals("Entity", readBack.lastname)
+        assertEquals(12, readBack.age)
     }
 
-    def "write a test entity and read it back"() {
-        given:
-        TestEntity e = new TestEntity()
-        e.setFirstname("Test")
-        e.setLastname("Entity")
-        e.setAge(12)
-        when:
-        oma.update(e)
-        then:
-        TestEntity readBack = oma.findOrFail(TestEntity.class, e.getId())
-        and:
-        readBack.getFirstname() == "Test"
-        and:
-        readBack.getLastname() == "Entity"
-        and:
-        readBack.getAge() == 12
+    @Test
+    fun `write and read an entity with composite`() {
+        val testEntityWithComposite = TestEntityWithComposite()
+        testEntityWithComposite.composite.city = "x"
+        testEntityWithComposite.composite.street = "y"
+        testEntityWithComposite.composite.zip = "z"
+        testEntityWithComposite.compositeWithComposite.composite.city = "a"
+        testEntityWithComposite.compositeWithComposite.composite.street = "b"
+        testEntityWithComposite.compositeWithComposite.composite.zip = "c"
+        oma.update(testEntityWithComposite)
+
+        val readBack = oma.findOrFail(TestEntityWithComposite::class.java, testEntityWithComposite.getId())
+
+        assertEquals("x", readBack.composite.city)
+        assertEquals("y", readBack.composite.street)
+        assertEquals("z", readBack.composite.zip)
+        assertEquals("a", readBack.compositeWithComposite.composite.city)
+        assertEquals("b", readBack.compositeWithComposite.composite.street)
+        assertEquals("c", readBack.compositeWithComposite.composite.zip)
     }
 
-    def "write and read an entity with composite"() {
-        given:
-        TestEntityWithComposite e = new TestEntityWithComposite()
-        e.getComposite().setCity("x")
-        e.getComposite().setStreet("y")
-        e.getComposite().setZip("z")
-        e.getCompositeWithComposite().getComposite().setCity("a")
-        e.getCompositeWithComposite().getComposite().setStreet("b")
-        e.getCompositeWithComposite().getComposite().setZip("c")
-        when:
-        oma.update(e)
-        then:
-        TestEntityWithComposite readBack = oma.findOrFail(TestEntityWithComposite.class, e.getId())
-        and:
-        readBack.getComposite().getCity() == "x"
-        and:
-        readBack.getComposite().getStreet() == "y"
-        and:
-        readBack.getComposite().getZip() == "z"
-        and:
-        readBack.getCompositeWithComposite().getComposite().getCity() == "a"
-        and:
-        readBack.getCompositeWithComposite().getComposite().getStreet() == "b"
-        and:
-        readBack.getCompositeWithComposite().getComposite().getZip() == "c"
+    @Test
+    fun `write and read an entity with mixin`() {
+        val testEntityWithMixin = TestEntityWithMixin()
+        testEntityWithMixin.firstname = "Homer"
+        testEntityWithMixin.lastname = "Simpson"
+        testEntityWithMixin.`as`(TestMixin::class.java).middleName = "Jay"
+        testEntityWithMixin.`as`(TestMixin::class.java).`as`(TestMixinMixin::class.java).initial = "J"
+        oma.update(testEntityWithMixin)
+
+        val readBack = oma.findOrFail(TestEntityWithMixin::class.java, testEntityWithMixin.getId())
+
+        assertEquals("Homer", readBack.firstname)
+        assertEquals("Simpson", readBack.lastname)
+        assertEquals("Jay", readBack.`as`(TestMixin::class.java).middleName)
+        assertEquals("J", readBack.`as`(TestMixin::class.java).`as`(TestMixinMixin::class.java).initial)
     }
 
-    def "write and read an entity with mixin"() {
-        given:
-        TestEntityWithMixin e = new TestEntityWithMixin()
-        e.setFirstname("Homer")
-        e.setLastname("Simpson")
-        e.as(TestMixin.class).setMiddleName("Jay")
-                e.as(TestMixin.class).as(TestMixinMixin.class).setInitial("J")
-        when:
-        oma.update(e)
-        then:
-        TestEntityWithMixin readBack = oma.findOrFail(TestEntityWithMixin.class, e.getId())
-        and:
-        readBack.getFirstname() == "Homer"
-        and:
-        readBack.getLastname() == "Simpson"
-        and:
-        readBack.as(TestMixin.class).getMiddleName() == "Jay"
-                and:
-                readBack.as(TestMixin.class).as(TestMixinMixin.class).getInitial() == "J"
-    }
+    @Test
+    fun `select from secondary works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "Marge"
+        testEntity.lastname = "Simpson"
+        testEntity.age = 43
+        oma.update(testEntity)
 
-    def "select from secondary works"() {
-        given:
-        TestEntity e = new TestEntity()
-        e.setFirstname("Marge")
-        e.setLastname("Simpson")
-        e.setAge(43)
-        when:
-        oma.update(e)
-        and:
-        TestEntity readBack = oma.selectFromSecondary(TestEntity.class)
-                .eq(TestEntity.ID, e.getId())
+        val readBack = oma.selectFromSecondary(TestEntity::class.java)
+                .eq(TestEntity.ID, testEntity.getId())
                 .queryFirst()
-                then:
-                readBack != null
-        and:
-        readBack.getFirstname() == "Marge"
-        readBack.getLastname() == "Simpson"
-        readBack.getAge() == 43
+
+        assertNotNull(readBack)
+        assertEquals("Marge", readBack.firstname)
+        assertEquals("Simpson", readBack.lastname)
+        assertEquals(43, readBack.age)
     }
 
-    def "select not all fields"() {
-        given:
-        TestEntity e = new TestEntity()
-        e.setFirstname("Marge")
-        e.setLastname("Simpson")
-        e.setAge(43)
-        when:
-        oma.update(e)
-        and:
-        TestEntity readBack = oma.select(TestEntity.class)
-                .eq(TestEntity.ID, e.getId())
+    @Test
+    fun `select not all fields`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "Marge"
+        testEntity.lastname = "Simpson"
+        testEntity.age = 43
+        oma.update(testEntity)
+
+        val readBack = oma.select(TestEntity::class.java)
+                .eq(TestEntity.ID, testEntity.getId())
                 .fields(TestEntity.FIRSTNAME, TestEntity.AGE)
                 .queryFirst()
-                then:
-                readBack != null
-        and:
-        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.ID))
-        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.FIRSTNAME))
-        !readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.LASTNAME))
-        readBack.getDescriptor().isFetched(readBack, readBack.getDescriptor().getProperty(TestEntity.AGE))
-        and:
-        readBack.getFirstname() == "Marge"
-        readBack.getLastname() == null
-        readBack.getAge() == 43
+
+        assertNotNull(readBack)
+        assertFalse { readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(TestEntity.ID)) }
+        assertTrue { readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(TestEntity.FIRSTNAME)) }
+        assertFalse { readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(TestEntity.LASTNAME)) }
+        assertTrue { readBack.descriptor.isFetched(readBack, readBack.descriptor.getProperty(TestEntity.AGE)) }
+        assertEquals("Marge", readBack.firstname)
+        assertNull(readBack.lastname)
+        assertEquals(43, readBack.age)
     }
 
-    def "resolve can resolve an entity by its unique name"() {
-        given:
-        TestClobEntity test = new TestClobEntity()
-        when:
-        test.setLargeValue("test")
-        and:
-        oma.update(test)
-        then:
-        test == oma.resolveOrFail(test.getUniqueName())
+    @Test
+    fun `resolve can resolve an entity by its unique name`() {
+        val testClobEntity = TestClobEntity()
+        testClobEntity.largeValue = "test"
+        oma.update(testClobEntity)
+
+        assertEquals(oma.resolveOrFail(testClobEntity.getUniqueName()), testClobEntity)
     }
 
-    def "change tracking works"() {
-        given:
-        TestEntityWithMixin e = new TestEntityWithMixin()
-        e.setFirstname("Homer")
-        e.setLastname("Simpson")
-        e.as(TestMixin.class).setMiddleName("Jay")
-                e.as(TestMixin.class).as(TestMixinMixin.class).setInitial("J")
-        expect:
-        e.isAnyMappingChanged()
-        and:
-        e.isChanged(TestEntityWithMixin.FIRSTNAME)
-        when:
-        oma.update(e)
-        then:
-        !e.isAnyMappingChanged()
-        when:
-        e.setLastname("SimpsonSimpson")
-        then:
-        e.isAnyMappingChanged()
-        and:
-        e.isChanged(TestEntityWithMixin.LASTNAME)
-        when:
-        oma.update(e)
-        and:
-        e.as(TestMixin.class).setMiddleName("JayJay")
-                then:
-                e.isAnyMappingChanged()
-                e.isChanged(TestMixin.MIDDLE_NAME.inMixin(TestMixin.class))
+    @Test
+    fun `change tracking works`() {
+        val testEntityWithMixin = TestEntityWithMixin()
+        testEntityWithMixin.firstname = "Homer"
+        testEntityWithMixin.lastname = "Simpson"
+        testEntityWithMixin.`as`(TestMixin::class.java).middleName = "Jay"
+        testEntityWithMixin.`as`(TestMixin::class.java).`as`(TestMixinMixin::class.java).initial = "J"
+
+        assertTrue {
+            testEntityWithMixin.isAnyMappingChanged
+            testEntityWithMixin.isChanged(TestEntityWithMixin.FIRSTNAME)
+        }
+
+        oma.update(testEntityWithMixin)
+
+        assertFalse { testEntityWithMixin.isAnyMappingChanged }
+
+        testEntityWithMixin.lastname = "SimpsonSimpson"
+
+        assertTrue {
+            testEntityWithMixin.isAnyMappingChanged
+            testEntityWithMixin.isChanged(TestEntityWithMixin.LASTNAME)
+        }
+
+        oma.update(testEntityWithMixin)
+
+        testEntityWithMixin.`as`(TestMixin::class.java).middleName = "JayJay"
+
+        assertTrue {
+            testEntityWithMixin.isAnyMappingChanged
+            testEntityWithMixin.isChanged(TestMixin.MIDDLE_NAME.inMixin(TestMixin::class.java))
+        }
     }
 
-    def "optimistic locking works"() {
-        when:
-        SQLLockedTestEntity entity = new SQLLockedTestEntity()
-        entity.setValue("Test")
-        oma.update(entity)
-        and:
-        SQLLockedTestEntity copyOfOriginal = oma.refreshOrFail(entity)
-        and:
-        entity.setValue("Test2")
-        oma.update(entity)
-        and:
-        entity.setValue("Test3")
-        oma.update(entity)
-        and:
-        copyOfOriginal.setValue("Test2")
-        oma.tryUpdate(copyOfOriginal)
-        then:
-        thrown(OptimisticLockException)
-        when:
-        oma.tryDelete(copyOfOriginal)
-        then:
-        thrown(OptimisticLockException)
-        when:
+    @Test
+    fun `optimistic locking works`() {
+        val sqlLockedTestEntity = SQLLockedTestEntity()
+        sqlLockedTestEntity.value = "Test"
+        oma.update(sqlLockedTestEntity)
+
+        val copyOfOriginal = oma.refreshOrFail(sqlLockedTestEntity)
+
+        assertThrows<OptimisticLockException> {
+            sqlLockedTestEntity.value = "Test2"
+            oma.update(sqlLockedTestEntity)
+
+            sqlLockedTestEntity.value = "Test3"
+            oma.update(sqlLockedTestEntity)
+
+            copyOfOriginal.value = "Test2"
+            oma.tryUpdate(copyOfOriginal)
+
+            oma.tryDelete(copyOfOriginal)
+        }
+
         oma.forceDelete(copyOfOriginal)
-        SQLLockedTestEntity notFound = oma.find(SQLLockedTestEntity.class, entity.getId()).orElse(null)
-        then:
-        notFound == null
+        val notFound = oma.find(SQLLockedTestEntity::class.java, sqlLockedTestEntity.getId()).orElse(null)
+
+        assertNull(notFound)
     }
 
-    def "unique constraint violations are properly thrown"() {
-        setup:
-        oma.select(SQLUniqueTestEntity.class).eq(SQLUniqueTestEntity.VALUE, "Test").delete()
-                when:
-        SQLUniqueTestEntity entity = new SQLUniqueTestEntity()
-                entity.setValue("Test")
-                oma.update(entity)
-                and:
-                SQLUniqueTestEntity conflictingEntity = new SQLUniqueTestEntity()
-                and:
-                conflictingEntity.setValue("Test")
-                oma.tryUpdate(conflictingEntity)
-                then:
-                thrown(IntegrityConstraintFailedException)
+    @Test
+    fun `unique constraint violations are properly thrown`() {
+        oma.select(SQLUniqueTestEntity::class.java).eq(SQLUniqueTestEntity.VALUE, "Test").delete()
+
+        assertThrows<IntegrityConstraintFailedException> {
+            val sqlUniqueTestEntity = SQLUniqueTestEntity()
+            sqlUniqueTestEntity.value = "Test"
+            oma.update(sqlUniqueTestEntity)
+
+            val conflictingEntity = SQLUniqueTestEntity()
+
+            conflictingEntity.value = "Test"
+            oma.tryUpdate(conflictingEntity)
+        }
     }
 
-    def "wasCreated() works in OMA"() {
-        given:
-        SQLWasCreatedTestEntity e = new SQLWasCreatedTestEntity()
-        e.setValue("test123")
-        when:
-        oma.update(e)
-        then:
-        e.hasJustBeenCreated()
-        and:
-        oma.update(e)
-        then:
-        !e.hasJustBeenCreated()
+    @Test
+    fun `wasCreated() works in OMA`() {
+        val sqlWasCreatedTestEntity = SQLWasCreatedTestEntity()
+        sqlWasCreatedTestEntity.value = "test123"
+
+        oma.update(sqlWasCreatedTestEntity)
+
+        assertTrue { sqlWasCreatedTestEntity.hasJustBeenCreated() }
+
+        oma.update(sqlWasCreatedTestEntity)
+
+        assertFalse { sqlWasCreatedTestEntity.hasJustBeenCreated() }
     }
 
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+        fun setupSpec() {
+            oma.readyFuture.await(Duration.ofSeconds(60))
+        }
+    }
 }
