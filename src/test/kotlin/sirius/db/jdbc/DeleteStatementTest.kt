@@ -8,50 +8,58 @@
 
 package sirius.db.jdbc
 
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import java.util.*
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
-class DeleteStatementSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class DeleteStatementTest {
+    @Test
+    fun `a delete statement deletes the expected entities`() {
+        val generatedStatementTestEntity1 = GeneratedStatementTestEntity()
+        generatedStatementTestEntity1.testNumber = 4711
+        generatedStatementTestEntity1.value = "2"
+        oma.update(generatedStatementTestEntity1)
 
-    @Part
-    private static OMA oma;
+        val generatedStatementTestEntity2 = GeneratedStatementTestEntity()
+        generatedStatementTestEntity2.testNumber = 4712
+        generatedStatementTestEntity2.value = "4"
+        oma.update(generatedStatementTestEntity2)
 
-    def "a delete statement deletes the expected entities"() {
-        given:
-        GeneratedStatementTestEntity e1 = new GeneratedStatementTestEntity()
-        e1.setTestNumber(4711)
-        e1.setValue("2")
-        oma.update(e1)
-        and:
-        GeneratedStatementTestEntity e2 = new GeneratedStatementTestEntity()
-        e2.setTestNumber(4712)
-        e2.setValue("4")
-        oma.update(e2)
-        when:
-        int changes = oma.
-        deleteStatement(GeneratedStatementTestEntity.class).
-        where(GeneratedStatementTestEntity.TEST_NUMBER, 4711).
-        executeUpdate()
-                then: "One entits was removed"
-                changes == 1
-                and: "e1 was removed"
-                !oma.find(GeneratedStatementTestEntity.class, e1.getId()).isPresent()
-                        and: "e2 wasn't"
-                oma.find(GeneratedStatementTestEntity.class, e2.getId()).isPresent()
+        val changes = oma.deleteStatement(
+                GeneratedStatementTestEntity::class.java
+        ).where(GeneratedStatementTestEntity.TEST_NUMBER, 4711)
+                .executeUpdate()
+
+        assertEquals(1, changes)
+        assertEquals(
+                Optional.empty(),
+                oma.find(GeneratedStatementTestEntity::class.java, generatedStatementTestEntity1.getId())
+        )
+        assertNotNull(oma.find(GeneratedStatementTestEntity::class.java, generatedStatementTestEntity2.getId()))
     }
 
 
-    def "a delete statement deletes all entities without errors"() {
-        given:
-        GeneratedStatementTestEntity e1 = new GeneratedStatementTestEntity()
-        e1.setTestNumber(4711)
-        e1.setValue("2")
-        oma.update(e1)
-        when:
-        oma.deleteStatement(GeneratedStatementTestEntity.class).
-        executeUpdate()
-                then: "All entities are removed"
-                oma.select(GeneratedStatementTestEntity.class).count() == 0
+    @Test
+    fun `a delete statement deletes all entities without errors`() {
+        val generatedStatementTestEntity = GeneratedStatementTestEntity()
+        generatedStatementTestEntity.testNumber = 4711
+        generatedStatementTestEntity.value = "2"
+        oma.update(generatedStatementTestEntity)
+        oma.deleteStatement(
+                GeneratedStatementTestEntity::class.java
+        ).executeUpdate()
+
+        assertEquals(0, oma.select(GeneratedStatementTestEntity::class.java).count())
     }
 
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+    }
 }
