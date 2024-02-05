@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 @ExtendWith(SiriusExtension::class)
 class SQLStringListPropertyEntityTest {
     @Test
-    fun `test many list entries`() {
+    fun `Many list entries can be stored`() {
         val sqlStringListPropertyEntity = SQLStringListPropertyEntity()
         sqlStringListPropertyEntity.stringList.add("test1").add("test2").add("test3").add("test4")
         oma.update(sqlStringListPropertyEntity)
@@ -35,7 +35,7 @@ class SQLStringListPropertyEntityTest {
     }
 
     @Test
-    fun `test one list entry`() {
+    fun `Single list entry can be stored`() {
         val sqlStringListPropertyEntity = SQLStringListPropertyEntity()
         sqlStringListPropertyEntity.stringList.add("test1")
         oma.update(sqlStringListPropertyEntity)
@@ -46,7 +46,7 @@ class SQLStringListPropertyEntityTest {
     }
 
     @Test
-    fun `test no list enties`() {
+    fun `Empty list can be stored`() {
         val entity = SQLStringListPropertyEntity()
         oma.update(entity)
         val result = oma.find(SQLStringListPropertyEntity::class.java, entity.getId()).get()
@@ -55,7 +55,7 @@ class SQLStringListPropertyEntityTest {
     }
 
     @Test
-    fun `test exception is thrown, if the list is to long for the field`() {
+    fun `Exception is thrown, if the list exceeds size constraint`() {
         val entity = SQLStringListPropertyEntity()
         entity.shortStringList.add("test1").add("test2").add("test3").add("test4")
 
@@ -67,7 +67,7 @@ class SQLStringListPropertyEntityTest {
     }
 
     @Test
-    fun `test exception is thrown for empty lists, if the list is non null-allowed`() {
+    fun `Exception is thrown for empty lists, if the list is non null-allowed`() {
         val entity = SQLStringListNonNullAllowedPropertyEntity()
 
         val exception = assertThrows<HandledException> { oma.update(entity) }
