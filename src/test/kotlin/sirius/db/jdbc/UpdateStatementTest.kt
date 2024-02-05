@@ -40,7 +40,7 @@ class UpdateStatementTest {
     }
 
     @Test
-    fun `a update statement reports illegal use (set after where)`() {
+    fun `an update statement reports illegal use (set after where)`() {
         assertThrows<IllegalStateException> {
             oma.updateStatement(
                     GeneratedStatementTestEntity::class.java
@@ -50,7 +50,7 @@ class UpdateStatementTest {
     }
 
     @Test
-    fun `a update statement ignores an empty update without errors`() {
+    fun `an update statement ignores an empty update without errors`() {
         val changes = oma.updateStatement(GeneratedStatementTestEntity::class.java).where(
                 GeneratedStatementTestEntity.TEST_NUMBER,
                 1
@@ -60,7 +60,7 @@ class UpdateStatementTest {
     }
 
     @Test
-    fun `a update statement detects and reports join columns as errors`() {
+    fun `an update statement detects and reports join columns as errors`() {
         assertThrows<IllegalArgumentException> {
             oma.updateStatement(
                     SmartQueryTestChildEntity::class.java
