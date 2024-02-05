@@ -8,66 +8,70 @@
 
 package sirius.db.jdbc
 
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
 
-class UpdateStatementSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class UpdateStatementTest {
+    @Test
+    fun `an update statement updates the expected entities`() {
+        val generatedStatementTestEntity1 = GeneratedStatementTestEntity()
+        generatedStatementTestEntity1.testNumber = 1
+        generatedStatementTestEntity1.value = "2"
+        oma.update(generatedStatementTestEntity1)
 
-    @Part
-    private static OMA oma
+        val generatedStatementTestEntity2 = GeneratedStatementTestEntity()
+        generatedStatementTestEntity2.testNumber = 3
+        generatedStatementTestEntity2.value = "4"
+        oma.update(generatedStatementTestEntity2)
 
-            def "an update statement updates the expected entities"() {
-        given:
-        GeneratedStatementTestEntity e1 = new GeneratedStatementTestEntity()
-        e1.setTestNumber(1)
-        e1.setValue("2")
-        oma.update(e1)
-        and:
-        GeneratedStatementTestEntity e2 = new GeneratedStatementTestEntity()
-        e2.setTestNumber(3)
-        e2.setValue("4")
-        oma.update(e2)
-        when:
-        int changes = oma.
-        updateStatement(GeneratedStatementTestEntity.class).
-        set(GeneratedStatementTestEntity.VALUE, "5").
-        where(GeneratedStatementTestEntity.TEST_NUMBER, 1).
-        executeUpdate()
-                then: "One entity was changed"
-                changes == 1
-                and: "e1 was update"
-                oma.refreshOrFail(e1).getValue() == "5"
-                and: "e2 wasn't"
-                oma.refreshOrFail(e2).getValue() == "4"
+        val changes = oma.updateStatement(
+                GeneratedStatementTestEntity::class.java
+        ).set(GeneratedStatementTestEntity.VALUE, "5")
+                .where(GeneratedStatementTestEntity.TEST_NUMBER, 1).executeUpdate()
+
+        assertEquals(1, changes)
+        assertEquals("5", oma.refreshOrFail(generatedStatementTestEntity1).value)
+        assertEquals("4", oma.refreshOrFail(generatedStatementTestEntity2).value)
     }
 
-    def "a update statement reports illegal use (set after where)"() {
-        when:
-        oma.updateStatement(GeneratedStatementTestEntity.class).
-        where(GeneratedStatementTestEntity.TEST_NUMBER, 1).
-        set(GeneratedStatementTestEntity.VALUE, "5").
-        executeUpdate()
-                then:
-                thrown(IllegalStateException)
+    @Test
+    fun `a update statement reports illegal use (set after where)`() {
+        assertThrows<IllegalStateException> {
+            oma.updateStatement(
+                    GeneratedStatementTestEntity::class.java
+            ).where(GeneratedStatementTestEntity.TEST_NUMBER, 1)
+                    .set(GeneratedStatementTestEntity.VALUE, "5").executeUpdate()
+        }
     }
 
-    def "a update statement ignores an empty update without errors"() {
-        when:
-        int changes = oma.updateStatement(GeneratedStatementTestEntity.class).
-        where(GeneratedStatementTestEntity.TEST_NUMBER, 1).
-        executeUpdate()
-                then: "Nothing really happens"
-        changes == 0
+    @Test
+    fun `a update statement ignores an empty update without errors`() {
+        val changes = oma.updateStatement(GeneratedStatementTestEntity::class.java).where(
+                GeneratedStatementTestEntity.TEST_NUMBER,
+                1
+        ).executeUpdate()
+
+        assertEquals(0, changes)
     }
 
-    def "a update statement detects and reports join columns as errors"() {
-        when:
-        oma.updateStatement(SmartQueryTestChildEntity.class).
-        set(SmartQueryTestChildEntity.NAME, "X").
-        where(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME), 1).
-        executeUpdate()
-                then:
-                thrown(IllegalArgumentException)
+    @Test
+    fun `a update statement detects and reports join columns as errors`() {
+        assertThrows<IllegalArgumentException> {
+            oma.updateStatement(
+                    SmartQueryTestChildEntity::class.java
+            ).set(SmartQueryTestChildEntity.NAME, "X")
+                    .where(SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME), 1)
+                    .executeUpdate()
+        }
     }
 
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+    }
 }
