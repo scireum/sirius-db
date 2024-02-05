@@ -8,71 +8,67 @@
 
 package sirius.db.jdbc
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.jdbc.schema.Schema
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 
 import java.time.Duration
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
-class StringPropertySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class StringPropertyTest {
+    @Test
+    fun `reading and writing clobs works`() {
+        schema.readyFuture.await(Duration.ofSeconds(45))
+        var testClobEntity = TestClobEntity()
+        testClobEntity.largeValue = "This is a test"
+        oma.update(testClobEntity)
+        testClobEntity = oma.refreshOrFail(testClobEntity)
 
-    @Part
-    private static OMA oma
-
-            @Part
-            private static Schema schema
-
-            def "reading and writing clobs works"() {
-        given:
-        schema.getReadyFuture().await(Duration.ofSeconds(45))
-        and:
-        TestClobEntity test = new TestClobEntity()
-        when:
-        test.setLargeValue("This is a test")
-        and:
-        oma.update(test)
-        and:
-        test = oma.refreshOrFail(test)
-        then:
-        test.getLargeValue() == "This is a test"
+        assertEquals("This is a test", testClobEntity.largeValue)
     }
 
-    def "modification annotations are applied correctly"() {
-        given:
-        schema.getReadyFuture().await(Duration.ofSeconds(45))
-        and:
-        StringManipulationTestEntity test = new StringManipulationTestEntity()
-        when:
-        test.setTrimmed(" Test ")
-        test.setLower(" TEST ")
-        test.setUpper(" test ")
-        test.setTrimmedLower(" TEST ")
-        test.setTrimmedUpper(" test ")
-        and:
-        oma.update(test)
-        and:
-        test = oma.refreshOrFail(test)
-        then:
-        test.getTrimmed() == "Test"
-        test.getLower() == " test "
-        test.getUpper() == " TEST "
-        test.getTrimmedLower() == "test"
-        test.getTrimmedUpper() == "TEST"
+    @Test
+    fun `modification annotations are applied correctly`() {
+        schema.readyFuture.await(Duration.ofSeconds(45))
+        var stringManipulationTestEntity = StringManipulationTestEntity()
+        stringManipulationTestEntity.trimmed = " Test "
+        stringManipulationTestEntity.lower = " TEST "
+        stringManipulationTestEntity.upper = " test "
+        stringManipulationTestEntity.trimmedLower = " TEST "
+        stringManipulationTestEntity.trimmedUpper = " test "
+
+        oma.update(stringManipulationTestEntity)
+        stringManipulationTestEntity = oma.refreshOrFail(stringManipulationTestEntity)
+
+        assertEquals("Test", stringManipulationTestEntity.trimmed)
+        assertEquals(" test ", stringManipulationTestEntity.lower)
+        assertEquals(" TEST ", stringManipulationTestEntity.upper)
+        assertEquals("test", stringManipulationTestEntity.trimmedLower)
+        assertEquals("TEST", stringManipulationTestEntity.trimmedUpper)
     }
 
-    def "modification annotations handle null correctly"() {
-        given:
-        schema.getReadyFuture().await(Duration.ofSeconds(45))
-        and:
-        StringManipulationTestEntity test = new StringManipulationTestEntity()
-        when:
-        oma.update(test)
-        and:
-        test = oma.refreshOrFail(test)
-        then:
-        test.getTrimmed() == null
-        test.getLower() == null
-        test.getTrimmedLower() == null
+    @Test
+    fun `modification annotations handle null correctly`() {
+        schema.readyFuture.await(Duration.ofSeconds(45))
+        var stringManipulationTestEntity = StringManipulationTestEntity()
+
+        oma.update(stringManipulationTestEntity)
+        stringManipulationTestEntity = oma.refreshOrFail(stringManipulationTestEntity)
+
+        assertNull(stringManipulationTestEntity.trimmed)
+        assertNull(stringManipulationTestEntity.lower)
+        assertNull(stringManipulationTestEntity.trimmedLower)
     }
 
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+        @Part
+        private lateinit var schema: Schema
+    }
 }
