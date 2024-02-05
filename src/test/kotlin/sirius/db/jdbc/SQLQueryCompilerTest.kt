@@ -8,333 +8,364 @@
 
 package sirius.db.jdbc
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.jdbc.constraints.SQLConstraint
 import sirius.db.jdbc.constraints.SQLQueryCompiler
 import sirius.db.mixing.Mapping
 import sirius.db.mixing.Mixing
 import sirius.db.mixing.Property
-import sirius.db.mixing.query.QueryCompiler
 import sirius.db.mixing.query.QueryField
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import sirius.kernel.testutil.Reflections
+import java.util.*
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 
-class SQLQueryCompilerSpec extends BaseSpecification {
-
-    @Part
-    private static Mixing mixing
-
-            def "compiling '' works"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+@ExtendWith(SiriusExtension::class)
+class SQLQueryCompilerTest {
+    @Test
+    fun `compiling '' works`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile() == null
+                mixing.getDescriptor(TestEntity::class.java),
+                "",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+        assertNull(queryCompiler.compile())
     }
 
-    def "compiling ':' yields an empty constraint"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling colon yields an empty constraint`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        ":",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile() == null
+                mixing.getDescriptor(TestEntity::class.java),
+                ":",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertNull(queryCompiler.compile())
     }
 
-    def "compiling '=' yields an empty constraint"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling '=' yields an empty constraint`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "=",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile() == null
+                mixing.getDescriptor(TestEntity::class.java),
+                "=",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertNull(queryCompiler.compile())
     }
 
-    def "compiling 'firstname:' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'firstname' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname:",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "firstname IS NULL"
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname:",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("firstname IS NULL", queryCompiler.compile().toString())
     }
 
-    def "compiling '!firstname:' yields a constraint"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'not firstname' yields a constraint`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "!firstname:",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "NOT(firstname IS NULL)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "!firstname:",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("NOT(firstname IS NULL)", queryCompiler.compile().toString())
     }
 
-    def "compiling '-firstname:' yields a constraint"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling '-firstname' yields a constraint`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "-firstname:",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "NOT(firstname IS NULL)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "-firstname:",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("NOT(firstname IS NULL)", queryCompiler.compile().toString())
     }
 
-    def "compiling 'firstname:X OR lastname:Y' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'firstname=X OR lastname=Y' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname:X OR lastname:Y",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "(firstname = X OR lastname = Y)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname:X OR lastname:Y",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("(firstname = X OR lastname = Y)", queryCompiler.compile().toString())
     }
 
-    def "compiling 'firstname:X AND lastname:Y' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'firstname=X AND lastname=Y' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname:X AND lastname:Y",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "(firstname = X AND lastname = Y)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname:X AND lastname:Y",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("(firstname = X AND lastname = Y)", queryCompiler.compile().toString())
     }
 
-    def "compiling '!firstname:X OR lastname:Y' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'not firstname=X OR lastname=Y' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "!firstname:X OR lastname:Y",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "(NOT(firstname = X) OR lastname = Y)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "!firstname:X OR lastname:Y",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("(NOT(firstname = X) OR lastname = Y)", queryCompiler.compile().toString())
     }
 
-    def "compiling '-firstname:X OR lastname:Y' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling '-firstname=X OR lastname=Y' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "-firstname:X OR lastname:Y",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "(NOT(firstname = X) OR lastname = Y)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "-firstname:X OR lastname:Y",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("(NOT(firstname = X) OR lastname = Y)", queryCompiler.compile().toString())
     }
 
-    def "compiling '!(firstname:X OR lastname:Y)' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'not (firstname=X OR lastname=Y)' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "!(firstname:X OR lastname:Y)",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "NOT((firstname = X OR lastname = Y))"
+                mixing.getDescriptor(TestEntity::class.java),
+                "!(firstname:X OR lastname:Y)",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("NOT((firstname = X OR lastname = Y))", queryCompiler.compile().toString())
     }
 
-    def "compiling '-(firstname:X OR lastname:Y)' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling '-(firstname=X OR lastname=Y)' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "-(firstname:X OR lastname:Y)",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "NOT((firstname = X OR lastname = Y))"
+                mixing.getDescriptor(TestEntity::class.java),
+                "-(firstname:X OR lastname:Y)",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+        assertEquals("NOT((firstname = X OR lastname = Y))", queryCompiler.compile().toString())
     }
 
-    def "compiling '-X' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling '-X' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "-X",
-                        Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "NOT(firstname = X)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "-X",
+                listOf(QueryField.eq(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("NOT(firstname = X)", queryCompiler.compile().toString())
     }
 
-    def "compiling '\"-X\"' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'backslash -X backslash' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "\"-X\"",
-                        Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "firstname = -X"
+                mixing.getDescriptor(TestEntity::class.java),
+                "\"-X\"",
+                listOf(QueryField.eq(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("firstname = -X", queryCompiler.compile().toString())
     }
 
-    def "compiling 'Y-X' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'Y-X' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "Y-X",
-                        Arrays.asList(QueryField.eq(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "firstname = Y-X"
+                mixing.getDescriptor(TestEntity::class.java),
+                "Y-X",
+                listOf(QueryField.eq(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("firstname = Y-X", queryCompiler.compile().toString())
     }
 
-    def "compiling 'firstname:test' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'firstname=test' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname:test",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "firstname = test"
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname:test",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("firstname = test", queryCompiler.compile().toString())
     }
 
-    def "compiling 'firstname:type:value-123' works"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'firstname=type=value-123' works`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname:type:value-123",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "firstname = type:value-123"
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname:type:value-123",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("firstname = type:value-123", queryCompiler.compile().toString())
+    }
+
+    @Test
+    fun `compiling 'firstname=type(value-123)' works`() {
+        val queryCompiler = SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname:type(value-123)",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("firstname = type(value-123)", queryCompiler.compile().toString())
+    }
+
+    @Test
+    fun `compiling 'hello=world' does not treat hello as a field`() {
+        val queryCompiler = SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity::class.java),
+                "hello:world",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("LOWER(firstname) LIKE '%hello:world%'", queryCompiler.compile().toString())
+    }
+
+    @Test
+    fun `compiling 'hello==world' does not treat hello as a field`() {
+        val queryCompiler = SQLQueryCompiler(
+                OMA.FILTERS,
+                mixing.getDescriptor(TestEntity::class.java),
+                "hello::world",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+
+        assertEquals("LOWER(firstname) LIKE '%hello::world%'", queryCompiler.compile().toString())
 
     }
 
-    def "compiling 'firstname:type(value-123)' works"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'hello bigger than world' silently drops the operator as hello isn't a field`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname:type(value-123)",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "firstname = type(value-123)"
+                mixing.getDescriptor(TestEntity::class.java),
+                "hello > world",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
 
+        assertEquals(
+                "(LOWER(firstname) LIKE '%hello%' AND LOWER(firstname) LIKE '%world%')",
+                queryCompiler.compile().toString()
+        )
     }
 
-    def "compiling 'hello:world' does not treat hello as a field"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'parent_name=Test' compiles into a JOIN FETCH`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "hello:world",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "LOWER(firstname) LIKE '%hello:world%'"
+                mixing.getDescriptor(SmartQueryTestChildEntity::class.java),
+                "parent.name:Test",
+                Collections.emptyList()
+        )
 
+        assertEquals("parent.name = Test", queryCompiler.compile().toString())
     }
 
-    def "compiling 'hello::world' does not treat hello as a field"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'parent#unknownProperty=Test' reports an appropriate error`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "hello::world",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "LOWER(firstname) LIKE '%hello::world%'"
+                mixing.getDescriptor(SmartQueryTestChildEntity::class.java),
+                "parent.unknownProperty:Test",
+                Collections.emptyList()
+        )
 
+        assertThrows<IllegalArgumentException> { queryCompiler.compile() }
     }
 
-    def "compiling 'hello > world' silently drops the operator as hello isn't a field"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `customizing constraint compilation works`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "hello > world",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME)))
-                        then:
-                        queryCompiler.compile().toString() == "(LOWER(firstname) LIKE '%hello%' AND LOWER(firstname) LIKE '%world%')"
+                mixing.getDescriptor(TestEntity::class.java),
+                "is:chat",
+                listOf(QueryField.contains(TestEntity.FIRSTNAME))
+        )
+        let {
+            @Override
+            fun compileCustomField(field: String): SQLConstraint {
+                return Reflections.callPrivateMethod(it, "parseOperation", Mapping.named(field)) as SQLConstraint
+            }
+
+            @Override
+            fun compileValue(property: Property, value: Any): Any {
+                return value
+            }
+        }
+
+        assertNotEquals("is = chat", queryCompiler.compile().toString())
     }
 
-    def "compiling 'parent.name:Test' compiles into a JOIN FETCH"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling a field with OR in its name works`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(SmartQueryTestChildEntity.class),
-                        "parent.name:Test",
-                        Collections.emptyList())
-                        then:
-                        queryCompiler.compile().toString() == "parent.name = Test"
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname: x orderNumber: 1",
+                Collections.emptyList()
+        )
+
+        assertEquals("(firstname = x AND orderNumber = 1)", queryCompiler.compile().toString())
     }
 
-    def "compiling 'parent.unknownProperty:Test' reports an appropriate error"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling a field with AND in its name works`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(SmartQueryTestChildEntity.class),
-                        "parent.unknownProperty:Test",
-                        Collections.emptyList())
-                        and:
-                        queryCompiler.compile()
-                        then: "If an unknown property is accessed and no search fields exist, an error is reported"
-                thrown(IllegalArgumentException)
+                mixing.getDescriptor(TestEntity::class.java),
+                "firstname: x andx: 1",
+                Collections.emptyList()
+        )
+
+        assertEquals("(firstname = x AND andx = 1)", queryCompiler.compile().toString())
     }
 
-    def "customizing constraint compilation works"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
+    @Test
+    fun `compiling 'foo - bar' works as expected`() {
+        val queryCompiler = SQLQueryCompiler(
                 OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "is:chat",
-                        Arrays.asList(QueryField.contains(TestEntity.FIRSTNAME))) {
-                    @Override
-                    protected SQLConstraint compileCustomField(String field) {
-                        return parseOperation(Mapping.named(field), null)
-                    }
+                mixing.getDescriptor(TestEntity::class.java),
+                "foo - bar",
+                listOf((QueryField.eq(TestEntity.FIRSTNAME)))
+        )
 
-                    @Override
-                    protected QueryCompiler.FieldValue compileValue(Property property, QueryCompiler.FieldValue value) {
-                        return value
-                    }
-
-                }
-                        then:
-                        queryCompiler.compile().toString() == "is = chat"
+        assertEquals("(firstname = foo AND firstname = bar)", queryCompiler.compile().toString())
     }
 
-    def "compiling a field with OR in its name works"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
-                OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname: x orderNumber: 1",
-                        Collections.emptyList())
-                        then:
-                        queryCompiler.compile().toString() == "(firstname = x AND orderNumber = 1)"
+    companion object {
+        @Part
+        private lateinit var mixing: Mixing
     }
-
-    def "compiling a field with AND in its name works"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
-                OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "firstname: x andx: 1",
-                        Collections.emptyList())
-                        then:
-                        queryCompiler.compile().toString() == "(firstname = x AND andx = 1)"
-    }
-
-    def "compiling 'foo - bar' works as expected"() {
-        when:
-        SQLQueryCompiler queryCompiler = new SQLQueryCompiler(
-                OMA.FILTERS,
-                mixing.getDescriptor(TestEntity.class),
-                        "foo - bar",
-                        Arrays.asList((QueryField.eq(TestEntity.FIRSTNAME))))
-                        then:
-                        queryCompiler.compile().toString() == "(firstname = foo AND firstname = bar)"
-    }
-
 }
