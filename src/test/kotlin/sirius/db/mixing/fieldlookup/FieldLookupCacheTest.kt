@@ -15,7 +15,10 @@ import sirius.db.mixing.FieldLookupCache
 import sirius.db.mixing.Mapping
 import sirius.db.mongo.Mango
 import sirius.kernel.SiriusExtension
+import sirius.kernel.cache.Cache
+import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import sirius.kernel.testutil.Reflections
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -79,8 +82,10 @@ class FieldLookupCacheTest {
                         .inner(NameFieldsTestComposite.LASTNAME)
         )
 
+        val cache = Reflections.callPrivateMethod(lookupCache,"getCache") as Cache<String, Value>
+
         assertEquals("Miles", name1.asString())
-        assertEquals("Miles", lookupCache.cache.get(cacheKey).toString())
+        assertEquals("Miles", cache.get(cacheKey).toString())
         assertEquals("Miles", name2.asString())
         assertEquals(16, age.asInt(0))
         assertTrue { cool.asBoolean() }
@@ -107,7 +112,6 @@ class FieldLookupCacheTest {
         tony.`as`(MongoSuperHeroTestMixin::class.java).heroNames.firstname = "Iron"
         tony.`as`(MongoSuperHeroTestMixin::class.java).heroNames.lastname = "Man"
         mango.update(tony)
-
 
         val cacheKey = lookupCache.getCacheKey(
                 (MongoFieldLookUpTestEntity::class.java), tony.id, MongoFieldLookUpTestEntity.NAMES.inner(
@@ -150,8 +154,10 @@ class FieldLookupCacheTest {
                         .inner(NameFieldsTestComposite.LASTNAME)
         )
 
+        val cache = Reflections.callPrivateMethod(lookupCache,"getCache") as Cache<String, Value>
+
         assertEquals("Tony", name1.asString())
-        assertEquals("Tony", lookupCache.cache.get(cacheKey).toString())
+        assertEquals("Tony", cache.get(cacheKey).toString())
         assertEquals("Tony", name2.asString())
         assertEquals(50, age.asInt(0))
         assertTrue { cool.asBoolean() }
