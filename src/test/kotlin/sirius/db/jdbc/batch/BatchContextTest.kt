@@ -8,251 +8,233 @@
 
 package sirius.db.jdbc.batch
 
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.jdbc.OMA
+import sirius.db.jdbc.SQLEntity
 import sirius.db.jdbc.TestEntity
 import sirius.db.mixing.Mixing
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
-
 import java.time.Duration
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
-class BatchContextSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class BatchContextTest {
+    @Test
+    fun `insert works`() {
+        val ctbatchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val insert = ctbatchContext.insertQuery(
+                TestEntity::class.java,
+                TestEntity.FIRSTNAME,
+                TestEntity.LASTNAME,
+                TestEntity.AGE
+        )
+        for (i in 0..99) {
+            val testEntity = TestEntity()
+            testEntity.firstname = "BatchContextInsert" + i
+            testEntity.lastname = "INSERT"
+            insert.insert(testEntity, true, false)
+        }
 
-    @Part
-    private static OMA oma
+        assertEquals(100, oma.select(TestEntity::class.java).eq(TestEntity.LASTNAME, "INSERT").count())
 
-            def setupSpec() {
-        oma.getReadyFuture().await(Duration.ofSeconds(60))
+        OMA.LOG.INFO(ctbatchContext)
+        ctbatchContext.close()
     }
 
-    def "insert works"() {
-        setup:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        InsertQuery<TestEntity> insert = ctx.insertQuery(
-                TestEntity.class,
-                        TestEntity.FIRSTNAME,
-        TestEntity.LASTNAME,
-        TestEntity.AGE)
-        and:
-        for (int i = 0; i < 100; i++) {
-        TestEntity e = new TestEntity()
-        e.setFirstname("BatchContextInsert" + i)
-        e.setLastname("INSERT")
-        insert.insert(e, true, false)
-    }
-        then:
-        oma.select(TestEntity.class).eq(TestEntity.LASTNAME, "INSERT").count() == 100
-                cleanup:
-                OMA.LOG.INFO(ctx)
-                ctx.close()
+    @Test
+    fun `batch insert works`() {
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val insert = batchContext.insertQuery(
+                TestEntity::class.java,
+                TestEntity.FIRSTNAME,
+                TestEntity.LASTNAME,
+                TestEntity.AGE
+        )
+        for (i in 0..99) {
+            val testEntity = TestEntity()
+            testEntity.firstname = "BatchContextInsert" + i
+            testEntity.lastname = "BATCHINSERT"
+            insert.insert(testEntity, false, true)
+        }
+
+        assertEquals(0, oma.select(TestEntity::class.java).eq(TestEntity.LASTNAME, "BATCHINSERT").count())
+
+        insert.commit()
+
+        assertEquals(100, oma.select(TestEntity::class.java).eq(TestEntity.LASTNAME, "BATCHINSERT").count())
+
+        OMA.LOG.INFO(batchContext)
+        batchContext.close()
     }
 
-    def "batch insert works"() {
-        setup:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        InsertQuery<TestEntity> insert = ctx.insertQuery(
-                TestEntity.class,
-                        TestEntity.FIRSTNAME,
-        TestEntity.LASTNAME,
-        TestEntity.AGE)
-        and:
-        for (int i = 0; i < 100; i++) {
-        TestEntity e = new TestEntity()
-        e.setFirstname("BatchContextInsert" + i)
-        e.setLastname("BATCHINSERT")
-        insert.insert(e, false, true)
-    }
-        and:
-        then:
-        oma.select(TestEntity.class).eq(TestEntity.LASTNAME, "BATCHINSERT").count() == 0
-                and:
-                insert.commit()
-                oma.select(TestEntity.class).eq(TestEntity.LASTNAME, "BATCHINSERT").count() == 100
-                cleanup:
-                OMA.LOG.INFO(ctx)
-                ctx.close()
+    @Test
+    fun `update works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "Updating"
+        testEntity.lastname = "Test"
+        oma.update(testEntity)
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val update = batchContext.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+        testEntity.firstname = "Updated"
+        update.update(testEntity, true, false)
+
+        assertEquals("Updated", oma.refreshOrFail(testEntity).firstname)
+
+        OMA.LOG.INFO(batchContext)
+        batchContext.close()
     }
 
-    def "update works"() {
-        setup:
-        TestEntity e = new TestEntity()
-        e.setFirstname("Updating")
-        e.setLastname("Test")
-        and:
-        oma.update(e)
-        and:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        UpdateQuery<TestEntity> update = ctx.updateByIdQuery(TestEntity.class, TestEntity.FIRSTNAME)
-        and:
-        e.setFirstname("Updated")
-        update.update(e, true, false)
-        then:
-        oma.refreshOrFail(e).getFirstname() == "Updated"
-        cleanup:
-        OMA.LOG.INFO(ctx)
-        ctx.close()
-    }
+    @Test
+    fun `batch update works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "Updating"
+        testEntity.lastname = "Test"
+        oma.update(testEntity)
+        val ctx = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val update = ctx.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+        testEntity.firstname = "Updated"
+        update.update(testEntity, true, true)
 
-    def "batch update works"() {
-        setup:
-        TestEntity e = new TestEntity()
-        e.setFirstname("Updating")
-        e.setLastname("Test")
-        and:
-        oma.update(e)
-        and:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        UpdateQuery<TestEntity> update = ctx.updateByIdQuery(TestEntity.class, TestEntity.FIRSTNAME)
-        and:
-        e.setFirstname("Updated")
-        update.update(e, true, true)
-        then:
-        oma.refreshOrFail(e).getFirstname() != "Updated"
-        and:
+        assertNotEquals("Updated", oma.refreshOrFail(testEntity).firstname)
+
         update.commit()
-        oma.refreshOrFail(e).getFirstname() == "Updated"
-        cleanup:
+
+        assertEquals("Updated", oma.refreshOrFail(testEntity).firstname)
+
         OMA.LOG.INFO(ctx)
         ctx.close()
     }
 
-    def "find works"() {
-        setup:
-        TestEntity e = new TestEntity()
-        e.setFirstname("BatchContextFind")
-        e.setLastname("Test")
-        and:
-        oma.update(e)
-        and:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        FindQuery<TestEntity> find = ctx.findQuery(TestEntity.class, TestEntity.FIRSTNAME)
-        and:
-        TestEntity found = new TestEntity()
-        found.setFirstname("BatchContextFind")
-        found.setLastname("Test")
-        and:
-        TestEntity notFound = new TestEntity()
-        notFound.setFirstname("BatchContextFind2")
-        found.setLastname("Test")
-        then:
-        find.find(found).get() == e
-        and:
-        find.find(found).isPresent()
-        and:
-        !find.find(found).get().isNew()
-        and:
-        !find.find(notFound).isPresent()
-        cleanup:
-        OMA.LOG.INFO(ctx)
-        ctx.close()
+    @Test
+    fun `find works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "BatchContextFind"
+        testEntity.lastname = "Test"
+        oma.update(testEntity)
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val find = batchContext.findQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+        val found = TestEntity()
+        found.firstname = "BatchContextFind"
+        found.lastname = "Test"
+        val notFound = TestEntity()
+        notFound.firstname = "BatchContextFind2"
+        found.lastname = "Test"
+
+        assertEquals(testEntity, find.find(found).get())
+        assertNotNull(find.find(found))
+        assertFalse { find.find(found).get().isNew }
+        assertNotNull(find.find(notFound))
+
+        OMA.LOG.INFO(batchContext)
+        batchContext.close()
     }
 
 
-    def "delete works"() {
-        setup:
-        TestEntity e = new TestEntity()
-        e.setFirstname("Delete")
-        e.setLastname("Test")
-        and:
-        oma.update(e)
-        and:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        DeleteQuery<TestEntity> delete = ctx.deleteQuery(TestEntity.class, TestEntity.FIRSTNAME)
-        and:
-        delete.delete(e, true, false)
-        then:
-        !oma.resolve(e.getUniqueName()).isPresent()
-        cleanup:
-        OMA.LOG.INFO(ctx)
-        ctx.close()
+    @Test
+    fun `delete works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "Delete"
+        testEntity.lastname = "Test"
+        oma.update(testEntity)
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val delete = batchContext.deleteQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+        delete.delete(testEntity, true, false)
+
+        assertNotNull(oma.resolve<SQLEntity>(testEntity.uniqueName))
+
+        OMA.LOG.INFO(batchContext)
+        batchContext.close()
     }
 
-    def "delete in batch works"() {
-        setup:
-        TestEntity e = new TestEntity()
-        e.setFirstname("BatchDelete")
-        e.setLastname("Test")
-        and:
-        oma.update(e)
-        and:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        DeleteQuery<TestEntity> delete = ctx.deleteQuery(TestEntity.class, TestEntity.FIRSTNAME)
-        and:
-        delete.delete(e, true, true)
-        then:
-        oma.resolve(e.getUniqueName()).isPresent()
-        and:
+    @Test
+    fun `delete in batch works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "BatchDelete"
+        testEntity.lastname = "Test"
+        oma.update(testEntity)
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val delete = batchContext.deleteQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+        delete.delete(testEntity, true, true)
+
+        assertNotNull(oma.resolve<SQLEntity>(testEntity.getUniqueName()))
+
         delete.commit()
-        !oma.resolve(e.getUniqueName()).isPresent()
-        cleanup:
-        OMA.LOG.INFO(ctx)
-        ctx.close()
+
+        assertNotNull(oma.resolve<SQLEntity>(testEntity.getUniqueName()))
+
+        OMA.LOG.INFO(batchContext)
+        batchContext.close()
     }
 
-    def "custom query works"() {
-        setup:
-        TestEntity e = new TestEntity()
-        e.setFirstname("BatchContextFind")
-        e.setLastname("CustomTest")
-        and:
-        oma.update(e)
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when:
-        CustomQuery find = ctx.customQuery(TestEntity.class, false, "SELECT * FROM testentity WHERE lastname = ?")
-        then:
+    @Test
+    fun `custom query works`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "BatchContextFind"
+        testEntity.lastname = "CustomTest"
+        oma.update(testEntity)
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val find =
+                batchContext.customQuery(TestEntity::class.java, false, "SELECT * FROM testentity WHERE lastname = ?")
         find.setParameter(1, "CustomTest")
-        find.query().queryFirst().getValue("LASTNAME").asString() == "CustomTest"
-        and:
+
+        assertEquals("CustomTest", find.query().queryFirst()!!.getValue("LASTNAME").asString())
+
         find.setParameter(1, "CustomTestXXX")
-        !find.query().first().isPresent()
-        cleanup:
-        OMA.LOG.INFO(ctx)
-        ctx.close()
+
+        assertNotNull(find.query.first())
+
+        OMA.LOG.INFO(batchContext)
+        batchContext.close()
     }
 
-    def "use after close is prevented"() {
-        setup:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        when: "the context is closed"
-        ctx.close()
-        and: "query is created afterwards"
-        InsertQuery<TestEntity> insert = ctx.insertQuery(
-                TestEntity.class,
-                        TestEntity.FIRSTNAME,
-        TestEntity.LASTNAME,
-        TestEntity.AGE)
-        then: "an exception is thrown"
-        thrown(IllegalStateException)
-        and: "no connection is leaked"
-        oma.getDatabase(Mixing.DEFAULT_REALM).getNumActive() == 0
+    @Test
+    fun `use after close is prevented`() {
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        batchContext.close()
+
+        assertThrows<IllegalStateException> {
+            batchContext.insertQuery(
+                    TestEntity::class.java,
+                    TestEntity.FIRSTNAME,
+                    TestEntity.LASTNAME,
+                    TestEntity.AGE
+            )
+        }
+        assertEquals(0, oma.getDatabase(Mixing.DEFAULT_REALM)!!.getNumActive())
     }
 
-    def "use of query after close is prevented"() {
-        setup:
-        BatchContext ctx = new BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+    @Test
+    fun `use of query after close is prevented`() {
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val insert = batchContext.insertQuery(
+                TestEntity::class.java,
+                TestEntity.FIRSTNAME,
+                TestEntity.LASTNAME,
+                TestEntity.AGE
+        )
+        batchContext.close()
 
-        when: "a query is created"
-        InsertQuery<TestEntity> insert = ctx.insertQuery(
-                TestEntity.class,
-                        TestEntity.FIRSTNAME,
-        TestEntity.LASTNAME,
-        TestEntity.AGE)
-        and: "the context is closed"
-        ctx.close()
-        and:
-        insert.insert(new TestEntity(), false, true)
-        then: "an exception is thrown"
-        thrown(HandledException)
-        and: "no connection is leaked"
-        oma.getDatabase(Mixing.DEFAULT_REALM).getNumActive() == 0
+        assertThrows<HandledException> { insert.insert(TestEntity(), false, true) }
+
+        assertEquals(0, oma.getDatabase(Mixing.DEFAULT_REALM)!!.getNumActive())
     }
 
+    companion object {
+        @Part
+        private lateinit var oma: OMA
+
+        @BeforeAll
+        @JvmStatic
+        fun setupSpec() {
+            oma.readyFuture.await(Duration.ofSeconds(60))
+        }
+    }
 }
