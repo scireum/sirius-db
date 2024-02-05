@@ -1,5 +1,6 @@
 package sirius.db.jdbc
 
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import sirius.kernel.SiriusExtension
@@ -21,8 +22,8 @@ class SmartQuerySortingTest {
     fun `sorting desc without null values returns all entries`() {
         prepareWithNonNullValues()
         val query = createDescSortingQuery()
-        
-        assertTrue {  isCorrectlySortedDesc(query) }
+
+        assertTrue { isCorrectlySortedDesc(query) }
     }
 
     @Test
@@ -162,5 +163,11 @@ class SmartQuerySortingTest {
         private const val FIRST_COL = 0
         private const val SECOND_COL = 1
         private const val NO_COL = -1
+
+        @AfterAll
+        @JvmStatic
+        fun cleanup() {
+            oma.select(SmartQueryTestSortingEntity::class.java).delete()
+        }
     }
 }
