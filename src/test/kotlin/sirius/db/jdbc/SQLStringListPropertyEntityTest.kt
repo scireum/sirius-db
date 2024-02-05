@@ -8,72 +8,74 @@
 
 package sirius.db.jdbc
 
-
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class SQLStringListPropertyEntitySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class SQLStringListPropertyEntityTest {
+    @Test
+    fun `test many list entries`() {
+        val sqlStringListPropertyEntity = SQLStringListPropertyEntity()
+        sqlStringListPropertyEntity.stringList.add("test1").add("test2").add("test3").add("test4")
+        oma.update(sqlStringListPropertyEntity)
+        val result = oma.find(SQLStringListPropertyEntity::class.java, sqlStringListPropertyEntity.getId()).get()
 
-    @Part
-    static OMA oma
-
-    def "test many list entries"() {
-        when:
-        SQLStringListPropertyEntity entity = new SQLStringListPropertyEntity()
-        entity.getStringList().add("test1").add("test2").add("test3").add("test4")
-        and:
-        oma.update(entity)
-        then:
-        def result = oma.find(SQLStringListPropertyEntity.class, entity.getId()).get()
-        result.getStringList().size() == 4
-        result.getStringList().contains("test1") == true
-        result.getStringList().contains("test2") == true
-        result.getStringList().contains("test3") == true
-        result.getStringList().contains("test4") == true
+        assertEquals(4, result.stringList.size())
+        assertTrue { result.stringList.contains("test1") }
+        assertTrue { result.stringList.contains("test2") }
+        assertTrue { result.stringList.contains("test3") }
+        assertTrue { result.stringList.contains("test4") }
     }
 
-    def "test one list entry"() {
-        when:
-        SQLStringListPropertyEntity entity = new SQLStringListPropertyEntity()
-        entity.getStringList().add("test1")
-        and:
-        oma.update(entity)
-        then:
-        def result = oma.find(SQLStringListPropertyEntity.class, entity.getId()).get()
-        result.getStringList().size() == 1
-        result.getStringList().contains("test1") == true
+    @Test
+    fun `test one list entry`() {
+        val sqlStringListPropertyEntity = SQLStringListPropertyEntity()
+        sqlStringListPropertyEntity.stringList.add("test1")
+        oma.update(sqlStringListPropertyEntity)
+        val result = oma.find(SQLStringListPropertyEntity::class.java, sqlStringListPropertyEntity.getId()).get()
+
+        assertEquals(1, result.stringList.size())
+        assertTrue { result.stringList.contains("test1") }
     }
 
-    def "test no list enties"() {
-        when:
-        SQLStringListPropertyEntity entity = new SQLStringListPropertyEntity()
-        and:
+    @Test
+    fun `test no list enties`() {
+        val entity = SQLStringListPropertyEntity()
         oma.update(entity)
-        then:
-        def result = oma.find(SQLStringListPropertyEntity.class, entity.getId()).get()
-        result.getStringList().size() == 0
+        val result = oma.find(SQLStringListPropertyEntity::class.java, entity.getId()).get()
+
+        assertEquals(0, result.stringList.size())
     }
 
-    def "test exception is thrown, if the list is to long for the field"() {
-        when:
-        SQLStringListPropertyEntity entity = new SQLStringListPropertyEntity()
-        entity.getShortStringList().add("test1").add("test2").add("test3").add("test4")
-        and:
-        oma.update(entity)
-        then:
-        def e = thrown(HandledException.class)
-                e.getMessage() == "Der Wert 'test1,test2,test3,test4' im Feld 'Model.shortStringList' ist mit 23 Zeichen zu " +
-                "lang. Maximal sind 20 Zeichen erlaubt."
+    @Test
+    fun `test exception is thrown, if the list is to long for the field`() {
+        val entity = SQLStringListPropertyEntity()
+        entity.shortStringList.add("test1").add("test2").add("test3").add("test4")
+
+        val exception = assertThrows<HandledException> { oma.update(entity) }
+        assertEquals(
+                "Der Wert 'test1,test2,test3,test4' im Feld 'Model.shortStringList' ist mit 23 Zeichen zu " +
+                        "lang. Maximal sind 20 Zeichen erlaubt.", exception.message
+        )
     }
 
-    def "test exception is thrown for empty lists, if the list is non null-allowed"() {
-        when:
-        SQLStringListNonNullAllowedPropertyEntity entity = new SQLStringListNonNullAllowedPropertyEntity()
-        and:
-        oma.update(entity)
-        then:
-        def e = thrown(HandledException.class)
-                e.getMessage().contains("'stringList' doesn't have a default value")
+    @Test
+    fun `test exception is thrown for empty lists, if the list is non null-allowed`() {
+        val entity = SQLStringListNonNullAllowedPropertyEntity()
+
+        val exception = assertThrows<HandledException> { oma.update(entity) }
+        assertFalse { exception.message!!.contains("'stringList' doesn't have a valault value") }
+    }
+
+    companion object {
+        @Part
+        lateinit var oma: OMA
     }
 }
