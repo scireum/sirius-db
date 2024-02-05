@@ -21,11 +21,6 @@ import kotlin.test.assertEquals
 
 @ExtendWith(SiriusExtension::class)
 class FacetTest {
-    companion object {
-        @Part
-        private lateinit var mango: Mango
-    }
-
     @Test
     fun `facet search works`() {
         val testEntity1 = MangoTestEntity()
@@ -106,5 +101,10 @@ class FacetTest {
         assertEquals(2, superPowersFacet.values[1].second)
         assertEquals("Time travel", superPowersFacet.values[2].first)
         assertEquals(1, superPowersFacet.values[2].second)
+    }
+
+    companion object {
+        @Part
+        private lateinit var mango: Mango
     }
 }
