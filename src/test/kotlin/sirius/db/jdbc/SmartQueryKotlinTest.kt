@@ -212,7 +212,6 @@ class SmartQueryKotlinTest {
                                 SmartQueryTestParentEntity.NAME
                         )
                 )
-
         val result = smartQueryTestChildEntity.queryList()
 
         assertEquals(
@@ -226,7 +225,6 @@ class SmartQueryKotlinTest {
 
     @Test
     fun `automatic joins work across several tables`() {
-
         val smartQueryTestChildChildEntity = oma.select(SmartQueryTestChildChildEntity::class.java).fields(
                 SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
                         SmartQueryTestParentEntity.NAME
