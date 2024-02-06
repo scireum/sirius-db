@@ -46,9 +46,10 @@ class ClickhouseTest {
         val readBack =
                 oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "X").queryFirst()
 
-        assertEquals(100, readBack.int8)
         assertTrue { readBack.isaBooleanSetToTrue() }
         assertFalse { readBack.isaBooleanSetToFalse() }
+
+        assertEquals(100, readBack.int8)
         assertEquals(30_000, readBack.int16)
         assertEquals(1_000_000_000, readBack.int32)
         assertEquals(10_000_000_000, readBack.int64)
