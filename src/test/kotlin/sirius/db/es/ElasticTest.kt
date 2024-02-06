@@ -9,83 +9,69 @@
 package sirius.db.es
 
 
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mixing.Mixing
 import sirius.db.mixing.OptimisticLockException
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
-import sirius.kernel.health.HandledException
-
 import java.time.Duration
+import kotlin.test.*
 
-class ElasticSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class ElasticTest {
+    @Test
+    fun `update, find and delete works`() {
+        val elasticTestEntity = ElasticTestEntity()
+        elasticTestEntity.firstname = "Hello"
+        elasticTestEntity.lastname = "World"
+        elasticTestEntity.age = 12
+        elastic.update(elasticTestEntity)
+        elastic.refresh(ElasticTestEntity::class.java)
+        val loaded = elastic.findOrFail(ElasticTestEntity::class.java, elasticTestEntity.id)
 
-    @Part
-    private static Elastic elastic
+        assertEquals("Hello", loaded.firstname)
+        assertEquals("World", loaded.lastname)
+        assertEquals(12, loaded.age)
 
-            @Part
-            private static Mixing mixing
+        elastic.delete(elasticTestEntity)
+        elastic.refresh(ElasticTestEntity::class.java)
+        val notFound = elastic.find(ElasticTestEntity::class.java, elasticTestEntity.id).orElse(null)
 
-            def setupSpec() {
-        elastic.getReadyFuture().await(Duration.ofSeconds(60))
+        assertNull(notFound)
     }
 
-    def "update / find / delete works"() {
-        when:
-        ElasticTestEntity entity = new ElasticTestEntity()
-        entity.setFirstname("Hello")
-        entity.setLastname("World")
-        entity.setAge(12)
-        elastic.update(entity)
-        and:
-        elastic.refresh(ElasticTestEntity.class)
-                ElasticTestEntity loaded = elastic.findOrFail(ElasticTestEntity.class, entity.getId())
-                then:
-                loaded.getFirstname() == "Hello"
-                loaded.getLastname() == "World"
-                loaded.getAge() == 12
-                when:
-        elastic.delete(entity)
-        and:
-        elastic.refresh(ElasticTestEntity.class)
-                ElasticTestEntity notFound = elastic.find(ElasticTestEntity.class, entity.getId()).orElse(null)
-                then:
-                notFound == null
-    }
+    @Test
+    fun `update, find and delete works with routing`() {
+        val routedTestEntity = RoutedTestEntity()
+        routedTestEntity.firstname = "Hello"
+        routedTestEntity.lastname = "World"
+        routedTestEntity.age = 12
+        elastic.update(routedTestEntity)
+        elastic.refresh(RoutedTestEntity::class.java)
+        val loaded = elastic.findOrFail(RoutedTestEntity::class.java, routedTestEntity.id, Elastic.routedBy("World"))
+        val notLoaded =
+                elastic.find(RoutedTestEntity::class.java, routedTestEntity.id, Elastic.routedBy("XX_badRouting"))
+                        .orElse(null)
 
-    def "update / find / delete works with routing"() {
-        when:
-        RoutedTestEntity entity = new RoutedTestEntity()
-        entity.setFirstname("Hello")
-        entity.setLastname("World")
-        entity.setAge(12)
-        elastic.update(entity)
-        and:
-        elastic.refresh(RoutedTestEntity.class)
-                RoutedTestEntity loaded = elastic.findOrFail(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World"))
-                RoutedTestEntity notLoaded = elastic.find(
-                RoutedTestEntity.class,
-                        entity.getId(),
-                Elastic.routedBy("XX_badRouting")).orElse(null)
-                then:
-                loaded.getFirstname() == "Hello"
-                loaded.getLastname() == "World"
-                loaded.getAge() == 12
-                and:
-                notLoaded == null
+        assertEquals("Hello", loaded.firstname)
+        assertEquals("World", loaded.lastname)
+        assertEquals(12, loaded.age)
+        assertNull(notLoaded)
 
-                when:
-        RoutedTestEntity refreshed = elastic.refreshOrFail(entity)
-                then:
-                refreshed.getFirstname() == "Hello"
+        val refreshed = elastic.refreshOrFail(routedTestEntity)
 
-                when:
-        elastic.delete(entity)
-        and:
-        elastic.refresh(RoutedTestEntity.class)
-                RoutedTestEntity notFound = elastic.find(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World")).
-        orElse(null)
-                then:
-                notFound == null
+        assertEquals("Hello", refreshed.firstname)
+
+        elastic.delete(routedTestEntity)
+        elastic.refresh(RoutedTestEntity::class.java)
+        val notFound =
+                elastic.find(RoutedTestEntity::class.java, routedTestEntity.id, Elastic.routedBy("World")).orElse(null)
+
+        assertNull(notFound)
     }
 
     /**
@@ -95,158 +81,145 @@ class ElasticSpec extends BaseSpecification {
      * (Normally this is also rejected and reported by the framework, unless the <tt>elasticsearch.suppressedRoutings</tt>
      * is used).
      */
-    def "update / find / delete works with suppressed routing"() {
-        when:
-        SuppressedRoutedTestEntity entity = new SuppressedRoutedTestEntity()
-        entity.setFirstname("Hello")
-        entity.setLastname("World")
-        entity.setAge(12)
-        elastic.update(entity)
-        and: "Performing a lookup with routing works"
-        elastic.refresh(SuppressedRoutedTestEntity.class)
-                SuppressedRoutedTestEntity loaded = elastic.
-        findOrFail(SuppressedRoutedTestEntity.class, entity.getId(), Elastic.routedBy("World"))
-                and: "Performing a lookup with an invalid routing works"
-                SuppressedRoutedTestEntity alsoLoaded = elastic.find(
-                SuppressedRoutedTestEntity.class,
-                        entity.getId(),
-                Elastic.routedBy("XX_badRouting")).orElse(null)
-                then:
-                loaded.getFirstname() == "Hello"
-                loaded.getLastname() == "World"
-                loaded.getAge() == 12
-                and:
-                alsoLoaded.getFirstname() == "Hello"
-                alsoLoaded.getLastname() == "World"
-                alsoLoaded.getAge() == 12
+    @Test
+    fun `update, find and delete works with suppressed routing`() {
+        val suppressedRoutedTestEntity = SuppressedRoutedTestEntity()
+        suppressedRoutedTestEntity.firstname = "Hello"
+        suppressedRoutedTestEntity.lastname = "World"
+        suppressedRoutedTestEntity.age = 12
+        elastic.update(suppressedRoutedTestEntity)
+        elastic.refresh(SuppressedRoutedTestEntity::class.java)
+        val loaded = elastic.findOrFail(
+                SuppressedRoutedTestEntity::class.java,
+                suppressedRoutedTestEntity.id,
+                Elastic.routedBy("World")
+        )
+        val alsoLoaded = elastic.find(
+                SuppressedRoutedTestEntity::class.java,
+                suppressedRoutedTestEntity.id,
+                Elastic.routedBy("XX_badRouting")
+        ).orElse(null)
 
-                and: "A query with a routing works"
-                elastic.
-                select(SuppressedRoutedTestEntity.class).
-        routing("World").
-        eq(SuppressedRoutedTestEntity.LASTNAME, "World").
-        exists()
-                and: "A query without a routing works"
-                elastic.
-                select(SuppressedRoutedTestEntity.class).
-        eq(SuppressedRoutedTestEntity.LASTNAME, "World").
-        exists()
-                and: "A query with an invalid routing works"
-                elastic.
-                select(SuppressedRoutedTestEntity.class).
-        routing("XXX").
-        eq(SuppressedRoutedTestEntity.LASTNAME, "World").
-        exists()
+        assertEquals("Hello", loaded.firstname)
+        assertEquals("World", loaded.lastname)
+        assertEquals(12, loaded.age)
+        assertEquals("Hello", alsoLoaded.firstname)
+        assertEquals("World", alsoLoaded.lastname)
+        assertEquals(12, alsoLoaded.age)
 
-                when: "Refresh still works"
-        SuppressedRoutedTestEntity refreshed = elastic.refreshOrFail(entity)
-        then:
-        refreshed.getFirstname() == "Hello"
+        elastic.select(SuppressedRoutedTestEntity::class.java).routing("World")
+                .eq(SuppressedRoutedTestEntity.LASTNAME, "World").exists()
+        elastic.select(SuppressedRoutedTestEntity::class.java).eq(SuppressedRoutedTestEntity.LASTNAME, "World").exists()
+        elastic.select(SuppressedRoutedTestEntity::class.java).routing("XXX")
+                .eq(SuppressedRoutedTestEntity.LASTNAME, "World").exists()
+        val refreshed = elastic.refreshOrFail(suppressedRoutedTestEntity)
 
-        when: "Delete works as expected"
-        elastic.delete(entity)
-        and:
-        elastic.refresh(RoutedTestEntity.class)
-                SuppressedRoutedTestEntity notFound = elastic.
-        find(RoutedTestEntity.class, entity.getId(), Elastic.routedBy("World")).
-        orElse(null)
-                then:
-                notFound == null
+        assertEquals("Hello", refreshed.firstname)
+
+        elastic.delete(suppressedRoutedTestEntity)
+        elastic.refresh(RoutedTestEntity::class.java)
+        val notFound =
+                elastic.find(RoutedTestEntity::class.java, suppressedRoutedTestEntity.id, Elastic.routedBy("World"))
+                        .orElse(null)
+
+        assertNull(notFound)
     }
 
-    def "optimistic locking works"() {
-        when:
-        LockedTestEntity entity = new LockedTestEntity()
-        entity.setValue("Test")
-        elastic.update(entity)
-        and:
-        elastic.refresh(LockedTestEntity.class)
-                LockedTestEntity copyOfOriginal = elastic.refreshOrFail(entity)
-                and:
-                entity.setValue("Test2")
-                elastic.update(entity)
-                elastic.refresh(LockedTestEntity.class)
-                and:
-                entity.setValue("Test3")
-                elastic.update(entity)
-                elastic.refresh(LockedTestEntity.class)
-                and:
-                copyOfOriginal.setValue("Test2")
-                elastic.tryUpdate(copyOfOriginal)
-                then:
-                thrown(OptimisticLockException)
-                when:
-        elastic.tryDelete(copyOfOriginal)
-        then:
-        thrown(OptimisticLockException)
-        when:
+    @Test
+    fun `optimistic locking works`() {
+        val lockedTestEntity = LockedTestEntity()
+        lockedTestEntity.value = "Test"
+        elastic.update(lockedTestEntity)
+        elastic.refresh(LockedTestEntity::class.java)
+        val copyOfOriginal = elastic.refreshOrFail(lockedTestEntity)
+
+        assertThrows<OptimisticLockException> {
+            lockedTestEntity.value = "Test2"
+            elastic.update(lockedTestEntity)
+            elastic.refresh(LockedTestEntity::class.java)
+
+            lockedTestEntity.value = "Test3"
+            elastic.update(lockedTestEntity)
+            elastic.refresh(LockedTestEntity::class.java)
+
+            copyOfOriginal.value = "Test2"
+            elastic.tryUpdate(copyOfOriginal)
+        }
+        assertThrows<OptimisticLockException> { elastic.tryDelete(copyOfOriginal) }
+
         elastic.forceDelete(copyOfOriginal)
-        elastic.refresh(LockedTestEntity.class)
-                LockedTestEntity notFound = elastic.find(LockedTestEntity.class, entity.getId()).orElse(null)
-                then:
-                notFound == null
+        elastic.refresh(LockedTestEntity::class.java)
+        val notFound = elastic.find(LockedTestEntity::class.java, lockedTestEntity.id).orElse(null)
+
+        assertNull(notFound)
     }
 
-    def "wasCreated() works in elastic"() {
-        given:
-        ElasticWasCreatedTestEntity e = new ElasticWasCreatedTestEntity()
-        e.setValue("test123")
-        when:
-        elastic.update(e)
-        then:
-        e.hasJustBeenCreated()
-        and:
-        elastic.update(e)
-        then:
-        !e.hasJustBeenCreated()
+    @Test
+    fun `wasCreated() works in elastic`() {
+        val elasticWasCreatedTestEntity = ElasticWasCreatedTestEntity()
+        elasticWasCreatedTestEntity.value = "test123"
+        elastic.update(elasticWasCreatedTestEntity)
+
+        assertTrue { elasticWasCreatedTestEntity.hasJustBeenCreated() }
+
+        elastic.update(elasticWasCreatedTestEntity)
+
+        assertFalse { elasticWasCreatedTestEntity.hasJustBeenCreated() }
     }
 
-    def "Deleting a non-existing entity simply does nothing"() {
-        given: "An entity when seems to be persisted, but doesn not exist in the database"
-        ElasticTestEntity fakeEntity = new ElasticTestEntity()
-        fakeEntity.setId("DOES_NOT_EXIST")
-        when: "we try to delete it"
-        elastic.delete(fakeEntity)
-        then: "no exception is thrown as the 404 response by ES is converted into an empty OK response"
-        notThrown(HandledException)
+    @Test
+    fun `Deleting a non-existing entity simply does nothing`() {
+        val elasticTestEntity = ElasticTestEntity()
+        elasticTestEntity.id = "DOES_NOT_EXIST"
+
+        assertDoesNotThrow { elastic.delete(elasticTestEntity) }
     }
 
-    def "Custom write index works"() {
-        when: "A new entity is created in the current index"
-        ElasticTestEntity testEntity = new ElasticTestEntity()
-        testEntity.setFirstname("Test")
-        testEntity.setLastname("Entity")
-        testEntity.setAge(12)
+    @Test
+    fun `Custom write index works`() {
+        val testEntity = ElasticTestEntity()
+        testEntity.firstname = "Test"
+        testEntity.lastname = "Entity"
+        testEntity.age = 12
         elastic.update(testEntity)
-        elastic.refresh(ElasticTestEntity.class)
-                and: "We switch to a new write index for the entity"
-                elastic.createAndInstallWriteIndex(mixing.getDescriptor(ElasticTestEntity.class))
-                elastic.refresh(ElasticTestEntity.class)
-                and: "Deleting the original entity doesn't change the read index"
-                elastic.delete(testEntity)
-                elastic.refresh(ElasticTestEntity.class)
-                then:
-                elastic.find(ElasticTestEntity.class, testEntity.getId()).isPresent()
+        elastic.refresh(ElasticTestEntity::class.java)
+        elastic.createAndInstallWriteIndex(mixing.getDescriptor(ElasticTestEntity::class.java))
+        elastic.refresh(ElasticTestEntity::class.java)
+        elastic.delete(testEntity)
+        elastic.refresh(ElasticTestEntity::class.java)
 
-                when: "Creating another entity is not visible in the read index"
-        ElasticTestEntity secondTestEntity = new ElasticTestEntity()
-        secondTestEntity.setFirstname("Second")
-        secondTestEntity.setLastname("Entity")
-        secondTestEntity.setAge(13)
+        assertNotNull(elastic.find(ElasticTestEntity::class.java, testEntity.id))
+
+        val secondTestEntity = ElasticTestEntity()
+        secondTestEntity.firstname = "Second"
+        secondTestEntity.lastname = "Entity"
+        secondTestEntity.age = 13
         elastic.update(secondTestEntity)
-        elastic.refresh(ElasticTestEntity.class)
-                then:
-                !elastic.find(ElasticTestEntity.class, secondTestEntity.getId()).isPresent()
+        elastic.refresh(ElasticTestEntity::class.java)
 
-                when: "Moving the read alias to the write index..."
-        elastic.commitWriteIndex(mixing.getDescriptor(ElasticTestEntity.class))
-                then: "...we then see the second entity"
-                elastic.find(ElasticTestEntity.class, secondTestEntity.getId()).isPresent()
+        assertNotNull(elastic.find(ElasticTestEntity::class.java, secondTestEntity.id))
 
-                when: "...and deleting it is also directly visible"
+        elastic.commitWriteIndex(mixing.getDescriptor(ElasticTestEntity::class.java))
+
+        assertTrue { elastic.find(ElasticTestEntity::class.java, secondTestEntity.id).isPresent }
+
         elastic.delete(secondTestEntity)
-        elastic.refresh(ElasticTestEntity.class)
-                then: "The first entity is no longer visible as it has never been written into the write index"
-                !elastic.find(ElasticTestEntity.class, testEntity.getId()).isPresent()
+        elastic.refresh(ElasticTestEntity::class.java)
+
+        assertNotNull(elastic.find(ElasticTestEntity::class.java, testEntity.id))
+    }
+
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+
+        @Part
+        private lateinit var mixing: Mixing
+
+        @BeforeAll
+        @JvmStatic
+        fun setupSpec() {
+            elastic.getReadyFuture().await(Duration.ofSeconds(60))
+        }
     }
 }
