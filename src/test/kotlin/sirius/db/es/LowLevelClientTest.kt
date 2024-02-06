@@ -31,7 +31,7 @@ class LowLevelClientTest {
     @Test
     fun `error handling works`() {
         assertThrows<HandledException> {
-            val obj = elastic.getLowLevelClient().createIndex("invalid", 0, 1, null)
+            elastic.getLowLevelClient().createIndex("invalid", 0, 1, null)
         }
     }
 
