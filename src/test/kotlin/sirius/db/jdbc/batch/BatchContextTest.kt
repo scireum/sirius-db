@@ -29,7 +29,7 @@ import kotlin.test.assertNotNull
 class BatchContextTest {
     @Test
     fun `insert works`() {
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
                 TestEntity::class.java,
                 TestEntity.FIRSTNAME,
@@ -50,7 +50,7 @@ class BatchContextTest {
 
     @Test
     fun `batch insert works`() {
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
                 TestEntity::class.java,
                 TestEntity.FIRSTNAME,
@@ -79,7 +79,7 @@ class BatchContextTest {
         testEntity.firstname = "Updating"
         testEntity.lastname = "Test"
         oma.update(testEntity)
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val update = batchContext.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
         testEntity.firstname = "Updated"
         update.update(testEntity, true, false)
@@ -95,7 +95,7 @@ class BatchContextTest {
         testEntity.firstname = "Updating"
         testEntity.lastname = "Test"
         oma.update(testEntity)
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val update = batchContext.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
         testEntity.firstname = "Updated"
         update.update(testEntity, true, true)
@@ -115,7 +115,7 @@ class BatchContextTest {
         testEntity.firstname = "BatchContextFind"
         testEntity.lastname = "Test"
         oma.update(testEntity)
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val find = batchContext.findQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
         val found = TestEntity()
         found.firstname = "BatchContextFind"
@@ -138,7 +138,7 @@ class BatchContextTest {
         testEntity.firstname = "Delete"
         testEntity.lastname = "Test"
         oma.update(testEntity)
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val delete = batchContext.deleteQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
         delete.delete(testEntity, true, false)
 
@@ -153,7 +153,7 @@ class BatchContextTest {
         testEntity.firstname = "BatchDelete"
         testEntity.lastname = "Test"
         oma.update(testEntity)
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val delete = batchContext.deleteQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
         delete.delete(testEntity, true, true)
 
@@ -172,7 +172,7 @@ class BatchContextTest {
         testEntity.firstname = "BatchContextFind"
         testEntity.lastname = "CustomTest"
         oma.update(testEntity)
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val find =
                 batchContext.customQuery(TestEntity::class.java, false, "SELECT * FROM testentity WHERE lastname = ?")
         find.setParameter(1, "CustomTest")
@@ -188,7 +188,7 @@ class BatchContextTest {
 
     @Test
     fun `use after close is prevented`() {
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         batchContext.close()
 
         assertThrows<IllegalStateException> {
@@ -204,7 +204,7 @@ class BatchContextTest {
 
     @Test
     fun `use of query after close is prevented`() {
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
                 TestEntity::class.java,
                 TestEntity.FIRSTNAME,
