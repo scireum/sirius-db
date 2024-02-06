@@ -63,7 +63,7 @@ class ClickhouseTest {
 
     @Test
     fun `batch insert into clickhouse works`() {
-        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
                 ClickhouseTestEntity::class.java, false
         )
@@ -77,7 +77,7 @@ class ClickhouseTest {
             clickhouseTestEntity.int64 = i.toLong()
             clickhouseTestEntity.string = "Test"
             clickhouseTestEntity.fixedString = "B"
-            clickhouseTestEntity.setInt8WithDefault(0)
+            clickhouseTestEntity.int8WithDefault = 0
             clickhouseTestEntity.enumValue = ClickhouseTestEntity.TestEnum.Test1
             insert.insert(clickhouseTestEntity, true, true)
         }
@@ -121,7 +121,7 @@ class ClickhouseTest {
         clickhouseTestEntity.int64 = 10_000_000_000
         clickhouseTestEntity.string = "This is a long string"
         clickhouseTestEntity.fixedString = "Z"
-        clickhouseTestEntity.setInt8WithDefault(17)
+        clickhouseTestEntity.int8WithDefault = 17
         oma.update(clickhouseTestEntity)
         val readBack = oma.select(ClickhouseTestEntity::class.java).eq(
                 ClickhouseTestEntity.FIXED_STRING,
@@ -142,7 +142,7 @@ class ClickhouseTest {
         clickhouseTestEntity.int64 = 10_000_000_000
         clickhouseTestEntity.string = "This is a long string"
         clickhouseTestEntity.fixedString = "A"
-        clickhouseTestEntity.setInt8WithDefault(17)
+        clickhouseTestEntity.int8WithDefault = 17
         clickhouseTestEntity.nullable = null
         oma.update(clickhouseTestEntity)
         val readBack =
