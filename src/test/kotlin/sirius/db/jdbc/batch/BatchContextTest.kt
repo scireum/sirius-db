@@ -29,8 +29,8 @@ import kotlin.test.assertNotNull
 class BatchContextTest {
     @Test
     fun `insert works`() {
-        val ctbatchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        val insert = ctbatchContext.insertQuery(
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val insert = batchContext.insertQuery(
                 TestEntity::class.java,
                 TestEntity.FIRSTNAME,
                 TestEntity.LASTNAME,
@@ -45,8 +45,7 @@ class BatchContextTest {
 
         assertEquals(100, oma.select(TestEntity::class.java).eq(TestEntity.LASTNAME, "INSERT").count())
 
-        OMA.LOG.INFO(ctbatchContext)
-        ctbatchContext.close()
+        batchContext.close()
     }
 
     @Test
@@ -96,8 +95,8 @@ class BatchContextTest {
         testEntity.firstname = "Updating"
         testEntity.lastname = "Test"
         oma.update(testEntity)
-        val ctx = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
-        val update = ctx.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+        val batchContext = BatchContext({ -> "Test" }, Duration.ofMinutes(2))
+        val update = batchContext.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
         testEntity.firstname = "Updated"
         update.update(testEntity, true, true)
 
@@ -107,8 +106,7 @@ class BatchContextTest {
 
         assertEquals("Updated", oma.refreshOrFail(testEntity).firstname)
 
-        OMA.LOG.INFO(ctx)
-        ctx.close()
+        batchContext.close()
     }
 
     @Test
