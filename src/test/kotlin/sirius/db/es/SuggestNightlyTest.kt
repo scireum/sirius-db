@@ -10,10 +10,11 @@ package sirius.db.es
 
 
 import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.constraints.BoolQueryBuilder
 
 import sirius.db.es.suggest.SuggesterBuilder
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.Tags
 import sirius.kernel.commons.Json
 import sirius.kernel.di.std.Part
@@ -21,8 +22,9 @@ import sirius.kernel.di.std.Part
 import java.time.Duration
 import java.util.function.Predicate
 
+@ExtendWith(SiriusExtension::class)
 @Tag(Tags.NIGHTLY)
-class SuggestSpec extends BaseSpecification {
+class SuggestNightlyTest {
 
     @Part
     private static Elastic elastic
