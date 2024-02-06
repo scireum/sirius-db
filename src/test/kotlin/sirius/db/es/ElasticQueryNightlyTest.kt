@@ -8,61 +8,63 @@
 
 package sirius.db.es
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.Tags
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
-
 import java.time.Duration
+import kotlin.test.assertEquals
 
 @Tag(Tags.NIGHTLY)
-class ElasticQueryNightlySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class ElasticQueryNightlyTest {
+    @Test
+    fun `scroll query and large streamBlockwise works`() {
+        for (i in 1..1499) {
+            val entity = QueryTestEntity()
+            entity.value = "SCROLL"
+            entity.counter = i
+            elastic.update(entity)
+        }
+        elastic.refresh(QueryTestEntity::class.java)
+        var sum = 0
+        elastic.select(QueryTestEntity::class.java).eq(QueryTestEntity.VALUE, "SCROLL")
+                .iterateAll { e -> sum += e.counter }
 
-    @Part
-    private static Elastic elastic
-
-            def setupSpec() {
-        elastic.getReadyFuture().await(Duration.ofSeconds(60))
+        assertEquals((1500 * 1501) / 2, sum)
+        assertEquals(
+                sum,
+                elastic.select(QueryTestEntity::class.java).eq(QueryTestEntity.VALUE, "SCROLL").streamBlockwise()
+                        .mapToInt { e -> e.counter }.sum()
+        )
     }
 
-    def "scroll query / large streamBlockwise work"() {
-        when:
-        for (int i = 1; i <= 1500; i++) {
-        QueryTestEntity entity = new QueryTestEntity()
-        entity.setValue("SCROLL")
-        entity.setCounter(i)
-        elastic.update(entity)
-    }
-        elastic.refresh(QueryTestEntity.class)
-                and:
-                int sum = 0
-                elastic.select(QueryTestEntity.class).
-        eq(QueryTestEntity.VALUE, "SCROLL").
-        iterateAll({ e -> sum += e.getCounter() })
-                then:
-                sum == (1500 * 1501) / 2
-                and:
-                elastic.select(QueryTestEntity.class).
-        eq(QueryTestEntity.VALUE, "SCROLL").
-        streamBlockwise().
-        mapToInt({ e -> e.getCounter() }).sum() == sum
+    @Test
+    fun `selecting over 1000 entities in queryList throws an exception`() {
+        elastic.select(ESListTestEntity::class.java).delete()
+        for (i in 0..1000) {
+            val entityToCreate = ESListTestEntity()
+            entityToCreate.counter = i
+            elastic.update(entityToCreate)
+        }
+        elastic.refresh(ESListTestEntity::class.java)
+
+        assertThrows<HandledException> { elastic.select(ESListTestEntity::class.java).queryList() }
     }
 
-    def "selecting over 1000 entities in queryList throws an exception"() {
-        given:
-        elastic.select(ESListTestEntity.class).delete()
-                and:
-                for (int i = 0; i < 1001; i++) {
-        def entityToCreate = new ESListTestEntity()
-        entityToCreate.setCounter(i)
-        elastic.update(entityToCreate)
-    }
-        elastic.refresh(ESListTestEntity.class)
-                when:
-        elastic.select(ESListTestEntity.class).queryList()
-                then:
-                thrown(HandledException)
-    }
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
 
+        @BeforeAll
+        @JvmStatic
+        fun setupSpec() {
+            elastic.getReadyFuture().await(Duration.ofSeconds(60))
+        }
+    }
 }
