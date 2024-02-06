@@ -88,7 +88,6 @@ class ClickhouseTest {
                 oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "B").count()
         )
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
 
