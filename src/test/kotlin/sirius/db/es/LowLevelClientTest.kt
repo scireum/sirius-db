@@ -8,49 +8,50 @@
 
 package sirius.db.es
 
-import com.fasterxml.jackson.databind.node.ObjectNode
-import sirius.kernel.BaseSpecification
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Json
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class LowLevelClientSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class LowLevelClientTest {
+    @Test
+    fun `create index works`() {
+        val obj = elastic.getLowLevelClient().createIndex("test", 1, 1, null)
 
-    @Part
-    private static Elastic elastic
-
-            def "create index works"() {
-        when:
-        ObjectNode obj = elastic.getLowLevelClient().createIndex("test", 1, 1, null)
-        then:
-        obj.acknowledged
+        assertTrue { obj.get("acknowledged").booleanValue() }
     }
 
-    def "error handling works"() {
-        when:
-        ObjectNode obj = elastic.getLowLevelClient().createIndex("invalid", 0, 1, null)
-        then:
-        thrown(HandledException)
+    @Test
+    fun `error handling works`() {
+        assertThrows<HandledException> {
+            val obj = elastic.getLowLevelClient().createIndex("invalid", 0, 1, null)
+        }
     }
 
-    def "index / get / delete works"() {
-        setup:
+    @Test
+    fun `index, get and delete works`() {
         elastic.getLowLevelClient().createIndex("test1", 1, 1, null)
-        when:
-        elastic.getLowLevelClient().
-        index("test1", "TEST", null, null, null, Json.createObject().put("Hello", "World"))
-        then:
-        def data = elastic.getLowLevelClient().get("test1", "TEST", null, true)
-        and:
-        data.found
-        data._source.Hello.asText() == 'World'
+        elastic.getLowLevelClient().index("test1", "TEST", null, null, null, Json.createObject().put("Hello", "World"))
+        var data = elastic.getLowLevelClient().get("test1", "TEST", null, true)
 
-        when:
+        assertTrue { data.get("found").booleanValue() }
+        assertEquals("World", data.get("_source").get("Hello").asText())
+
         elastic.getLowLevelClient().delete("test1", "TEST", null, null, null)
-        and:
         data = elastic.getLowLevelClient().get("test1", "TEST", null, true)
-        then:
-        !data.found
+
+        assertFalse { data.get("found").booleanValue() }
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+    }
 }
