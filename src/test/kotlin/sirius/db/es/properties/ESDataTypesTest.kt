@@ -8,268 +8,209 @@
 
 package sirius.db.es.properties
 
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.di.std.Part
-
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class ESDataTypesSpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class ESDataTypesTest {
+    @Test
+    fun `reading and writing Long works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.longValue = Long.MAX_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-    @Part
-    private static Elastic elastic
+        assertEquals(Long.MAX_VALUE, esDataTypesEntity.longValue)
 
-            def setupSpec() {
-        elastic.getReadyFuture().await(Duration.ofSeconds(60))
+        esDataTypesEntity.longValue = 0
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(0L, esDataTypesEntity.longValue)
+
+        esDataTypesEntity.longValue = Long.MIN_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(Long.MIN_VALUE, esDataTypesEntity.longValue)
     }
 
-    def "reading and writing Long works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
+    @Test
+    fun `reading and writing Integer works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.intValue = Integer.MAX_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setLongValue(Long.MAX_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLongValue() == Long.MAX_VALUE
+        assertEquals(Integer.MAX_VALUE, esDataTypesEntity.intValue)
 
-        when:
-        test.setLongValue(0)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLongValue() == 0
+        esDataTypesEntity.intValue = 0
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setLongValue(Long.MIN_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLongValue() == Long.MIN_VALUE
+        assertEquals(0, esDataTypesEntity.intValue)
+
+        esDataTypesEntity.intValue = Integer.MIN_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(Integer.MIN_VALUE, esDataTypesEntity.intValue)
     }
 
-    def "reading and writing Integer works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
+    @Test
+    fun `reading and writing long works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.longValue2 = Long.MAX_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setIntValue(Integer.MAX_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getIntValue() == Integer.MAX_VALUE
+        assertEquals(Long.MAX_VALUE, esDataTypesEntity.longValue2)
 
-        when:
-        test.setIntValue(0)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getIntValue() == 0
+        esDataTypesEntity.longValue2 = 0
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setIntValue(Integer.MIN_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getIntValue() == Integer.MIN_VALUE
+        assertEquals(0, esDataTypesEntity.longValue2)
+
+        esDataTypesEntity.longValue2 = Long.MIN_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(Long.MIN_VALUE, esDataTypesEntity.longValue2)
     }
 
-    def "reading and writing long works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
+    @Test
+    fun `reading and writing int works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.intValue2 = Integer.MAX_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setLongValue2(Long.MAX_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLongValue2() == Long.MAX_VALUE
+        assertEquals(Integer.MAX_VALUE, esDataTypesEntity.intValue2)
 
-        when:
-        test.setLongValue2(0)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLongValue2() == 0
+        esDataTypesEntity.intValue2 = 0
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setLongValue2(Long.MIN_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLongValue2() == Long.MIN_VALUE
+        assertEquals(0, esDataTypesEntity.intValue2)
+
+        esDataTypesEntity.intValue2 = Integer.MIN_VALUE
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(Integer.MIN_VALUE, esDataTypesEntity.intValue2)
     }
 
-    def "reading and writing int works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
+    @Test
+    fun `reading and writing String works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.stringValue = "Test"
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        when:
-        test.setIntValue2(Integer.MAX_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getIntValue2() == Integer.MAX_VALUE
-
-        when:
-        test.setIntValue2(0)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getIntValue2() == 0
-
-        when:
-        test.setIntValue2(Integer.MIN_VALUE)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getIntValue2() == Integer.MIN_VALUE
+        assertEquals("Test", esDataTypesEntity.stringValue)
     }
 
-    def "reading and writing String works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setStringValue("Test")
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getStringValue() == "Test"
+    @Test
+    fun `reading and writing amount works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.amountValue = Amount.of(400.5)
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(Amount.of(400.5), esDataTypesEntity.amountValue)
     }
 
-    def "reading and writing amount works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setAmountValue(Amount.of(400.5))
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getAmountValue() == Amount.of(400.5)
+    @Test
+    fun `reading and writing LocalDate works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.localDateValue = LocalDate.of(2014, 10, 24)
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(LocalDate.of(2014, 10, 24), esDataTypesEntity.localDateValue)
     }
 
-    def "reading and writing LocalDate works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setLocalDateValue(LocalDate.of(2014, 10, 24))
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLocalDateValue() == LocalDate.of(2014, 10, 24)
+    @Test
+    fun `reading and writing LocalDateTime works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.localDateTimeValue = LocalDateTime.of(2014, 10, 24, 14, 30)
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(LocalDateTime.of(2014, 10, 24, 14, 30), esDataTypesEntity.localDateTimeValue)
     }
 
-    def "reading and writing LocalDateTime works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setLocalDateTimeValue(LocalDateTime.of(2014, 10, 24, 14, 30))
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getLocalDateTimeValue() == LocalDateTime.of(2014, 10, 24, 14, 30)
+    @Test
+    fun `reading and writing Boolean true works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.boolValue = true
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertTrue { esDataTypesEntity.boolValue }
     }
 
-    def "reading and writing Boolean true works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setBoolValue(true)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getBoolValue() == true
+    @Test
+    fun `reading and writing Boolean false works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.boolValue = false
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertFalse { esDataTypesEntity.boolValue }
     }
 
-    def "reading and writing Boolean false works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setBoolValue(false)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getBoolValue() == false
+    @Test
+    fun `reading and writing TestEnum works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.testEnum = ESDataTypesEntity.TestEnum.Test1
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(ESDataTypesEntity.TestEnum.Test1, esDataTypesEntity.testEnum)
     }
 
-    def "reading and writing TestEnum works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setTestEnum(ESDataTypesEntity.TestEnum.Test1)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getTestEnum() == ESDataTypesEntity.TestEnum.Test1
+    @Test
+    fun `reading and writing TestEnum as ordinal works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.testEnum2 = ESDataTypesEntity.TestEnum.Test2
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(ESDataTypesEntity.TestEnum.Test2, esDataTypesEntity.testEnum2)
     }
 
-    def "reading and writing TestEnum as ordinal works"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.setTestEnum2(ESDataTypesEntity.TestEnum.Test2)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getTestEnum2() == ESDataTypesEntity.TestEnum.Test2
+    @Test
+    fun `reading and writing SQLEntityRefs work`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+        esDataTypesEntity.sqlEntityRef.setId(1)
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        assertEquals(1L, esDataTypesEntity.sqlEntityRef.id)
+        assertTrue { esDataTypesEntity.sqlEntityRef.id is Long }
     }
 
-    def "reading and writing SQLEntityRefs work"() {
-        given:
-        ESDataTypesEntity test = new ESDataTypesEntity()
-        when:
-        test.getSqlEntityRef().setId(1)
-        and:
-        elastic.update(test)
-        and:
-        test = elastic.refreshOrFail(test)
-        then:
-        test.getSqlEntityRef().getId() == 1L
-        and:
-        test.getSqlEntityRef().getId().getClass() == Long.class
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+
+        @BeforeAll
+        @JvmStatic
+        fun setupSpec() {
+            elastic.readyFuture.await(Duration.ofSeconds(60))
+        }
     }
 }
