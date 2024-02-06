@@ -38,7 +38,7 @@ class BatchContextTest {
         )
         for (i in 0..99) {
             val testEntity = TestEntity()
-            testEntity.firstname = "BatchContextInsert" + i
+            testEntity.firstname = "BatchContextInsert$i"
             testEntity.lastname = "INSERT"
             insert.insert(testEntity, true, false)
         }
@@ -59,7 +59,7 @@ class BatchContextTest {
         )
         for (i in 0..99) {
             val testEntity = TestEntity()
-            testEntity.firstname = "BatchContextInsert" + i
+            testEntity.firstname = "BatchContextInsert$i"
             testEntity.lastname = "BATCHINSERT"
             insert.insert(testEntity, false, true)
         }
