@@ -71,7 +71,6 @@ class BatchContextTest {
 
         assertEquals(100, oma.select(TestEntity::class.java).eq(TestEntity.LASTNAME, "BATCHINSERT").count())
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
 
@@ -88,7 +87,6 @@ class BatchContextTest {
 
         assertEquals("Updated", oma.refreshOrFail(testEntity).firstname)
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
 
@@ -133,10 +131,8 @@ class BatchContextTest {
         assertFalse { find.find(found).get().isNew }
         assertNotNull(find.find(notFound))
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
-
 
     @Test
     fun `delete works`() {
@@ -150,7 +146,6 @@ class BatchContextTest {
 
         assertNotNull(oma.resolve<SQLEntity>(testEntity.uniqueName))
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
 
@@ -170,7 +165,6 @@ class BatchContextTest {
 
         assertNotNull(oma.resolve<SQLEntity>(testEntity.getUniqueName()))
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
 
@@ -191,7 +185,6 @@ class BatchContextTest {
 
         assertNotNull(find.query.first())
 
-        OMA.LOG.INFO(batchContext)
         batchContext.close()
     }
 
@@ -223,7 +216,6 @@ class BatchContextTest {
         batchContext.close()
 
         assertThrows<HandledException> { insert.insert(TestEntity(), false, true) }
-
         assertEquals(0, oma.getDatabase(Mixing.DEFAULT_REALM)!!.getNumActive())
     }
 
