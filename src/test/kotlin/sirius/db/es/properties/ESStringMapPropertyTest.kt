@@ -8,38 +8,38 @@
 
 package sirius.db.es.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
-class ESStringMapPropertySpec extends BaseSpecification {
+@ExtendWith(SiriusExtension::class)
+class ESStringMapPropertyTest {
+    @Test
+    fun `reading and writing works`() {
+        val esStringMapEntity = ESStringMapEntity()
+        esStringMapEntity.map.put("Test", "1").put("Foo", "2")
+        elastic.update(esStringMapEntity)
+        var resolved = elastic.refreshOrFail(esStringMapEntity)
 
-    @Part
-    private static Elastic elastic
+        assertEquals(2,resolved.map.size())
+        assertEquals("1",resolved.map.get("Test").get())
+        assertEquals("2", resolved.map.get("Foo").get())
 
-            def "reading and writing works"() {
-        when:
-        def test = new ESStringMapEntity()
-        test.getMap().put("Test", "1").put("Foo", "2")
-        elastic.update(test)
-        def resolved = elastic.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 2
-        and:
-        resolved.getMap().get("Test").get() == "1"
-        resolved.getMap().get("Foo").get() == "2"
-
-        when:
-        resolved.getMap().modify().remove("Test")
-        and:
+        resolved.map.modify().remove("Test")
         elastic.update(resolved)
-        and:
-        resolved = elastic.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 1
-        and:
-        !resolved.getMap().contains("Test")
-        resolved.getMap().get("Foo").get() == "2"
+        resolved = elastic.refreshOrFail(esStringMapEntity)
+
+        assertEquals(1,resolved.map.size())
+        assertFalse { resolved.map.containsKey("Test") }
+        assertEquals("2",resolved.map.get("Foo").get())
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+    }
 }
