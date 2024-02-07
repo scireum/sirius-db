@@ -8,40 +8,41 @@
 
 package sirius.db.es.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class ESStringListMapPropertySpec extends BaseSpecification {
-
-    @Part
-    private static Elastic elastic
-
-            def "reading and writing works"() {
-        when:
-        def test = new ESStringListMapEntity()
-        test.getMap().add("Test", "1").add("Foo", "2").add("Test", "3")
+@ExtendWith(SiriusExtension::class)
+class ESStringListMapPropertyTest {
+    @Test
+    fun `reading and writing works`() {
+        val test = ESStringListMapEntity()
+        test.map.add("Test", "1").add("Foo", "2").add("Test", "3")
         elastic.update(test)
-        def resolved = elastic.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 2
-        and:
-        resolved.getMap().contains("Test", "1")
-        resolved.getMap().contains("Test", "3")
-        resolved.getMap().contains("Foo", "2")
+        var resolved = elastic.refreshOrFail(test)
 
-        when:
-        resolved.getMap().remove("Test", "1")
-        and:
+        assertEquals(2, resolved.map.size())
+        assertTrue { resolved.map.contains("Test", "1") }
+        assertTrue { resolved.map.contains("Test", "3") }
+        assertTrue { resolved.map.contains("Foo", "2") }
+
+        resolved.map.remove("Test", "1")
         elastic.update(resolved)
-        and:
         resolved = elastic.refreshOrFail(test)
-        then:
-        resolved.getMap().size() == 2
-        and:
-        !resolved.getMap().contains("Test", "1")
-        resolved.getMap().contains("Test", "3")
-        resolved.getMap().contains("Foo", "2")
+
+        assertEquals(2, resolved.map.size())
+        assertFalse { resolved.map.contains("Test", "1") }
+        assertTrue { resolved.map.contains("Test", "3") }
+        assertTrue { resolved.map.contains("Foo", "2") }
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+    }
 }
