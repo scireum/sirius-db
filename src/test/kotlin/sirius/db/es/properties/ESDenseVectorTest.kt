@@ -8,69 +8,71 @@
 
 package sirius.db.es.properties
 
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
 import sirius.db.es.NearestNeighborsSearch
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
-
 import java.time.Duration
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
-class ESDenseVectorSpec extends BaseSpecification {
-
-    @Part
-    private static Elastic elastic
-
-            def setupSpec() {
-        elastic.getReadyFuture().await(Duration.ofSeconds(60))
-    }
-
-    def "reading and writing works"() {
-        given:
-        ESDenseVectorEntity test = new ESDenseVectorEntity()
-
-        when:
-        float[] vector = new float[3]
-        vector[0] = 1f
-        vector[1] = 2f
-        vector[2] = 3f
-        test.getDenseVector().storeVector(vector)
-        and:
+@ExtendWith(SiriusExtension::class)
+class ESDenseVectorTest {
+    @Test
+    fun `reading and writing works`() {
+        var test = ESDenseVectorEntity()
+        val vector = arrayOf(1f, 2f, 3f)
+        test.denseVector.storeVector(vector)
         elastic.update(test)
-        and:
         test = elastic.refreshOrFail(test)
-        then:
-        test.getDenseVector().loadVector()[0] == 1f
-        and:
-        test.getDenseVector().loadVector()[1] == 2f
-        and:
-        test.getDenseVector().loadVector()[2] == 3f
+
+        assertEquals(1f, test.denseVector.loadVector()[0])
+        assertEquals(2f, test.denseVector.loadVector()[1])
+        assertEquals(3f, test.denseVector.loadVector()[2])
     }
 
-    def "knn search works"() {
-        given:
-        ESDenseVectorEntity test = new ESDenseVectorEntity()
-
-        when:
-        float[] vector = new float[3]
-        vector[0] = 1f
-        vector[1] = 2f
-        vector[2] = 3f
-        test.getDenseVector().storeVector(vector)
-        test.setTestString("FOO")
-        and:
+    @Test
+    fun `knn search works`() {
+        val test = ESDenseVectorEntity()
+        val vector = floatArrayOf(1f, 2f, 3f)
+        test.denseVector.storeVector(vector.toTypedArray())
+        test.testString = "FOO"
         elastic.update(test)
-        and:
-        elastic.refresh(ESDenseVectorEntity.class)
-                then:
-                elastic.select(ESDenseVectorEntity.class)
-                .knn(new NearestNeighborsSearch(ESDenseVectorEntity.DENSE_VECTOR, vector, 1, 10).filter(Elastic.FILTERS.eq(
-                        ESDenseVectorEntity.TEST_STRING,
-                        "FOO"))).first().isPresent()
-                and:
-                elastic.select(ESDenseVectorEntity.class)
-                .knn(new NearestNeighborsSearch(ESDenseVectorEntity.DENSE_VECTOR, vector, 1, 10).filter(Elastic.FILTERS.eq(
-                        ESDenseVectorEntity.TEST_STRING,
-                        "BAR"))).first().isEmpty()
+        elastic.refresh(ESDenseVectorEntity::class.java)
+
+        assertNotNull(
+                elastic.select(ESDenseVectorEntity::class.java).knn(
+                        NearestNeighborsSearch(ESDenseVectorEntity.DENSE_VECTOR, vector, 1, 10).filter(
+                                Elastic.FILTERS.eq(
+                                        ESDenseVectorEntity.TEST_STRING,
+                                        "FOO"
+                                )
+                        )
+                ).first()
+        )
+        assertTrue {
+            elastic.select(ESDenseVectorEntity::class.java).knn(
+                    NearestNeighborsSearch(ESDenseVectorEntity.DENSE_VECTOR, vector, 1, 10).filter(
+                            Elastic.FILTERS.eq(
+                                    ESDenseVectorEntity.TEST_STRING,
+                                    "BAR"
+                            )
+                    )
+            ).first().isEmpty
+        }
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+        @BeforeAll
+        @JvmStatic
+        fun setupSpec() {
+            elastic.readyFuture.await(Duration.ofSeconds(60))
+        }
+    }
 }
