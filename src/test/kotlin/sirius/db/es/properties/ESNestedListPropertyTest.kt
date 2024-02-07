@@ -17,12 +17,6 @@ import kotlin.test.assertEquals
 
 @ExtendWith(SiriusExtension::class)
 class ESNestedListPropertyTest {
-    companion object {
-        @Part
-        private lateinit var elastic: Elastic
-    }
-
-
     @Test
     fun `reading, change tracking and writing works`() {
         val test = ESNestedListEntity()
@@ -85,4 +79,8 @@ class ESNestedListPropertyTest {
         assertEquals("D", resolved.list.data()[1].value2)
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+    }
 }
