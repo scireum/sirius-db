@@ -8,40 +8,41 @@
 
 package sirius.db.es.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class ESStringListPropertySpec extends BaseSpecification {
-
-    @Part
-    private static Elastic elastic
-
-            def "reading and writing works for Elasticsearch"() {
-        when:
-        def test = new ESStringListEntity()
-        test.getList().add("Test").add("Hello").add("World")
+@ExtendWith(SiriusExtension::class)
+class ESStringListPropertyTest {
+    @Test
+    fun `reading and writing works for Elasticsearch`() {
+        val test = ESStringListEntity()
+        test.list.add("Test").add("Hello").add("World")
         elastic.update(test)
-        def resolved = elastic.refreshOrFail(test)
-        then:
-        resolved.getList().size() == 3
-        and:
-        resolved.getList().contains("Test")
-        resolved.getList().contains("Hello")
-        resolved.getList().contains("World")
+        var resolved = elastic.refreshOrFail(test)
 
-        when:
-        resolved.getList().modify().remove("World")
-        and:
+        assertEquals(3, resolved.list.size())
+        assertTrue { resolved.list.contains("Test") }
+        assertTrue { resolved.list.contains("Hello") }
+        assertTrue { resolved.list.contains("World") }
+
+        resolved.list.modify().remove("World")
         elastic.update(resolved)
-        and:
         resolved = elastic.refreshOrFail(test)
-        then:
-        resolved.getList().size() == 2
-        and:
-        resolved.getList().contains("Test")
-        resolved.getList().contains("Hello")
-        !resolved.getList().contains("World")
+
+        assertEquals(2, resolved.list.size())
+        assertTrue { resolved.list.contains("Test") }
+        assertTrue { resolved.list.contains("Hello") }
+        assertFalse { resolved.list.contains("World") }
     }
 
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
+    }
 }
