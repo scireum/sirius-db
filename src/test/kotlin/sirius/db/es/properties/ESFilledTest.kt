@@ -8,55 +8,58 @@
 
 package sirius.db.es.properties
 
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
-import sirius.kernel.BaseSpecification
+import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import kotlin.test.assertEquals
 
-class ESFilledSpec extends BaseSpecification {
-
-    @Part
-    private static Elastic elastic
-
-            def "filled/notFilled/exists query works"() {
-        setup:
-        ESFilledEntity fieldFilled = new ESFilledEntity()
-        fieldFilled.setTestField("test")
-        ESFilledEntity fieldNotFilled = new ESFilledEntity()
-        when:
+@ExtendWith(SiriusExtension::class)
+class ESFilledTest {
+    @Test
+    fun `filled, notFilled and exists query works`() {
+        val fieldFilled = ESFilledEntity()
+        fieldFilled.testField = "test"
+        val fieldNotFilled = ESFilledEntity()
         elastic.update(fieldFilled)
         elastic.update(fieldNotFilled)
-        elastic.refresh(ESFilledEntity.class)
-                then:
-                elastic.select(ESFilledEntity.class)
-                .eq(ESFilledEntity.TEST_FIELD, null)
-                .queryFirst()
-                .getIdAsString() == fieldNotFilled.getIdAsString()
-                elastic.select(ESFilledEntity.class)
-                .eq(ESFilledEntity.TEST_FIELD, null)
-                .count() == 1
+        elastic.refresh(ESFilledEntity::class.java)
 
-                elastic.select(ESFilledEntity.class)
-                .where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD))
-                .queryFirst()
-                .getIdAsString() == fieldNotFilled.getIdAsString()
-                elastic.select(ESFilledEntity.class)
-                .where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD))
-                .count() == 1
+        assertEquals(
+                fieldNotFilled.idAsString,
+                elastic.select(ESFilledEntity::class.java).eq(ESFilledEntity.TEST_FIELD, null).queryFirst().idAsString
+        )
+        assertEquals(1, elastic.select(ESFilledEntity::class.java).eq(ESFilledEntity.TEST_FIELD, null).count())
+        assertEquals(
+                fieldNotFilled.idAsString,
+                elastic.select(ESFilledEntity::class.java).where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD))
+                        .queryFirst().idAsString
+        )
+        assertEquals(
+                1,
+                elastic.select(ESFilledEntity::class.java).where(Elastic.FILTERS.notFilled(ESFilledEntity.TEST_FIELD))
+                        .count()
+        )
+        assertEquals(
+                fieldFilled.idAsString,
+                elastic.select(ESFilledEntity::class.java).ne(ESFilledEntity.TEST_FIELD, null).queryFirst().idAsString
+        )
+        assertEquals(1, elastic.select(ESFilledEntity::class.java).ne(ESFilledEntity.TEST_FIELD, null).count())
+        assertEquals(
+                fieldFilled.idAsString,
+                elastic.select(ESFilledEntity::class.java).where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
+                        .queryFirst().idAsString
+        )
+        assertEquals(
+                1,
+                elastic.select(ESFilledEntity::class.java).where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
+                        .count()
+        )
+    }
 
-                elastic.select(ESFilledEntity.class)
-                .ne(ESFilledEntity.TEST_FIELD, null)
-                .queryFirst()
-                .getIdAsString() == fieldFilled.getIdAsString()
-                elastic.select(ESFilledEntity.class)
-                .ne(ESFilledEntity.TEST_FIELD, null)
-                .count() == 1
-
-                elastic.select(ESFilledEntity.class)
-                .where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
-                .queryFirst()
-                .getIdAsString() == fieldFilled.getIdAsString()
-                elastic.select(ESFilledEntity.class)
-                .where(Elastic.FILTERS.filled(ESFilledEntity.TEST_FIELD))
-                .count() == 1
+    companion object {
+        @Part
+        private lateinit var elastic: Elastic
     }
 }
