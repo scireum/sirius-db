@@ -25,7 +25,7 @@ import kotlin.test.assertEquals
 class ElasticQueryNightlyTest {
     @Test
     fun `scroll query and large streamBlockwise works`() {
-        for (i in 1..1499) {
+        for (i in 1..1500) {
             val entity = QueryTestEntity()
             entity.value = "SCROLL"
             entity.counter = i
