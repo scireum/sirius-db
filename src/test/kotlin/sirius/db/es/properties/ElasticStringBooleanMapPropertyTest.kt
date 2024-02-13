@@ -18,7 +18,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
-class ESStringBooleanMapPropertyTest {
+class ElasticStringBooleanMapPropertyTest {
     @Test
     fun `read and write a string boolean map works`() {
         val test = ESStringBooleanMapEntity()

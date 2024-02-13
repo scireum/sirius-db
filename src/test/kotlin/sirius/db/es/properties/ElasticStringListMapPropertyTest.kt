@@ -18,27 +18,27 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
-class ESStringListPropertyTest {
+class ElasticStringListMapPropertyTest {
     @Test
-    fun `reading and writing works for Elasticsearch`() {
-        val test = ESStringListEntity()
-        test.list.add("Test").add("Hello").add("World")
+    fun `reading and writing works`() {
+        val test = ESStringListMapEntity()
+        test.map.add("Test", "1").add("Foo", "2").add("Test", "3")
         elastic.update(test)
         var resolved = elastic.refreshOrFail(test)
 
-        assertEquals(3, resolved.list.size())
-        assertTrue { resolved.list.contains("Test") }
-        assertTrue { resolved.list.contains("Hello") }
-        assertTrue { resolved.list.contains("World") }
+        assertEquals(2, resolved.map.size())
+        assertTrue { resolved.map.contains("Test", "1") }
+        assertTrue { resolved.map.contains("Test", "3") }
+        assertTrue { resolved.map.contains("Foo", "2") }
 
-        resolved.list.modify().remove("World")
+        resolved.map.remove("Test", "1")
         elastic.update(resolved)
         resolved = elastic.refreshOrFail(test)
 
-        assertEquals(2, resolved.list.size())
-        assertTrue { resolved.list.contains("Test") }
-        assertTrue { resolved.list.contains("Hello") }
-        assertFalse { resolved.list.contains("World") }
+        assertEquals(2, resolved.map.size())
+        assertFalse { resolved.map.contains("Test", "1") }
+        assertTrue { resolved.map.contains("Test", "3") }
+        assertTrue { resolved.map.contains("Foo", "2") }
     }
 
     companion object {

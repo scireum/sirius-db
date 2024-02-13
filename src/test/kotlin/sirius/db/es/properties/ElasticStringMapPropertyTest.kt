@@ -17,7 +17,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 @ExtendWith(SiriusExtension::class)
-class ESStringMapPropertyTest {
+class ElasticStringMapPropertyTest {
     @Test
     fun `reading and writing works`() {
         val esStringMapEntity = ESStringMapEntity()

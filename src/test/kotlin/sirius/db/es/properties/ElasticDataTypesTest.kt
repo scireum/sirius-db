@@ -23,7 +23,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
-class ESDataTypesTest {
+class ElasticDataTypesTest {
     @Test
     fun `reading and writing Long works`() {
         var esDataTypesEntity = ESDataTypesEntity()
