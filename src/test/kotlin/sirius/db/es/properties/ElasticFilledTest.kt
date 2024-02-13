@@ -16,7 +16,7 @@ import sirius.kernel.di.std.Part
 import kotlin.test.assertEquals
 
 @ExtendWith(SiriusExtension::class)
-class ESFilledTest {
+class ElasticFilledTest {
     @Test
     fun `filled, notFilled and exists query works`() {
         val fieldFilled = ESFilledEntity()

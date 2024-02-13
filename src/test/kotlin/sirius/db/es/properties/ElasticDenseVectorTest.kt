@@ -21,7 +21,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
-class ESDenseVectorTest {
+class ElasticDenseVectorTest {
     @Test
     fun `reading and writing works`() {
         var test = ESDenseVectorEntity()
