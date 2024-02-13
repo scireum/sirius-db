@@ -22,7 +22,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
-class ESStringLocalDateTimePropertyTest {
+class ElasticStringLocalDateTimePropertyTest {
 
     @Test
     fun `reading and writing works for Elasticsearch`() {

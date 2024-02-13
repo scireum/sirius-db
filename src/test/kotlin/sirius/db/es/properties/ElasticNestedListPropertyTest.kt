@@ -16,7 +16,7 @@ import sirius.kernel.di.std.Part
 import kotlin.test.assertEquals
 
 @ExtendWith(SiriusExtension::class)
-class ESNestedListPropertyTest {
+class ElasticNestedListPropertyTest {
     @Test
     fun `reading, change tracking and writing works`() {
         val test = ESNestedListEntity()
