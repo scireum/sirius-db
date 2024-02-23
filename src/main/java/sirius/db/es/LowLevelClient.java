@@ -365,7 +365,7 @@ public class LowLevelClient {
                             .handle();
         }
 
-        return Optional.of(indexNames.get(0));
+        return Optional.of(indexNames.getFirst());
     }
 
     /**

@@ -74,7 +74,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
     /**
      * Returns the {@link EntityDescriptor} of the referenced entity.
      *
-     * @return the referenced entity drescriptor
+     * @return the referenced entity descriptor
      */
     public EntityDescriptor getReferencedDescriptor() {
         if (referencedDescriptor == null) {
@@ -253,7 +253,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
                                                  EntityDescriptor referencedDescriptor,
                                                  BaseEntityRef.OnDelete deleteHandler) {
         // If a cascade delete handler is present and the referenced entity is not explicitly marked as
-        // "non complex" and we're within the IDE or running as a test, we force the system to compute / lookup
+        // "non-complex" and we're within the IDE or running as a test, we force the system to compute / lookup
         // the associated NLS keys which might be required to generated appropriate deletion logs or rejection
         // errors (otherwise this might be missed while developing or testing the system).
         if ((referencedDescriptor.getAnnotation(ComplexDelete.class).map(ComplexDelete::value).orElse(true)
@@ -286,7 +286,8 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
                          .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
-                         .iterateAll(other -> cascadeSetNull(taskContext, other));
+                         .streamBlockwise()
+                         .forEach(other -> cascadeSetNull(taskContext, other));
     }
 
     private void cascadeSetNull(TaskContext taskContext, BaseEntity<?> other) {
@@ -309,7 +310,8 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
                          .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
-                         .iterateAll(other -> cascadeDelete(taskContext, other));
+                         .streamBlockwise()
+                         .forEach(other -> cascadeDelete(taskContext, other));
     }
 
     private void cascadeDelete(TaskContext taskContext, BaseEntity<?> other) {

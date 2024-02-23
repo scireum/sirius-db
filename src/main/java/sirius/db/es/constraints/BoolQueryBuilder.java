@@ -187,7 +187,7 @@ public class BoolQueryBuilder {
         }
 
         if (musts == 1 && mustNots == 0 && filters == 0 && shoulds == 0 && Strings.isEmpty(name)) {
-            return must.get(0);
+            return must.getFirst();
         }
 
         ObjectNode query = Json.createObject();

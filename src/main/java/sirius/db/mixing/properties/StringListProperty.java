@@ -182,6 +182,9 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
             return ((Collection<String>) object).toArray();
         }
         String data = Strings.join((Collection<?>) object, ",");
+        if (data.isEmpty()) {
+            return null;
+        }
         if (length > 0 && data.length() > length) {
             throw Exceptions.handle()
                             .to(Mixing.LOG)
