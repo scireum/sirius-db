@@ -16,6 +16,7 @@ import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
 import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
@@ -31,6 +32,18 @@ class DataTypesTest {
         test = oma.refreshOrFail(test)
 
         assertEquals(Long.MAX_VALUE, test.longValue)
+    }
+
+    @Test
+    fun `StringProperty detects changes to empty values properly`() {
+        var test = DataTypesEntity()
+        test.stringValueNoDefault = ""
+
+        oma.update(test)
+        val afterFirstSave = oma.refreshOrFail(test)
+
+        afterFirstSave.stringValueNoDefault = ""
+        assertFalse { afterFirstSave.isAnyMappingChanged }
     }
 
     @Test

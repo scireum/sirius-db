@@ -125,6 +125,14 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     }
 
     @Override
+    protected boolean isConsideredNull(Object propertyValue) {
+        if (trim) {
+            return Strings.isEmpty(Strings.trim(propertyValue));
+        }
+        return Strings.isEmpty(propertyValue);
+    }
+
+    @Override
     public Object transformValue(Value value) {
         if (value.isFilled()) {
             return value.asString();
