@@ -41,9 +41,9 @@ class DefaultValuesTest {
     @MethodSource("provideParametersForValuesTransformed")
     fun `column default values are properly transformed`(propertyName: String, expectedDefault: String?) {
         assertEquals(
-                expectedDefault,
                 mixing.getDescriptor(SQLDefaultValuesEntity::class.java).findProperty(propertyName)
-                        ?.getColumnDefaultValue()
+                        ?.getColumnDefaultValue(),
+                expectedDefault,
         )
     }
 
