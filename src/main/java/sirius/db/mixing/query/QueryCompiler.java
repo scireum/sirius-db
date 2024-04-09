@@ -260,8 +260,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         skipWhitespace();
 
         if ((reader.current().is('!') || reader.current().is('-'))) {
-            if (reader.next().isWhitespace() ||reader.next()
-                                                     .isEndOfInput()) {
+            if (reader.next().isWhitespace() || reader.next().isEndOfInput()) {
                 // If there is a single "-" or "!" in a string like "foo - bar", we simly skip the dash
                 // as it is ignored by the indexing tokenizer anyway...
                 reader.consume();

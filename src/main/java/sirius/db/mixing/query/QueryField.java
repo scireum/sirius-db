@@ -24,8 +24,8 @@ public class QueryField {
         EQUAL, LIKE, PREFIX, CONTAINS
     }
 
-    private Mapping field;
-    private Mode mode;
+    private final Mapping field;
+    private final Mode mode;
 
     private QueryField(Mapping field, Mode mode) {
         this.field = field;
