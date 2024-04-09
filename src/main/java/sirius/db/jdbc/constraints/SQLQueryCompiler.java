@@ -19,6 +19,7 @@ import sirius.db.mixing.query.constraints.FilterFactory;
 import sirius.kernel.commons.Tuple;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides a query compiler for {@link sirius.db.jdbc.SmartQuery} and {@link SQLFilterFactory}.
@@ -42,22 +43,26 @@ public class SQLQueryCompiler extends QueryCompiler<SQLConstraint> {
 
     @Override
     protected SQLConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
+        Optional<String> caseOptimizedValue = getCaseOptimizedValue(field, value);
         switch (mode) {
             case EQUAL:
-                return factory.eq(field, value);
+                return factory.eq(field, caseOptimizedValue.orElse(value));
             case LIKE:
-                if (value.contains("*")) {
+                if (caseOptimizedValue.isEmpty() && value.contains("*")) {
                     return OMA.FILTERS.like(field).matches(value).ignoreCase().build();
                 } else {
-                    return factory.eq(field, value);
+                    return factory.eq(field, caseOptimizedValue.orElse(value));
                 }
             case PREFIX:
-                if (value.contains("*")) {
+                if (caseOptimizedValue.isEmpty() && value.contains("*")) {
                     return OMA.FILTERS.like(field).startsWith(value).ignoreCase().build();
                 } else {
-                    return OMA.FILTERS.like(field).startsWith(value).build();
+                    return OMA.FILTERS.like(field).startsWith(caseOptimizedValue.orElse(value)).build();
                 }
             default:
+                if (caseOptimizedValue.isPresent()) {
+                    return OMA.FILTERS.like(field).contains(caseOptimizedValue.get()).build();
+                }
                 return OMA.FILTERS.like(field).contains(value).ignoreCase().build();
         }
     }

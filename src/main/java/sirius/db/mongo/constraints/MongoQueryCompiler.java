@@ -58,7 +58,7 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
         }
 
         if (mode == QueryField.Mode.EQUAL) {
-            return factory.eq(field, value);
+            return factory.eq(field, getCaseOptimizedValue(field, value).orElse(value));
         } else if (mode == QueryField.Mode.PREFIX) {
             return QueryBuilder.FILTERS.prefix(field, value);
         } else {
