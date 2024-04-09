@@ -17,7 +17,8 @@ import java.lang.annotation.Target;
 /**
  * Marks a string property as auto upper-cased.
  * <p>
- * The value of this property will be upper-cased before it is written to the database.
+ * The value of this property will be upper-cased before it is written to the database. Also, it is used to optimize
+ * some system generated queries.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -11,6 +11,8 @@ package sirius.db.mixing.query;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.db.mixing.annotations.LowerCase;
+import sirius.db.mixing.annotations.UpperCase;
 import sirius.db.mixing.properties.BaseEntityRefListProperty;
 import sirius.db.mixing.properties.BaseEntityRefProperty;
 import sirius.db.mixing.properties.LocalDateProperty;
@@ -35,6 +37,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -257,8 +260,7 @@ public abstract class QueryCompiler<C extends Constraint> {
         skipWhitespace();
 
         if ((reader.current().is('!') || reader.current().is('-'))) {
-            if (reader.next().isWhitespace() ||reader.next()
-                                                     .isEndOfInput()) {
+            if (reader.next().isWhitespace() || reader.next().isEndOfInput()) {
                 // If there is a single "-" or "!" in a string like "foo - bar", we simly skip the dash
                 // as it is ignored by the indexing tokenizer anyway...
                 reader.consume();
@@ -788,5 +790,23 @@ public abstract class QueryCompiler<C extends Constraint> {
         }
 
         return null;
+    }
+
+    /**
+     * Returns the optimized value for the given field respecting the Sirius DB casing annotations.
+     *
+     * @param field the field to query for
+     * @param value the value to query
+     * @return the optimized value to use in a constraint if any, or an Optional.empty() if no optimization is possible
+     */
+    protected Optional<String> getCaseOptimizedValue(Mapping field, String value) {
+        Property property = resolveProperty(field.toString()).getSecond();
+        if (property.isAnnotationPresent(LowerCase.class)) {
+            return Optional.of(value.toLowerCase());
+        }
+        if (property.isAnnotationPresent(UpperCase.class)) {
+            return Optional.of(value.toUpperCase());
+        }
+        return Optional.empty();
     }
 }
