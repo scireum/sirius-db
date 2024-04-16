@@ -246,25 +246,28 @@ public class Mango extends SecondaryCapableMapper<MongoEntity, MongoConstraint, 
                         mongo.find(entityDescriptor.getRealm());
         return finder.where(MongoEntity.ID, id.toString())
                      .singleIn(entityDescriptor.getRelationName())
-                     .map(doc -> make(entityDescriptor, doc));
+                     .map(doc -> make(entityDescriptor, doc, false));
     }
 
     /**
      * Creates a new entity for the given descriptor based on the given doc.
      *
-     * @param descriptor the descriptor of the entity to create
-     * @param doc        the document to read the values from
-     * @param <E>        the effective type of the generated entity
+     * @param descriptor        the descriptor of the entity to create
+     * @param doc               the document to read the values from
+     * @param retainRawDocument whether to retain the raw database document in the entity
+     * @param <E>               the effective type of the generated entity
      * @return the generated entity
      */
     @SuppressWarnings("unchecked")
-    public static <E extends MongoEntity> E make(EntityDescriptor descriptor, Doc doc) {
+    public static <E extends MongoEntity> E make(EntityDescriptor descriptor, Doc doc, boolean retainRawDocument) {
         try {
             E result = (E) descriptor.make(Mango.class,
                                            null,
                                            key -> doc.getUnderlyingObject().containsKey(key) ? doc.get(key) : null);
 
-            result.setMongoDocument(doc);
+            if (retainRawDocument) {
+                result.setMongoDocument(doc);
+            }
 
             if (descriptor.isVersioned()) {
                 result.setVersion(doc.get(VERSION).asInt(0));

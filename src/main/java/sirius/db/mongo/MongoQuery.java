@@ -45,6 +45,8 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     private List<MongoFacet> facets;
 
+    private boolean retainRawDocuments = false;
+
     @Part
     private static Mango mango;
 
@@ -150,12 +152,23 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         return this;
     }
 
+    /**
+     * Marks the query to retain the raw database documents.
+     *
+     * @return the query itself for fluent method calls
+     */
+    public MongoQuery<E> retainingRawDocuments() {
+        retainRawDocuments = true;
+        return this;
+    }
+
     @Override
     protected void doIterate(Predicate<E> resultHandler) {
         if (forceFail) {
             return;
         }
-        finder.eachIn(descriptor.getRelationName(), doc -> resultHandler.test(Mango.make(descriptor, doc)));
+        finder.eachIn(descriptor.getRelationName(),
+                      doc -> resultHandler.test(Mango.make(descriptor, doc, retainRawDocuments)));
     }
 
     @Override
@@ -206,7 +219,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
             if (lastId != null) {
                 query.where(QueryBuilder.FILTERS.gt(MongoEntity.ID, lastId));
             }
-            query.allIn(relation, doc -> buffer.add(Mango.make(descriptor, doc)));
+            query.allIn(relation, doc -> buffer.add(Mango.make(descriptor, doc, retainRawDocuments)));
 
             if (!buffer.isEmpty()) {
                 lastId = buffer.getLast().getId();
@@ -273,7 +286,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
         }
 
         finder.sample(descriptor.getRelationName(), doc -> {
-            result.add(Mango.make(descriptor, doc));
+            result.add(Mango.make(descriptor, doc, retainRawDocuments));
             failOnOverflow(result);
             return true;
         });
