@@ -36,6 +36,9 @@ public abstract class MongoEntity extends BaseEntity<String> {
     @Transient
     protected int version = 0;
 
+    @Transient
+    protected Doc mongoDocument;
+
     @Part
     protected static Mongo mongo;
 
@@ -98,5 +101,19 @@ public abstract class MongoEntity extends BaseEntity<String> {
      */
     public void setVersion(int version) {
         this.version = version;
+    }
+
+    /**
+     * Returns the underlying {@linkplain Doc Mongo document}. Be aware that this is only available after loading the
+     * {@linkplain MongoEntity entity} from the database, and the document is not updated automatically.
+     *
+     * @return the underlying Mongo document
+     */
+    public Doc getMongoDocument() {
+        return mongoDocument;
+    }
+
+    protected void setMongoDocument(Doc mongoDocument) {
+        this.mongoDocument = mongoDocument;
     }
 }

@@ -263,6 +263,9 @@ public class Mango extends SecondaryCapableMapper<MongoEntity, MongoConstraint, 
             E result = (E) descriptor.make(Mango.class,
                                            null,
                                            key -> doc.getUnderlyingObject().containsKey(key) ? doc.get(key) : null);
+
+            result.setMongoDocument(doc);
+
             if (descriptor.isVersioned()) {
                 result.setVersion(doc.get(VERSION).asInt(0));
             }
