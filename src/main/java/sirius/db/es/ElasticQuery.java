@@ -1198,7 +1198,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Elastic.make(descriptor, (ObjectNode) jsonEntity);
         }
 
-        String indexName = jsonEntity.get("_index").asText();
+        String indexName = jsonEntity.get("_index").asText(null);
         return additionalDescriptors.stream()
                                     .filter(additionalDescriptor -> Strings.areEqual(elastic.determineEffectiveIndex(
                                             additionalDescriptor), indexName))
