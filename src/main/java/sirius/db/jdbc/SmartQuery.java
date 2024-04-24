@@ -73,6 +73,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     protected List<String> groupBys = Collections.emptyList();
     protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
+    protected Map<String, String> indexHints = new HashMap<>();
 
     /**
      * Creates a new query instance.
@@ -204,6 +205,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
         Watch w = Watch.start();
         Compiler compiler = compileCOUNT();
+        compiler.getIndexHints().putAll(indexHints);
         try {
             try (Connection c = db.getConnection()) {
                 return execCount(compiler, c);
@@ -493,6 +495,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.constraints.addAll(constraints);
         copy.limit = limit;
         copy.skip = skip;
+        copy.indexHints = indexHints;
 
         return copy;
     }
@@ -593,6 +596,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         protected AtomicInteger aliasCounter = new AtomicInteger(1);
         protected String defaultAlias = "e";
         protected JoinFetch rootFetch = new JoinFetch();
+        protected Map<String, String> indexHints = new HashMap<>();
 
         /**
          * Creates a new compiler for the given entity descriptor.
@@ -696,6 +700,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                  .append(other.getRelationName())
                  .append(" ")
                  .append(tableAlias)
+                 .append(indexHints.getOrDefault(other.getRelationName(), ""))
                  .append(" ON ")
                  .append(tableAlias)
                  .append(".id = ")
@@ -803,6 +808,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return preJoinQuery.toString() + joins + postJoinQuery;
         }
 
+        public Map<String, String> getIndexHints() {
+            return this.indexHints;
+        }
+
         @Override
         public String toString() {
             if (parameters.isEmpty()) {
@@ -833,6 +842,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
+        c.getIndexHints().putAll(indexHints);
         c.getSELECTBuilder().append("SELECT ");
         if (fields.isEmpty() && aggregationFields.isEmpty()) {
             c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
@@ -914,7 +924,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void from(Compiler compiler) {
-        compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getRelationName()).append(" e");
+        String relationName = descriptor.getRelationName();
+        compiler.getSELECTBuilder()
+                .append(" FROM ")
+                .append(relationName)
+                .append(" e")
+                .append(indexHints.getOrDefault(relationName, ""));
     }
 
     private void where(Compiler compiler) {
