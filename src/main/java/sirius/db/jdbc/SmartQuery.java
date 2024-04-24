@@ -158,7 +158,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      */
     private <T extends SQLEntity> void indexHint(Class<T> table, String type, String forHint, String indexName) {
         indexHints.put(mixing.getDescriptor(table).getRelationName(),
-                       " " + type + " INDEX (" + (forHint != null ? forHint + " " : "") + indexName + ")");
+                       " " + type + " INDEX " + (forHint != null ? "FOR " + forHint + " (" : "(") + indexName + ")");
     }
 
     @Override
