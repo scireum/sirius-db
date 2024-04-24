@@ -106,6 +106,61 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         return this;
     }
 
+    /**
+     * Adds a "USE INDEX" hint for a table that recommends an index to te optimizer.
+     *
+     * @param table     the table for which the index should be used.
+     * @param forHint   the clause for which the index should be used. Can be null, "JOIN", "ORDER BY" or "GROUP BY".
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of entities being queried.
+     * @return the query itself for fluent method calls.
+     */
+    public <T extends SQLEntity> SmartQuery<E> useIndex(Class<T> table, String forHint, String indexName) {
+        indexHint(table, "USE", forHint, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a "FORCE INDEX" hint for a table that forces an index to te optimizer.
+     *
+     * @param table     the table for wh index to use.
+     *                  * @param <T>       the type of entiich the index should be used.
+     * @param indexName the name of theties being queried.
+     * @return the query itself for fluent method calls.
+     */
+    public <T extends SQLEntity> SmartQuery<E> forceIndex(Class<T> table, String indexName) {
+        indexHint(table, "FORCE", null, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a "IGNORE INDEX" hint for a table that makes the optimizer to not consider the given index.
+     *
+     * @param table     the table for which the index should be used.
+     * @param forHint   the clause for which the index should be used. Can be null, "JOIN", "ORDER BY" or "GROUP BY".
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of entities being queried.
+     * @return the query itself for fluent method calls
+     */
+    public <T extends SQLEntity> SmartQuery<E> ignoreIndex(Class<T> table, String forHint, String indexName) {
+        indexHint(table, "IGNORE", forHint, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a hint for a table that is used by the optimizer.
+     *
+     * @param table     the table for which the index should be used.
+     * @param type      the type of the hint. Can be "USE", "FORCE" or "IGNORE".
+     * @param forHint   the clause for which the index should be used. Can be null, "JOIN", "ORDER BY" or "GROUP BY".
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of entities being queried.
+     */
+    private <T extends SQLEntity> void indexHint(Class<T> table, String type, String forHint, String indexName) {
+        indexHints.put(mixing.getDescriptor(table).getRelationName(),
+                       type + " INDEX " + (forHint != null ? forHint + " " : "") + indexName);
+    }
+
     @Override
     public FilterFactory<SQLConstraint> filters() {
         return oma.filters();
