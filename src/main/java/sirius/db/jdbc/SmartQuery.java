@@ -125,19 +125,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Adds a "USE INDEX" hint for a table that recommends an index to the optimizer.
-     *
-     * @param table     the table for which the index should be used.
-     * @param forHint   the {@link IndexForHint} for which the index should be used.
-     * @param indexName the name of the index to use.
-     * @param <T>       the type of the entities being queried.
-     * @return the query itself for fluent method calls.
-     */
-    public <T extends SQLEntity> SmartQuery<E> useIndex(Class<T> table, String indexName) {
-        return useIndex(table, null, indexName);
-    }
-
-    /**
      * Adds a "USE INDEX" hint for a table that recommends an index to te optimizer.
      *
      * @param table     the table for which the index should be used.
@@ -162,18 +149,6 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     public <T extends SQLEntity> SmartQuery<E> forceIndex(Class<T> table, String indexName) {
         indexHint(table, "FORCE", null, indexName);
         return this;
-    }
-
-    /**
-     * Adds a "IGNORE INDEX" hint for a table that makes the optimizer to not consider the given index.
-     *
-     * @param table     the table for which the index should be used.
-     * @param indexName the name of the index to use.
-     * @param <T>       the type of the entities being queried.
-     * @return the query itself for fluent method calls
-     */
-    public <T extends SQLEntity> SmartQuery<E> ignoreIndex(Class<T> table, String indexName) {
-        return ignoreIndex(table, null, indexName);
     }
 
     /**
