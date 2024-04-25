@@ -79,7 +79,18 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * Indicates the "FOR" hint for the optimizer, when used with "USE INDEX" and "IGNORE INDEX".
      */
     public enum IndexForHint {
-        JOIN, ORDER_BY, GROUP_BY
+        /**
+         * Indicates to the optimizer that the index should be used, when the table is joined with another table.
+         */
+        JOIN,
+        /**
+         * Indicates to the optimizer that the index should be used, when the table is ordered.
+         */
+        ORDER_BY,
+        /**
+         * Indicates to the optimizer that the index should be used, when the results are grouped.
+         */
+        GROUP_BY
     }
 
     /**
@@ -114,9 +125,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Adds a "USE INDEX" hint for a table that recommends an index to te optimizer.
+     * Adds a "USE INDEX" hint for a table that recommends an index to the optimizer.
      *
      * @param table     the table for which the index should be used.
+     * @param forHint   the {@link IndexForHint} for which the index should be used.
      * @param indexName the name of the index to use.
      * @param <T>       the type of the entities being queried.
      * @return the query itself for fluent method calls.
@@ -168,7 +180,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * Adds a "IGNORE INDEX" hint for a table that makes the optimizer to not consider the given index.
      *
      * @param table     the table for which the index should be used.
-     * @param forHint   the action for which the index should be used. Can be null.
+     * @param forHint   the {@link IndexForHint} for which the index should be used. Can be null.
      * @param indexName the name of the index to use.
      * @param <T>       the type of the entities being queried.
      * @return the query itself for fluent method calls
@@ -183,7 +195,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      *
      * @param table     the table for which the index should be used.
      * @param type      the type of the hint. Can be "USE", "FORCE" or "IGNORE".
-     * @param forHint   the clause for which the index should be used. Can be null.
+     * @param forHint   the {@link IndexForHint} for which the index should be used. Can be null.
      * @param indexName the name of the index to use.
      * @param <T>       the type of entities being queried.
      */
