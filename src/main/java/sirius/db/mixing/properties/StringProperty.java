@@ -23,6 +23,7 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Mixing;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
+import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.annotations.LowerCase;
 import sirius.db.mixing.annotations.Trim;
@@ -122,6 +123,25 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
             }
         }
         super.setValueToField(value, target);
+    }
+
+    @Override
+    protected boolean isConsideredNull(Object propertyValue) {
+        if (trim) {
+            return Strings.isEmpty(Strings.trim(propertyValue));
+        }
+        return Strings.isEmpty(propertyValue);
+    }
+
+    @Override
+    protected void determineDefaultValue() {
+        DefaultValue defaultValueAnnotation = field.getAnnotation(DefaultValue.class);
+        if (defaultValueAnnotation != null) {
+            this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
+        } else {
+            Object initialValue = getValue(getDescriptor().getReferenceInstance());
+            this.defaultValue = Value.of(initialValue);
+        }
     }
 
     @Override

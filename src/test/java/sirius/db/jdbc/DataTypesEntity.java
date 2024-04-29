@@ -12,6 +12,7 @@ import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Numeric;
+import sirius.db.mixing.annotations.Trim;
 import sirius.kernel.commons.Amount;
 
 import java.time.LocalDate;
@@ -35,6 +36,11 @@ public class DataTypesEntity extends SQLEntity {
     @Length(255)
     @NullAllowed
     private String stringValue;
+
+    @Trim
+    @Length(255)
+    @NullAllowed
+    private String stringValueNoDefault;
 
     @DefaultValue("300")
     @NullAllowed
@@ -85,6 +91,14 @@ public class DataTypesEntity extends SQLEntity {
 
     public void setStringValue(String stringValue) {
         this.stringValue = stringValue;
+    }
+
+    public String getStringValueNoDefault() {
+        return stringValueNoDefault;
+    }
+
+    public void setStringValueNoDefault(String stringValueNoDefault) {
+        this.stringValueNoDefault = stringValueNoDefault;
     }
 
     public Amount getAmountValue() {
