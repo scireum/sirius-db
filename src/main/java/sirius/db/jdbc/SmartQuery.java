@@ -125,7 +125,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Adds a "USE INDEX" hint for a table that recommends an index to te optimizer.
+     * Adds a "USE INDEX" hint for a table that recommends an index to the optimizer.
      *
      * @param table     the table for which the index should be used.
      * @param forHint   the action for which the index should be used. Can be null.
@@ -139,7 +139,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     /**
-     * Adds a "FORCE INDEX" hint for a table that forces an index to te optimizer.
+     * Adds a "FORCE INDEX" hint for a table that forces an index to the optimizer.
      *
      * @param table     the table for wh index to use.
      * @param indexName the name of the index to use.
