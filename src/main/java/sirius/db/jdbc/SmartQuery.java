@@ -73,6 +73,25 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     protected List<String> groupBys = Collections.emptyList();
     protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
+    protected Map<String, String> indexHints = new HashMap<>();
+
+    /**
+     * Indicates the "FOR" hint for the optimizer, when used with "USE INDEX" and "IGNORE INDEX".
+     */
+    public enum IndexForHint {
+        /**
+         * Indicates to the optimizer that the index should be used, when the table is joined with another table.
+         */
+        JOIN,
+        /**
+         * Indicates to the optimizer that the index should be used, when the table is ordered.
+         */
+        ORDER_BY,
+        /**
+         * Indicates to the optimizer that the index should be used, when the results are grouped.
+         */
+        GROUP_BY
+    }
 
     /**
      * Creates a new query instance.
@@ -103,6 +122,67 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
 
         return this;
+    }
+
+    /**
+     * Adds a "USE INDEX" hint for a table that recommends an index to the optimizer.
+     *
+     * @param table     the table for which the index should be used.
+     * @param forHint   the action for which the index should be used. Can be null.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of the entities being queried.
+     * @return the query itself for fluent method calls.
+     */
+    public <T extends SQLEntity> SmartQuery<E> useIndex(Class<T> table, IndexForHint forHint, String indexName) {
+        indexHint(table, "USE", forHint, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a "FORCE INDEX" hint for a table that forces an index to the optimizer.
+     *
+     * @param table     the table for wh index to use.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of the entities the index should be used.
+     * @return the query itself for fluent method calls.
+     */
+    public <T extends SQLEntity> SmartQuery<E> forceIndex(Class<T> table, String indexName) {
+        indexHint(table, "FORCE", null, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a "IGNORE INDEX" hint for a table that makes the optimizer to not consider the given index.
+     *
+     * @param table     the table for which the index should be used.
+     * @param forHint   the {@link IndexForHint} for which the index should be used. Can be null.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of the entities being queried.
+     * @return the query itself for fluent method calls
+     */
+    public <T extends SQLEntity> SmartQuery<E> ignoreIndex(Class<T> table, IndexForHint forHint, String indexName) {
+        indexHint(table, "IGNORE", forHint, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a hint for a table that is used by the optimizer.
+     *
+     * @param table     the table for which the index should be used.
+     * @param type      the type of the hint. Can be "USE", "FORCE" or "IGNORE".
+     * @param forHint   the {@link IndexForHint} for which the index should be used. Can be null.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of entities being queried.
+     */
+    private <T extends SQLEntity> void indexHint(Class<T> table, String type, IndexForHint forHint, String indexName) {
+        StringBuilder indexHint = new StringBuilder();
+        indexHint.append(" ").append(type).append(" INDEX");
+        if (forHint != null) {
+            indexHint.append(" FOR ");
+            indexHint.append(forHint.name().replace("_", " "));
+        }
+        indexHint.append(" (").append(indexName).append(")");
+        indexHints.put(mixing.getDescriptor(table).getRelationName(), indexHint.toString());
     }
 
     @Override
@@ -204,6 +284,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
         Watch w = Watch.start();
         Compiler compiler = compileCOUNT();
+        compiler.getIndexHints().putAll(indexHints);
         try {
             try (Connection c = db.getConnection()) {
                 return execCount(compiler, c);
@@ -493,6 +574,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.constraints.addAll(constraints);
         copy.limit = limit;
         copy.skip = skip;
+        copy.indexHints = indexHints;
 
         return copy;
     }
@@ -593,6 +675,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         protected AtomicInteger aliasCounter = new AtomicInteger(1);
         protected String defaultAlias = "e";
         protected JoinFetch rootFetch = new JoinFetch();
+        protected Map<String, String> indexHints = new HashMap<>();
 
         /**
          * Creates a new compiler for the given entity descriptor.
@@ -696,6 +779,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                  .append(other.getRelationName())
                  .append(" ")
                  .append(tableAlias)
+                 .append(indexHints.getOrDefault(other.getRelationName(), ""))
                  .append(" ON ")
                  .append(tableAlias)
                  .append(".id = ")
@@ -803,6 +887,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return preJoinQuery.toString() + joins + postJoinQuery;
         }
 
+        public Map<String, String> getIndexHints() {
+            return this.indexHints;
+        }
+
         @Override
         public String toString() {
             if (parameters.isEmpty()) {
@@ -833,6 +921,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
+        c.getIndexHints().putAll(indexHints);
         c.getSELECTBuilder().append("SELECT ");
         if (fields.isEmpty() && aggregationFields.isEmpty()) {
             c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
@@ -914,7 +1003,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void from(Compiler compiler) {
-        compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getRelationName()).append(" e");
+        String relationName = descriptor.getRelationName();
+        compiler.getSELECTBuilder()
+                .append(" FROM ")
+                .append(relationName)
+                .append(" e")
+                .append(indexHints.getOrDefault(relationName, ""));
     }
 
     private void where(Compiler compiler) {
