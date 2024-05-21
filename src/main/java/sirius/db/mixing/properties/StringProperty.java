@@ -26,7 +26,7 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.annotations.LowerCase;
-import sirius.db.mixing.annotations.RemoveWhiteSpaces;
+import sirius.db.mixing.annotations.RemoveWhitespace;
 import sirius.db.mixing.annotations.Trim;
 import sirius.db.mixing.annotations.UpperCase;
 import sirius.kernel.commons.StringCleanup;
@@ -78,7 +78,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         this.lowerCase = field.isAnnotationPresent(LowerCase.class);
         this.upperCase = field.isAnnotationPresent(UpperCase.class);
         this.lob = field.isAnnotationPresent(Lob.class);
-        this.removeWhiteSpaces = field.isAnnotationPresent(RemoveWhiteSpaces.class);
+        this.removeWhiteSpaces = field.isAnnotationPresent(RemoveWhitespace.class);
     }
 
     @Override

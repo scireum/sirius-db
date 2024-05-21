@@ -22,5 +22,5 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface RemoveWhiteSpaces {
+public @interface RemoveWhitespace {
 }

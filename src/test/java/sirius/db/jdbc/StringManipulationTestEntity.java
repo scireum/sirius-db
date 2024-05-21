@@ -12,7 +12,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.LowerCase;
 import sirius.db.mixing.annotations.NullAllowed;
-import sirius.db.mixing.annotations.RemoveWhiteSpaces;
+import sirius.db.mixing.annotations.RemoveWhitespace;
 import sirius.db.mixing.annotations.Trim;
 import sirius.db.mixing.annotations.UpperCase;
 
@@ -53,7 +53,7 @@ public class StringManipulationTestEntity extends SQLEntity {
     public static final Mapping REMOVE_WHITE_SPACES = Mapping.named("removeWhiteSpaces");
     @Length(100)
     @NullAllowed
-    @RemoveWhiteSpaces
+    @RemoveWhitespace
     private String removeWhiteSpaces;
 
     public String getTrimmed() {
