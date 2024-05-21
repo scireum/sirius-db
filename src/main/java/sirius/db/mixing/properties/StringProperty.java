@@ -177,7 +177,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (value != null && (trim || removeWhiteSpaces || lowerCase || upperCase)) {
+        if (value != null && hasAnnotationModifications()) {
             value = applyAnnotationModifications(entity, value);
             setValue(entity, value);
         }
@@ -193,6 +193,10 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
                             .set("maxLength", length)
                             .handle();
         }
+    }
+
+    private boolean hasAnnotationModifications() {
+        return trim || removeWhiteSpaces || lowerCase || upperCase;
     }
 
     @Nullable
