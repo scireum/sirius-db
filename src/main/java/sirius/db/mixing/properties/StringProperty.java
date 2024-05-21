@@ -26,8 +26,10 @@ import sirius.db.mixing.PropertyFactory;
 import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mixing.annotations.Lob;
 import sirius.db.mixing.annotations.LowerCase;
+import sirius.db.mixing.annotations.RemoveWhiteSpaces;
 import sirius.db.mixing.annotations.Trim;
 import sirius.db.mixing.annotations.UpperCase;
+import sirius.kernel.commons.StringCleanup;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.di.std.Register;
@@ -48,6 +50,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     private final boolean lowerCase;
     private final boolean upperCase;
     private final boolean lob;
+    private final boolean removeWhiteSpaces;
 
     /**
      * Factory for generating properties based on their field type
@@ -75,6 +78,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
         this.lowerCase = field.isAnnotationPresent(LowerCase.class);
         this.upperCase = field.isAnnotationPresent(UpperCase.class);
         this.lob = field.isAnnotationPresent(Lob.class);
+        this.removeWhiteSpaces = field.isAnnotationPresent(RemoveWhiteSpaces.class);
     }
 
     @Override
@@ -122,6 +126,14 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
                 value = null;
             }
         }
+        if (removeWhiteSpaces) {
+            if (value != null) {
+                value = StringCleanup.removeWhitespace(value.toString());
+            }
+            if ("".equals(value)) {
+                value = null;
+            }
+        }
         super.setValueToField(value, target);
     }
 
@@ -129,6 +141,13 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     protected boolean isConsideredNull(Object propertyValue) {
         if (trim) {
             return Strings.isEmpty(Strings.trim(propertyValue));
+        }
+        if (removeWhiteSpaces) {
+            if (propertyValue == null) {
+                return true;
+            } else {
+                return Strings.isEmpty(StringCleanup.removeWhitespace(propertyValue.toString()));
+            }
         }
         return Strings.isEmpty(propertyValue);
     }
@@ -158,7 +177,7 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
     @Override
     public void onBeforeSaveChecks(Object entity) {
         String value = (String) getValue(entity);
-        if (value != null && (trim || lowerCase || upperCase)) {
+        if (value != null && (trim || removeWhiteSpaces || lowerCase || upperCase)) {
             value = applyAnnotationModifications(entity, value);
             setValue(entity, value);
         }
@@ -182,6 +201,9 @@ public class StringProperty extends Property implements SQLPropertyInfo, ESPrope
 
         if (trim) {
             modifiedValue = modifiedValue.trim();
+        }
+        if (removeWhiteSpaces) {
+            modifiedValue = StringCleanup.removeWhitespace(modifiedValue);
         }
         if (modifiedValue.isEmpty()) {
             modifiedValue = null;
