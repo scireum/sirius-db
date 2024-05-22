@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 /**
  * Specifies the numeric precision of a NUMBER column.
  * <p>
- * If a column must sore values with 12 digits and 3 decimal places, the precision would by <tt>15</tt> and scale
+ * If a column must store values with 12 digits and 3 decimal places, the precision would be <tt>15</tt> and scale
  * <tt>3</tt>.
  */
 @Documented

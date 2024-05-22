@@ -31,7 +31,7 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
     private static final Mapping FULLTEXT_MAPPING = Mapping.named("$text");
 
     /**
-     * Represents an artificial field which generates a search using a <tt>$text</tt> filter. Therefore
+     * Represents an artificial field which generates a search using a <tt>$text</tt> filter. Therefore,
      * an appropriate <b>text</b> index has to be present.
      */
     public static final QueryField FULLTEXT = QueryField.contains(FULLTEXT_MAPPING);
@@ -58,7 +58,7 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
         }
 
         if (mode == QueryField.Mode.EQUAL) {
-            return factory.eq(field, value);
+            return factory.eq(field, getCaseOptimizedValue(field, value).orElse(value));
         } else if (mode == QueryField.Mode.PREFIX) {
             return QueryBuilder.FILTERS.prefix(field, value);
         } else {

@@ -114,7 +114,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
      * Adds a limit to the query.
      *
      * @param skip  the number of items to skip (used for pagination).
-     * @param limit the max. number of items to return (exluding those who have been skipped).
+     * @param limit the max. number of items to return (excluding those who have been skipped).
      * @return the builder itself for fluent method calls
      */
     public MongoQuery<E> limit(int skip, int limit) {
@@ -209,7 +209,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
             query.allIn(relation, doc -> buffer.add(Mango.make(descriptor, doc)));
 
             if (!buffer.isEmpty()) {
-                lastId = buffer.get(buffer.size() - 1).getId();
+                lastId = buffer.getLast().getId();
             }
 
             return buffer.iterator();
@@ -282,7 +282,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     /**
-     * Aggregates the documents in the result of the given query with an sum operator.
+     * Aggregates the documents in the result of the given query with a sum operator.
      * <p>
      * Note that limits are ignored for this query.
      *
@@ -294,7 +294,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
     }
 
     /**
-     * Aggregates the documents in the result of the given query with an an average operator.
+     * Aggregates the documents in the result of the given query with an average operator.
      * <p>
      * Note that limits are ignored for this query.
      *
@@ -331,7 +331,7 @@ public class MongoQuery<E extends MongoEntity> extends Query<MongoQuery<E>, E, M
 
     @Override
     public void delete(@Nullable Consumer<E> entityCallback) {
-        iterateAll(entity -> {
+        streamBlockwise().forEach(entity -> {
             if (entityCallback != null) {
                 entityCallback.accept(entity);
             }

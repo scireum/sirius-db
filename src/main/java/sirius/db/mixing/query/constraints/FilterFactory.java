@@ -392,7 +392,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
         if (effectiveConstraints.size() == 1) {
-            return effectiveConstraints.get(0);
+            return effectiveConstraints.getFirst();
         }
 
         return effectiveAnd(effectiveConstraints);
@@ -432,7 +432,7 @@ public abstract class FilterFactory<C extends Constraint> {
             return null;
         }
         if (effectiveConstraints.size() == 1) {
-            return effectiveConstraints.get(0);
+            return effectiveConstraints.getFirst();
         }
 
         return effectiveOr(effectiveConstraints);

@@ -77,7 +77,7 @@ public class SuggestionResult {
             return Collections.emptyList();
         }
 
-        return textPartSuggestions.get(0).getTermSuggestions();
+        return textPartSuggestions.getFirst().getTermSuggestions();
     }
 
     /**

@@ -24,11 +24,9 @@ import sirius.kernel.commons.Limit;
 import sirius.kernel.commons.Monoflop;
 import sirius.kernel.commons.PullBasedSpliterator;
 import sirius.kernel.commons.Strings;
-import sirius.kernel.commons.Timeout;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
-import sirius.kernel.di.std.ConfigValue;
 import sirius.kernel.di.std.Part;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
@@ -39,7 +37,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -63,9 +59,6 @@ import java.util.stream.StreamSupport;
  * @param <E> the generic type of entities being queried
  */
 public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQLConstraint> {
-
-    @ConfigValue("jdbc.queryIterateTimeout")
-    private static Duration queryIterateTimeout;
 
     @Part
     private static OMA oma;
@@ -80,6 +73,25 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     protected List<String> groupBys = Collections.emptyList();
     protected List<SQLConstraint> constraints = new ArrayList<>();
     protected Database db;
+    protected Map<String, String> indexHints = new HashMap<>();
+
+    /**
+     * Indicates the "FOR" hint for the optimizer, when used with "USE INDEX" and "IGNORE INDEX".
+     */
+    public enum IndexForHint {
+        /**
+         * Indicates to the optimizer that the index should be used, when the table is joined with another table.
+         */
+        JOIN,
+        /**
+         * Indicates to the optimizer that the index should be used, when the table is ordered.
+         */
+        ORDER_BY,
+        /**
+         * Indicates to the optimizer that the index should be used, when the results are grouped.
+         */
+        GROUP_BY
+    }
 
     /**
      * Creates a new query instance.
@@ -110,6 +122,67 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
 
         return this;
+    }
+
+    /**
+     * Adds a "USE INDEX" hint for a table that recommends an index to the optimizer.
+     *
+     * @param table     the table for which the index should be used.
+     * @param forHint   the action for which the index should be used. Can be null.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of the entities being queried.
+     * @return the query itself for fluent method calls.
+     */
+    public <T extends SQLEntity> SmartQuery<E> useIndex(Class<T> table, IndexForHint forHint, String indexName) {
+        indexHint(table, "USE", forHint, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a "FORCE INDEX" hint for a table that forces an index to the optimizer.
+     *
+     * @param table     the table for wh index to use.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of the entities the index should be used.
+     * @return the query itself for fluent method calls.
+     */
+    public <T extends SQLEntity> SmartQuery<E> forceIndex(Class<T> table, String indexName) {
+        indexHint(table, "FORCE", null, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a "IGNORE INDEX" hint for a table that makes the optimizer to not consider the given index.
+     *
+     * @param table     the table for which the index should be used.
+     * @param forHint   the {@link IndexForHint} for which the index should be used. Can be null.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of the entities being queried.
+     * @return the query itself for fluent method calls
+     */
+    public <T extends SQLEntity> SmartQuery<E> ignoreIndex(Class<T> table, IndexForHint forHint, String indexName) {
+        indexHint(table, "IGNORE", forHint, indexName);
+        return this;
+    }
+
+    /**
+     * Adds a hint for a table that is used by the optimizer.
+     *
+     * @param table     the table for which the index should be used.
+     * @param type      the type of the hint. Can be "USE", "FORCE" or "IGNORE".
+     * @param forHint   the {@link IndexForHint} for which the index should be used. Can be null.
+     * @param indexName the name of the index to use.
+     * @param <T>       the type of entities being queried.
+     */
+    private <T extends SQLEntity> void indexHint(Class<T> table, String type, IndexForHint forHint, String indexName) {
+        StringBuilder indexHint = new StringBuilder();
+        indexHint.append(" ").append(type).append(" INDEX");
+        if (forHint != null) {
+            indexHint.append(" FOR ");
+            indexHint.append(forHint.name().replace("_", " "));
+        }
+        indexHint.append(" (").append(indexName).append(")");
+        indexHints.put(mixing.getDescriptor(table).getRelationName(), indexHint.toString());
     }
 
     @Override
@@ -211,6 +284,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         }
         Watch w = Watch.start();
         Compiler compiler = compileCOUNT();
+        compiler.getIndexHints().putAll(indexHints);
         try {
             try (Connection c = db.getConnection()) {
                 return execCount(compiler, c);
@@ -254,41 +328,15 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         return copy().fields(SQLEntity.ID).first().isPresent();
     }
 
-    /**
-     * Deletes all matches using the {@link OMA#delete(BaseEntity)}.
-     * <p>
-     * Note that for very large result sets, we perform a blockwise strategy. We therefore iterate over
-     * the results until the timeout ({@link #queryIterateTimeout} is reached). In this case, we abort the
-     * iteration, execute the query again and continue deleting until all entities are gone.
-     *
-     * @param entityCallback a callback to be invoked for each entity to be deleted
-     */
     @Override
     public void delete(@Nullable Consumer<E> entityCallback) {
-        if (forceFail) {
-            return;
-        }
-        AtomicBoolean continueDeleting = new AtomicBoolean(true);
-        TaskContext taskContext = TaskContext.get();
-        while (continueDeleting.get() && taskContext.isActive()) {
-            continueDeleting.set(false);
-            Timeout timeout = new Timeout(queryIterateTimeout);
-            iterate(entity -> {
-                if (entityCallback != null) {
-                    entityCallback.accept(entity);
-                }
-                oma.delete(entity);
-                if (timeout.isReached()) {
-                    // Timeout has been reached, set the flag so that another delete query is attempted....
-                    continueDeleting.set(true);
-                    // and abort processing the results of this query...
-                    return false;
-                } else {
-                    // Timeout not yet reached, continue deleting...
-                    return true;
-                }
-            });
-        }
+        streamBlockwise().forEach(entity -> {
+            if (entityCallback != null) {
+                entityCallback.accept(entity);
+            }
+
+            oma.delete(entity);
+        });
     }
 
     @Override
@@ -322,7 +370,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
             List<E> block = queryNextBlock();
             if (!block.isEmpty()) {
-                lastValue = block.get(block.size() - 1);
+                lastValue = block.getLast();
                 orderByValuesOfLastEntityDuringFetch = extractOrderByValues(lastValue);
             }
             return block.iterator();
@@ -427,7 +475,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     /**
      * Creates a sql constraint for sorting purposes.
      * </p>
-     * In MySQL/MariaDB, NULL is considered as a 'missing, unkonwn value'. Any arithmetic comparison with NULL
+     * In MySQL/MariaDB, NULL is considered as a 'missing, unknown value'. Any arithmetic comparison with NULL
      * returns false e.g. NULL != 'any' returns false.
      * Therefore, comparisons with NULL values must be treated specially.
      *
@@ -526,6 +574,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         copy.constraints.addAll(constraints);
         copy.limit = limit;
         copy.skip = skip;
+        copy.indexHints = indexHints;
 
         return copy;
     }
@@ -626,6 +675,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
         protected AtomicInteger aliasCounter = new AtomicInteger(1);
         protected String defaultAlias = "e";
         protected JoinFetch rootFetch = new JoinFetch();
+        protected Map<String, String> indexHints = new HashMap<>();
 
         /**
          * Creates a new compiler for the given entity descriptor.
@@ -729,6 +779,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                  .append(other.getRelationName())
                  .append(" ")
                  .append(tableAlias)
+                 .append(indexHints.getOrDefault(other.getRelationName(), ""))
                  .append(" ON ")
                  .append(tableAlias)
                  .append(".id = ")
@@ -760,7 +811,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             List<Mapping> fetchPath = new ArrayList<>();
             Mapping parent = field.getParent();
             while (parent != null) {
-                fetchPath.add(0, parent);
+                fetchPath.addFirst(parent);
                 parent = parent.getParent();
             }
             JoinFetch jf = rootFetch;
@@ -836,6 +887,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             return preJoinQuery.toString() + joins + postJoinQuery;
         }
 
+        public Map<String, String> getIndexHints() {
+            return this.indexHints;
+        }
+
         @Override
         public String toString() {
             if (parameters.isEmpty()) {
@@ -866,6 +921,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
 
     private Compiler select() {
         Compiler c = new Compiler(descriptor);
+        c.getIndexHints().putAll(indexHints);
         c.getSELECTBuilder().append("SELECT ");
         if (fields.isEmpty() && aggregationFields.isEmpty()) {
             c.getSELECTBuilder().append(" ").append(c.defaultAlias).append(".*");
@@ -947,7 +1003,12 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
     }
 
     private void from(Compiler compiler) {
-        compiler.getSELECTBuilder().append(" FROM ").append(descriptor.getRelationName()).append(" e");
+        String relationName = descriptor.getRelationName();
+        compiler.getSELECTBuilder()
+                .append(" FROM ")
+                .append(relationName)
+                .append(" e")
+                .append(indexHints.getOrDefault(relationName, ""));
     }
 
     private void where(Compiler compiler) {

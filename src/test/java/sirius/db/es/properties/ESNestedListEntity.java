@@ -17,9 +17,9 @@ public class ESNestedListEntity extends ElasticEntity {
 
     public static class NestedEntity extends Nested {
 
-        private static final Mapping VALUE1 = Mapping.named("value1");
+        public static final Mapping VALUE1 = Mapping.named("value1");
         private String value1;
-        private static final Mapping VALUE2 = Mapping.named("value2");
+        public static final Mapping VALUE2 = Mapping.named("value2");
         private String value2;
 
         public String getValue1() {

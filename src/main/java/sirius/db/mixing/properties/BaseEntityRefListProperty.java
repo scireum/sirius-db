@@ -180,7 +180,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     /**
      * Returns the {@link EntityDescriptor} of the referenced entity.
      *
-     * @return the referenced entity drescriptor
+     * @return the referenced entity descriptor
      */
     public EntityDescriptor getReferencedDescriptor() {
         if (referencedDescriptor == null) {
@@ -241,7 +241,8 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             referenceInstance.getMapper()
                              .select(referenceInstance.getClass())
                              .eq(nameAsMapping, idBeingDeleted)
-                             .iterateAll(other -> cascadeSetNull(taskContext, idBeingDeleted, other));
+                             .streamBlockwise()
+                             .forEach(other -> cascadeSetNull(taskContext, idBeingDeleted, other));
         }
     }
 
@@ -264,7 +265,8 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
                          .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
-                         .iterateAll(other -> cascadeDelete(taskContext, other));
+                         .streamBlockwise()
+                         .forEach(other -> cascadeDelete(taskContext, other));
     }
 
     private void cascadeDelete(TaskContext taskContext, BaseEntity<?> other) {

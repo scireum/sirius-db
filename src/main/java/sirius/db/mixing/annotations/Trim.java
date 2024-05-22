@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 /**
  * Marks a string property as auto trimmed.
  * <p>
- * The value of this property will be trimmed bevore it is written to the database.
+ * The value of this property will be trimmed before it is written to the database.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
