@@ -35,4 +35,10 @@ class PatternSplitProcessorTest : TokenProcessorTest() {
             "7C"
         )
     }
+
+    @Test
+    fun `tokenizing via hard boundary splitter preset`() {
+        // Text including a plus or ampersand not surrounded by whitespace should not be split
+        assertExactTokenizing("A+B&C", PatternSplitProcessor.createHardBoundarySplitter(), "A+B&C")
+    }
 }
