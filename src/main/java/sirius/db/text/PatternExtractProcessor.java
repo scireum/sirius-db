@@ -20,6 +20,10 @@ import java.util.stream.Stream;
 public class PatternExtractProcessor extends ChainableTokenProcessor {
 
     private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}[^@]++)@(.+)$");
+    /**
+     * Matches numbered placeholders like {0}, {1}, {2} etc.
+     */
+    private static final Pattern NUMBERED_PLACEHOLDER = Pattern.compile("\\{(\\d+)}");
 
     private final Pattern pattern;
     private final List<List<ReplacementPattern>> replacements;
@@ -61,14 +65,14 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
 
     private List<ReplacementPattern> compileReplacementPattern(String input) {
         List<ReplacementPattern> result = new ArrayList<>();
-        Matcher matcher = Pattern.compile("\\{(\\d+)}").matcher(input);
+        Matcher numberedPlaceholderMatcher = NUMBERED_PLACEHOLDER.matcher(input);
         int start = 0;
-        while (matcher.find(start)) {
-            if (matcher.start() > start) {
-                result.add(new ReplacementPattern(input.substring(start, matcher.start())));
+        while (numberedPlaceholderMatcher.find(start)) {
+            if (numberedPlaceholderMatcher.start() > start) {
+                result.add(new ReplacementPattern(input.substring(start, numberedPlaceholderMatcher.start())));
             }
-            result.add(new ReplacementPattern(Integer.parseInt(matcher.group(1))));
-            start = matcher.end();
+            result.add(new ReplacementPattern(Integer.parseInt(numberedPlaceholderMatcher.group(1))));
+            start = numberedPlaceholderMatcher.end();
         }
 
         if (start < input.length()) {
