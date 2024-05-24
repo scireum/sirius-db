@@ -21,29 +21,8 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
 
     private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}[^@]++)@(.+)$");
 
-    private static class ReplacementPattern {
-        int groupIndex = -1;
-        String staticString;
-
-        ReplacementPattern(String staticString) {
-            this.staticString = staticString;
-        }
-
-        ReplacementPattern(int groupIndex) {
-            this.groupIndex = groupIndex;
-        }
-
-        void execute(Matcher matcher, StringBuilder output) {
-            if (groupIndex > -1) {
-                output.append(matcher.group(groupIndex));
-            } else {
-                output.append(staticString);
-            }
-        }
-    }
-
-    private Pattern pattern;
-    private List<List<ReplacementPattern>> replacements;
+    private final Pattern pattern;
+    private final List<List<ReplacementPattern>> replacements;
 
     /**
      * Creates a new processor.
@@ -121,6 +100,27 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
 
         if (start == 0) {
             emit(value);
+        }
+    }
+
+    private static class ReplacementPattern {
+        int groupIndex = -1;
+        String staticString;
+
+        ReplacementPattern(String staticString) {
+            this.staticString = staticString;
+        }
+
+        ReplacementPattern(int groupIndex) {
+            this.groupIndex = groupIndex;
+        }
+
+        void execute(Matcher matcher, StringBuilder output) {
+            if (groupIndex > -1) {
+                output.append(matcher.group(groupIndex));
+            } else {
+                output.append(staticString);
+            }
         }
     }
 }

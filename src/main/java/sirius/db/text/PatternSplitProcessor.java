@@ -21,9 +21,9 @@ public class PatternSplitProcessor extends ChainableTokenProcessor {
     private static final Pattern SOFT_BOUNDARY = Pattern.compile("[^\\p{L}\\d]");
     private static final Pattern WHITESPACE = Pattern.compile("\\p{javaWhitespace}");
 
-    private Pattern pattern;
-    private boolean preserveOriginal;
-    private boolean purge;
+    private final Pattern pattern;
+    private final boolean preserveOriginal;
+    private final boolean purge;
 
     /**
      * Creates a new processor.
