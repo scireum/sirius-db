@@ -8,6 +8,9 @@
 
 package sirius.db.redis;
 
+import redis.clients.jedis.ClientSetInfoConfig;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -148,15 +151,24 @@ public class RedisDB {
             JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
             jedisPoolConfig.setMaxTotal(maxActive);
             jedisPoolConfig.setMaxIdle(maxIdle);
+
             Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(determineServiceName(), host, port);
-            jedis = new JedisPool(jedisPoolConfig,
-                                  effectiveHostAndPort.getFirst(),
-                                  effectiveHostAndPort.getSecond(),
-                                  connectTimeout,
-                                  readTimeout,
-                                  Strings.isFilled(password) ? password : null,
-                                  db,
-                                  CallContext.getNodeName());
+            HostAndPort hostAndPort =
+                    new HostAndPort(effectiveHostAndPort.getFirst(), effectiveHostAndPort.getSecond());
+
+            DefaultJedisClientConfig jedisClientConfig = DefaultJedisClientConfig.builder()
+                                                                                 .database(db)
+                                                                                 .clientName(CallContext.getNodeName())
+                                                                                 .connectionTimeoutMillis(connectTimeout)
+                                                                                 .socketTimeoutMillis(readTimeout)
+                                                                                 .clientSetInfoConfig(new ClientSetInfoConfig(
+                                                                                         true))
+                                                                                 .password(Strings.isFilled(password) ?
+                                                                                           password :
+                                                                                           null)
+                                                                                 .build();
+
+            jedis = new JedisPool(jedisPoolConfig, hostAndPort, jedisClientConfig);
         }
 
         return jedis.getResource();
