@@ -16,8 +16,8 @@ import java.util.Set;
  */
 public class DeduplicateProcessor extends ChainableTokenProcessor {
 
-    private Set<String> tokens = new HashSet<>();
-    private boolean global;
+    private final Set<String> tokens = new HashSet<>();
+    private final boolean global;
 
     /**
      * Creates a new processor.

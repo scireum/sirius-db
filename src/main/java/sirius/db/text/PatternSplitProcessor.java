@@ -17,13 +17,13 @@ import java.util.regex.Pattern;
  */
 public class PatternSplitProcessor extends ChainableTokenProcessor {
 
-    private static final Pattern HARD_BOUNDARY = Pattern.compile("[^\\p{L}\\d_\\-.,:/\\\\@ ]");
+    private static final Pattern HARD_BOUNDARY = Pattern.compile("[^\\p{L}\\d_\\-.,:/\\\\@+& ]");
     private static final Pattern SOFT_BOUNDARY = Pattern.compile("[^\\p{L}\\d]");
     private static final Pattern WHITESPACE = Pattern.compile("\\p{javaWhitespace}");
 
-    private Pattern pattern;
-    private boolean preserveOriginal;
-    private boolean purge;
+    private final Pattern pattern;
+    private final boolean preserveOriginal;
+    private final boolean purge;
 
     /**
      * Creates a new processor.
@@ -41,7 +41,7 @@ public class PatternSplitProcessor extends ChainableTokenProcessor {
     /**
      * Creates a processor which splits a hard "word" boundaries.
      * <p>
-     * This are all punctuation symbols other than <tt>/ , . : \ _ -</tt>
+     * These are all punctuation symbols other than <tt>/ , . : \ _ - @ + &</tt>
      *
      * @return a new processor which splits at hard token boundaries. This will {@link #purge()} after each sub token
      * being emitted
