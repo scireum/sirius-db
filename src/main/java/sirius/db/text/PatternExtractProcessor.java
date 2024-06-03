@@ -20,30 +20,13 @@ import java.util.stream.Stream;
 public class PatternExtractProcessor extends ChainableTokenProcessor {
 
     private static final Pattern EXTRACT_EMAILS = Pattern.compile("(\\p{Alnum}[^@]++)@(.+)$");
+    /**
+     * Matches numbered placeholders like {0}, {1}, {2} etc.
+     */
+    private static final Pattern NUMBERED_PLACEHOLDER = Pattern.compile("\\{(\\d+)}");
 
-    private static class ReplacementPattern {
-        int groupIndex = -1;
-        String staticString;
-
-        ReplacementPattern(String staticString) {
-            this.staticString = staticString;
-        }
-
-        ReplacementPattern(int groupIndex) {
-            this.groupIndex = groupIndex;
-        }
-
-        void execute(Matcher matcher, StringBuilder output) {
-            if (groupIndex > -1) {
-                output.append(matcher.group(groupIndex));
-            } else {
-                output.append(staticString);
-            }
-        }
-    }
-
-    private Pattern pattern;
-    private List<List<ReplacementPattern>> replacements;
+    private final Pattern pattern;
+    private final List<List<ReplacementPattern>> replacements;
 
     /**
      * Creates a new processor.
@@ -82,14 +65,14 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
 
     private List<ReplacementPattern> compileReplacementPattern(String input) {
         List<ReplacementPattern> result = new ArrayList<>();
-        Matcher matcher = Pattern.compile("\\{(\\d+)}").matcher(input);
+        Matcher numberedPlaceholderMatcher = NUMBERED_PLACEHOLDER.matcher(input);
         int start = 0;
-        while (matcher.find(start)) {
-            if (matcher.start() > start) {
-                result.add(new ReplacementPattern(input.substring(start, matcher.start())));
+        while (numberedPlaceholderMatcher.find(start)) {
+            if (numberedPlaceholderMatcher.start() > start) {
+                result.add(new ReplacementPattern(input.substring(start, numberedPlaceholderMatcher.start())));
             }
-            result.add(new ReplacementPattern(Integer.parseInt(matcher.group(1))));
-            start = matcher.end();
+            result.add(new ReplacementPattern(Integer.parseInt(numberedPlaceholderMatcher.group(1))));
+            start = numberedPlaceholderMatcher.end();
         }
 
         if (start < input.length()) {
@@ -121,6 +104,27 @@ public class PatternExtractProcessor extends ChainableTokenProcessor {
 
         if (start == 0) {
             emit(value);
+        }
+    }
+
+    private static class ReplacementPattern {
+        int groupIndex = -1;
+        String staticString;
+
+        ReplacementPattern(String staticString) {
+            this.staticString = staticString;
+        }
+
+        ReplacementPattern(int groupIndex) {
+            this.groupIndex = groupIndex;
+        }
+
+        void execute(Matcher matcher, StringBuilder output) {
+            if (groupIndex > -1) {
+                output.append(matcher.group(groupIndex));
+            } else {
+                output.append(staticString);
+            }
         }
     }
 }

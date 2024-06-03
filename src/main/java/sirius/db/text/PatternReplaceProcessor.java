@@ -17,8 +17,8 @@ public class PatternReplaceProcessor extends ChainableTokenProcessor {
 
     private static final Pattern CONTROL_CHARACTERS = Pattern.compile("\\p{Cntrl}");
 
-    private Pattern pattern;
-    private String replacement;
+    private final Pattern pattern;
+    private final String replacement;
 
     /**
      * Creates a new processor.
