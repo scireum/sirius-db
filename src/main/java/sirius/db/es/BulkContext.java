@@ -39,6 +39,7 @@ import java.util.List;
 public class BulkContext implements Closeable {
 
     private static final int MAX_BATCH_SIZE = 1024;
+    private static final int MAX_REQUEST_SIZE = 100_000_000;
     private static final int RECOMMENDED_BATCH_SIZE = 256;
 
     private static final String KEY_INDEX = "_index";
@@ -128,15 +129,43 @@ public class BulkContext implements Closeable {
             return;
         }
 
-        commands.add(Json.createObject().set(COMMAND_INDEX, meta));
-        commands.add(data);
+        ObjectNode metaCommand = Json.createObject().set(COMMAND_INDEX, meta);
+        commitIfNeededAndAdd(metaCommand, data);
         autocommit();
     }
 
+    /**
+     * Commits all commands if the batch size exceeds {@link #MAX_BATCH_SIZE}.
+     */
     private void autocommit() {
         if (commands.size() >= MAX_BATCH_SIZE) {
             commit().throwFailures();
         }
+    }
+
+    /**
+     * Commits queued commands if needed and adds the given nodes to the queue.
+     * <p>
+     * If the new nodes would exceed {@link #MAX_REQUEST_SIZE}, we commit them before adding new commands to the list. This is important
+     * for bulk requests since Elasticsearch establishes a default limit of 100MB per request.
+     *
+     * @param nodes the nodes which size should be checked
+     */
+    private void commitIfNeededAndAdd(ObjectNode... nodes) {
+        int currentSize = commands.stream().map(this::calculateNodeLength).reduce(0, Integer::sum);
+        for (ObjectNode node : nodes) {
+            currentSize += calculateNodeLength(node);
+        }
+        if (currentSize >= MAX_REQUEST_SIZE) {
+            // The given commands will exceed the maximum request size, so we commit the current queued commands
+            // before adding new ones
+            commit().throwFailures();
+        }
+        commands.addAll(List.of(nodes));
+    }
+
+    private int calculateNodeLength(ObjectNode node) {
+        return node.toString().length();
     }
 
     private ObjectNode builtMetadata(ElasticEntity entity, boolean force, EntityDescriptor ed) {
@@ -167,7 +196,9 @@ public class BulkContext implements Closeable {
         entityDescriptor.beforeDelete(entity);
 
         ObjectNode meta = builtMetadata(entity, force, entityDescriptor);
-        commands.add(Json.createObject().set(COMMAND_DELETE, meta));
+
+        ObjectNode metaCommand = Json.createObject().set(COMMAND_DELETE, meta);
+        commitIfNeededAndAdd(metaCommand);
         autocommit();
     }
 
