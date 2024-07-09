@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import sirius.db.KeyGenerator;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.es.constraints.ElasticFilterFactory;
@@ -169,11 +168,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         if (client == null) {
             Elastic.LOG.INFO("Initializing Elasticsearch client against: %s", hosts);
 
-            // Fixes an Elastic bug that results in TimeoutExceptions
-            // Remove this, once ES is updated to at least 6.3.1
-            RestClientBuilder.RequestConfigCallback configCallback =
-                    requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(0);
-
             HttpHost[] httpHosts = Arrays.stream(this.hosts.split(","))
                                          .map(String::trim)
                                          .map(host -> Strings.splitAtLast(host, ":"))
@@ -181,7 +175,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                          .map(this::mapPort)
                                          .map(this::makeHttpHost)
                                          .toArray(size -> new HttpHost[size]);
-            client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configCallback).build());
+            client = new LowLevelClient(RestClient.builder(httpHosts).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise, strange connection issues might arise.
