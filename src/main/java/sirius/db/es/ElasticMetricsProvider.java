@@ -70,7 +70,7 @@ public class ElasticMetricsProvider implements MetricProvider {
     public int getCurrentMaxMemoryPressure() {
         return elastic.getLowLevelClient()
                       .memoryStats()
-                      .get("nodes")
+                      .path("nodes")
                       .properties()
                       .stream()
                       .map(Map.Entry::getValue)
@@ -81,8 +81,8 @@ public class ElasticMetricsProvider implements MetricProvider {
 
     private int calculateMemoryPressure(JsonNode memoryStats) {
         JsonNode oldGenStats = memoryStats.at(OLD_GEN_STATS_POINTER);
-        int usedInBytes = oldGenStats.get("used_in_bytes").intValue();
-        int maxInBytes = oldGenStats.get("max_in_bytes").intValue();
+        int usedInBytes = oldGenStats.path("used_in_bytes").asInt();
+        int maxInBytes = oldGenStats.path("max_in_bytes").asInt();
 
         return (int) (100f * usedInBytes / maxInBytes);
     }
