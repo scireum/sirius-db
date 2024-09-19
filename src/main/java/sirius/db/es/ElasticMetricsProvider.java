@@ -84,6 +84,10 @@ public class ElasticMetricsProvider implements MetricProvider {
         int usedInBytes = oldGenStats.path("used_in_bytes").asInt();
         int maxInBytes = oldGenStats.path("max_in_bytes").asInt();
 
+        if (maxInBytes == 0) {
+            return 0;
+        }
+
         return (int) (100f * usedInBytes / maxInBytes);
     }
 }
