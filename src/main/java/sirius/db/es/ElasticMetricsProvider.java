@@ -81,8 +81,8 @@ public class ElasticMetricsProvider implements MetricProvider {
 
     private int calculateMemoryPressure(JsonNode memoryStats) {
         JsonNode oldGenStats = memoryStats.at(OLD_GEN_STATS_POINTER);
-        int usedInBytes = oldGenStats.path("used_in_bytes").asInt();
-        int maxInBytes = oldGenStats.path("max_in_bytes").asInt();
+        long usedInBytes = oldGenStats.path("used_in_bytes").asLong();
+        long maxInBytes = oldGenStats.path("max_in_bytes").asLong();
 
         if (maxInBytes == 0) {
             return 0;
