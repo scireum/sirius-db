@@ -50,6 +50,7 @@ public class LowLevelClient {
     private static final String API_REFRESH = "/_refresh";
     private static final String API_SETTINGS = "/_settings";
     private static final String API_CLUSTER_HEALTH = "/_cluster/health";
+    private static final String API_JVM_MEMORY_STATS = "/_nodes/stats?pretty&filter_path=nodes.*.jvm.mem";
     private static final String API_STATS = "/_stats";
     private static final String API_MAPPING = "/_mapping";
     private static final String API_BULK = "_bulk";
@@ -577,6 +578,15 @@ public class LowLevelClient {
      */
     public ObjectNode clusterHealth() {
         return performGet().execute(API_CLUSTER_HEALTH).response();
+    }
+
+    /**
+     * Fetches the JVM memory statistics.
+     *
+     * @return a JSON object as returned by <tt>/_nodes/stats?pretty&filter_path=nodes.*.jvm.mem</tt>
+     */
+    public ObjectNode memoryStats() {
+        return performGet().execute(API_JVM_MEMORY_STATS).response();
     }
 
     /**
