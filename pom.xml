@@ -78,19 +78,9 @@
         <dependency>
             <groupId>com.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.4.6</version>
+            <version>0.6.5</version>
+            <classifier>http</classifier>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-            <version>1.8.0</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Required as the version brought by clickhouse-jdbc contains security issues -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
         </dependency>
     </dependencies>
 
