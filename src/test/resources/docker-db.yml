@@ -18,7 +18,7 @@ services:
     hostname: qdrant
 
   mariadb:
-    image: mariadb:10.11.2-jammy
+    image: mariadb:11.4.3-noble
     ports:
     - "3306"
     environment:
