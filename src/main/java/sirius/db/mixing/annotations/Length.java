@@ -16,6 +16,12 @@ import java.lang.annotation.Target;
 
 /**
  * Specifies the column length, most probably of string (CHAR) columns.
+ * <p>
+ * This annotation has no effect on properties other than a string, except the columns
+ * definitions for Clickhouse, where the length is used also for other types, for example int,
+ * to define the int size to use.
+ *
+ * @see sirius.db.jdbc.schema.ClickhouseDatabaseDialect
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
