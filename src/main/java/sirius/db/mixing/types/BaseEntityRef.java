@@ -194,6 +194,16 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     }
 
     /**
+     * Returns the effective entity object which is referenced by forcing a fresh database lookup.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E forceFetchValue() {
+        value = null;
+        return fetchCachedValue();
+    }
+
+    /**
      * Returns the effective entity object which is referenced using a secondary node of a DB cluster.
      * <p>
      * Note, this values returned by this method will never be cached and a new lookup is always performed.
@@ -206,6 +216,17 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
             return entity.orElse(null);
         }
         return value;
+    }
+
+    /**
+     * Returns the effective entity object which is referenced by forcing a fresh database lookup using a secondary node
+     * of a DB cluster.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E forceFetchValueFromSecondary() {
+        value = null;
+        return fetchCachedValueFromSecondary();
     }
 
     /**
