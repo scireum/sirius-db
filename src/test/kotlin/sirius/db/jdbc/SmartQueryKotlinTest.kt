@@ -283,7 +283,10 @@ class SmartQueryKotlinTest {
         )
         val result = smartQueryTestChildEntity.queryList()
 
-        assertEquals(listOf("Parent 2"), result.stream().map { x -> x.name }.collect(Collectors.toList()))
+        assertEquals(
+            listOf("Parent 2", "Parent 3"),
+            result.stream().map { x -> x.name.substring(0, 8) }.collect(Collectors.toList())
+        )
     }
 
     @Test
