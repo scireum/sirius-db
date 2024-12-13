@@ -31,24 +31,24 @@ class SmartQueryKotlinTest {
     @Test
     fun `queryList returns all entities`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(
-                listOf("Test", "Hello", "World"),
-                result.stream().map { x -> x.value }.collect(Collectors.toList())
+            listOf("Test", "Hello", "World"),
+            result.stream().map { x -> x.value }.collect(Collectors.toList())
         )
     }
 
     @Test
     fun `streamBlockwise() works`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .fields(SmartQueryTestEntity.VALUE)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .fields(SmartQueryTestEntity.VALUE)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
 
         assertEquals(
-                listOf("Test", "Hello", "World"),
-                smartQueryTestEntity.copy().streamBlockwise().map { it.value }.collect(Collectors.toList())
+            listOf("Test", "Hello", "World"),
+            smartQueryTestEntity.copy().streamBlockwise().map { it.value }.collect(Collectors.toList())
         )
         assertThrows<UnsupportedOperationException> {
             smartQueryTestEntity.copy().skip(1).limit(1).streamBlockwise().count()
@@ -60,7 +60,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `count returns the number of entity`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.count()
 
         assertEquals(3, result)
@@ -69,7 +69,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `exists returns a correct value`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.exists()
 
         assertTrue { result }
@@ -78,7 +78,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `exists doesn't screw up the internals of the query`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.exists()
 
         assertTrue { result }
@@ -91,7 +91,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `queryFirst returns the first entity`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.queryFirst()
 
         assertEquals("Test", result.value)
@@ -100,7 +100,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `first returns the first entity`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.first()
 
         assertEquals("Test", result.get().value)
@@ -109,7 +109,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `queryFirst returns null for an empty result`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .eq(SmartQueryTestEntity.VALUE, "xxx")
+            .eq(SmartQueryTestEntity.VALUE, "xxx")
         val result = smartQueryTestEntity.queryFirst()
 
         assertNull(result)
@@ -118,7 +118,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `first returns an empty optional for an empty result`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .eq(SmartQueryTestEntity.VALUE, "xxx")
+            .eq(SmartQueryTestEntity.VALUE, "xxx")
         val result = smartQueryTestEntity.first()
 
         assertNotNull(result)
@@ -127,7 +127,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `limit works on a plain list`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .skip(1).limit(2).orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .skip(1).limit(2).orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(listOf("Hello", "World"), result.stream().map { x -> x.value }.collect(Collectors.toList()))
@@ -144,7 +144,7 @@ class SmartQueryKotlinTest {
         FieldUtils.writeField(newOMA, "schema", mockk<Schema>(), true)
         every { newOMA.getDatabase(Mixing.DEFAULT_REALM) } returns noCapsDB
         val smartQueryTestEntity = newOMA.select(SmartQueryTestEntity::class.java)
-                .skip(1).limit(2).orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .skip(1).limit(2).orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(listOf("Hello", "World"), result.stream().map { x -> x.value }.collect(Collectors.toList()))
@@ -153,11 +153,11 @@ class SmartQueryKotlinTest {
     @Test
     fun `automatic joins work when sorting by a referenced field`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestChildEntity::class.java)
-                .orderAsc(
-                        SmartQueryTestChildEntity.PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        )
+            .orderAsc(
+                SmartQueryTestChildEntity.PARENT.join(
+                    SmartQueryTestParentEntity.NAME
                 )
+            )
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(listOf("Child 1", "Child 2"), result.stream().map { x -> x.name }.collect(Collectors.toList()))
@@ -166,31 +166,31 @@ class SmartQueryKotlinTest {
     @Test
     fun `automatic joins work when fetching a referenced field`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestChildEntity::class.java)
-                .fields(
-                        SmartQueryTestChildEntity.PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        )
+            .fields(
+                SmartQueryTestChildEntity.PARENT.join(
+                    SmartQueryTestParentEntity.NAME
                 )
-                .orderAsc(
-                        SmartQueryTestChildEntity.PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        )
+            )
+            .orderAsc(
+                SmartQueryTestChildEntity.PARENT.join(
+                    SmartQueryTestParentEntity.NAME
                 )
+            )
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(listOf("Parent 1", "Parent 2"), result.stream().map { x -> x.parent.fetchCachedValue().name }
-                .collect(Collectors.toList()))
+            .collect(Collectors.toList()))
     }
 
     @Test
     fun `ids are properly propagated in join fetches `() {
         val smartQueryTestEntity = oma.select(SmartQueryTestChildEntity::class.java)
-                .fields(
-                        SmartQueryTestChildEntity.PARENT,
-                        SmartQueryTestChildEntity.PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        )
+            .fields(
+                SmartQueryTestChildEntity.PARENT,
+                SmartQueryTestChildEntity.PARENT.join(
+                    SmartQueryTestParentEntity.NAME
                 )
+            )
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(listOf(1L, 2L), result.stream().map { x -> x.parent.id }.collect(Collectors.toList()))
@@ -199,23 +199,23 @@ class SmartQueryKotlinTest {
     @Test
     fun `automatic joins work when referencing one table in two relations`() {
         val smartQueryTestChildEntity = oma.select(SmartQueryTestChildEntity::class.java)
-                .fields(
-                        SmartQueryTestChildEntity.PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        ),
-                        SmartQueryTestChildEntity.OTHER_PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        )
+            .fields(
+                SmartQueryTestChildEntity.PARENT.join(
+                    SmartQueryTestParentEntity.NAME
+                ),
+                SmartQueryTestChildEntity.OTHER_PARENT.join(
+                    SmartQueryTestParentEntity.NAME
                 )
-                .orderAsc(
-                        SmartQueryTestChildEntity.PARENT.join(
-                                SmartQueryTestParentEntity.NAME
-                        )
+            )
+            .orderAsc(
+                SmartQueryTestChildEntity.PARENT.join(
+                    SmartQueryTestParentEntity.NAME
                 )
+            )
         val result = smartQueryTestChildEntity.queryList()
 
         assertEquals(
-                listOf("Parent 1Parent 2", "Parent 2Parent 1"), result.stream()
+            listOf("Parent 1Parent 2", "Parent 2Parent 1"), result.stream()
                 .map { x ->
                     x.parent.fetchCachedValue().name + x.otherParent.fetchCachedValue().name
                 }
@@ -226,30 +226,30 @@ class SmartQueryKotlinTest {
     @Test
     fun `automatic joins work across several tables`() {
         val smartQueryTestChildChildEntity = oma.select(SmartQueryTestChildChildEntity::class.java).fields(
-                SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
-                        SmartQueryTestParentEntity.NAME
-                )
+            SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
+                SmartQueryTestParentEntity.NAME
+            )
         ).orderAsc(
-                SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
-                        SmartQueryTestParentEntity.NAME
-                )
+            SmartQueryTestChildChildEntity.PARENT_CHILD.join(SmartQueryTestChildEntity.PARENT).join(
+                SmartQueryTestParentEntity.NAME
+            )
         )
         val result = smartQueryTestChildChildEntity.queryList()
 
         assertEquals(
-                listOf("Parent 1"),
-                result.stream().map { x -> x.parentChild.fetchCachedValue().parent.fetchCachedValue().name }
-                        .collect(Collectors.toList()))
+            listOf("Parent 1"),
+            result.stream().map { x -> x.parentChild.fetchCachedValue().parent.fetchCachedValue().name }
+                .collect(Collectors.toList()))
     }
 
     @Test
     fun `exists works when referencing a child entity`() {
         val smartQueryTestChildEntity = oma.select(SmartQueryTestParentEntity::class.java).where(
-                OMA.FILTERS.existsIn(
-                        SmartQueryTestParentEntity.ID,
-                        SmartQueryTestChildEntity::class.java,
-                        SmartQueryTestChildEntity.PARENT
-                )
+            OMA.FILTERS.existsIn(
+                SmartQueryTestParentEntity.ID,
+                SmartQueryTestChildEntity::class.java,
+                SmartQueryTestChildEntity.PARENT
+            )
         )
         val result = smartQueryTestChildEntity.queryList()
 
@@ -259,11 +259,11 @@ class SmartQueryKotlinTest {
     @Test
     fun `exists works when referencing a child entity with constraints`() {
         val smartQueryTestChildEntity = oma.select(SmartQueryTestParentEntity::class.java).where(
-                OMA.FILTERS.existsIn(
-                        SmartQueryTestParentEntity.ID,
-                        SmartQueryTestChildEntity::class.java,
-                        SmartQueryTestChildEntity.PARENT
-                ).where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))
+            OMA.FILTERS.existsIn(
+                SmartQueryTestParentEntity.ID,
+                SmartQueryTestChildEntity::class.java,
+                SmartQueryTestChildEntity.PARENT
+            ).where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))
         )
         val result = smartQueryTestChildEntity.queryList()
 
@@ -273,13 +273,13 @@ class SmartQueryKotlinTest {
     @Test
     fun `exists works when inverted`() {
         val smartQueryTestChildEntity = oma.select(SmartQueryTestParentEntity::class.java).where(
-                OMA.FILTERS.not(
-                        OMA.FILTERS.existsIn(
-                                SmartQueryTestParentEntity.ID,
-                                SmartQueryTestChildEntity::class.java,
-                                SmartQueryTestChildEntity.PARENT
-                        ).where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))
-                )
+            OMA.FILTERS.not(
+                OMA.FILTERS.existsIn(
+                    SmartQueryTestParentEntity.ID,
+                    SmartQueryTestChildEntity::class.java,
+                    SmartQueryTestChildEntity.PARENT
+                ).where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))
+            )
         )
         val result = smartQueryTestChildEntity.queryList()
 
@@ -289,14 +289,14 @@ class SmartQueryKotlinTest {
     @Test
     fun `exists works with complicated columns`() {
         val smartQueryTestChildEntity = oma.select(SmartQueryTestParentEntity::class.java).where(
-                OMA.FILTERS.existsIn(
-                        CompoundValue(SmartQueryTestParentEntity.ID).addComponent(SmartQueryTestParentEntity.NAME),
-                        SmartQueryTestChildEntity::class.java,
-                        CompoundValue(SmartQueryTestChildEntity.PARENT).addComponent(
-                                SmartQueryTestChildEntity
-                                        .PARENT_NAME
-                        )
-                ).where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))
+            OMA.FILTERS.existsIn(
+                CompoundValue(SmartQueryTestParentEntity.ID).addComponent(SmartQueryTestParentEntity.NAME),
+                SmartQueryTestChildEntity::class.java,
+                CompoundValue(SmartQueryTestChildEntity.PARENT).addComponent(
+                    SmartQueryTestChildEntity
+                        .PARENT_NAME
+                )
+            ).where(OMA.FILTERS.eq(SmartQueryTestChildEntity.NAME, "Child 1"))
         )
         val result = smartQueryTestChildEntity.queryList()
 
@@ -306,13 +306,13 @@ class SmartQueryKotlinTest {
     @Test
     fun `copy of query does also copy fields`() {
         val smartQueryTestEntity = oma.select(SmartQueryTestEntity::class.java)
-                .fields(SmartQueryTestEntity.TEST_NUMBER, SmartQueryTestEntity.VALUE)
-                .copy()
-                .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
+            .fields(SmartQueryTestEntity.TEST_NUMBER, SmartQueryTestEntity.VALUE)
+            .copy()
+            .orderAsc(SmartQueryTestEntity.TEST_NUMBER)
         val result = smartQueryTestEntity.queryList()
 
         assertEquals(listOf("Test", "Hello", "World"), result.stream().map { x -> x.value }
-                .collect(Collectors.toList()))
+            .collect(Collectors.toList()))
     }
 
     @Test
@@ -321,12 +321,12 @@ class SmartQueryKotlinTest {
         testEntityWithNullRef.name = "bliblablub"
         oma.update(testEntityWithNullRef)
         val result = oma.select(TestEntityWithNullRef::class.java)
-                .fields(
-                        TestEntityWithNullRef.NAME,
-                        TestEntityWithNullRef.PARENT.join(SmartQueryTestParentEntity.NAME),
-                        TestEntityWithNullRef.PARENT.join(SmartQueryTestParentEntity.ID)
-                )
-                .eq(TestEntityWithNullRef.ID, testEntityWithNullRef.getId()).queryList()
+            .fields(
+                TestEntityWithNullRef.NAME,
+                TestEntityWithNullRef.PARENT.join(SmartQueryTestParentEntity.NAME),
+                TestEntityWithNullRef.PARENT.join(SmartQueryTestParentEntity.ID)
+            )
+            .eq(TestEntityWithNullRef.ID, testEntityWithNullRef.getId()).queryList()
         val found = result[0]
 
         assertTrue { found.parent.isEmpty }
@@ -344,11 +344,11 @@ class SmartQueryKotlinTest {
         oma.update(testEntityWithNullRef)
 
         val result = oma.select(TestEntityWithNullRef::class.java)
-                .fields(
-                        TestEntityWithNullRef.NAME,
-                        SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME)
-                )
-                .eq(TestEntityWithNullRef.ID, testEntityWithNullRef.getId()).queryList()
+            .fields(
+                TestEntityWithNullRef.NAME,
+                SmartQueryTestChildEntity.PARENT.join(SmartQueryTestParentEntity.NAME)
+            )
+            .eq(TestEntityWithNullRef.ID, testEntityWithNullRef.getId()).queryList()
         val found = result[0]
 
         assertTrue { found.parent.isFilled }
@@ -365,8 +365,8 @@ class SmartQueryKotlinTest {
         oma.update(smartQueryTestMixinEntity1)
 
         val smartQueryTestMixinEntity2 = oma.select(SmartQueryTestMixinEntity::class.java).eq(
-                SmartQueryTestMixinEntityMixin.MIXIN_VALUE.inMixin(SmartQueryTestMixinEntityMixin::class.java),
-                "mixinvalue1"
+            SmartQueryTestMixinEntityMixin.MIXIN_VALUE.inMixin(SmartQueryTestMixinEntityMixin::class.java),
+            "mixinvalue1"
         ).queryFirst()
 
         assertFalse { smartQueryTestMixinEntity1.isNew }
@@ -388,23 +388,23 @@ class SmartQueryKotlinTest {
     @Test
     fun `eq with row values works`() {
         var items = oma.select(SmartQueryTestEntity::class.java).where(
-                OMA.FILTERS.eq(
-                        CompoundValue(SmartQueryTestEntity.VALUE).addComponent(
-                                SmartQueryTestEntity
-                                        .TEST_NUMBER
-                        ),
-                        CompoundValue("Test").addComponent(1)
-                )
+            OMA.FILTERS.eq(
+                CompoundValue(SmartQueryTestEntity.VALUE).addComponent(
+                    SmartQueryTestEntity
+                        .TEST_NUMBER
+                ),
+                CompoundValue("Test").addComponent(1)
+            )
         ).queryList()
 
         assertEquals(1, items.size)
         assertEquals(1, items[0].testNumber)
 
         items = oma.select(SmartQueryTestEntity::class.java).where(
-                OMA.FILTERS.eq(
-                        CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER),
-                        CompoundValue(SmartQueryTestEntity.VALUE).addComponent(1)
-                )
+            OMA.FILTERS.eq(
+                CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER),
+                CompoundValue(SmartQueryTestEntity.VALUE).addComponent(1)
+            )
         ).queryList()
 
         assertEquals(1, items.size)
@@ -414,10 +414,10 @@ class SmartQueryKotlinTest {
     @Test
     fun `gt with row values works`() {
         val items = oma.select(SmartQueryTestEntity::class.java).where(
-                OMA.FILTERS.gt(
-                        CompoundValue(SmartQueryTestEntity.VALUE).addComponent(2),
-                        CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER)
-                )
+            OMA.FILTERS.gt(
+                CompoundValue(SmartQueryTestEntity.VALUE).addComponent(2),
+                CompoundValue("Test").addComponent(SmartQueryTestEntity.TEST_NUMBER)
+            )
         ).orderAsc(SmartQueryTestEntity.VALUE).queryList()
 
         assertEquals(2, items.size)
@@ -429,7 +429,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `count distinct for one field returns a correct number of entities`() {
         val smartQueryTestCountEntity = oma.select(SmartQueryTestCountEntity::class.java)
-                .distinctFields(SmartQueryTestCountEntity.FIELD_ONE)
+            .distinctFields(SmartQueryTestCountEntity.FIELD_ONE)
         val result = smartQueryTestCountEntity.count()
 
         assertEquals(2, result)
@@ -438,10 +438,10 @@ class SmartQueryKotlinTest {
     @Test
     fun `count distinct for two fields returns a correct number of entities`() {
         val smartQueryTestCountEntity = oma.select(SmartQueryTestCountEntity::class.java)
-                .distinctFields(
-                        SmartQueryTestCountEntity.FIELD_ONE,
-                        SmartQueryTestCountEntity.FIELD_TWO
-                )
+            .distinctFields(
+                SmartQueryTestCountEntity.FIELD_ONE,
+                SmartQueryTestCountEntity.FIELD_TWO
+            )
         val result = smartQueryTestCountEntity.count()
 
         assertEquals(3, result)
@@ -450,7 +450,7 @@ class SmartQueryKotlinTest {
     @Test
     fun `count for one field without distinct modifier returns a correct number of entities`() {
         val smartQueryTestCountEntity = oma.select(SmartQueryTestCountEntity::class.java)
-                .fields(SmartQueryTestCountEntity.FIELD_ONE)
+            .fields(SmartQueryTestCountEntity.FIELD_ONE)
         val result = smartQueryTestCountEntity.count()
 
         assertEquals(4, result)
@@ -459,12 +459,30 @@ class SmartQueryKotlinTest {
     @Test
     fun `count for two fields without distinct modifier throws an exception`() {
         val smartQueryTestCountEntity = oma.select(SmartQueryTestCountEntity::class.java)
-                .fields(
-                        SmartQueryTestCountEntity.FIELD_ONE,
-                        SmartQueryTestCountEntity.FIELD_TWO
-                )
+            .fields(
+                SmartQueryTestCountEntity.FIELD_ONE,
+                SmartQueryTestCountEntity.FIELD_TWO
+            )
 
         assertThrows<HandledException> { smartQueryTestCountEntity.count() }
+    }
+
+    @Test
+    fun `fetchCachedValue and forceFetchCachedValue works`() {
+        val child = SmartQueryTestChildEntity()
+        child.parent.id = 3
+        var parent = child.parent.fetchCachedValue()
+        assertEquals("Parent 3", parent.name)
+
+        val freshParent = oma.find(SmartQueryTestParentEntity::class.java, 3).orElse(null)
+        freshParent.name = "Parent 3.1"
+        oma.update(freshParent)
+
+        parent = child.parent.fetchCachedValue()
+        assertEquals("Parent 3", parent.name)
+
+        parent = child.parent.forceFetchValue()
+        assertEquals("Parent 3.1", parent.name)
     }
 
     companion object {
@@ -511,6 +529,9 @@ class SmartQueryKotlinTest {
             val smartQueryTestParentEntity2 = SmartQueryTestParentEntity()
             smartQueryTestParentEntity2.name = "Parent 2"
             oma.update(smartQueryTestParentEntity2)
+            val smartQueryTestParentEntity3 = SmartQueryTestParentEntity()
+            smartQueryTestParentEntity3.name = "Parent 3"
+            oma.update(smartQueryTestParentEntity3)
 
             var smartQueryTestChildEntity = SmartQueryTestChildEntity()
             smartQueryTestChildEntity.name = "Child 1"
