@@ -167,7 +167,7 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * Note, this might cause a database lookup if the entity is not prefetched.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
-     * @deprecated use {@link #fetchCachedValue()} instead
+     * @deprecated use {@link #fetchCachedValue()} or {@link #forceFetchValue()} instead
      */
     @Deprecated
     public E fetchValue() {
@@ -235,7 +235,7 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * Note, this values returned by this method will never be cached and a new lookup is always performed.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
-     * @deprecated use {@link #fetchCachedValueFromSecondary()} instead
+     * @deprecated use {@link #fetchCachedValueFromSecondary()} or {@link #forceFetchValueFromSecondary()} instead
      */
     @Deprecated
     public E fetchValueFromSecondary() {
