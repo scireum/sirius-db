@@ -178,7 +178,7 @@ class SmartQueryKotlinTest {
                 )
         val result = smartQueryTestEntity.queryList()
 
-        assertEquals(listOf("Parent 1", "Parent 2"), result.stream().map { x -> x.parent.fetchValue().name }
+        assertEquals(listOf("Parent 1", "Parent 2"), result.stream().map { x -> x.parent.fetchCachedValue().name }
                 .collect(Collectors.toList()))
     }
 
@@ -217,7 +217,7 @@ class SmartQueryKotlinTest {
         assertEquals(
                 listOf("Parent 1Parent 2", "Parent 2Parent 1"), result.stream()
                 .map { x ->
-                    x.parent.fetchValue().name + x.otherParent.fetchValue().name
+                    x.parent.fetchCachedValue().name + x.otherParent.fetchCachedValue().name
                 }
                 .collect(Collectors.toList())
         )
@@ -238,7 +238,7 @@ class SmartQueryKotlinTest {
 
         assertEquals(
                 listOf("Parent 1"),
-                result.stream().map { x -> x.parentChild.fetchValue().parent.fetchValue().name }
+                result.stream().map { x -> x.parentChild.fetchCachedValue().parent.fetchCachedValue().name }
                         .collect(Collectors.toList()))
     }
 
@@ -352,8 +352,8 @@ class SmartQueryKotlinTest {
         val found = result[0]
 
         assertTrue { found.parent.isFilled }
-        assertFalse { found.parent.fetchValue().isNew }
-        assertTrue { Strings.isFilled(found.parent.fetchValue().name) }
+        assertFalse { found.parent.fetchCachedValue().isNew }
+        assertTrue { Strings.isFilled(found.parent.fetchCachedValue().name) }
     }
 
     @Test

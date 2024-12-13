@@ -167,8 +167,21 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * Note, this might cause a database lookup if the entity is not prefetched.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     * @deprecated use {@link #fetchCachedValue()} instead
      */
+    @Deprecated
     public E fetchValue() {
+        return fetchCachedValue();
+    }
+
+    /**
+     * Returns the effective entity object which is referenced.
+     * <p>
+     * Note, this might cause a database lookup if the entity is not prefetched.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E fetchCachedValue() {
         if (value == null && id != null) {
             Optional<E> entity = find(type, id);
             if (entity.isPresent()) {
