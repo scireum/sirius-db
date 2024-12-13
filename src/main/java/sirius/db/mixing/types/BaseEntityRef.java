@@ -200,12 +200,25 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
      */
-    public E fetchValueFromSecondary() {
+    public E fetchCachedValueFromSecondary() {
         if (value == null && id != null) {
             Optional<E> entity = findInSecondary(type, id);
             return entity.orElse(null);
         }
         return value;
+    }
+
+    /**
+     * Returns the effective entity object which is referenced using a secondary node of a DB cluster.
+     * <p>
+     * Note, this values returned by this method will never be cached and a new lookup is always performed.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     * @deprecated use {@link #fetchCachedValueFromSecondary()} instead
+     */
+    @Deprecated
+    public E fetchValueFromSecondary() {
+        return fetchCachedValueFromSecondary();
     }
 
     /**
