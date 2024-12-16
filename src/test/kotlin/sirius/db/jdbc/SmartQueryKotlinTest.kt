@@ -283,6 +283,8 @@ class SmartQueryKotlinTest {
         )
         val result = smartQueryTestChildEntity.queryList()
 
+        // Another test case will rename "Parent 3" to "Parent 3.1". Since we cannot guarantee the order in which
+        // they run, we strip the string to match both cases
         assertEquals(
             listOf("Parent 2", "Parent 3"),
             result.stream().map { x -> x.name.substring(0, 8) }.collect(Collectors.toList())
