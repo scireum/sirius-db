@@ -167,17 +167,67 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * Note, this might cause a database lookup if the entity is not prefetched.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     * @deprecated use {@link #fetchCachedValue()} or {@link #forceFetchValue()} instead
      */
+    @Deprecated
     public E fetchValue() {
-        if (value == null && id != null) {
-            Optional<E> entity = find(type, id);
-            if (entity.isPresent()) {
-                value = entity.get();
-            } else {
-                id = null;
-            }
+        return fetchCachedValue();
+    }
+
+    /**
+     * Returns the effective entity object which is referenced.
+     * <p>
+     * Note, this might cause a database lookup if the entity is not prefetched.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E fetchCachedValue() {
+        if (value != null) {
+            return value;
+        }
+        return forceFetchValue();
+    }
+
+    /**
+     * Returns the effective entity object which is referenced by forcing a fresh database lookup.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E forceFetchValue() {
+        Optional<E> entity = find(type, id);
+        if (entity.isPresent()) {
+            value = entity.get();
+        } else {
+            id = null;
+            value = null;
         }
         return value;
+    }
+
+    /**
+     * Returns the effective entity object which is referenced using a secondary node of a DB cluster.
+     * <p>
+     * If a value has already been loaded via {@link #forceFetchValue()} or indirectly via {@link #fetchCachedValue()},
+     * it will be delivered. Otherwise, a lookup is performed using secondary nodes, but the value retrieved
+     * id will not be cached and subsequent calls will always perform a fresh lookup.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E fetchCachedValueFromSecondary() {
+        if (value != null) {
+            return value;
+        }
+        return forceFetchValueFromSecondary();
+    }
+
+    /**
+     * Returns the effective entity object which is referenced by forcing a fresh database lookup using a secondary node
+     * of a DB cluster.
+     *
+     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     */
+    public E forceFetchValueFromSecondary() {
+        return findInSecondary(type, id).orElse(null);
     }
 
     /**
@@ -186,13 +236,11 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * Note, this values returned by this method will never be cached and a new lookup is always performed.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
+     * @deprecated use {@link #fetchCachedValueFromSecondary()} or {@link #forceFetchValueFromSecondary()} instead
      */
+    @Deprecated
     public E fetchValueFromSecondary() {
-        if (value == null && id != null) {
-            Optional<E> entity = findInSecondary(type, id);
-            return entity.orElse(null);
-        }
-        return value;
+        return fetchCachedValueFromSecondary();
     }
 
     /**
