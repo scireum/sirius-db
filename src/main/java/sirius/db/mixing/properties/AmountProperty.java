@@ -92,7 +92,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
     @Override
     public Object transformValue(Value value) {
         if (value.isFilled()) {
-            return NLS.parseUserString(Amount.class, value.asString());
+            return NLS.parseUserString(Amount.class, value.asString()).round(getPersistanceNumberFormat());
         }
         if (this.isNullable() || defaultValue.isEmptyString()) {
             return Amount.NOTHING;
@@ -106,7 +106,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
             if (value.getAmount().isEmpty() && !this.isNullable()) {
                 return defaultValue.getAmount();
             }
-            return value.get();
+            return ((Amount) value.get()).round(getPersistanceNumberFormat());
         }
 
         if (value.isFilled()) {
@@ -118,10 +118,10 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     private Amount parseWithNLS(@Nonnull Value value) {
         try {
-            return Amount.ofMachineString(value.asString());
+            return Amount.ofMachineString(value.asString()).round(getPersistanceNumberFormat());
         } catch (IllegalArgumentException originalFormatException) {
             try {
-                return Amount.ofUserString(value.asString());
+                return Amount.ofUserString(value.asString()).round(getPersistanceNumberFormat());
             } catch (Exception ignored) {
                 throw originalFormatException;
             }
@@ -144,10 +144,15 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         }
         // the resulting string needs to match the string representation in the DB exactly,
         // else a schema change will be issued.
-        NumberFormat format = getAnnotation(Numeric.class).map(numeric -> {
+        NumberFormat format = getPersistanceNumberFormat();
+        return Amount.of((BigDecimal) defaultData).toString(format).asString();
+    }
+
+    @Nonnull
+    private NumberFormat getPersistanceNumberFormat() {
+        return getAnnotation(Numeric.class).map(numeric -> {
             return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
         }).orElse(NumberFormat.MACHINE_NO_DECIMAL_PLACES);
-        return Amount.of((BigDecimal) defaultData).toString(format).asString();
     }
 
     @Override
