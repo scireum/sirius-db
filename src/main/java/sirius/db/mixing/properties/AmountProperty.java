@@ -146,7 +146,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         // else a schema change will be issued.
         NumberFormat format = getAnnotation(Numeric.class).map(numeric -> {
             return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
-        }).orElse(NumberFormat.MACHINE_THREE_DECIMAL_PLACES);
+        }).orElse(NumberFormat.MACHINE_NO_DECIMAL_PLACES);
         return Amount.of((BigDecimal) defaultData).toString(format).asString();
     }
 
