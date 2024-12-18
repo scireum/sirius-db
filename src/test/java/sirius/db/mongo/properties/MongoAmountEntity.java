@@ -9,6 +9,7 @@
 package sirius.db.mongo.properties;
 
 import sirius.db.mixing.Mapping;
+import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Numeric;
 import sirius.db.mongo.MongoEntity;
 import sirius.kernel.commons.Amount;
@@ -21,6 +22,7 @@ public class MongoAmountEntity extends MongoEntity {
     private Amount testAmount = Amount.NOTHING;
 
     public static final Mapping SCALED_AMOUNT = Mapping.named("scaledAmount");
+    @NullAllowed
     @Numeric(precision = 20, scale = AMOUNT_SCALE)
     private Amount scaledAmount = Amount.NOTHING;
 
