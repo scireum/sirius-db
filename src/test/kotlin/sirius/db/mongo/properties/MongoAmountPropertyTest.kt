@@ -13,8 +13,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.mongo.Mango
 import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
+import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import java.math.RoundingMode
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 @ExtendWith(SiriusExtension::class)
 class MongoAmountPropertyTest {
@@ -23,7 +26,29 @@ class MongoAmountPropertyTest {
         val values = listOf(-3.77, Double.MAX_VALUE, 0.00001, -0.00001)
         for (value in values) {
             assertEquals(Amount.of(value), saveAndRead(Amount.of(value)))
+            assertEquals(Amount.of(value), saveAndReadUsingPropertyParsing(Value.of(value)))
         }
+    }
+
+    @Test
+    fun `property autoscaling of amount fields works`() {
+        var test = MongoAmountEntity()
+        val unscaledValue = Value.of("1,2345")
+
+        val scaledAmountProperty = test.descriptor.getProperty("scaledAmount")
+        scaledAmountProperty.parseValue(test, unscaledValue)
+        val testAmountProperty = test.descriptor.getProperty("testAmount")
+        testAmountProperty.parseValue(test, unscaledValue)
+        mango.update(test)
+        test = mango.refreshOrFail(test)
+        val expectedAmount = unscaledValue.amount.round(MongoAmountEntity.AMOUNT_SCALE, RoundingMode.HALF_UP)
+        assertEquals(expectedAmount, test.scaledAmount)
+        assertEquals(unscaledValue.amount, test.testAmount)
+
+        // Storing the same value twice must not trigger a change
+        scaledAmountProperty.parseValue(test, unscaledValue)
+        testAmountProperty.parseValue(test, unscaledValue)
+        assertFalse { test.isAnyMappingChanged }
     }
 
     companion object {
@@ -33,6 +58,15 @@ class MongoAmountPropertyTest {
         private fun saveAndRead(value: Amount): Amount {
             var mongoAmountEntity = MongoAmountEntity()
             mongoAmountEntity.testAmount = value
+            mango.update(mongoAmountEntity)
+            mongoAmountEntity = mango.refreshOrFail(mongoAmountEntity)
+            return mongoAmountEntity.testAmount
+        }
+
+        private fun saveAndReadUsingPropertyParsing(value: Value): Amount {
+            var mongoAmountEntity = MongoAmountEntity()
+            val amountProperty = mongoAmountEntity.descriptor.getProperty("testAmount")
+            amountProperty.parseValueFromImport(mongoAmountEntity, value)
             mango.update(mongoAmountEntity)
             mongoAmountEntity = mango.refreshOrFail(mongoAmountEntity)
             return mongoAmountEntity.testAmount
