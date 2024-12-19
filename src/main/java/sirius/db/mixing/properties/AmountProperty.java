@@ -38,6 +38,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Types;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -92,12 +93,22 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
     @Override
     public Object transformValue(Value value) {
         if (value.isFilled()) {
-            return NLS.parseUserString(Amount.class, value.asString());
+            return applyNumericRounding(NLS.parseUserString(Amount.class, value.asString()));
         }
         if (this.isNullable() || defaultValue.isEmptyString()) {
             return Amount.NOTHING;
         }
         return defaultValue.getAmount();
+    }
+
+    /**
+     * In case the property is annotated with {@link Numeric}, the value is rounded according to the annotation.
+     *
+     * @param amount the amount
+     * @return the rounded amount if the property is annotated with {@link Numeric}, otherwise the amount itself
+     */
+    private Amount applyNumericRounding(Amount amount) {
+        return getAnnotatedNumberFormat().map(amount::round).orElse(amount);
     }
 
     @Override
@@ -106,7 +117,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
             if (value.getAmount().isEmpty() && !this.isNullable()) {
                 return defaultValue.getAmount();
             }
-            return value.get();
+            return applyNumericRounding((Amount) value.get());
         }
 
         if (value.isFilled()) {
@@ -118,10 +129,10 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     private Amount parseWithNLS(@Nonnull Value value) {
         try {
-            return Amount.ofMachineString(value.asString());
+            return applyNumericRounding(Amount.ofMachineString(value.asString()));
         } catch (IllegalArgumentException originalFormatException) {
             try {
-                return Amount.ofUserString(value.asString());
+                return applyNumericRounding(Amount.ofUserString(value.asString()));
             } catch (Exception ignored) {
                 throw originalFormatException;
             }
@@ -144,10 +155,15 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         }
         // the resulting string needs to match the string representation in the DB exactly,
         // else a schema change will be issued.
-        NumberFormat format = getAnnotation(Numeric.class).map(numeric -> {
-            return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
-        }).orElse(NumberFormat.MACHINE_THREE_DECIMAL_PLACES);
+        NumberFormat format = getAnnotatedNumberFormat().orElse(NumberFormat.MACHINE_NO_DECIMAL_PLACES);
         return Amount.of((BigDecimal) defaultData).toString(format).asString();
+    }
+
+    @Nonnull
+    private Optional<NumberFormat> getAnnotatedNumberFormat() {
+        return getAnnotation(Numeric.class).map(numeric -> {
+            return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
+        });
     }
 
     @Override

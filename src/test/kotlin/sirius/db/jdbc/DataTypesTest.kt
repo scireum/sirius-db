@@ -14,6 +14,7 @@ import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import java.math.RoundingMode
 import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -86,8 +87,24 @@ class DataTypesTest {
     }
 
     @Test
-    fun `default values work`() {
+    fun `AmountProperty scaling works as excepted`() {
+        var test = DataTypesEntity()
+        val unscaledValue = Value.of("1,2345")
 
+        val amountProperty = test.descriptor.getProperty("amountValue")
+        amountProperty.parseValue(test, unscaledValue)
+        oma.update(test)
+        test = oma.refreshOrFail(test)
+        val expectedAmount = unscaledValue.amount.round(DataTypesEntity.AMOUNT_SCALE, RoundingMode.HALF_UP)
+        assertEquals(expectedAmount, test.amountValue)
+
+        // Storing the same value twice must not trigger a change
+        amountProperty.parseValue(test, unscaledValue)
+        assertFalse { test.isAnyMappingChanged }
+    }
+
+    @Test
+    fun `default values work`() {
         var test = DataTypesEntity()
 
         oma.update(test)
