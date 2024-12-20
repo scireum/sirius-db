@@ -90,6 +90,56 @@ class BatchContextTest {
     }
 
     @Test
+    fun `unique check works on changing the value in an update`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "First"
+        testEntity.lastname = "First"
+        testEntity.within = "First"
+        oma.update(testEntity)
+        val testEntity2 = TestEntity();
+        testEntity2.firstname = "Second"
+        testEntity2.lastname = "First"
+        testEntity2.within = "First"
+        oma.update(testEntity2)
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
+        val update = batchContext.updateByIdQuery(TestEntity::class.java, TestEntity.FIRSTNAME)
+
+        testEntity2.firstname = "First"
+        assertThrows<HandledException> {
+            update.update(testEntity2, true, false)
+        }
+
+        assertEquals("Second", oma.refreshOrFail(testEntity2).firstname)
+
+        batchContext.close()
+    }
+
+    @Test
+    fun `unique check works on changing the within-value in an update`() {
+        val testEntity = TestEntity()
+        testEntity.firstname = "First"
+        testEntity.lastname = "First"
+        testEntity.within = "First"
+        oma.update(testEntity)
+        val testEntity2 = TestEntity();
+        testEntity2.firstname = "First"
+        testEntity2.lastname = "First"
+        testEntity2.within = "Second"
+        oma.update(testEntity2)
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
+        val update = batchContext.updateByIdQuery(TestEntity::class.java, TestEntity.WITHIN)
+
+        testEntity2.within = "First"
+        assertThrows<HandledException> {
+            update.update(testEntity2, true, false)
+        }
+
+        assertEquals("Second", oma.refreshOrFail(testEntity2).within)
+
+        batchContext.close()
+    }
+
+    @Test
     fun `batch update works`() {
         val testEntity = TestEntity()
         testEntity.firstname = "Updating"
