@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -748,10 +749,7 @@ public abstract class Property extends Composable {
             propertyValidator.beforeSave(this, getValue(entity));
         }
 
-        if (valueChanged) {
-            // Only enforce uniqueness if the value actually changed...
-            checkUniqueness(entity, propertyValue);
-        }
+        checkUniqueness(entity, propertyValue);
     }
 
     /**
@@ -818,12 +816,17 @@ public abstract class Property extends Composable {
             return;
         }
 
-        if (!(entity instanceof BaseEntity<?>)) {
+        if (!(entity instanceof BaseEntity<?> baseEntity)) {
             throw new IllegalArgumentException("Only subclasses of BaseEntity can have unique fields!");
         }
 
-        Mapping[] withinColumns = Arrays.stream(unique.within()).map(Mapping::named).toArray(Mapping[]::new);
-        ((BaseEntity<?>) entity).assertUnique(nameAsMapping, propertyValue, withinColumns);
+        List<Mapping> withinColumns = Arrays.stream(unique.within()).map(Mapping::named).toList();
+        List<Mapping> changedColumns = withinColumns.stream().filter(baseEntity::isChanged).toList();
+
+        // Only enforce uniqueness if the value has changed or if any of the within column values have changed
+        if (baseEntity.isChanged(nameAsMapping) || !changedColumns.isEmpty()) {
+            baseEntity.assertUnique(nameAsMapping, propertyValue, withinColumns.toArray(Mapping[]::new));
+        }
     }
 
     /**
