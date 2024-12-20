@@ -26,9 +26,9 @@ import java.lang.annotation.Target;
 public @interface Unique {
 
     /**
-     * Names properties which must also match fro two entities to trigger the unique check.
+     * Names properties which must also match for two entities to trigger the unique check.
      *
-     * @return the list of properties which determine the scope of the uniqueness
+     * @return the array of properties which determine the scope of the uniqueness
      */
     String[] within() default {};
 
