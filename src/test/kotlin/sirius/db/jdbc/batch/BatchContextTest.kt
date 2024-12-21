@@ -112,6 +112,8 @@ class BatchContextTest {
         assertEquals("Second", oma.refreshOrFail(testEntity2).firstname)
 
         batchContext.close()
+        oma.delete(testEntity)
+        oma.delete(testEntity2)
     }
 
     @Test
@@ -137,6 +139,8 @@ class BatchContextTest {
         assertEquals("Second", oma.refreshOrFail(testEntity2).within)
 
         batchContext.close()
+        oma.delete(testEntity)
+        oma.delete(testEntity2)
     }
 
     @Test
@@ -157,6 +161,7 @@ class BatchContextTest {
         assertEquals("Updated", oma.refreshOrFail(testEntity).firstname)
 
         batchContext.close()
+        oma.delete(testEntity)
     }
 
     @Test
@@ -180,6 +185,8 @@ class BatchContextTest {
         assertNotNull(find.find(notFound))
 
         batchContext.close()
+        oma.delete(testEntity)
+        oma.delete(found)
     }
 
     @Test
