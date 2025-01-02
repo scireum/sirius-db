@@ -821,10 +821,10 @@ public abstract class Property extends Composable {
         }
 
         List<Mapping> withinColumns = Arrays.stream(unique.within()).map(Mapping::named).toList();
-        List<Mapping> changedColumns = withinColumns.stream().filter(baseEntity::isChanged).toList();
+        List<Mapping> changedWithinColumns = withinColumns.stream().filter(baseEntity::isChanged).toList();
 
         // Only enforce uniqueness if the value has changed or if any of the within column values have changed
-        if (baseEntity.isChanged(nameAsMapping) || !changedColumns.isEmpty()) {
+        if (baseEntity.isChanged(nameAsMapping) || !changedWithinColumns.isEmpty()) {
             baseEntity.assertUnique(nameAsMapping, propertyValue, withinColumns.toArray(Mapping[]::new));
         }
     }
