@@ -11,17 +11,25 @@ package sirius.db.jdbc;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Length;
+import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.annotations.Unique;
 
 @Index(name = "lastname", columns = "lastname")
 public class TestEntity extends SQLEntity {
 
     public static final Mapping FIRSTNAME = Mapping.named("firstname");
     @Length(50)
+    @Unique(within = "within")
     private String firstname;
 
     public static final Mapping LASTNAME = Mapping.named("lastname");
     @Length(50)
     private String lastname;
+
+    public static final Mapping WITHIN = Mapping.named("within");
+    @Length(50)
+    @NullAllowed
+    private String within;
 
     public static final Mapping AGE = Mapping.named("age");
     private int age;
@@ -46,6 +54,14 @@ public class TestEntity extends SQLEntity {
 
     public void setLastname(String lastname) {
         this.lastname = lastname;
+    }
+
+    public String getWithin() {
+        return within;
+    }
+
+    public void setWithin(String within) {
+        this.within = within;
     }
 
     public int getAge() {

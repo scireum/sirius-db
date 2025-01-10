@@ -33,6 +33,7 @@ class OMATest {
         assertEquals("Test", readBack.firstname)
         assertEquals("Entity", readBack.lastname)
         assertEquals(12, readBack.age)
+        oma.delete(testEntity)
     }
 
     @Test
@@ -71,6 +72,7 @@ class OMATest {
         assertEquals("Simpson", readBack.lastname)
         assertEquals("Jay", readBack.`as`(TestMixin::class.java).middleName)
         assertEquals("J", readBack.`as`(TestMixin::class.java).`as`(TestMixinMixin::class.java).initial)
+        oma.delete(testEntityWithMixin)
     }
 
     @Test
@@ -89,6 +91,7 @@ class OMATest {
         assertEquals("Marge", readBack.firstname)
         assertEquals("Simpson", readBack.lastname)
         assertEquals(43, readBack.age)
+        oma.delete(testEntity)
     }
 
     @Test
@@ -112,6 +115,7 @@ class OMATest {
         assertEquals("Marge", readBack.firstname)
         assertNull(readBack.lastname)
         assertEquals(43, readBack.age)
+        oma.delete(testEntity)
     }
 
     @Test
@@ -155,6 +159,7 @@ class OMATest {
             testEntityWithMixin.isAnyMappingChanged
             testEntityWithMixin.isChanged(TestMixin.MIDDLE_NAME.inMixin(TestMixin::class.java))
         }
+        oma.delete(testEntityWithMixin)
     }
 
     @Test
