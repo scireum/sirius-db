@@ -159,8 +159,13 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         return Amount.of((BigDecimal) defaultData).toString(format).asString();
     }
 
+    /**
+     * Returns the {@link NumberFormat} as specified by the {@link Numeric} annotation.
+     *
+     * @return the annotated format or an empty optional if no annotation is present
+     */
     @Nonnull
-    private Optional<NumberFormat> getAnnotatedNumberFormat() {
+    public Optional<NumberFormat> getAnnotatedNumberFormat() {
         return getAnnotation(Numeric.class).map(numeric -> {
             return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
         });
