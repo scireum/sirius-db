@@ -14,6 +14,7 @@ import sirius.db.jdbc.TestEntity;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
+import sirius.db.mixing.annotations.Numeric;
 import sirius.db.mixing.annotations.Ordinal;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.commons.Amount;
@@ -22,6 +23,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class ESDataTypesEntity extends ElasticEntity {
+
+    public static final int AMOUNT_SCALE = 6;
 
     public enum TestEnum {
         Test1, Test2;
@@ -47,6 +50,7 @@ public class ESDataTypesEntity extends ElasticEntity {
 
     private static final Mapping AMOUNT_VALUE = Mapping.named("amountValue");
     @NullAllowed
+    @Numeric(precision = 20, scale = AMOUNT_SCALE)
     private Amount amountValue = Amount.NOTHING;
 
     private static final Mapping LOCALDATE_VALUE = Mapping.named("localDateValue");

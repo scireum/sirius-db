@@ -168,7 +168,9 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     @Override
     protected Object transformToElastic(Object object) {
-        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
+        return object == null || ((Amount) object).isEmpty() ?
+               null :
+               applyNumericRounding(((Amount) object)).getAmount().toPlainString();
     }
 
     @Override
@@ -197,7 +199,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (Strings.isEmpty(valueAsString)) {
             return Amount.NOTHING;
         }
-        return Amount.of(new BigDecimal(valueAsString));
+        return Amount.ofRounded(new BigDecimal(valueAsString));
     }
 
     @Override

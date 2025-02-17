@@ -12,9 +12,12 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
+import sirius.db.jdbc.DataTypesEntity
 import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.di.std.Part
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -130,6 +133,21 @@ class ElasticDataTypesTest {
         esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
         assertEquals(Amount.of(400.5), esDataTypesEntity.amountValue)
+    }
+
+
+    @Test
+    fun `reading and writing large scale amount works`() {
+        var esDataTypesEntity = ESDataTypesEntity()
+
+        val unscaledValue = Amount.ofRounded(BigDecimal("1.23456789"))
+
+        esDataTypesEntity.amountValue = unscaledValue
+        elastic.update(esDataTypesEntity)
+        esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
+
+        val expectedAmount = unscaledValue.round(ESDataTypesEntity.AMOUNT_SCALE, RoundingMode.HALF_UP)
+        assertEquals(expectedAmount, esDataTypesEntity.amountValue)
     }
 
     @Test
