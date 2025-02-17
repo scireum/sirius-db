@@ -175,7 +175,9 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     @Override
     protected Object transformToMongo(Object object) {
-        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
+        return object == null || ((Amount) object).isEmpty() ?
+               null :
+               applyNumericRounding(((Amount) object)).getAmount();
     }
 
     @Override
@@ -204,7 +206,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     @Override
     protected Object transformFromMongo(Value object) {
-        return object.getAmount();
+        return object.getRoundedAmount();
     }
 
     @Override
