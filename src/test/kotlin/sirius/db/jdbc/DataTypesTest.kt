@@ -14,6 +14,7 @@ import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Duration
 import kotlin.test.assertEquals
@@ -101,6 +102,18 @@ class DataTypesTest {
         // Storing the same value twice must not trigger a change
         amountProperty.parseValue(test, unscaledValue)
         assertFalse { test.isAnyMappingChanged }
+    }
+
+    @Test
+    fun `Persisting large scale amounts works properly`() {
+        var test = DataTypesEntity()
+        val unscaledValue = Amount.ofRounded(BigDecimal("1.23456789"))
+
+        test.amountValue = unscaledValue
+        oma.update(test)
+        test = oma.refreshOrFail(test)
+        val expectedAmount = unscaledValue.round(DataTypesEntity.AMOUNT_SCALE, RoundingMode.HALF_UP)
+        assertEquals(expectedAmount, test.amountValue)
     }
 
     @Test

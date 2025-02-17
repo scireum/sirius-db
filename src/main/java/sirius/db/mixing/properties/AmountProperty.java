@@ -188,7 +188,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (object instanceof Integer value) {
             return Amount.of(value);
         }
-        return Amount.of((BigDecimal) object);
+        return Amount.ofRounded((BigDecimal) object);
     }
 
     @Override
