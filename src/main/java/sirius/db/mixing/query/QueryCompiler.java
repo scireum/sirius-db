@@ -502,6 +502,7 @@ public abstract class QueryCompiler<C extends Constraint> {
             for (QueryField field : searchFields) {
                 fieldConstraints.add(compileSearchToken(field.getField(),
                                                         QueryField.Mode.EQUAL,
+                                                        field.isCaseSensitive(),
                                                         token.getValue().toString()));
             }
             constraints.add(factory.or(fieldConstraints));
@@ -509,7 +510,10 @@ public abstract class QueryCompiler<C extends Constraint> {
             for (String word : token.getValue().toString().split("\\s")) {
                 List<C> fieldConstraints = new ArrayList<>();
                 for (QueryField field : searchFields) {
-                    fieldConstraints.add(compileSearchToken(field.getField(), field.getMode(), word));
+                    fieldConstraints.add(compileSearchToken(field.getField(),
+                                                            field.getMode(),
+                                                            field.isCaseSensitive(),
+                                                            word));
                 }
                 constraints.add(factory.or(fieldConstraints));
             }
@@ -520,12 +524,13 @@ public abstract class QueryCompiler<C extends Constraint> {
     /**
      * Permits the subclasses to generate the appropriate search constraint.
      *
-     * @param field the field to search in
-     * @param mode  the mode to use
-     * @param value the value to search for
+     * @param field         the field to search in
+     * @param mode          the mode to use
+     * @param caseSensitive determines if the search should be case-sensitive
+     * @param value         the value to search for
      * @return an appropriate constraint for the given parameters
      */
-    protected abstract C compileSearchToken(Mapping field, QueryField.Mode mode, String value);
+    protected abstract C compileSearchToken(Mapping field, QueryField.Mode mode, boolean caseSensitive, String value);
 
     /**
      * Parses an operation on the given field.

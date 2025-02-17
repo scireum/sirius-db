@@ -26,10 +26,12 @@ public class QueryField {
 
     private final Mapping field;
     private final Mode mode;
+    private final boolean caseSensitive;
 
-    private QueryField(Mapping field, Mode mode) {
+    private QueryField(Mapping field, Mode mode, boolean caseSensitive) {
         this.field = field;
         this.mode = mode;
+        this.caseSensitive = caseSensitive;
     }
 
     /**
@@ -41,7 +43,7 @@ public class QueryField {
      * @return the generated query field
      */
     public static QueryField eq(Mapping field) {
-        return new QueryField(field, Mode.EQUAL);
+        return new QueryField(field, Mode.EQUAL, true);
     }
 
     /**
@@ -55,20 +57,50 @@ public class QueryField {
      * @return the generated query field
      */
     public static QueryField like(Mapping field) {
-        return new QueryField(field, Mode.LIKE);
+        return new QueryField(field, Mode.LIKE, true);
     }
+
+    /**
+     * Informs the compiler, that by default, equality checks are used for this field.
+     * <p>
+     * However, if there are wildcards in the filter value, an expanding constraint can be generated.
+     * <p>
+     * Caveat: This method is case-insensitive and therefore will <b>not use an index</b> and should only be used for reasonably sized datasets.
+     *
+     * @param field the field to search in
+     * @return the generated query field
+     */
+    public static QueryField likeIgnoreCase(Mapping field) {
+        return new QueryField(field, Mode.LIKE, false);
+    }
+
 
     /**
      * Informs the compiler, that by default an expanding search like a prefix query may be generated for this field.
      * <p>
      * Depending on the underlying database an index might be used to support this query. If the database cannot
-     * execute prefix queries if may fallback to an equals constraint.
+     * execute prefix queries it may fall back to an equals-constraint.
      *
      * @param field the field to search in
      * @return the generated query field
      */
     public static QueryField startsWith(Mapping field) {
-        return new QueryField(field, Mode.PREFIX);
+        return new QueryField(field, Mode.PREFIX, true);
+    }
+
+    /**
+     * Informs the compiler, that by default an expanding search like a case-insensitive prefix query may be generated for this field.
+     * <p>
+     * Depending on the underlying database an index might be used to support this query. If the database cannot
+     * execute prefix queries it may fall back to an equals-constraint.
+     * <p>
+     * Caveat: This method is case-insensitive and therefore will <b>not use an index</b> and should only be used for reasonably sized datasets.
+     *
+     * @param field the field to search in
+     * @return the generated query field
+     */
+    public static QueryField startsWithIgnoreCase(Mapping field) {
+        return new QueryField(field, Mode.PREFIX, false);
     }
 
     /**
@@ -80,7 +112,7 @@ public class QueryField {
      * @return the generated query field
      */
     public static QueryField contains(Mapping field) {
-        return new QueryField(field, Mode.CONTAINS);
+        return new QueryField(field, Mode.CONTAINS, true);
     }
 
     public Mapping getField() {
@@ -89,5 +121,9 @@ public class QueryField {
 
     public Mode getMode() {
         return mode;
+    }
+
+    public boolean isCaseSensitive() {
+        return caseSensitive;
     }
 }

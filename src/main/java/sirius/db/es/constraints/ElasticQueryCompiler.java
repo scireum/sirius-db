@@ -41,7 +41,7 @@ public class ElasticQueryCompiler extends QueryCompiler<ElasticConstraint> {
     }
 
     @Override
-    protected ElasticConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
+    protected ElasticConstraint compileSearchToken(Mapping field, QueryField.Mode mode, boolean caseSensitive, String value) {
         if (mode == QueryField.Mode.EQUAL) {
             return factory.eq(field, value);
         }

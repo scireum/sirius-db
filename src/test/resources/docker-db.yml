@@ -24,6 +24,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     hostname: mysql
+    command: --collation-server=utf8mb4_bin --character-set-server=utf8mb4
   clickhouse:
     image: clickhouse/clickhouse-server:24.5.8-alpine
     ports:

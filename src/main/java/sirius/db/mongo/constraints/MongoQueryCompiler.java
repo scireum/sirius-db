@@ -52,7 +52,7 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
     }
 
     @Override
-    protected MongoConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
+    protected MongoConstraint compileSearchToken(Mapping field, QueryField.Mode mode, boolean caseSensitive, String value) {
         if (FULLTEXT_MAPPING.equals(field)) {
             return QueryBuilder.FILTERS.text(value.toLowerCase());
         }

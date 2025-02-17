@@ -42,19 +42,19 @@ public class SQLQueryCompiler extends QueryCompiler<SQLConstraint> {
     }
 
     @Override
-    protected SQLConstraint compileSearchToken(Mapping field, QueryField.Mode mode, String value) {
+    protected SQLConstraint compileSearchToken(Mapping field, QueryField.Mode mode, boolean caseSensitive, String value) {
         Optional<String> caseOptimizedValue = getCaseOptimizedValue(field, value);
         switch (mode) {
             case EQUAL:
                 return factory.eq(field, caseOptimizedValue.orElse(value));
             case LIKE:
-                if (caseOptimizedValue.isEmpty() && value.contains("*")) {
+                if ((caseOptimizedValue.isEmpty() && value.contains("*")) || !caseSensitive) {
                     return OMA.FILTERS.like(field).matches(value).ignoreCase().build();
                 } else {
                     return factory.eq(field, caseOptimizedValue.orElse(value));
                 }
             case PREFIX:
-                if (caseOptimizedValue.isEmpty() && value.contains("*")) {
+                if ((caseOptimizedValue.isEmpty() && value.contains("*")) || !caseSensitive) {
                     return OMA.FILTERS.like(field).startsWith(value).ignoreCase().build();
                 } else {
                     return OMA.FILTERS.like(field).startsWith(caseOptimizedValue.orElse(value)).build();
