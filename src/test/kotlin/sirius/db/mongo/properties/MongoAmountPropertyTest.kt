@@ -15,6 +15,7 @@ import sirius.kernel.SiriusExtension
 import sirius.kernel.commons.Amount
 import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
+import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -49,6 +50,19 @@ class MongoAmountPropertyTest {
         scaledAmountProperty.parseValue(test, unscaledValue)
         testAmountProperty.parseValue(test, unscaledValue)
         assertFalse { test.isAnyMappingChanged }
+    }
+
+    @Test
+    fun `Persisting large scale amounts works properly`() {
+        var test = MongoAmountEntity()
+        val unscaledValue = Amount.ofRounded(BigDecimal("1.23456789"))
+
+        test.scaledAmount = unscaledValue
+        test.testAmount = Amount.ONE
+        mango.update(test)
+        test = mango.refreshOrFail(test)
+        val expectedAmount = unscaledValue.round(MongoAmountEntity.AMOUNT_SCALE, RoundingMode.HALF_UP)
+        assertEquals(expectedAmount, test.scaledAmount)
     }
 
     companion object {

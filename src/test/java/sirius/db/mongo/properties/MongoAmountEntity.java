@@ -16,7 +16,7 @@ import sirius.kernel.commons.Amount;
 
 public class MongoAmountEntity extends MongoEntity {
 
-    public static final int AMOUNT_SCALE = 3;
+    public static final int AMOUNT_SCALE = 6;
 
     public static final Mapping TEST_AMOUNT = Mapping.named("testAmount");
     private Amount testAmount = Amount.NOTHING;
