@@ -129,10 +129,10 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     private Amount parseWithNLS(@Nonnull Value value) {
         try {
-            return applyNumericRounding(Amount.ofMachineString(value.asString()));
+            return applyNumericRounding(Amount.ofRoundedMachineString(value.asString()));
         } catch (IllegalArgumentException originalFormatException) {
             try {
-                return applyNumericRounding(Amount.ofUserString(value.asString()));
+                return applyNumericRounding(Amount.ofRoundedUserString(value.asString()));
             } catch (Exception ignored) {
                 throw originalFormatException;
             }
