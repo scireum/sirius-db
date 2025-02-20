@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:7.2.6-alpine
+    image: redis:7.4.2-alpine
     ports:
     - "6379"
     hostname: redis
@@ -18,12 +18,13 @@ services:
     hostname: qdrant
 
   mariadb:
-    image: mariadb:11.4.3-noble
+    image: mariadb:11.4.5-noble
     ports:
     - "3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
     hostname: mysql
+    command: --collation-server=utf8mb4_bin --character-set-server=utf8mb4
   clickhouse:
     image: clickhouse/clickhouse-server:24.5.8-alpine
     ports:
@@ -31,7 +32,7 @@ services:
     - "9000"
     hostname: clickhouse
   elasticsearch:
-    image: elasticsearch:8.15.3
+    image: elasticsearch:8.17.2
     ports:
     - "9200"
     environment:
