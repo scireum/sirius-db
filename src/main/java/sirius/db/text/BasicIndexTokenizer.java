@@ -18,7 +18,7 @@ public class BasicIndexTokenizer extends Tokenizer {
     @Override
     protected ChainableTokenProcessor createProcessor() {
         // ATTENTION: The pipeline used to contain a "new ReduceCharacterProcessor()" stage. This lead to the search
-        // index consisting of normalised strings, unlike earlier verions of sirius-db. Consequently, without migration,
+        // index consisting of normalised strings, unlike earlier versions of sirius-db. Consequently, without migration,
         // existing indices were incompatible. Furthermore, ElasticQueryCompiler did not follow along and continued to
         // query for raw strings, hence not finding search terms containing special characters such as umlauts.
         // Weighing the two possible options — keeping the normalised index and normalising the search term, or

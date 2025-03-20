@@ -15,12 +15,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a string property as auto trimmed.
+ * Marks a string property to remove any white-spaces.
  * <p>
- * The value of this property will be trimmed before it is written to the database.
+ * All white-spaces of the property's value will be removed before it is written to the database.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Trim {
+public @interface RemoveWhitespace {
 }

@@ -85,16 +85,13 @@ public abstract class BaseEntityCache<I extends Serializable, E extends BaseEnti
     }
 
     /**
-     * Fetches the entity in the given ref from the cache and returns it.
+     * Fetches the entity with {@link BaseEntity#ID id} stored in the given ref from the cache and returns it.
      *
      * @param entityRef the ref pointing to the entity to fetch
      * @return the cached entity wrapped in an Optional or an empty Optional
      */
     @Nonnull
     public Optional<E> fetch(@Nonnull BaseEntityRef<I, E> entityRef) {
-        if (entityRef.isValueLoaded()) {
-            return entityRef.getValueIfPresent();
-        }
         return fetchById(entityRef.getIdAsString());
     }
 

@@ -102,7 +102,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
 
     @Override
     public String getValueForUserMessage(Object entity) {
-        return NLS.toUserString(getEntityRef(accessPath.apply(entity)).fetchValue());
+        return NLS.toUserString(getEntityRef(accessPath.apply(entity)).fetchCachedValue());
     }
 
     @Override

@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  */
 public class PipelineProcessor extends ChainableTokenProcessor {
 
-    private List<ChainableTokenProcessor> processors;
+    private final List<ChainableTokenProcessor> processors;
 
     /**
      * Creates a new processor.
@@ -36,8 +36,8 @@ public class PipelineProcessor extends ChainableTokenProcessor {
      */
     public PipelineProcessor(Stream<ChainableTokenProcessor> processorsStream) {
         this.processors = processorsStream.filter(Objects::nonNull).toList();
-        for (int i = 0; i < processors.size() - 1; i++) {
-            processors.get(i).chain(processors.get(i + 1));
+        for (int processorIndex = 0; processorIndex < processors.size() - 1; processorIndex++) {
+            processors.get(processorIndex).chain(processors.get(processorIndex + 1));
         }
     }
 

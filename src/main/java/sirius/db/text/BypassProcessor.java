@@ -17,9 +17,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * i.e. properly enforce word boundaries when working with processors which emit purges internally.
  */
 public class BypassProcessor extends ChainableTokenProcessor {
-    private ChainableTokenProcessor tokenProcessor;
-    private AtomicBoolean innerPurge = new AtomicBoolean();
-    private AtomicBoolean permitPurge = new AtomicBoolean();
+
+    private final ChainableTokenProcessor tokenProcessor;
+    private final AtomicBoolean innerPurge = new AtomicBoolean();
+    private final AtomicBoolean permitPurge = new AtomicBoolean();
 
     /**
      * Creates a new instance for the given processor.

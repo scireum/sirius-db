@@ -20,6 +20,8 @@ import java.time.LocalTime;
 
 public class DataTypesEntity extends SQLEntity {
 
+    public static final int AMOUNT_SCALE = 3;
+
     public enum TestEnum {
         Test1, TestTest, Test2
     }
@@ -44,7 +46,7 @@ public class DataTypesEntity extends SQLEntity {
 
     @DefaultValue("300")
     @NullAllowed
-    @Numeric(precision = 20, scale = 3)
+    @Numeric(precision = 20, scale = AMOUNT_SCALE)
     private Amount amountValue = Amount.NOTHING;
 
     @DefaultValue("2018-01-01")

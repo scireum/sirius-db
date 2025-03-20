@@ -40,6 +40,7 @@ class StringPropertyTest {
         stringManipulationTestEntity.upper = " test "
         stringManipulationTestEntity.trimmedLower = " TEST "
         stringManipulationTestEntity.trimmedUpper = " test "
+        stringManipulationTestEntity.removeWhiteSpaces = " foo\tbar "
 
         oma.update(stringManipulationTestEntity)
         stringManipulationTestEntity = oma.refreshOrFail(stringManipulationTestEntity)
@@ -49,6 +50,7 @@ class StringPropertyTest {
         assertEquals(" TEST ", stringManipulationTestEntity.upper)
         assertEquals("test", stringManipulationTestEntity.trimmedLower)
         assertEquals("TEST", stringManipulationTestEntity.trimmedUpper)
+        assertEquals("foobar", stringManipulationTestEntity.removeWhiteSpaces)
     }
 
     @Test
@@ -62,6 +64,7 @@ class StringPropertyTest {
         assertNull(stringManipulationTestEntity.trimmed)
         assertNull(stringManipulationTestEntity.lower)
         assertNull(stringManipulationTestEntity.trimmedLower)
+        assertNull(stringManipulationTestEntity.removeWhiteSpaces)
     }
 
     companion object {

@@ -246,7 +246,11 @@ class RequestBuilder {
 
     protected ObjectNode extractErrorJSON(ResponseException e) {
         try {
-            ObjectNode response = Json.parseObject(EntityUtils.toString(e.getResponse().getEntity()));
+            HttpEntity httpEntity = e.getResponse().getEntity();
+            if (e.getResponse().getEntity().getContentLength() == 0) {
+                return null;
+            }
+            ObjectNode response = Json.parseObject(EntityUtils.toString(httpEntity));
             return Json.getObject(response, PARAM_ERROR);
         } catch (IOException ex) {
             Exceptions.handle(Elastic.LOG, ex);
