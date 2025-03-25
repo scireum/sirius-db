@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.scireum</groupId>
         <artifactId>sirius-parent</artifactId>
-        <version>13.1.0</version>
+        <version>14.0.1</version>
     </parent>
     <artifactId>sirius-db</artifactId>
     <version>DEVELOPMENT-SNAPSHOT</version>
@@ -16,10 +16,10 @@
     <description>
         Provides a modern and highly flexible ORM and lightweight connectivity for JDBC, MongoDB, Redis, Elasticsearch.
     </description>
-    <url>http://www.sirius-lib.net</url>
+    <url>https://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>dev-44.4.0</sirius.kernel>
+        <sirius.kernel>dev-45.0.0</sirius.kernel>
     </properties>
 
     <repositories>
