@@ -56,6 +56,13 @@ public class RedisDB {
     private String sentinels;
     private boolean available = true;
 
+    /**
+     * Determines whether additional client information should be sent to the server when connecting.
+     * <p>
+     * This may be disabled for some redis servers that do not support this feature.
+     */
+    private final boolean enableClientInfo;
+
     protected JedisPool jedis;
     protected JedisSentinelPool sentinelPool;
 
@@ -72,6 +79,7 @@ public class RedisDB {
         this.maxIdle = config.getInt("maxIdle");
         this.masterName = config.getString("masterName");
         this.sentinels = config.getString("sentinels");
+        this.enableClientInfo = config.get("enableClientInfo").asBoolean(true);
     }
 
     /**
@@ -162,7 +170,7 @@ public class RedisDB {
                                                                                  .connectionTimeoutMillis(connectTimeout)
                                                                                  .socketTimeoutMillis(readTimeout)
                                                                                  .clientSetInfoConfig(new ClientSetInfoConfig(
-                                                                                         true))
+                                                                                         !enableClientInfo))
                                                                                  .password(Strings.isFilled(password) ?
                                                                                            password :
                                                                                            null)
