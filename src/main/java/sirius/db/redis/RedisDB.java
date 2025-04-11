@@ -79,7 +79,7 @@ public class RedisDB {
         this.maxIdle = config.getInt("maxIdle");
         this.masterName = config.getString("masterName");
         this.sentinels = config.getString("sentinels");
-        this.enableClientInfo = config.get("enableClientInfo").asBoolean(true);
+        this.enableClientInfo = config.get("enableClientInfo").asBoolean(false);
     }
 
     /**
