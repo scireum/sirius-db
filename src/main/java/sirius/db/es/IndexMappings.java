@@ -90,7 +90,7 @@ public class IndexMappings implements Startable {
     public static final String MAPPING_DYNAMIC = "dynamic";
 
     /**
-     * Mapping value used to mark a field as "keywors" meaning that it is indexed but not analyzed.
+     * Mapping value used to mark a field as "keyword" meaning that it is indexed but not analyzed.
      */
     public static final String MAPPING_TYPE_KEWORD = "keyword";
 
