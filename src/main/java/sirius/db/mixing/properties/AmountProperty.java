@@ -129,10 +129,10 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     private Amount parseWithNLS(@Nonnull Value value) {
         try {
-            return applyNumericRounding(Amount.ofMachineString(value.asString()));
+            return applyNumericRounding(Amount.ofRoundedMachineString(value.asString()));
         } catch (IllegalArgumentException originalFormatException) {
             try {
-                return applyNumericRounding(Amount.ofUserString(value.asString()));
+                return applyNumericRounding(Amount.ofRoundedUserString(value.asString()));
             } catch (Exception ignored) {
                 throw originalFormatException;
             }
@@ -159,8 +159,13 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         return Amount.of((BigDecimal) defaultData).toString(format).asString();
     }
 
+    /**
+     * Returns the {@link NumberFormat} as specified by the {@link Numeric} annotation.
+     *
+     * @return the annotated format or an empty optional if no annotation is present
+     */
     @Nonnull
-    private Optional<NumberFormat> getAnnotatedNumberFormat() {
+    public Optional<NumberFormat> getAnnotatedNumberFormat() {
         return getAnnotation(Numeric.class).map(numeric -> {
             return new NumberFormat(numeric.scale(), RoundingMode.HALF_UP, NLS.getMachineFormatSymbols(), false, null);
         });
@@ -168,12 +173,16 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
 
     @Override
     protected Object transformToElastic(Object object) {
-        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount().toPlainString();
+        return object == null || ((Amount) object).isEmpty() ?
+               null :
+               applyNumericRounding(((Amount) object)).getAmount().toPlainString();
     }
 
     @Override
     protected Object transformToMongo(Object object) {
-        return object == null || ((Amount) object).isEmpty() ? null : ((Amount) object).getAmount();
+        return object == null || ((Amount) object).isEmpty() ?
+               null :
+               applyNumericRounding(((Amount) object)).getAmount();
     }
 
     @Override
@@ -188,7 +197,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (object instanceof Integer value) {
             return Amount.of(value);
         }
-        return Amount.of((BigDecimal) object);
+        return Amount.ofRounded((BigDecimal) object);
     }
 
     @Override
@@ -197,12 +206,12 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         if (Strings.isEmpty(valueAsString)) {
             return Amount.NOTHING;
         }
-        return Amount.of(new BigDecimal(valueAsString));
+        return Amount.ofRounded(new BigDecimal(valueAsString));
     }
 
     @Override
     protected Object transformFromMongo(Value object) {
-        return object.getAmount();
+        return object.getRoundedAmount();
     }
 
     @Override

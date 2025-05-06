@@ -20,7 +20,7 @@ import java.time.LocalTime;
 
 public class DataTypesEntity extends SQLEntity {
 
-    public static final int AMOUNT_SCALE = 3;
+    public static final int AMOUNT_SCALE = 6;
 
     public enum TestEnum {
         Test1, TestTest, Test2
