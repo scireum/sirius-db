@@ -19,7 +19,7 @@
     <url>https://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>ga-12.0.0</sirius.kernel>
+        <sirius.kernel>ga-13.0.0</sirius.kernel>
     </properties>
 
     <repositories>
