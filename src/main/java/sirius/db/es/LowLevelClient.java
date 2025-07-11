@@ -19,6 +19,7 @@ import sirius.db.mixing.OptimisticLockException;
 import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Strings;
+import sirius.kernel.commons.Urls;
 import sirius.kernel.health.Exceptions;
 import sirius.kernel.health.HandledException;
 
@@ -278,18 +279,17 @@ public class LowLevelClient {
      * @return <tt>true</tt> if the task is alive and active, <tt>false</tt> otherwise
      */
     public boolean checkTaskActivity(String taskId) {
-        ObjectNode response =
-                performGet().execute(API_TASK_INFO + Strings.urlEncode(taskId)).withCustomErrorHandler(ex -> {
-                    try {
-                        if (ex.getResponse().getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
-                            return new StringEntity("{ notFound: true }");
-                        } else {
-                            return null;
-                        }
-                    } catch (UnsupportedEncodingException e) {
-                        throw Exceptions.handle(e);
-                    }
-                }).response();
+        ObjectNode response = performGet().execute(API_TASK_INFO + Urls.encode(taskId)).withCustomErrorHandler(ex -> {
+            try {
+                if (ex.getResponse().getStatusLine().getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                    return new StringEntity("{ notFound: true }");
+                } else {
+                    return null;
+                }
+            } catch (UnsupportedEncodingException e) {
+                throw Exceptions.handle(e);
+            }
+        }).response();
 
         return !response.has("notFound") && !response.required("completed").asBoolean();
     }
