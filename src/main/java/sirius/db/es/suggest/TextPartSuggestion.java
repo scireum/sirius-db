@@ -11,7 +11,6 @@ package sirius.db.es.suggest;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.commons.Json;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,10 +23,10 @@ public class TextPartSuggestion {
     private static final String PARAM_LENGTH = "length";
     private static final String PARAM_OPTIONS = "options";
 
-    private String text;
-    private int offset;
-    private int length;
-    private List<TermSuggestion> termSuggestions;
+    private final String text;
+    private final int offset;
+    private final int length;
+    private final List<TermSuggestion> termSuggestions;
 
     /**
      * Creates a new phrase suggestion based on JSON as returned by Elasticsearch.
@@ -78,6 +77,6 @@ public class TextPartSuggestion {
      * @return a list of {@link TermSuggestion term suggestions}
      */
     public List<TermSuggestion> getTermSuggestions() {
-        return Collections.unmodifiableList(termSuggestions);
+        return termSuggestions;
     }
 }
