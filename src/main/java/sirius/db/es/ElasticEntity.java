@@ -144,10 +144,10 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         }
 
         ArrayNode matchedQueriesArray = Json.getArray(searchHit, MATCHED_QUERIES);
-        return Json.streamEntries(matchedQueriesArray)
-                   .filter(Objects::nonNull)
-                   .map(JsonNode::asText)
-                   .collect(Collectors.toSet());
+        return matchedQueriesArray.valueStream()
+                                  .filter(Objects::nonNull)
+                                  .map(JsonNode::asText)
+                                  .collect(Collectors.toSet());
     }
 
     /**
@@ -183,9 +183,10 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     @SuppressWarnings("unchecked")
     public <E extends ElasticEntity> List<E> getInnerHits(Class<E> type, String name) {
         return Json.tryGetArrayAt(getSearchHit(), Json.createPointer(INNER_HITS, name, "hits", "hits"))
-                   .map(jsonHits -> (List<E>) Json.streamEntries(jsonHits)
-                                                  .map(innerHit -> Elastic.make(getDescriptor(), (ObjectNode) innerHit))
-                                                  .toList())
+                   .map(jsonHits -> (List<E>) jsonHits.valueStream()
+                                                      .map(innerHit -> Elastic.make(getDescriptor(),
+                                                                                    (ObjectNode) innerHit))
+                                                      .toList())
                    .orElse(Collections.emptyList());
     }
 

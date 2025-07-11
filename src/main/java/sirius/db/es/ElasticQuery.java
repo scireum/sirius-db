@@ -497,7 +497,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return Json.streamEntries(jsonSorts).map(JsonNode::asText).toList();
+        return jsonSorts.valueStream().map(JsonNode::asText).toList();
     }
 
     /**
@@ -1419,7 +1419,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
 
-            return Json.streamEntries(Json.getArrayAt(response, HITS_POINTER))
+            return Json.getArrayAt(response, HITS_POINTER)
+                       .valueStream()
                        .map(entry -> (E) Elastic.make(descriptor, (ObjectNode) entry))
                        .iterator();
         }

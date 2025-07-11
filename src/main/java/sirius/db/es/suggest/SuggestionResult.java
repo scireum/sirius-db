@@ -34,7 +34,8 @@ public class SuggestionResult {
         ObjectNode suggestionsObject = Json.getObject(json, KEY_SUGGEST);
         suggestionsObject.properties().forEach(property -> {
             String name = property.getKey();
-            List<TextPartSuggestion> textPartSuggestions = Json.streamEntries(Json.getArray(suggestionsObject, name))
+            List<TextPartSuggestion> textPartSuggestions = Json.getArray(suggestionsObject, name)
+                                                               .valueStream()
                                                                .map(ObjectNode.class::cast)
                                                                .map(TextPartSuggestion::new)
                                                                .toList();
