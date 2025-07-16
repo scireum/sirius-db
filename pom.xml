@@ -74,7 +74,7 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>9.0.3</version>
+            <version>8.18.3</version>
         </dependency>
 
         <!-- Changelog: https://github.com/mariadb-corporation/mariadb-connector-j/releases -->
