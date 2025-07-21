@@ -18,6 +18,7 @@ import sirius.kernel.di.std.Part
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.ChronoField
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -29,9 +30,11 @@ class ClickhouseTest {
     @Test
     fun `write a test entity and read it back`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        val now = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
-        clickhouseTestEntity.instant = now
+        val nowInstant = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
+        val nowDateTime = LocalDateTime.now().withNano(0)
+        clickhouseTestEntity.instant = nowInstant
         clickhouseTestEntity.date = LocalDate.now()
+        clickhouseTestEntity.dateTime = nowDateTime
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
         clickhouseTestEntity.int32 = 1_000_000_000
@@ -56,7 +59,8 @@ class ClickhouseTest {
         assertEquals("This is a long string", readBack.string)
         assertEquals("X", readBack.fixedString)
         assertEquals(LocalDate.now(), readBack.date)
-        assertEquals(now, readBack.instant)
+        assertEquals(nowInstant, readBack.instant)
+        assertEquals(nowDateTime, readBack.dateTime)
         assertEquals(listOf("string1", "string2"), readBack.stringList.data())
         assertEquals(listOf(), readBack.emptyList.data())
         assertEquals(ClickhouseTestEntity.TestEnum.Test2, readBack.enumValue)
@@ -71,6 +75,7 @@ class ClickhouseTest {
         for (i in 0..99) {
             val clickhouseTestEntity = ClickhouseTestEntity()
             clickhouseTestEntity.instant = Instant.now()
+            clickhouseTestEntity.dateTime = LocalDateTime.now()
             clickhouseTestEntity.date = LocalDate.now()
             clickhouseTestEntity.int8 = i
             clickhouseTestEntity.int16 = i
@@ -96,6 +101,7 @@ class ClickhouseTest {
     fun `property with default-value is set to default when null in object`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
         clickhouseTestEntity.instant = Instant.now()
+        clickhouseTestEntity.dateTime = LocalDateTime.now()
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
@@ -115,6 +121,7 @@ class ClickhouseTest {
     fun `property with default-value is set to actual value when set`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
         clickhouseTestEntity.instant = Instant.now()
+        clickhouseTestEntity.dateTime = LocalDateTime.now()
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
@@ -136,6 +143,7 @@ class ClickhouseTest {
     fun `nullable property can be null`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
         clickhouseTestEntity.instant = Instant.now()
+        clickhouseTestEntity.dateTime = LocalDateTime.now()
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000

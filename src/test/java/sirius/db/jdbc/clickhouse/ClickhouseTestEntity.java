@@ -18,6 +18,7 @@ import sirius.db.mixing.types.StringList;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Realm("clickhouse")
 public class ClickhouseTestEntity extends SQLEntity {
@@ -31,6 +32,9 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public static final Mapping DATE = Mapping.named("date");
     private LocalDate date;
+
+    public static final Mapping DATE_TIME = Mapping.named("dateTime");
+    private LocalDateTime dateTime;
 
     public static final Mapping INT8 = Mapping.named("int8");
     @Length(1)
@@ -94,6 +98,14 @@ public class ClickhouseTestEntity extends SQLEntity {
 
     public void setDate(LocalDate date) {
         this.date = date;
+    }
+
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
     }
 
     public int getInt8() {
