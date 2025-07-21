@@ -12,6 +12,7 @@ import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.di.Initializable;
@@ -38,10 +39,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -79,6 +82,8 @@ public class Databases implements Initializable {
     private static final long DAY_SHIFT = HOUR_SHIFT * 100;
     private static final long MONTH_SHIFT = DAY_SHIFT * 100;
     private static final long YEAR_SHIFT = MONTH_SHIFT * 100;
+
+    private static final String CLICKHOUSE_PRODUCT_NAME = "ClickHouse";
 
     /**
      * Provides some metrics across all managed data sources.
@@ -308,6 +313,8 @@ public class Databases implements Initializable {
      * @param value         the value to add. This will be converted using {@link #convertValue(Object)}
      * @throws SQLException in case of a database error
      */
+    @SuppressWarnings("squid:S2143")
+    @Explain("PreparedStatement.setDate(int, LocalDate, Calendar) still expects a Calendar object")
     public static void convertAndSetParameter(PreparedStatement stmt, int oneBasedIndex, Object value)
             throws SQLException {
         Object effectiveValue = convertValue(value);
@@ -316,7 +323,14 @@ public class Databases implements Initializable {
         } else if (effectiveValue instanceof Integer number) {
             stmt.setInt(oneBasedIndex, number);
         } else if (effectiveValue instanceof Date date) {
-            stmt.setDate(oneBasedIndex, date);
+            if (isClickHouse(stmt)) {
+                // ClickHouse type Date has no time zone information, but the JDBC driver will assume a date as midnight
+                // in the current time zone. For timezones with an offset greater than 0, this will lead to the effective
+                // date being shifted to the previous day.
+                stmt.setDate(oneBasedIndex, date, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+            } else {
+                stmt.setDate(oneBasedIndex, date);
+            }
         } else if (effectiveValue instanceof Time time) {
             stmt.setTime(oneBasedIndex, time);
         } else if (effectiveValue instanceof String string) {
@@ -360,5 +374,9 @@ public class Databases implements Initializable {
             }
             return row;
         }
+    }
+
+    private static boolean isClickHouse(PreparedStatement stmt) throws SQLException {
+        return CLICKHOUSE_PRODUCT_NAME.equals(stmt.getConnection().getMetaData().getDatabaseProductName());
     }
 }
