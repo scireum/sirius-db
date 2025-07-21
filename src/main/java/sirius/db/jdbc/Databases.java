@@ -337,6 +337,7 @@ public class Databases implements Initializable {
         } else if (effectiveValue instanceof String string) {
             stmt.setString(oneBasedIndex, string);
         } else if (effectiveValue instanceof Timestamp timestamp && isClickHouse(stmt)) {
+            // ClickHouse the highest resolution for a DateTime is seconds.
             Timestamp effectiveTimestamp = new Timestamp(timestamp.getTime());
             effectiveTimestamp.setNanos(0);
             stmt.setTimestamp(oneBasedIndex, effectiveTimestamp, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
