@@ -58,6 +58,7 @@ class ClickhouseTest {
         assertEquals(LocalDate.now(), readBack.date)
         assertEquals(now, readBack.dateTime)
         assertEquals(listOf("string1", "string2"), readBack.stringList.data())
+        assertEquals(listOf(), readBack.emptyList.data())
         assertEquals(ClickhouseTestEntity.TestEnum.Test2, readBack.enumValue)
     }
 
