@@ -86,6 +86,9 @@ public class Databases implements Initializable {
 
     private static final String CLICKHOUSE_PRODUCT_NAME = "ClickHouse";
 
+    @ConfigValue("jdbc.clickhouse.timeZone")
+    private static String clickhouseTimeZone;
+
     /**
      * Provides some metrics across all managed data sources.
      */
@@ -328,7 +331,7 @@ public class Databases implements Initializable {
                 // ClickHouse type Date has no time zone information, but the JDBC driver will assume a date as midnight
                 // in the current time zone. For timezones with an offset greater than 0, this will lead to the effective
                 // date being shifted to the previous day.
-                stmt.setDate(oneBasedIndex, date, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+                stmt.setDate(oneBasedIndex, date, Calendar.getInstance(TimeZone.getTimeZone(clickhouseTimeZone)));
             } else {
                 stmt.setDate(oneBasedIndex, date);
             }
@@ -340,7 +343,9 @@ public class Databases implements Initializable {
             // ClickHouse the highest resolution for a DateTime is seconds.
             Timestamp effectiveTimestamp = new Timestamp(timestamp.getTime());
             effectiveTimestamp.setNanos(0);
-            stmt.setTimestamp(oneBasedIndex, effectiveTimestamp, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+            stmt.setTimestamp(oneBasedIndex,
+                              effectiveTimestamp,
+                              Calendar.getInstance(TimeZone.getTimeZone(clickhouseTimeZone)));
         } else {
             stmt.setObject(oneBasedIndex, effectiveValue);
         }
