@@ -32,6 +32,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
@@ -335,6 +336,10 @@ public class Databases implements Initializable {
             stmt.setTime(oneBasedIndex, time);
         } else if (effectiveValue instanceof String string) {
             stmt.setString(oneBasedIndex, string);
+        } else if (effectiveValue instanceof Timestamp timestamp && isClickHouse(stmt)) {
+            Timestamp effectiveTimestamp = new Timestamp(timestamp.getTime());
+            effectiveTimestamp.setNanos(0);
+            stmt.setTimestamp(oneBasedIndex, effectiveTimestamp, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
         } else {
             stmt.setObject(oneBasedIndex, effectiveValue);
         }
