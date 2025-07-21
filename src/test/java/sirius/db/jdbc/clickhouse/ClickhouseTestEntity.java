@@ -26,8 +26,8 @@ public class ClickhouseTestEntity extends SQLEntity {
         Test1, Test2
     }
 
-    public static final Mapping DATE_TIME = Mapping.named("dateTime");
-    private Instant dateTime;
+    public static final Mapping INSTANT = Mapping.named("instant");
+    private Instant instant;
 
     public static final Mapping DATE = Mapping.named("date");
     private LocalDate date;
@@ -80,12 +80,12 @@ public class ClickhouseTestEntity extends SQLEntity {
     @NullAllowed
     private TestEnum enumValue = null;
 
-    public Instant getDateTime() {
-        return dateTime;
+    public Instant getInstant() {
+        return instant;
     }
 
-    public void setDateTime(Instant dateTime) {
-        this.dateTime = dateTime;
+    public void setInstant(Instant instant) {
+        this.instant = instant;
     }
 
     public LocalDate getDate() {

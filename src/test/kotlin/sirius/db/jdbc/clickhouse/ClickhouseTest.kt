@@ -30,7 +30,7 @@ class ClickhouseTest {
     fun `write a test entity and read it back`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
         val now = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
-        clickhouseTestEntity.dateTime = now
+        clickhouseTestEntity.instant = now
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
@@ -56,7 +56,7 @@ class ClickhouseTest {
         assertEquals("This is a long string", readBack.string)
         assertEquals("X", readBack.fixedString)
         assertEquals(LocalDate.now(), readBack.date)
-        assertEquals(now, readBack.dateTime)
+        assertEquals(now, readBack.instant)
         assertEquals(listOf("string1", "string2"), readBack.stringList.data())
         assertEquals(listOf(), readBack.emptyList.data())
         assertEquals(ClickhouseTestEntity.TestEnum.Test2, readBack.enumValue)
@@ -70,7 +70,7 @@ class ClickhouseTest {
         )
         for (i in 0..99) {
             val clickhouseTestEntity = ClickhouseTestEntity()
-            clickhouseTestEntity.dateTime = Instant.now()
+            clickhouseTestEntity.instant = Instant.now()
             clickhouseTestEntity.date = LocalDate.now()
             clickhouseTestEntity.int8 = i
             clickhouseTestEntity.int16 = i
@@ -95,7 +95,7 @@ class ClickhouseTest {
     @Test
     fun `property with default-value is set to default when null in object`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        clickhouseTestEntity.dateTime = Instant.now()
+        clickhouseTestEntity.instant = Instant.now()
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
@@ -114,7 +114,7 @@ class ClickhouseTest {
     @Test
     fun `property with default-value is set to actual value when set`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        clickhouseTestEntity.dateTime = Instant.now()
+        clickhouseTestEntity.instant = Instant.now()
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
@@ -135,7 +135,7 @@ class ClickhouseTest {
     @Test
     fun `nullable property can be null`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        clickhouseTestEntity.dateTime = Instant.now()
+        clickhouseTestEntity.instant = Instant.now()
         clickhouseTestEntity.date = LocalDate.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
