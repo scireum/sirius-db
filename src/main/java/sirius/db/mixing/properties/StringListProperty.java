@@ -166,7 +166,8 @@ public class StringListProperty extends Property implements ESPropertyInfo, SQLP
     private Object unpackListOrArray(Value object) {
         if (object.get() instanceof Array) {
             try {
-                return Arrays.asList((String[]) ((Array) object.get()).getArray());
+                Object[] array = (Object[]) ((Array) object.get()).getArray();
+                return Arrays.stream(array).map(String.class::cast).toList();
             } catch (SQLException e) {
                 throw Exceptions.handle(Mixing.LOG, e);
             }
