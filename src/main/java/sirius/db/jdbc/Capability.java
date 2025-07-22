@@ -80,18 +80,6 @@ public enum Capability {
     NULLS_FIRST,
 
     /**
-     * Used by {@link sirius.db.mixing.properties.LocalDateProperty} that the offset between the JVM's timezone and the
-     * server's timezone must be considered when storing a {@link java.time.LocalDate}.
-     * <p>
-     * The local date is obtained by stripping time from the current time in the current timezone. If the server's timezone is
-     * before the JVM's timezone, the date is shifted by one day.
-     * <p>
-     * For example, a {@link java.time.LocalDate} of 2023-10-01 00:00:00 in GMT+2 results in an actual date of 2023-09-30 22:00:00 in UTC,
-     * and this date will be stored in the database without its time information.
-     */
-    TIMEZONE_OFFSET,
-
-    /**
      * Signalizes that {@link sirius.db.mixing.properties.InstantProperty} values are stored without nanoseconds (1 second resolution).
      */
     INSTANT_WITHOUT_NANOS;
@@ -126,5 +114,5 @@ public enum Capability {
      * Contains the capabilities of a Clickhouse database
      */
     public static final Set<Capability> CLICKHOUSE_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS, INSTANT_WITHOUT_NANOS, TIMEZONE_OFFSET));
+            Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS, INSTANT_WITHOUT_NANOS));
 }

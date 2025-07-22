@@ -12,9 +12,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;
 import sirius.db.es.annotations.IndexMode;
-import sirius.db.jdbc.Capability;
-import sirius.db.jdbc.Database;
-import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -26,7 +23,6 @@ import sirius.db.mixing.annotations.DefaultValue;
 import sirius.db.mongo.QueryBuilder;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
-import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
@@ -44,11 +40,6 @@ import java.util.function.Consumer;
  * {@link LocalDate}.
  */
 public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPropertyInfo {
-
-    @Part
-    private static OMA oma;
-
-    private Integer timeZoneOffset;
 
     /**
      * Factory for generating properties based on their field type
@@ -119,16 +110,7 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
 
     @Override
     protected Object transformToJDBC(Object object) {
-        if (object == null) {
-            return null;
-        }
-
-        LocalDate localDate = (LocalDate) object;
-        if (fetchTimezoneOffset() > 0) {
-            // If the offset is positive, the Instant calculated from this date's year, month, and day will be in the previous day.
-            localDate = localDate.plusDays(1);
-        }
-        return Date.valueOf(localDate);
+        return object == null ? null : Date.valueOf((LocalDate) object);
     }
 
     @Override
@@ -169,7 +151,7 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
      * Overrides the default behavior, as the initial value of a temporal property is not suited for a default.
      * <p>
      * The initial value will commonly be a temporal value and thus not a constant.
-     * Therefore, we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
+     * Therefore we ignore the initial value here, and only check for a {@link DefaultValue} annotation on the field.
      */
     @Override
     protected void determineDefaultValue() {
@@ -177,17 +159,5 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
         if (defaultValueAnnotation != null) {
             this.defaultValue = Value.of(transformValueFromImport(Value.of(defaultValueAnnotation.value())));
         }
-    }
-
-    private int fetchTimezoneOffset() {
-        if (timeZoneOffset == null) {
-            Database database = oma.getDatabase(descriptor.getRealm());
-            if (database.hasCapability(Capability.TIMEZONE_OFFSET)) {
-                timeZoneOffset = database.getTimeZoneOffset();
-            } else {
-                timeZoneOffset = 0;
-            }
-        }
-        return timeZoneOffset;
     }
 }
