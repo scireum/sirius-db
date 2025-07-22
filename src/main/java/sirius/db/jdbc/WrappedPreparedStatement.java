@@ -60,15 +60,15 @@ class WrappedPreparedStatement implements PreparedStatement {
         this.preparedSQL = preparedSQL;
     }
 
-    protected void updateStatistics(String sql, Watch w) {
-        w.submitMicroTiming("SQL", "PreparedStatement: " + sql);
+    protected void updateStatistics(String sql, Watch watch) {
+        watch.submitMicroTiming("SQL", "PreparedStatement: " + sql);
         Databases.numQueries.inc();
         if (!longRunning) {
-            Databases.queryDuration.addValue(w.elapsedMillis());
-            if (w.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
+            Databases.queryDuration.addValue(watch.elapsedMillis());
+            if (watch.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
                 Databases.numSlowQueries.inc();
                 DB.SLOW_DB_LOG.INFO("A slow JDBC query was executed (%s): %s\n%s",
-                                    w.duration(),
+                                    watch.duration(),
                                     sql,
                                     ExecutionPoint.snapshot().toString());
             }
@@ -80,11 +80,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeQuery(sql);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -102,11 +102,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(preparedSQL);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> preparedSQL, determineOperationDuration())) {
             return delegate.executeQuery();
         } finally {
-            updateStatistics(preparedSQL, w);
+            updateStatistics(preparedSQL, watch);
         }
     }
 
@@ -115,11 +115,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -133,11 +133,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(preparedSQL);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> preparedSQL, determineOperationDuration())) {
             return delegate.executeUpdate();
         } finally {
-            updateStatistics(preparedSQL, w);
+            updateStatistics(preparedSQL, watch);
         }
     }
 
@@ -285,11 +285,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -421,27 +421,27 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(preparedSQL);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> preparedSQL, Duration.ofSeconds(30))) {
             return delegate.execute();
         } finally {
-            updateStatistics(preparedSQL, w);
+            updateStatistics(preparedSQL, watch);
         }
     }
 
     @Override
     public int[] executeBatch() throws SQLException {
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> "executeBatch: " + preparedSQL, determineOperationDuration())) {
             int[] result = delegate.executeBatch();
-            w.submitMicroTiming("SQL", "Batch: " + preparedSQL);
+            watch.submitMicroTiming("SQL", "Batch: " + preparedSQL);
             Databases.numQueries.inc();
             if (!longRunning) {
-                Databases.queryDuration.addValue(w.elapsedMillis());
-                if (w.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
+                Databases.queryDuration.addValue(watch.elapsedMillis());
+                if (watch.elapsedMillis() > Databases.getLogQueryThresholdMillis()) {
                     Databases.numSlowQueries.inc();
                     DB.SLOW_DB_LOG.INFO("A slow JDBC batch query was executed (%s): %s (%s rows)\n%s",
-                                        w.duration(),
+                                        watch.duration(),
                                         preparedSQL,
                                         result.length,
                                         ExecutionPoint.snapshot().toString());
@@ -512,11 +512,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql, autoGeneratedKeys);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -530,11 +530,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql, columnIndexes);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -553,11 +553,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql, columnNames);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -566,11 +566,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql, autoGeneratedKeys);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -594,11 +594,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql, columnIndexes);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
@@ -617,11 +617,11 @@ class WrappedPreparedStatement implements PreparedStatement {
         if (Databases.LOG.isFINE()) {
             Databases.LOG.FINE(sql);
         }
-        Watch w = Watch.start();
+        Watch watch = Watch.start();
         try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql, columnNames);
         } finally {
-            updateStatistics(sql, w);
+            updateStatistics(sql, watch);
         }
     }
 
