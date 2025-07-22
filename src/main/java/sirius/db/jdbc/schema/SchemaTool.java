@@ -92,15 +92,16 @@ public class SchemaTool {
         fillColumns(connection, table);
         fillPK(connection, table);
         fillIndices(connection, table);
+        fillFKs(connection, table);
+    }
+
+    private void fillFKs(Connection connection, Table table) throws SQLException {
         if (dialect instanceof ClickhouseDatabaseDialect) {
             // ClickHouse does not support calls to getImportedKeys, and it will throw a warning such as
             // "getImportedKeys is not supported and may return invalid results"
             return;
         }
-        fillFKs(connection, table);
-    }
 
-    private void fillFKs(Connection connection, Table table) throws SQLException {
         ResultSet rs = connection.getMetaData()
                                  .getImportedKeys(connection.getCatalog(), connection.getSchema(), table.getName());
         while (rs.next()) {
