@@ -67,7 +67,8 @@ public class SchemaTool {
     public List<Table> getSchema(Database db) throws SQLException {
         List<Table> tables = new ArrayList<>();
         try (Connection connection = db.getConnection()) {
-            try (ResultSet rs = connection.getMetaData().getTables(connection.getCatalog(), connection.getSchema(), null, null)) {
+            try (ResultSet rs = connection.getMetaData()
+                                          .getTables(connection.getCatalog(), connection.getSchema(), null, null)) {
                 while (rs.next()) {
                     readTableRow(tables, connection, rs);
                 }
@@ -91,11 +92,17 @@ public class SchemaTool {
         fillColumns(connection, table);
         fillPK(connection, table);
         fillIndices(connection, table);
+        if (dialect instanceof ClickhouseDatabaseDialect) {
+            // ClickHouse does not support calls to getImportedKeys, and it will throw a warning such as
+            // "getImportedKeys is not supported and may return invalid results"
+            return;
+        }
         fillFKs(connection, table);
     }
 
     private void fillFKs(Connection connection, Table table) throws SQLException {
-        ResultSet rs = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(), table.getName());
+        ResultSet rs = connection.getMetaData()
+                                 .getImportedKeys(connection.getCatalog(), connection.getSchema(), table.getName());
         while (rs.next()) {
             String indexName = rs.getString("FK_NAME");
             if (indexName != null) {
@@ -114,7 +121,12 @@ public class SchemaTool {
     }
 
     private void fillIndices(Connection connection, Table table) throws SQLException {
-        ResultSet rs = connection.getMetaData().getIndexInfo(connection.getCatalog(), connection.getSchema(), table.getName(), false, false);
+        ResultSet rs = connection.getMetaData()
+                                 .getIndexInfo(connection.getCatalog(),
+                                               connection.getSchema(),
+                                               table.getName(),
+                                               false,
+                                               false);
         while (rs.next()) {
             String indexName = rs.getString("INDEX_NAME");
             if (indexName != null) {
@@ -132,7 +144,8 @@ public class SchemaTool {
     }
 
     private void fillPK(Connection connection, Table table) throws SQLException {
-        ResultSet rs = connection.getMetaData().getPrimaryKeys(connection.getCatalog(), connection.getSchema(), table.getName());
+        ResultSet rs = connection.getMetaData()
+                                 .getPrimaryKeys(connection.getCatalog(), connection.getSchema(), table.getName());
         List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
         while (rs.next()) {
             keyFields.add(ComparableTuple.create(rs.getInt(COLUMN_KEY_SEQ), rs.getString(COLUMN_COLUMN_NAME)));
@@ -145,7 +158,8 @@ public class SchemaTool {
     }
 
     private void fillColumns(Connection connection, Table table) throws SQLException {
-        ResultSet rs = connection.getMetaData().getColumns(connection.getCatalog(), connection.getSchema(), table.getName(), null);
+        ResultSet rs = connection.getMetaData()
+                                 .getColumns(connection.getCatalog(), connection.getSchema(), table.getName(), null);
         while (rs.next()) {
             TableColumn column = new TableColumn();
             column.setName(rs.getString(COLUMN_COLUMN_NAME));
