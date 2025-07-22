@@ -66,36 +66,36 @@ public class SchemaTool {
      */
     public List<Table> getSchema(Database db) throws SQLException {
         List<Table> tables = new ArrayList<>();
-        try (Connection c = db.getConnection()) {
-            try (ResultSet rs = c.getMetaData().getTables(c.getCatalog(), c.getSchema(), null, null)) {
+        try (Connection connection = db.getConnection()) {
+            try (ResultSet rs = connection.getMetaData().getTables(connection.getCatalog(), connection.getSchema(), null, null)) {
                 while (rs.next()) {
-                    readTableRow(tables, c, rs);
+                    readTableRow(tables, connection, rs);
                 }
             }
         }
         return tables;
     }
 
-    protected void readTableRow(List<Table> tables, Connection c, ResultSet rs) throws SQLException {
+    protected void readTableRow(List<Table> tables, Connection connection, ResultSet rs) throws SQLException {
         if (!"TABLE".equalsIgnoreCase(rs.getString(4))) {
             return;
         }
 
         Table table = new Table();
         table.setName(rs.getString("TABLE_NAME"));
-        fillTable(c, table);
+        fillTable(connection, table);
         tables.add(dialect.completeTableInfos(table));
     }
 
-    private void fillTable(Connection c, Table table) throws SQLException {
-        fillColumns(c, table);
-        fillPK(c, table);
-        fillIndices(c, table);
-        fillFKs(c, table);
+    private void fillTable(Connection connection, Table table) throws SQLException {
+        fillColumns(connection, table);
+        fillPK(connection, table);
+        fillIndices(connection, table);
+        fillFKs(connection, table);
     }
 
-    private void fillFKs(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getImportedKeys(c.getCatalog(), c.getSchema(), table.getName());
+    private void fillFKs(Connection connection, Table table) throws SQLException {
+        ResultSet rs = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(), table.getName());
         while (rs.next()) {
             String indexName = rs.getString("FK_NAME");
             if (indexName != null) {
@@ -113,8 +113,8 @@ public class SchemaTool {
         rs.close();
     }
 
-    private void fillIndices(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getIndexInfo(c.getCatalog(), c.getSchema(), table.getName(), false, false);
+    private void fillIndices(Connection connection, Table table) throws SQLException {
+        ResultSet rs = connection.getMetaData().getIndexInfo(connection.getCatalog(), connection.getSchema(), table.getName(), false, false);
         while (rs.next()) {
             String indexName = rs.getString("INDEX_NAME");
             if (indexName != null) {
@@ -131,8 +131,8 @@ public class SchemaTool {
         rs.close();
     }
 
-    private void fillPK(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getPrimaryKeys(c.getCatalog(), c.getSchema(), table.getName());
+    private void fillPK(Connection connection, Table table) throws SQLException {
+        ResultSet rs = connection.getMetaData().getPrimaryKeys(connection.getCatalog(), connection.getSchema(), table.getName());
         List<ComparableTuple<Integer, String>> keyFields = new ArrayList<>();
         while (rs.next()) {
             keyFields.add(ComparableTuple.create(rs.getInt(COLUMN_KEY_SEQ), rs.getString(COLUMN_COLUMN_NAME)));
@@ -144,8 +144,8 @@ public class SchemaTool {
         rs.close();
     }
 
-    private void fillColumns(Connection c, Table table) throws SQLException {
-        ResultSet rs = c.getMetaData().getColumns(c.getCatalog(), c.getSchema(), table.getName(), null);
+    private void fillColumns(Connection connection, Table table) throws SQLException {
+        ResultSet rs = connection.getMetaData().getColumns(connection.getCatalog(), connection.getSchema(), table.getName(), null);
         while (rs.next()) {
             TableColumn column = new TableColumn();
             column.setName(rs.getString(COLUMN_COLUMN_NAME));
