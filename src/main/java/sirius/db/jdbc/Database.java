@@ -28,8 +28,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +56,6 @@ public class Database {
     private static final String KEY_MAX_ACTIVE = "maxActive";
     private static final String KEY_MAX_IDLE = "maxIdle";
     private static final String KEY_VALIDATION_QUERY = "validationQuery";
-    private static final String KEY_SERVER_TIME_ZONE = "serverTimeZone";
     protected final String name;
     private final String service;
     private final String driver;
@@ -71,7 +68,6 @@ public class Database {
     private final int maxIdle;
     private final boolean testOnBorrow;
     private final String validationQuery;
-    private final int timeZoneOffset;
     private MonitoredDataSource ds;
     private Set<Capability> capabilities;
     private static final Pattern SANE_COLUMN_NAME = Pattern.compile("\\w+");
@@ -123,20 +119,6 @@ public class Database {
                                Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).setDirect(ctx).format() :
                                ext.get(KEY_VALIDATION_QUERY).asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
-        this.timeZoneOffset = calculateTimeZoneOffset(ext.get(KEY_SERVER_TIME_ZONE).isFilled() ?
-                                                      ext.get(KEY_SERVER_TIME_ZONE).asString() :
-                                                      profile.get(KEY_SERVER_TIME_ZONE).asString());
-    }
-
-    private int calculateTimeZoneOffset(String serverTimeZone) {
-        if (Strings.isEmpty(serverTimeZone)) {
-            return 0;
-        }
-        Instant now = Instant.now();
-        ZoneId targetZone = ZoneId.of(serverTimeZone);
-        return ZoneId.systemDefault().getRules().getOffset(now).getTotalSeconds() - targetZone.getRules()
-                                                                                              .getOffset(now)
-                                                                                              .getTotalSeconds();
     }
 
     private void applyPortMapping() {
@@ -433,17 +415,6 @@ public class Database {
             return 0;
         }
         return ds.getNumActive();
-    }
-
-    /**
-     * Returns the time zone offset in seconds between the local time zone and the server time zone.
-     * <p>
-     * If no target time zone is configured, this will return 0.
-     *
-     * @return the time zone offset in seconds
-     */
-    public int getTimeZoneOffset() {
-        return timeZoneOffset;
     }
 
     /**
