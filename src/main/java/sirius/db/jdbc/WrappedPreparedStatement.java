@@ -252,8 +252,6 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    @SuppressWarnings("squid:S2143")
-    @Explain("The PreparedStatement still expects a Calendar as parameter.")
     public void setDate(int parameterIndex, Date x) throws SQLException {
         if (isDelegatingToClickHouse(delegate)) {
             // Clickhouse uses fromUnixTimestamp64Nano to pass the nanos from a date to the database. The nanos will be
@@ -261,7 +259,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             // expects nanos in UTC, we must set it with a UTC Calendar to avoid date shifting.
             // eg: a LocalDate of 2023-10-01 in GMT+2 will be converted to an Instant of 2023-09-30T22:00:00Z in UTC.
             // https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions#fromunixtimestamp64nano
-            delegate.setDate(parameterIndex, x, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+            delegate.setDate(parameterIndex, x, getUtcCalendar());
         } else {
             delegate.setDate(parameterIndex, x);
         }
@@ -386,7 +384,16 @@ class WrappedPreparedStatement implements PreparedStatement {
 
     @Override
     public void setObject(int parameterIndex, Object x) throws SQLException {
-        delegate.setObject(parameterIndex, x);
+        if (isDelegatingToClickHouse(delegate) && x instanceof Timestamp timestamp) {
+            // Timestamps, translated in ClickHouse as DateTime data type, have a resolution of 1 second.
+            // If we pass it to the regular setObject, parsing errors will occur unless nanoseconds are dropped, or
+            // we delegate to the method responsible for it. Note that we then need to use the correct UTC Calendar
+            // so the timestamp will not be shifted.
+            // https://clickhouse.com/docs/sql-reference/data-types/datetime
+            delegate.setTimestamp(parameterIndex, timestamp, getUtcCalendar());
+        } else {
+            delegate.setObject(parameterIndex, x);
+        }
     }
 
     @Override
@@ -733,5 +740,11 @@ class WrappedPreparedStatement implements PreparedStatement {
             return isDelegatingToClickHouse(delegatingPreparedStatement.getDelegate());
         }
         return statement instanceof StatementImpl;
+    }
+
+    @SuppressWarnings("squid:S2143")
+    @Explain("The PreparedStatement still expects a Calendar as parameter.")
+    private static Calendar getUtcCalendar() {
+        return Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     }
 }
