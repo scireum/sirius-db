@@ -77,12 +77,7 @@ public enum Capability {
      * Some, e.g. mariaDB or MySQL, lists null values before non-null values. Oracle and postgreSQL do it the other way
      * around.
      */
-    NULLS_FIRST,
-
-    /**
-     * Signalizes that {@link sirius.db.mixing.properties.InstantProperty} values are stored without nanoseconds (1 second resolution).
-     */
-    INSTANT_WITHOUT_NANOS;
+    NULLS_FIRST;
 
     /**
      * Contains the default capabilities of unknown databases.
@@ -113,6 +108,5 @@ public enum Capability {
     /**
      * Contains the capabilities of a Clickhouse database
      */
-    public static final Set<Capability> CLICKHOUSE_CAPABILITIES =
-            Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS, INSTANT_WITHOUT_NANOS));
+    public static final Set<Capability> CLICKHOUSE_CAPABILITIES = Collections.unmodifiableSet(EnumSet.of(LIMIT, LISTS));
 }

@@ -8,8 +8,6 @@
 
 package sirius.db.mixing.properties;
 
-import sirius.db.jdbc.Capability;
-import sirius.db.jdbc.OMA;
 import sirius.db.jdbc.schema.SQLPropertyInfo;
 import sirius.db.jdbc.schema.Table;
 import sirius.db.jdbc.schema.TableColumn;
@@ -19,7 +17,6 @@ import sirius.db.mixing.Mixable;
 import sirius.db.mixing.Property;
 import sirius.db.mixing.PropertyFactory;
 import sirius.kernel.commons.Value;
-import sirius.kernel.di.std.Part;
 import sirius.kernel.di.std.Register;
 import sirius.kernel.nls.NLS;
 
@@ -36,11 +33,6 @@ import java.util.function.Consumer;
  * Represents an {@link Instant} field within a {@link Mixable}.
  */
 public class InstantProperty extends Property implements SQLPropertyInfo {
-
-    @Part
-    private static OMA oma;
-
-    private Boolean dbHasCapabilityInstantWithoutNanos;
 
     /**
      * Factory for generating properties based on their field type
@@ -91,23 +83,11 @@ public class InstantProperty extends Property implements SQLPropertyInfo {
         if (object == null) {
             return null;
         }
-        Timestamp timestamp = new Timestamp(((Instant) object).toEpochMilli());
-        if (hasCapabilityInstantWithoutNanos()) {
-            timestamp.setNanos(0);
-        }
-        return timestamp;
+        return new Timestamp(((Instant) object).toEpochMilli());
     }
 
     @Override
     public void contributeToTable(Table table) {
         table.getColumns().add(new TableColumn(this, Types.TIMESTAMP));
-    }
-
-    private boolean hasCapabilityInstantWithoutNanos() {
-        if (dbHasCapabilityInstantWithoutNanos == null) {
-            dbHasCapabilityInstantWithoutNanos =
-                    oma.getDatabase(descriptor.getRealm()).hasCapability(Capability.INSTANT_WITHOUT_NANOS);
-        }
-        return dbHasCapabilityInstantWithoutNanos;
     }
 }
