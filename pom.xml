@@ -90,7 +90,6 @@
             <groupId>com.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
             <version>0.9.0</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

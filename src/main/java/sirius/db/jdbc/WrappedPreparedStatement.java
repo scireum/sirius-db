@@ -8,6 +8,8 @@
 
 package sirius.db.jdbc;
 
+import com.clickhouse.jdbc.StatementImpl;
+import org.apache.commons.dbcp2.DelegatingPreparedStatement;
 import sirius.db.DB;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Operation;
@@ -33,10 +35,12 @@ import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.Calendar;
+import java.util.TimeZone;
 
 /**
  * Wrapper for {@link PreparedStatement} to add microtiming.
@@ -57,7 +61,7 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     protected void updateStatistics(String sql, Watch w) {
-        w.submitMicroTiming("SQL","PreparedStatement: " + sql);
+        w.submitMicroTiming("SQL", "PreparedStatement: " + sql);
         Databases.numQueries.inc();
         if (!longRunning) {
             Databases.queryDuration.addValue(w.elapsedMillis());
@@ -248,8 +252,19 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
+    @SuppressWarnings("squid:S2143")
+    @Explain("The PreparedStatement still expects a Calendar as parameter.")
     public void setDate(int parameterIndex, Date x) throws SQLException {
-        delegate.setDate(parameterIndex, x);
+        if (isDelegatingToClickHouse(delegate)) {
+            // Clickhouse uses fromUnixTimestamp64Nano to pass the nanos from a date to the database. The nanos will be
+            // obtained after creating an Instant from the date using the local timezone Calendar. Since this function
+            // expects nanos in UTC, we must set it with a UTC Calendar to avoid date shifting.
+            // eg: a LocalDate of 2023-10-01 in GMT+2 will be converted to an Instant of 2023-09-30T22:00:00Z in UTC.
+            // https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions#fromunixtimestamp64nano
+            delegate.setDate(parameterIndex, x, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+        } else {
+            delegate.setDate(parameterIndex, x);
+        }
     }
 
     @Override
@@ -412,7 +427,7 @@ class WrappedPreparedStatement implements PreparedStatement {
         Watch w = Watch.start();
         try (Operation op = new Operation(() -> "executeBatch: " + preparedSQL, determineOperationDuration())) {
             int[] result = delegate.executeBatch();
-            w.submitMicroTiming("SQL","Batch: " + preparedSQL);
+            w.submitMicroTiming("SQL", "Batch: " + preparedSQL);
             Databases.numQueries.inc();
             if (!longRunning) {
                 Databases.queryDuration.addValue(w.elapsedMillis());
@@ -711,5 +726,12 @@ class WrappedPreparedStatement implements PreparedStatement {
     @Override
     public void setNClob(int parameterIndex, Reader reader) throws SQLException {
         delegate.setNClob(parameterIndex, reader);
+    }
+
+    private boolean isDelegatingToClickHouse(Statement statement) {
+        if (statement instanceof DelegatingPreparedStatement delegatingPreparedStatement) {
+            return isDelegatingToClickHouse(delegatingPreparedStatement.getDelegate());
+        }
+        return statement instanceof StatementImpl;
     }
 }
