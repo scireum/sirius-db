@@ -445,7 +445,7 @@ public class SchemaTool {
         for (TableColumn targetCol : targetTable.getColumns()) {
             // Try to find column by name
             TableColumn otherCol = findColumn(other, targetCol.getName());
-            // If we didn't find a column and the col has rename infos, try to
+            // If we didn't find a column and the col has renamed infos, try to
             // find an appropriate column for renaming.
             if (otherCol == null && targetCol.getOldName() != null) {
                 otherCol = findColumn(other, targetCol.getOldName());
