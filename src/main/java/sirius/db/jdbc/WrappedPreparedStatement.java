@@ -39,6 +39,7 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -745,6 +746,6 @@ class WrappedPreparedStatement implements PreparedStatement {
     @SuppressWarnings("squid:S2143")
     @Explain("The PreparedStatement still expects a Calendar as parameter.")
     private static Calendar getUtcCalendar() {
-        return Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        return Calendar.getInstance(TimeZone.getTimeZone(ZoneOffset.UTC));
     }
 }
