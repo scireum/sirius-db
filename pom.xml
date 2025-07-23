@@ -85,6 +85,15 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Changelog: https://github.com/apache/commons-lang/tags -->
+        <!-- The one imported by ClickHouse (3.16.0) has the following CVE
+        https://www.mend.io/vulnerability-database/CVE-2025-48924?utm_source=JetBrains -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.18.0</version>
+        </dependency>
+
         <!-- Changelog: https://github.com/ClickHouse/clickhouse-java/releases -->
         <dependency>
             <groupId>com.clickhouse</groupId>
