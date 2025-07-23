@@ -2,19 +2,19 @@ services:
   redis:
     image: redis:7.4.3-alpine
     ports:
-    - "6379"
+      - "6379"
     hostname: redis
 
   mongo:
     image: mongo:8.0.8
     ports:
-    - "27017"
+      - "27017"
     hostname: mongo
 
   mariadb:
     image: mariadb:11.4.5-noble
     ports:
-    - "3306"
+      - "3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
     hostname: mysql
@@ -23,8 +23,8 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:25.5.9.14-alpine
     ports:
-    - "8123"
-    - "9000"
+      - "8123"
+      - "9000"
     hostname: clickhouse
     environment:
       CLICKHOUSE_USER: default
@@ -33,10 +33,10 @@ services:
   elasticsearch:
     image: elasticsearch:8.18.3
     ports:
-    - "9200"
+      - "9200"
     environment:
-    - ES_JAVA_OPTS=-Xms128M -Xmx128M
-    - discovery.type=single-node
-    - ingest.geoip.downloader.enabled=false
-    - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms128M -Xmx128M
+      - discovery.type=single-node
+      - ingest.geoip.downloader.enabled=false
+      - xpack.security.enabled=false
     hostname: es
