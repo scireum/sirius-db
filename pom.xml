@@ -19,7 +19,7 @@
     <url>https://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>dev-48.0.0</sirius.kernel>
+        <sirius.kernel>dev-48.0.1</sirius.kernel>
     </properties>
 
     <repositories>
@@ -83,15 +83,6 @@
             <artifactId>mariadb-java-client</artifactId>
             <version>3.5.4</version>
             <scope>test</scope>
-        </dependency>
-
-        <!-- Changelog: https://github.com/apache/commons-lang/tags -->
-        <!-- The one imported by ClickHouse (3.16.0) has the following CVE
-        https://www.mend.io/vulnerability-database/CVE-2025-48924?utm_source=JetBrains -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.18.0</version>
         </dependency>
 
         <!-- Changelog: https://github.com/ClickHouse/clickhouse-java/releases -->
