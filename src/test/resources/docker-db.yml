@@ -21,7 +21,7 @@ services:
     command: --collation-server=utf8mb4_bin --character-set-server=utf8mb4
 
   clickhouse:
-    image: clickhouse/clickhouse-server:25.5.9.14-alpine
+    image: clickhouse/clickhouse-server:25.8.2.29
     ports:
       - "8123"
       - "9000"
