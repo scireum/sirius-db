@@ -62,6 +62,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
     private static final String PARAM_BOOST = "boost";
     private static final String PARAM_DIS_MAX = "dis_max";
     private static final String PARAM_QUERIES = "queries";
+    private static final String PARAM_CASE_INSENSITIVE = "case_insensitive";
 
     @Override
     protected Object customTransform(Object value) {
@@ -268,11 +269,26 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * @return a new prefix query as constraint
      */
     public ElasticConstraint prefix(Mapping field, String value) {
+        return prefix(field, value, false);
+    }
+
+    /**
+     * Creates a prefix query.
+     *
+     * @param field           the field to search in
+     * @param value           the prefix to filter by
+     * @param caseInsensitive determines whether the prefix should be matched case insensitively
+     * @return a new prefix query as constraint
+     */
+    public ElasticConstraint prefix(Mapping field, String value, boolean caseInsensitive) {
         if (Strings.isEmpty(value)) {
             return null;
         }
 
-        ObjectNode settings = Json.createObject().put(PARAM_VALUE, value).put(PARAM_REWRITE, TOP_TERMS_256);
+        ObjectNode settings = Json.createObject()
+                                  .put(PARAM_VALUE, value)
+                                  .put(PARAM_REWRITE, TOP_TERMS_256)
+                                  .put(PARAM_CASE_INSENSITIVE, caseInsensitive);
         return wrap(Json.createObject().set(PARAM_PREFIX, Json.createObject().set(field.toString(), settings)));
     }
 
@@ -432,10 +448,10 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
 
     /**
      * Provides a var-args version of {@link #maxScore(List)}.
-     * 
+     *
      * @param constraints the clauses to match
      * @return the resulting constraint
-     * @see #maxScore(List) 
+     * @see #maxScore(List)
      */
     @Nullable
     public ElasticConstraint maxScore(@Nonnull ElasticConstraint... constraints) {
