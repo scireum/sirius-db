@@ -42,18 +42,18 @@ import java.util.stream.Collectors;
  */
 public class RedisDB {
 
-    private Redis redisInstance;
+    private final Redis redisInstance;
     private final String name;
-    private String host;
-    private int port;
-    private int connectTimeout;
-    private int readTimeout;
-    private String password;
-    private int db;
-    private int maxActive;
-    private int maxIdle;
-    private String masterName;
-    private String sentinels;
+    private final String host;
+    private final int port;
+    private final int connectTimeout;
+    private final int readTimeout;
+    private final String password;
+    private final int db;
+    private final int maxActive;
+    private final int maxIdle;
+    private final String masterName;
+    private final String sentinels;
     private boolean available = true;
 
     /**
