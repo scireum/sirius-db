@@ -196,7 +196,7 @@ public class RedisDB {
      */
     public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
         Watch w = Watch.start();
-        try (Operation op = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
+        try (var _ = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
             return task.apply(redis);
         } catch (Exception e) {
             throw Exceptions.handle(Redis.LOG, e);
