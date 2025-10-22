@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
  */
 public class RedisDB {
 
+    private static final String INFO_MODULE = "module";
+
     private final Redis redisInstance;
     private final String name;
     private final String host;
@@ -273,6 +275,8 @@ public class RedisDB {
             return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
                          .map(line -> Strings.split(line, ":"))
                          .filter(keyAndValue -> Strings.areAllFilled(keyAndValue.getFirst(), keyAndValue.getSecond()))
+                         // Modules are listed under the same "key", so we skip them from here
+                         .filter(keyAndValue -> !INFO_MODULE.equals(keyAndValue.getFirst()))
                          .collect(Collectors.toMap(Tuple::getFirst, Tuple::getSecond));
         } catch (Exception exception) {
             Exceptions.handle(Redis.LOG, exception);
