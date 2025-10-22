@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -281,6 +282,24 @@ public class RedisDB {
         } catch (Exception exception) {
             Exceptions.handle(Redis.LOG, exception);
             return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * Returns a list of all loaded modules in the redis server.
+     *
+     * @return a list of module data as reported by redis INFO command
+     */
+    public List<String> getModules() {
+        try {
+            return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
+                         .map(line -> Strings.split(line, ":"))
+                         .filter(keyAndValue -> INFO_MODULE.equals(keyAndValue.getFirst()))
+                         .map(Tuple::getSecond)
+                         .toList();
+        } catch (Exception exception) {
+            Exceptions.handle(Redis.LOG, exception);
+            return Collections.emptyList();
         }
     }
 }

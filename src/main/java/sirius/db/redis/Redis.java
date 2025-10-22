@@ -278,6 +278,15 @@ public class Redis implements Startable, Stoppable {
     }
 
     /**
+     * Invokes {@link RedisDB#getModules()} ()} for the {@link #getSystem() system database}.
+     *
+     * @return a list of all loaded redis modules
+     */
+    public List<String> getModules() {
+        return getSystem().getModules();
+    }
+
+    /**
      * Data object for storing information of a redis lock
      */
     public static class LockInfo {
