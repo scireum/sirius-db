@@ -272,7 +272,7 @@ public class RedisDB {
         try {
             return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
                          .map(line -> Strings.split(line, ":"))
-                         .filter(keyAndValue -> keyAndValue.getFirst() != null && keyAndValue.getSecond() != null)
+                         .filter(keyAndValue -> Strings.areAllFilled(keyAndValue.getFirst(), keyAndValue.getSecond()))
                          .collect(Collectors.toMap(Tuple::getFirst, Tuple::getSecond));
         } catch (Exception exception) {
             Exceptions.handle(Redis.LOG, exception);
