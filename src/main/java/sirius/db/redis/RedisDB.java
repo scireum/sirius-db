@@ -198,8 +198,8 @@ public class RedisDB {
         Watch w = Watch.start();
         try (var _ = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
             return task.apply(redis);
-        } catch (Exception e) {
-            throw Exceptions.handle(Redis.LOG, e);
+        } catch (Exception exception) {
+            throw Exceptions.handle(Redis.LOG, exception);
         } finally {
             redisInstance.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -271,11 +271,11 @@ public class RedisDB {
     public Map<String, String> getInfo() {
         try {
             return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
-                         .map(l -> Strings.split(l, ":"))
-                         .filter(t -> t.getFirst() != null && t.getSecond() != null)
+                         .map(line -> Strings.split(line, ":"))
+                         .filter(keyAndValue -> keyAndValue.getFirst() != null && keyAndValue.getSecond() != null)
                          .collect(Collectors.toMap(Tuple::getFirst, Tuple::getSecond));
-        } catch (Exception e) {
-            Exceptions.handle(Redis.LOG, e);
+        } catch (Exception exception) {
+            Exceptions.handle(Redis.LOG, exception);
             return Collections.emptyMap();
         }
     }
