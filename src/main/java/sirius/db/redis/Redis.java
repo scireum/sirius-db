@@ -48,7 +48,7 @@ import java.util.function.Supplier;
 /**
  * Provides a thin layer to access Redis.
  * <p>
- * The configuration is loaded from <tt>redis.pools</tt>. By default the <b>system</b> pool is used,
+ * The configuration is loaded from <tt>redis.pools</tt>. By default, the <b>system</b> pool is used,
  * but multiple database can be used at the same time.
  */
 @Register(classes = {Redis.class, Startable.class, Stoppable.class})
@@ -62,8 +62,8 @@ public class Redis implements Startable, Stoppable {
     @Parts(Subscriber.class)
     private PartCollection<Subscriber> subscribers;
 
-    private List<JedisPubSub> subscriptions = new CopyOnWriteArrayList<>();
-    private AtomicBoolean subscriptionsActive = new AtomicBoolean(true);
+    private final List<JedisPubSub> subscriptions = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean subscriptionsActive = new AtomicBoolean(true);
 
     @Part
     private Tasks tasks;
@@ -278,6 +278,15 @@ public class Redis implements Startable, Stoppable {
     }
 
     /**
+     * Invokes {@link RedisDB#getModules()} for the {@link #getSystem() system database}.
+     *
+     * @return a list of all loaded redis modules
+     */
+    public List<String> getModules() {
+        return getSystem().getModules();
+    }
+
+    /**
      * Data object for storing information of a redis lock
      */
     public static class LockInfo {
@@ -287,7 +296,7 @@ public class Redis implements Startable, Stoppable {
         public final String key;
 
         /**
-         * The name of the lock, without any reids prefixes
+         * The name of the lock, without any redis prefixes
          */
         public final String name;
 
@@ -320,7 +329,7 @@ public class Redis implements Startable, Stoppable {
     /**
      * Returns a list of all currently held locks.
      * <p>
-     * This is mainly inteded to be used for monitoring and maintenance (e.g. {@link RedisCommand})
+     * This is mainly intended to be used for monitoring and maintenance (e.g. {@link RedisCommand})
      *
      * @return a list of all currently known locks
      */
@@ -368,7 +377,7 @@ public class Redis implements Startable, Stoppable {
      * <p>
      * The <tt>lockTimeout</tt> controls the max. age of the lock. After the given period, the lock
      * will be released, even if unlock wasn't called. This is to prevent a cluster from locking itself
-     * out due to a single node crash. However, it is very important to chose a sane value here.
+     * out due to a single node crash. However, it is very important to choose a sane value here.
      *
      * @param lock           the name of the lock to acquire
      * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
@@ -412,7 +421,7 @@ public class Redis implements Startable, Stoppable {
      * <p>
      * See {@link #tryLock(String, Duration, Duration)} for details on acquiring a lock.
      * <p>
-     * If the lock cannot be acquired, nothing will happen (neighter the task will be execute nor an exception will be
+     * If the lock cannot be acquired, nothing will happen (neither the task will be executed nor an exception will be
      * thrown).
      *
      * @param lock           the name of the lock to acquire

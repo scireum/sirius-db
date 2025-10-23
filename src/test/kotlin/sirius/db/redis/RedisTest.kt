@@ -9,6 +9,7 @@
 package sirius.db.redis
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import org.junit.jupiter.api.extension.ExtendWith
 import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
@@ -20,6 +21,14 @@ class RedisTest {
     companion object {
         @Part
         private lateinit var redis: Redis
+    }
+
+    @Test
+    fun `getInfo works`() {
+        val info = redis.info
+
+        assert(info.isNotEmpty())
+        assertNotNull(info["redis_version"])
     }
 
     @Test
