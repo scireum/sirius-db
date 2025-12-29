@@ -1,5 +1,6 @@
-![sirius](https://raw.githubusercontent.com/scireum/sirius-kernel/master/docs/sirius.jpg)
-[![Build Status](https://drone.scireum.com/api/badges/scireum/sirius-db/status.svg?ref=refs/heads/develop)](https://drone.scireum.com/scireum/sirius-db)
+# sirius-db
+![sirius](https://raw.githubusercontent.com/scireum/sirius-kernel/main/docs/sirius.jpg)
+[![Build Status](https://drone.scireum.com/api/badges/scireum/sirius-db/status.svg?ref=refs/heads/main)](https://drone.scireum.com/scireum/sirius-db)
 
 Welcome to the **database module** of the SIRIUS OpenSource framework created by [scireum GmbH](https://www.scireum.de). 
 To learn more about what SIRIUS is please refer to documentation of the [kernel module](https://github.com/scireum/sirius-kernel).
@@ -9,7 +10,7 @@ To learn more about what SIRIUS is please refer to documentation of the [kernel 
 Provides access to popular databases like **JDBC/SQL, MongoDB, Redis or Elasticsearch**.
 
 For each database a *low level interface* is provided which combines configuration, monitoring,
-metrics and debugging with best performance possible.
+metrics and debugging with the best performance possible.
 
 Additionally a mapping layer is provided for JDBC, MongoDB and Elasticsearch, which is called 
 [Mixing](src/main/java/sirius/db/mixing).
@@ -23,15 +24,15 @@ at [sirius-biz](https://github.com/scireum/sirius-biz) which provides a lot of h
 * [Mixins](src/main/java/sirius/db/mixing) which can extend existing model classes and be enabled within customizations
 * Wrappers for efficient calls into JDBC databases, Redis and MongoDB with automatic connection management
 * Automatic schema and index generation for all managed databases - note that **sirius-biz** provides a
-  [UI](https://github.com/scireum/sirius-biz/tree/master/src/main/java/sirius/biz/jdbc) for this
+  [UI](https://github.com/scireum/sirius-biz/tree/main/src/main/java/sirius/biz/jdbc) for this
 * Metrics and Monitoring of all database operations - note that **sirius-web** provides a 
-  [UI](https://github.com/scireum/sirius-web/tree/master/src/main/java/sirius/web/health) to display these stats 
+  [UI](https://github.com/scireum/sirius-web/tree/main/src/main/java/sirius/web/health) to display these stats 
   and timings
-* Automatic reporting for slow or inefficient database opertions 
+* Automatic reporting for slow or inefficient database operations 
 
 ## Important files of this module: 
 
-* [Default configuration](src/main/resources/component-db.conf)
+* [Default configuration](src/main/resources/component-060-db.conf)
 * [Maven setup](pom.xml)
 
 ## Frameworks
@@ -42,9 +43,9 @@ Provides a database independent mapping framework which can be extended by user 
 Provides a both, a low-level interface which adds configuration- and resource management to JDBC while still
 delivering its raw performance. Also a high-level mapper based on **Mixing** is provided.
 * [ES](src/main/java/sirius/db/es)\
-Provides a HTTP based client for Elasticsearch which utilizes **Mixing** to provide a high-level API.
+Provides an HTTP based client for Elasticsearch which utilizes **Mixing** to provide a high-level API.
 * [Mongo](src/main/java/sirius/db/mongo)\
-Provides a both, a low-level interface which adds configuration- and resource management to the plain MongoDB driver whil still
+Provides a both, a low-level interface which adds configuration- and resource management to the plain MongoDB driver while still
 delivering its raw performance. Also a high-level mapper based on **Mixing** is provided.
 * [Redis](src/main/java/sirius/db/redis)\
 Contains a helper framework which provides configuration- and resource management when talking to one or more Redis servers.
