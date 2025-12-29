@@ -18,7 +18,6 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Transient;
 import sirius.db.mixing.query.Query;
 import sirius.db.mixing.query.constraints.Constraint;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.di.std.Part;
 
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
  * noticeably. This is done by annotating the field with {@link sirius.db.es.annotations.RoutedBy}.
  * <p>
  * For more info on why its a good idea to use custom routing, visit:
- * https://www.elastic.co/blog/customizing-your-document-routing.
+ * <a href="https://www.elastic.co/blog/customizing-your-document-routing">...</a>.
  */
 public abstract class ElasticEntity extends BaseEntity<String> {
 
@@ -117,8 +116,6 @@ public abstract class ElasticEntity extends BaseEntity<String> {
                               .anyMatch(property -> getDescriptor().isChanged(this, property));
     }
 
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("We only pass the result JSON along internally and want to avoid an extra copy.")
     protected void setSearchHit(ObjectNode searchHit) {
         this.searchHit = searchHit;
     }
@@ -128,7 +125,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * <p>
      * Note: This will be only populated, if the source of the entity is a query.
      *
-     * @return the list of named queries which matched this entity.
+     * @return the set of named queries which matched this entity.
      */
     public Set<String> getMatchedQueries() {
         if (matchedQueries == null) {
@@ -144,10 +141,10 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         }
 
         ArrayNode matchedQueriesArray = Json.getArray(searchHit, MATCHED_QUERIES);
-        return Json.streamEntries(matchedQueriesArray)
-                   .filter(Objects::nonNull)
-                   .map(JsonNode::asText)
-                   .collect(Collectors.toSet());
+        return matchedQueriesArray.valueStream()
+                                  .filter(Objects::nonNull)
+                                  .map(JsonNode::asText)
+                                  .collect(Collectors.toSet());
     }
 
     /**
@@ -183,9 +180,10 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     @SuppressWarnings("unchecked")
     public <E extends ElasticEntity> List<E> getInnerHits(Class<E> type, String name) {
         return Json.tryGetArrayAt(getSearchHit(), Json.createPointer(INNER_HITS, name, "hits", "hits"))
-                   .map(jsonHits -> (List<E>) Json.streamEntries(jsonHits)
-                                                  .map(innerHit -> Elastic.make(getDescriptor(), (ObjectNode) innerHit))
-                                                  .toList())
+                   .map(jsonHits -> (List<E>) jsonHits.valueStream()
+                                                      .map(innerHit -> Elastic.make(getDescriptor(),
+                                                                                    (ObjectNode) innerHit))
+                                                      .toList())
                    .orElse(Collections.emptyList());
     }
 
@@ -217,7 +215,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * Checks wether the query with the given name matched this entity.
      *
      * @param queryName the name of the query to check
-     * @return the list of named queries which matched this entity.
+     * @return true if the query with the given name matched this entity, false otherwise
      */
     public boolean isMatchedNamedQuery(String queryName) {
         return getMatchedQueries().contains(queryName);
@@ -229,8 +227,6 @@ public abstract class ElasticEntity extends BaseEntity<String> {
      * @return the original underlying hit object of this entity.
      */
     @Nullable
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("Performing a deep copy of the whole object is most probably an overkill here.")
     public ObjectNode getSearchHit() {
         return searchHit;
     }

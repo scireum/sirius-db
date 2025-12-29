@@ -43,6 +43,11 @@ public class RedisCommand implements Command {
         }
 
         output.blankLine();
+        output.line("Redis Modules");
+        output.separator();
+        redis.getModules().forEach(output::line);
+
+        output.blankLine();
         output.line("Redis Locks (use redis unlock <lock> to forcefully remove a lock)");
         output.separator();
         for (Redis.LockInfo info : redis.getLockList()) {

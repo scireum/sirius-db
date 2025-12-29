@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.scireum</groupId>
         <artifactId>sirius-parent</artifactId>
-        <version>14.0.1</version>
+        <version>14.2.0</version>
     </parent>
     <artifactId>sirius-db</artifactId>
     <version>DEVELOPMENT-SNAPSHOT</version>
@@ -19,7 +19,7 @@
     <url>https://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>ga-13.0.0</sirius.kernel>
+        <sirius.kernel>dev-49.3.0</sirius.kernel>
     </properties>
 
     <repositories>
@@ -54,14 +54,14 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>4.11.1</version>
+            <version>5.6.0</version>
         </dependency>
 
         <!-- Changelog: https://github.com/redis/jedis/releases -->
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>5.2.0</version>
+            <version>7.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.json</groupId>
@@ -74,14 +74,14 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>8.17.1</version>
+            <version>8.18.3</version>
         </dependency>
 
         <!-- Changelog: https://github.com/mariadb-corporation/mariadb-connector-j/releases -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.6</version>
             <scope>test</scope>
         </dependency>
 
@@ -89,9 +89,7 @@
         <dependency>
             <groupId>com.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.6.5</version>
-            <classifier>http</classifier>
-            <scope>test</scope>
+            <version>0.9.4</version>
         </dependency>
     </dependencies>
 

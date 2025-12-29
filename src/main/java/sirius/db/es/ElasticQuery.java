@@ -497,7 +497,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return Json.streamEntries(jsonSorts).map(JsonNode::asText).toList();
+        return jsonSorts.valueStream().map(JsonNode::asText).toList();
     }
 
     /**
@@ -669,43 +669,6 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
         });
 
         return this;
-    }
-
-    /**
-     * Adds a sort statement to the query.
-     *
-     * @param sortBuilder a sort builder
-     * @return the query itself for fluent method calls
-     * @deprecated use {@link #orderBy(SortBuilder)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> sort(SortBuilder sortBuilder) {
-        return orderBy(sortBuilder.build());
-    }
-
-    /**
-     * Adds a sort statement to the query.
-     *
-     * @param sortSpec a JSON object describing a sort requirement
-     * @return the query itself for fluent method calls
-     * @deprecated use {@link #orderBy(ObjectNode)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> sort(ObjectNode sortSpec) {
-        return orderBy(sortSpec);
-    }
-
-    /**
-     * Adds a sort statement for the given field to the query.
-     *
-     * @param field    the field to sort by
-     * @param sortSpec a JSON object describing a sort requirement
-     * @return the query itself for fluent method calls
-     * @deprecated use {@link #orderBy(Mapping, ObjectNode)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public ElasticQuery<E> sort(Mapping field, ObjectNode sortSpec) {
-        return orderBy(Json.createObject().set(field.toString(), sortSpec));
     }
 
     /**
@@ -1419,7 +1382,8 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             response = client.search("", null, 0, maxResults, payload);
             searchAfter = getLastSortValues();
 
-            return Json.streamEntries(Json.getArrayAt(response, HITS_POINTER))
+            return Json.getArrayAt(response, HITS_POINTER)
+                       .valueStream()
                        .map(entry -> (E) Elastic.make(descriptor, (ObjectNode) entry))
                        .iterator();
         }

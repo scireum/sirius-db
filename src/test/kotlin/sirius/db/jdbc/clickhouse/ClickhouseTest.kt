@@ -18,6 +18,7 @@ import sirius.kernel.di.std.Part
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.ChronoField
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -29,9 +30,11 @@ class ClickhouseTest {
     @Test
     fun `write a test entity and read it back`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        val now = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
-        clickhouseTestEntity.dateTime = now
+        val nowInstant = Instant.now().with(ChronoField.MILLI_OF_SECOND, 0)
+        val nowDateTime = LocalDateTime.now().withNano(0)
+        clickhouseTestEntity.instant = nowInstant
         clickhouseTestEntity.date = LocalDate.now()
+        clickhouseTestEntity.dateTime = nowDateTime
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
         clickhouseTestEntity.int32 = 1_000_000_000
@@ -44,7 +47,7 @@ class ClickhouseTest {
         clickhouseTestEntity.enumValue = ClickhouseTestEntity.TestEnum.Test2
         oma.update(clickhouseTestEntity)
         val readBack =
-                oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "X").queryFirst()
+            oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "X").queryFirst()
 
         assertTrue { readBack.isaBooleanSetToTrue() }
         assertFalse { readBack.isaBooleanSetToFalse() }
@@ -56,8 +59,10 @@ class ClickhouseTest {
         assertEquals("This is a long string", readBack.string)
         assertEquals("X", readBack.fixedString)
         assertEquals(LocalDate.now(), readBack.date)
-        assertEquals(now, readBack.dateTime)
+        assertEquals(nowDateTime, readBack.dateTime)
+        assertEquals(nowInstant, readBack.instant)
         assertEquals(listOf("string1", "string2"), readBack.stringList.data())
+        assertEquals(listOf(), readBack.emptyList.data())
         assertEquals(ClickhouseTestEntity.TestEnum.Test2, readBack.enumValue)
     }
 
@@ -65,12 +70,13 @@ class ClickhouseTest {
     fun `batch insert into clickhouse works`() {
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
-                ClickhouseTestEntity::class.java, false
+            ClickhouseTestEntity::class.java, false
         )
         for (i in 0..99) {
             val clickhouseTestEntity = ClickhouseTestEntity()
-            clickhouseTestEntity.dateTime = Instant.now()
+            clickhouseTestEntity.instant = Instant.now()
             clickhouseTestEntity.date = LocalDate.now()
+            clickhouseTestEntity.dateTime = LocalDateTime.now()
             clickhouseTestEntity.int8 = i
             clickhouseTestEntity.int16 = i
             clickhouseTestEntity.int32 = i
@@ -84,8 +90,8 @@ class ClickhouseTest {
         insert.commit()
 
         assertEquals(
-                100,
-                oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "B").count()
+            100,
+            oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "B").count()
         )
 
         batchContext.close()
@@ -94,8 +100,9 @@ class ClickhouseTest {
     @Test
     fun `property with default-value is set to default when null in object`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        clickhouseTestEntity.dateTime = Instant.now()
+        clickhouseTestEntity.instant = Instant.now()
         clickhouseTestEntity.date = LocalDate.now()
+        clickhouseTestEntity.dateTime = LocalDateTime.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
         clickhouseTestEntity.int32 = 1_000_000_000
@@ -105,7 +112,7 @@ class ClickhouseTest {
         clickhouseTestEntity.setInt8WithDefault(null)
         oma.update(clickhouseTestEntity)
         val readBack =
-                oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "Y").queryFirst()
+            oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "Y").queryFirst()
 
         assertEquals(42, readBack.int8WithDefault)
     }
@@ -113,8 +120,9 @@ class ClickhouseTest {
     @Test
     fun `property with default-value is set to actual value when set`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        clickhouseTestEntity.dateTime = Instant.now()
+        clickhouseTestEntity.instant = Instant.now()
         clickhouseTestEntity.date = LocalDate.now()
+        clickhouseTestEntity.dateTime = LocalDateTime.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
         clickhouseTestEntity.int32 = 1_000_000_000
@@ -124,8 +132,8 @@ class ClickhouseTest {
         clickhouseTestEntity.int8WithDefault = 17
         oma.update(clickhouseTestEntity)
         val readBack = oma.select(ClickhouseTestEntity::class.java).eq(
-                ClickhouseTestEntity.FIXED_STRING,
-                "Z"
+            ClickhouseTestEntity.FIXED_STRING,
+            "Z"
         ).queryFirst()
 
         assertEquals(17, readBack.int8WithDefault)
@@ -134,8 +142,9 @@ class ClickhouseTest {
     @Test
     fun `nullable property can be null`() {
         val clickhouseTestEntity = ClickhouseTestEntity()
-        clickhouseTestEntity.dateTime = Instant.now()
+        clickhouseTestEntity.instant = Instant.now()
         clickhouseTestEntity.date = LocalDate.now()
+        clickhouseTestEntity.dateTime = LocalDateTime.now()
         clickhouseTestEntity.int8 = 100
         clickhouseTestEntity.int16 = 30_000
         clickhouseTestEntity.int32 = 1_000_000_000
@@ -146,7 +155,7 @@ class ClickhouseTest {
         clickhouseTestEntity.nullable = null
         oma.update(clickhouseTestEntity)
         val readBack =
-                oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "A").queryFirst()
+            oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "A").queryFirst()
 
         assertNull(readBack.nullable)
     }

@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,19 +43,28 @@ import java.util.stream.Collectors;
  */
 public class RedisDB {
 
-    private Redis redisInstance;
+    private static final String INFO_MODULE = "module";
+
+    private final Redis redisInstance;
     private final String name;
-    private String host;
-    private int port;
-    private int connectTimeout;
-    private int readTimeout;
-    private String password;
-    private int db;
-    private int maxActive;
-    private int maxIdle;
-    private String masterName;
-    private String sentinels;
+    private final String host;
+    private final int port;
+    private final int connectTimeout;
+    private final int readTimeout;
+    private final String password;
+    private final int db;
+    private final int maxActive;
+    private final int maxIdle;
+    private final String masterName;
+    private final String sentinels;
     private boolean available = true;
+
+    /**
+     * Determines whether additional client information should be sent to the server when connecting.
+     * <p>
+     * This may be disabled for some redis servers that do not support this feature.
+     */
+    private final boolean enableClientInfo;
 
     protected JedisPool jedis;
     protected JedisSentinelPool sentinelPool;
@@ -72,6 +82,7 @@ public class RedisDB {
         this.maxIdle = config.getInt("maxIdle");
         this.masterName = config.getString("masterName");
         this.sentinels = config.getString("sentinels");
+        this.enableClientInfo = config.get("enableClientInfo").asBoolean(false);
     }
 
     /**
@@ -162,7 +173,7 @@ public class RedisDB {
                                                                                  .connectionTimeoutMillis(connectTimeout)
                                                                                  .socketTimeoutMillis(readTimeout)
                                                                                  .clientSetInfoConfig(new ClientSetInfoConfig(
-                                                                                         true))
+                                                                                         !enableClientInfo))
                                                                                  .password(Strings.isFilled(password) ?
                                                                                            password :
                                                                                            null)
@@ -188,10 +199,10 @@ public class RedisDB {
      */
     public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
         Watch w = Watch.start();
-        try (Operation op = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
+        try (var _ = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
             return task.apply(redis);
-        } catch (Exception e) {
-            throw Exceptions.handle(Redis.LOG, e);
+        } catch (Exception exception) {
+            throw Exceptions.handle(Redis.LOG, exception);
         } finally {
             redisInstance.callDuration.addValue(w.elapsedMillis());
             if (Microtiming.isEnabled()) {
@@ -263,12 +274,32 @@ public class RedisDB {
     public Map<String, String> getInfo() {
         try {
             return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
-                         .map(l -> Strings.split(l, ":"))
-                         .filter(t -> t.getFirst() != null && t.getSecond() != null)
+                         .map(line -> Strings.split(line, ":"))
+                         .filter(keyAndValue -> Strings.areAllFilled(keyAndValue.getFirst(), keyAndValue.getSecond()))
+                         // Modules are listed under the same "key", so we skip them from here
+                         .filter(keyAndValue -> !INFO_MODULE.equals(keyAndValue.getFirst()))
                          .collect(Collectors.toMap(Tuple::getFirst, Tuple::getSecond));
-        } catch (Exception e) {
-            Exceptions.handle(Redis.LOG, e);
+        } catch (Exception exception) {
+            Exceptions.handle(Redis.LOG, exception);
             return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * Returns a list of all loaded modules in the redis server.
+     *
+     * @return a list of module data as reported by redis INFO command
+     */
+    public List<String> getModules() {
+        try {
+            return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
+                         .map(line -> Strings.split(line, ":"))
+                         .filter(keyAndValue -> INFO_MODULE.equals(keyAndValue.getFirst()))
+                         .map(Tuple::getSecond)
+                         .toList();
+        } catch (Exception exception) {
+            Exceptions.handle(Redis.LOG, exception);
+            return Collections.emptyList();
         }
     }
 }
