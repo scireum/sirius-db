@@ -744,9 +744,11 @@ public abstract class Property extends Composable {
 
         boolean valueChanged = entity instanceof BaseEntity<?> && (((BaseEntity<?>) entity).isNew()
                                                                    || ((BaseEntity<?>) entity).isChanged(nameAsMapping));
-        if (propertyValidator != null && (strictValidation || valueChanged)) {
+        if (propertyValidator != null
+            && (strictValidation || valueChanged)
+            && entity instanceof BaseEntity<?> baseEntity) {
             // Only enforce validity if the value actually changed or in strict validation mode
-            propertyValidator.beforeSave(this, getValue(entity));
+            propertyValidator.beforeSave(baseEntity, this, getValue(entity));
         }
 
         checkUniqueness(entity, propertyValue);
@@ -761,8 +763,8 @@ public abstract class Property extends Composable {
      * @param validationConsumer the consumer collecting the validation messages
      */
     protected void onValidate(Object entity, Consumer<String> validationConsumer) {
-        if (propertyValidator != null) {
-            propertyValidator.validate(this, getValue(entity), validationConsumer);
+        if (propertyValidator != null && entity instanceof BaseEntity<?> baseEntity) {
+            propertyValidator.validate(baseEntity, this, getValue(entity), validationConsumer);
         }
     }
 
