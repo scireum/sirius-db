@@ -22,17 +22,21 @@ public interface PropertyValidator extends Named {
     /**
      * Validates the given value and reports any warnings/errors to the given consumer.
      *
+     * @param entity             the entity being validated
+     * @param property           the property being validated
      * @param value              the value to validate
      * @param validationConsumer can be used to report validation errors
      */
-    void validate(Property property, Object value, Consumer<String> validationConsumer);
+    void validate(BaseEntity<?> entity, Property property, Object value, Consumer<String> validationConsumer);
 
     /**
      * Validates the given value and reports any warnings/errors to the given consumer.
      * <p>
      * Throwing any exception will abort the write operation.
      *
-     * @param value the value to validate
+     * @param entity   the entity being validated
+     * @param property the property being validated
+     * @param value    the value to validate
      */
-    void beforeSave(Property property, Object value);
+    void beforeSave(BaseEntity<?> entity, Property property, Object value);
 }
