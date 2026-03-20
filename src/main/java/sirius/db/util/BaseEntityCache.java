@@ -60,7 +60,7 @@ public abstract class BaseEntityCache<I extends Serializable, E extends BaseEnti
      * @return the cached entity wrapped in an Optional or an empty Optional
      */
     @Nonnull
-    public Optional<E> fetchById(@Nonnull String id) {
+    public Optional<E> fetchById(String id) {
         if (Strings.isEmpty(id)) {
             return Optional.empty();
         }
@@ -76,7 +76,7 @@ public abstract class BaseEntityCache<I extends Serializable, E extends BaseEnti
      * @throws sirius.kernel.health.HandledException if no matching entity can be found
      */
     @Nonnull
-    public E fetchRequiredById(@Nonnull String id) {
+    public E fetchRequiredById(String id) {
         return fetchById(id).orElseThrow(() -> Exceptions.createHandled()
                                                          .withSystemErrorMessage("Unknown %s: %s",
                                                                                  getEntityClass().getSimpleName(),
