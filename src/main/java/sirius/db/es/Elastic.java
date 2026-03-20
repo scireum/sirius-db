@@ -440,7 +440,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         String writeIndexName = writeIndexTable.get(entityDescriptor);
         if (writeIndexName == null) {
             throw Exceptions.createHandled()
-                            .withSystemErrorMessage("These is no write-index available for %s",
+                            .withSystemErrorMessage("There is no write-index available for %s",
                                                     entityDescriptor.getType().getName())
                             .handle();
         }
