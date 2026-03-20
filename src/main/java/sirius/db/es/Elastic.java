@@ -102,6 +102,12 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @ConfigValue("elasticsearch.hosts")
     private String hosts;
 
+    @ConfigValue("elasticsearch.connectTimeout")
+    private Duration connectTimeout;
+
+    @ConfigValue("elasticsearch.socketTimeout")
+    private Duration socketTimeout;
+
     private static long logQueryThresholdMillis = -1;
 
     /**
@@ -174,7 +180,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                          .map(this::mapPort)
                                          .map(this::makeHttpHost)
                                          .toArray(size -> new HttpHost[size]);
-            client = new LowLevelClient(RestClient.builder(httpHosts).build());
+            client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configBuilder -> {
+                return configBuilder.setConnectTimeout((int) connectTimeout.toMillis())
+                                    .setSocketTimeout((int) socketTimeout.toMillis());
+            }).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise, strange connection issues might arise.
