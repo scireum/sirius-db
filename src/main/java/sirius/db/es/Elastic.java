@@ -21,6 +21,7 @@ import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.kernel.Sirius;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Explain;
@@ -101,18 +102,22 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @ConfigValue("elasticsearch.hosts")
     private String hosts;
 
-    @ConfigValue("elasticsearch.logQueryThreshold")
-    private static Duration logQueryThreshold;
+    @ConfigValue("elasticsearch.connectTimeout")
+    private Duration connectTimeout;
+
+    @ConfigValue("elasticsearch.socketTimeout")
+    private Duration socketTimeout;
+
     private static long logQueryThresholdMillis = -1;
 
     /**
      * Determines if the effective routing should be computed for a read or a write access.
      * <p>
      * This needs to be specified as we support that the routing suppression of the read index is
-     * different from the routing suppression of the write index. Thus, one can migrate from an
-     * un-routed index to a routed one and vice versa.
+     * different from the routing suppression of the write-index. Thus, one can migrate from an
+     * unrouted index to a routed one and vice versa.
      */
-    enum RoutingAccessMode {
+    protected enum RoutingAccessMode {
         READ, WRITE
     }
 
@@ -152,7 +157,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Provides access to the underlying low level client.
+     * Provides access to the underlying low-level client.
      *
      * @return the underlying low level client used to perform the HTTP requests against Elasticsearch.
      */
@@ -175,7 +180,10 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
                                          .map(this::mapPort)
                                          .map(this::makeHttpHost)
                                          .toArray(size -> new HttpHost[size]);
-            client = new LowLevelClient(RestClient.builder(httpHosts).build());
+            client = new LowLevelClient(RestClient.builder(httpHosts).setRequestConfigCallback(configBuilder -> {
+                return configBuilder.setConnectTimeout((int) connectTimeout.toMillis())
+                                    .setSocketTimeout((int) socketTimeout.toMillis());
+            }).build());
 
             // If we're using a docker container (most probably for testing), we give ES some time
             // to fully boot up. Otherwise, strange connection issues might arise.
@@ -209,7 +217,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
         if (Strings.isFilled(hostnameAndPort.getSecond())) {
             try {
                 return Tuple.create(hostnameAndPort.getFirst(), Integer.parseInt(hostnameAndPort.getSecond()));
-            } catch (NumberFormatException exception) {
+            } catch (NumberFormatException _) {
                 Exceptions.handle()
                           .to(LOG)
                           .withSystemErrorMessage("Invalid port in 'elasticsearch.hosts': %s %s",
@@ -326,7 +334,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Determines the ID of the entity.
      * <p>
-     * This will either return the stored ID or create a new one, if the entity is still new.
+     * This will either return the stored ID or create a new one if the entity is still new.
      *
      * @param entity the entity to determine the ID for
      * @return the ID to use for this entity
@@ -367,9 +375,9 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Determines the alias for the currently active write index for the given {@link EntityDescriptor}.
+     * Determines the alias for the currently active write-index for the given {@link EntityDescriptor}.
      *
-     * @param entityDescriptor the descriptor of the entity to determine the write alias for
+     * @param entityDescriptor the descriptor of the entity to determine the write-alias for
      * @return the alias of the currently active index
      */
     protected String determineWriteAlias(EntityDescriptor entityDescriptor) {
@@ -396,11 +404,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Creates a new write index for the given entity and installs it into the {@link #writeIndexTable}.
+     * Creates a new write-index for the given entity and installs it into the {@link #writeIndexTable}.
      * <p>
      * This will also install the most current mappings into the newly created index.
      *
-     * @param entityDescriptor the entity descriptor of the entity to install a new write index for
+     * @param entityDescriptor the entity descriptor of the entity to install a new write-index for
      */
     public void createAndInstallWriteIndex(EntityDescriptor entityDescriptor) {
         String nextIndexName = indexMappings.determineNextIndexName(entityDescriptor);
@@ -409,11 +417,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Installs the given write index for the given entity by writing it into the {@link #writeIndexTable}.
+     * Installs the given write-index for the given entity by writing it into the {@link #writeIndexTable}.
      * <p>
-     * This can be used if the write index has already been created previously or on another node.
+     * This can be used if the write-index has already been created previously or on another node.
      *
-     * @param entityDescriptor the descriptor of the entity to set the write index for
+     * @param entityDescriptor the descriptor of the entity to set the write-index for
      * @param nextIndexName    the index name to send writes to (This is probably a name like entity-2021-01-01).
      */
     public void installWriteIndex(EntityDescriptor entityDescriptor, String nextIndexName) {
@@ -421,18 +429,18 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Makes the current write index of the given entity also the read index by moving the {@link #ACTIVE_ALIAS}.
+     * Makes the current write-index of the given entity also the read index by moving the {@link #ACTIVE_ALIAS}.
      * <p>
      * This will also remove the write-redirection by clearing the entry in the {@link #writeIndexTable} as
      * the indices / aliases are now the same.
      *
-     * @param entityDescriptor the entity descriptor for which the write index should also become the new read index / alias
+     * @param entityDescriptor the entity descriptor for which the write-index should also become the new read index / alias
      */
     public void commitWriteIndex(EntityDescriptor entityDescriptor) {
         String writeIndexName = writeIndexTable.get(entityDescriptor);
         if (writeIndexName == null) {
             throw Exceptions.createHandled()
-                            .withSystemErrorMessage("These is no write index available for %s",
+                            .withSystemErrorMessage("There is no write-index available for %s",
                                                     entityDescriptor.getType().getName())
                             .handle();
         }
@@ -442,11 +450,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Clears the current write index of the given entity.
+     * Clears the current write-index of the given entity.
      * <p>
      * Note that the underlying index will <b>NOT</b> be deleted. The {@link ESIndexCommand} can be used to achieve this.
      *
-     * @param entityDescriptor the entity descriptor for which the write index should be cleared
+     * @param entityDescriptor the entity descriptor for which the write-index should be cleared
      */
     public void rollbackWriteIndex(EntityDescriptor entityDescriptor) {
         writeIndexTable.remove(entityDescriptor);
@@ -612,7 +620,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      * <p>
      * Via the config list {@link #suppressedRoutings} (<tt>elasticsearch.suppressedRoutings</tt>) the usage of
      * a routing field can entirely be disabled for all listed entities. This might be useful when migrating
-     * from an un-routed to a routed index or even if the routing is only feasible in some scenarios.
+     * from an unrouted to a routed index or even if the routing is only feasible in some scenarios.
      *
      * @param entityDescriptor the descriptor of the entity to check
      * @param accessMode       the access mode for which the suppression should be checked
@@ -667,7 +675,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Determines if an appropriate configuration is available (e.g. a host to connect to).
+     * Determines if an appropriate configuration is available (e.g., a host to connect to).
      *
      * @return <tt>true</tt> if a configuration is present, <tt>false</tt> otherwise
      */
@@ -685,7 +693,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     protected static long getLogQueryThresholdMillis() {
         if (logQueryThresholdMillis < 0) {
-            logQueryThresholdMillis = logQueryThreshold.toMillis();
+            logQueryThresholdMillis = Sirius.getSettings().getDuration("elasticsearch.logQueryThreshold").toMillis();
         }
 
         return logQueryThresholdMillis;
@@ -699,13 +707,13 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     /**
      * Creates a new query which can be used to fetch entities of the given types.
      * <p>
-     * Note: All entities to query across must extend a common super class. Also note, that the list of types can be
+     * Note: All entities to query across must extend a common super class. Also note that the list of types can be
      * left empty and specified later via {@link ElasticQuery#withEffectiveIndices(List)}.
      *
      * @param commonSuperClass the common super class of all entities to query across
      * @param types            the types of the entities to query across
      * @param <E>              the generic common type of the entities to query across
-     * @return a new query which can be used to fetch entities of the given types
+     * @return a new query, which can be used to fetch entities of the given types
      */
     @SuppressWarnings("java:S1172")
     @Explain("We only need this parameter to make the compiler enforce proper type rules.")
@@ -734,11 +742,11 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     }
 
     /**
-     * Allows to explicitly refresh the index for the given {@link ElasticEntity}, making all operations performed
+     * Allows explicitly refreshing the index for the given {@link ElasticEntity}, making all operations performed
      * since the last refresh available for search.
      *
-     * @param type the entity type which should be refreshed
-     * @param <E>  the concrete type which should be refreshed
+     * @param type the entity type, which should be refreshed
+     * @param <E>  the concrete type, which should be refreshed
      */
     public <E extends ElasticEntity> void refresh(Class<E> type) {
         getLowLevelClient().refresh(determineWriteAlias(mixing.getDescriptor(type)));
