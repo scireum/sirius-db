@@ -21,6 +21,7 @@ import sirius.db.mixing.ContextInfo;
 import sirius.db.mixing.EntityDescriptor;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.Property;
+import sirius.kernel.Sirius;
 import sirius.kernel.async.ExecutionPoint;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Explain;
@@ -101,8 +102,6 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
     @ConfigValue("elasticsearch.hosts")
     private String hosts;
 
-    @ConfigValue("elasticsearch.logQueryThreshold")
-    private static Duration logQueryThreshold;
     private static long logQueryThresholdMillis = -1;
 
     /**
@@ -685,7 +684,7 @@ public class Elastic extends BaseMapper<ElasticEntity, ElasticConstraint, Elasti
      */
     protected static long getLogQueryThresholdMillis() {
         if (logQueryThresholdMillis < 0) {
-            logQueryThresholdMillis = logQueryThreshold.toMillis();
+            logQueryThresholdMillis = Sirius.getSettings().getDuration("elasticsearch.logQueryThreshold").toMillis();
         }
 
         return logQueryThresholdMillis;
