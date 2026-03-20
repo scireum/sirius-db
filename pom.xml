@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.scireum</groupId>
         <artifactId>sirius-parent</artifactId>
-        <version>14.2.0</version>
+        <version>14.3.1</version>
     </parent>
     <artifactId>sirius-db</artifactId>
     <version>DEVELOPMENT-SNAPSHOT</version>
@@ -19,7 +19,7 @@
     <url>https://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>50.0.0</sirius.kernel>
+        <sirius.kernel>50.1.0</sirius.kernel>
     </properties>
 
     <repositories>
@@ -47,14 +47,14 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
-            <version>2.13.0</version>
+            <version>2.14.0</version>
         </dependency>
 
         <!-- Changelog: https://github.com/mongodb/mongo-java-driver/releases -->
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>5.6.0</version>
+            <version>5.6.4</version>
         </dependency>
 
         <!-- Changelog: https://github.com/redis/jedis/releases -->
@@ -74,14 +74,14 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>8.18.3</version>
+            <version>8.19.12</version>
         </dependency>
 
         <!-- Changelog: https://github.com/mariadb-corporation/mariadb-connector-j/releases -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.6</version>
+            <version>3.5.7</version>
             <scope>test</scope>
         </dependency>
 
@@ -90,6 +90,21 @@
             <groupId>com.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
             <version>0.9.4</version>
+            <exclusions>
+                <!-- Excludes for security reasons and replace by successor with renamed group 'at.yawk.lz4' -->
+                <exclusion>
+                    <groupId>org.lz4</groupId>
+                    <artifactId>lz4-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Required, as the version provided by clickhouse-jdbc 0.9.4 has security issues -->
+        <!-- Changelog: https://github.com/yawkat/lz4-java/releases -->
+        <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>1.10.4</version>
         </dependency>
     </dependencies>
 
