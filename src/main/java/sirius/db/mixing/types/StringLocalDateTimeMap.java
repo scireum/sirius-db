@@ -11,7 +11,7 @@ package sirius.db.mixing.types;
 import java.time.LocalDateTime;
 
 /**
- * Represents map of <tt>String</tt> pointing to <tt>LocalDateTime</tt> values.
+ * Represents a map of <tt>String</tt> pointing to <tt>LocalDateTime</tt> values.
  */
 public class StringLocalDateTimeMap extends SafeMap<String, LocalDateTime> {
 
