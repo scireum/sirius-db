@@ -44,12 +44,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Represents an {@link StringLocalDateTimeMap} field within a {@link Mixable}.
+ * Represents a {@link StringLocalDateTimeMap} field within a {@link Mixable}.
  */
 public class StringLocalDateTimeMapProperty extends BaseMapProperty implements ESPropertyInfo {
 
     /**
-     * Factory for generating properties based on their field type
+     * Factory for generating properties based on their field type.
      */
     @Register
     public static class Factory implements PropertyFactory {
@@ -82,15 +82,15 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
     @Override
     protected Object transformToMongo(Object object) {
         Document doc = new Document();
-        ((Map<String, StringLocalDateTimeMap>) object).forEach((k, v) -> doc.put(k, QueryBuilder.FILTERS.transform(v)));
+        ((Map<String, LocalDateTime>) object).forEach((key, value) -> doc.put(key,
+                                                                              QueryBuilder.FILTERS.transform(value)));
         return doc;
     }
 
     @Override
     protected Object transformFromMongo(Value object) {
         Map<String, LocalDateTime> result = new LinkedHashMap<>();
-        Object obj = object.get();
-        if (obj instanceof Document document) {
+        if (object.get() instanceof Document document) {
             for (Map.Entry<String, Object> entry : document.entrySet()) {
                 try {
                     result.put(entry.getKey(),
@@ -123,7 +123,7 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
         try {
             return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(date))
                                 .truncatedTo(ChronoUnit.MILLIS);
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(date)).truncatedTo(ChronoUnit.MILLIS);
         }
     }
