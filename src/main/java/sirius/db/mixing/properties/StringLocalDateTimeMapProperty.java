@@ -82,7 +82,7 @@ public class StringLocalDateTimeMapProperty extends BaseMapProperty implements E
     @Override
     protected Object transformToMongo(Object object) {
         Document doc = new Document();
-        ((Map<String, StringLocalDateTimeMap>) object).forEach((k, v) -> doc.put(k, QueryBuilder.FILTERS.transform(v)));
+        ((Map<String, LocalDateTime>) object).forEach((k, v) -> doc.put(k, QueryBuilder.FILTERS.transform(v)));
         return doc;
     }
 
