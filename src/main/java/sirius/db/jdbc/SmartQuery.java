@@ -397,7 +397,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
                 adjusted.orderAsc(BaseEntity.ID);
             }
 
-            if (!adjusted.distinct && !fields.isEmpty()) {
+            if (!fields.isEmpty()) {
                 // We SELECT a subset of the columns to optimize the network bandwidth.
                 // When pulling the next block, we need to continue exactly where we left of, so we need to SELECT
                 // at least all the fields from the ORDER BY clause.
