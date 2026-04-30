@@ -305,6 +305,11 @@ public class BatchContext implements Closeable {
 
     /**
      * Prepares the given SQL statement as {@link CustomQuery custom query}.
+     * <p>
+     * This is a low-level API for callers which intentionally provide complete SQL statements. Use JDBC parameter
+     * placeholders and {@link CustomQuery#setParameter(int, Object)} for all values derived from user input. SQL
+     * identifiers or expressions cannot be bound as parameters and therefore must only be taken from trusted constants
+     * as that can lead to SQL injection attacks.
      *
      * @param type    the type of entities to process
      * @param fetchId determines if generated IDs should be fetched

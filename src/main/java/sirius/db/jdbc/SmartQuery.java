@@ -237,8 +237,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * <b>NOTE:</b> This cannot be used in "normal" entity queries, as the O/R mapper cannot handle aggregations.
      * Rather, the query has to be converted using {@link #asSQLQuery()} which then permits direct access to rows.
      * <p>
-     * <b>ALSO NOTE:</b> The given expressions will directly end up on the SQL query and must therefore be constant
-     * and safe string which aren't subject to SQL injection attacks!
+     * <b>ALSO NOTE:</b> The given expression will directly end up in the SQL query and is therefore validated against
+     * a basic SQL injection blocklist. It must not contain SQL comments, statement separators, or DDL/DML keywords.
+     * User input must still be bound as parameters in normal query constraints and must never be concatenated into this
+     * expression.
      *
      * @param expression the expression to group by
      * @return the query itself for fluent method calls
@@ -250,6 +252,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             this.aggregationFields = new ArrayList<>();
         }
 
+        SQLExpressionValidator.assertAllowedSQLExpression(expression);
         this.aggregationFields.add(expression);
         return this;
     }
@@ -260,8 +263,10 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
      * <b>NOTE:</b> This cannot be used in "normal" entity queries, as the O/R mapper cannot handle aggregations.
      * Rather, the query has to be converted using {@link #asSQLQuery()} which then permits direct access to rows.
      * <p>
-     * <b>ALSO NOTE:</b> The given expressions will directly end up on the SQL query and must therefore be constant
-     * and safe string which aren't subject to SQL injection attacks!
+     * <b>ALSO NOTE:</b> The given expression will directly end up in the SQL query and is therefore validated against
+     * a basic SQL injection blocklist. It must not contain SQL comments, statement separators, or DDL/DML keywords.
+     * User input must still be bound as parameters in normal query constraints and must never be concatenated into this
+     * expression.
      *
      * @param expression the expression to group by
      * @return the query itself for fluent method calls
@@ -273,6 +278,7 @@ public class SmartQuery<E extends SQLEntity> extends Query<SmartQuery<E>, E, SQL
             this.groupBys = new ArrayList<>();
         }
 
+        SQLExpressionValidator.assertAllowedSQLExpression(expression);
         this.groupBys.add(expression);
         return this;
     }
