@@ -20,6 +20,10 @@ import java.util.Collections;
 
 /**
  * Wraps a SQL statement as {@link BatchSQLQuery}.
+ * <p>
+ * This intentionally accepts complete SQL statements. Callers must use placeholders and {@link #setParameter(int,
+ * Object)} for values derived from user input and must not concatenate user input into the SQL string itself as that
+ * can lead to SQL injection attacks.
  */
 public class CustomQuery extends BatchQuery<SQLEntity> {
 
