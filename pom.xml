@@ -89,7 +89,7 @@
         <dependency>
             <groupId>com.clickhouse</groupId>
             <artifactId>clickhouse-jdbc</artifactId>
-            <version>0.9.4</version>
+            <version>0.9.8</version>
             <exclusions>
                 <!-- Excludes for security reasons and replace by successor with renamed group 'at.yawk.lz4' -->
                 <exclusion>
