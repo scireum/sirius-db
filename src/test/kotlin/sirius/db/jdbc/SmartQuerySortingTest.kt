@@ -2,14 +2,44 @@ package sirius.db.jdbc
 
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
+import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
 class SmartQuerySortingTest {
+
+    @Test
+    @Timeout(30, unit = TimeUnit.SECONDS)
+    fun `streamBlockwise progresses when sorting values were not originally selected`() {
+        oma.select(SmartQueryTestSortingEntity::class.java).delete()
+
+        val entityCount = 1500
+        for (i in 1..entityCount) {
+            val entity = SmartQueryTestSortingEntity()
+            entity.valueOne = "sort_%04d".format(i)
+            entity.valueTwo = "distinct_%04d".format(i)
+            oma.update(entity)
+        }
+
+        val query = oma.select(SmartQueryTestSortingEntity::class.java)
+            .distinctFields(SmartQueryTestSortingEntity.VALUE_TWO)
+            .orderAsc(SmartQueryTestSortingEntity.VALUE_ONE)
+
+        val result = query.streamBlockwise()
+            .toList()
+
+        val uniqueValues = result.map { it.valueTwo }.toSet()
+
+        assertEquals(entityCount, result.size)
+        assertEquals(entityCount, uniqueValues.size)
+    }
+
     @Test
     fun `sorting asc without null values returns all entries`() {
         prepareWithNonNullValues()
