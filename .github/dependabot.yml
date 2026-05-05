@@ -24,6 +24,8 @@ updates:
     sirius:
       patterns:
         - "com.scireum:sirius-*"
+  # allow more than the standard five open pull requests; this repo may have DB driver upgrades pending that are not processed quickly
+  open-pull-requests-limit: 10
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
