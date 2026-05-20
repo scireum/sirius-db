@@ -63,7 +63,7 @@ public class Mango extends SecondaryCapableMapper<MongoEntity, MongoConstraint, 
     public static final String INDEX_DESCENDING = "-1";
 
     /**
-     * Defines the value used to declare create a fulltext index for the given column.
+     * Defines the value used to declare that a fulltext index should be created for the given column.
      */
     public static final String INDEX_AS_FULLTEXT = "text";
 

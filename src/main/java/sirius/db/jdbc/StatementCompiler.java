@@ -170,7 +170,7 @@ class StatementCompiler {
     /**
      * Checks for a condition like [:fooMode AND y = 10 ].
      * <p>
-     * These will be cut and the whole block is only compiles if the condition (fooMode in this case) is a parameter
+     * These will be cut and the whole block is only compiled if the condition (fooMode in this case) is a parameter
      * which is set to true.
      */
     private String checkForBlockCondition(String sql) throws SQLException {
