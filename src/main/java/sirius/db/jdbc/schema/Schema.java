@@ -118,9 +118,9 @@ public class Schema implements Startable, Initializable {
     }
 
     /**
-     * Provides a {@link Future} which is fullfilled when then schema is fully initialized
+     * Provides a {@link Future} which is fulfilled when then schema is fully initialized
      *
-     * @return the future which is fullfilled if the framework is ready
+     * @return the future which is fulfilled if the framework is ready
      */
     public Future getReadyFuture() {
         return readyFuture;
@@ -163,7 +163,7 @@ public class Schema implements Startable, Initializable {
 
         if (failed > 0 || skipped > 0) {
             OMA.LOG.WARN(
-                    "Executed %d schema change actions of which %d failed. %d were skipped due to possible dataloss",
+                    "Executed %d schema change actions of which %d failed. %d were skipped due to possible data loss",
                     executed,
                     failed,
                     skipped);

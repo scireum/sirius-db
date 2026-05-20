@@ -80,9 +80,9 @@ public class SchemaUpdateAction {
     }
 
     /**
-     * Determines if dataloss is possible when executing this change.
+     * Determines if data loss is possible when executing this change.
      *
-     * @return <tt>true</tt> if dataloss is possible (a column or table is dropped), <tt>false</tt> otherwise
+     * @return <tt>true</tt> if data loss is possible (a column or table is dropped), <tt>false</tt> otherwise
      */
     public boolean isDataLossPossible() {
         return dataLossPossible;

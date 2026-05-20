@@ -23,7 +23,7 @@ public class Tensors {
     }
 
     /**
-     * Provides a helper method to savely convert a list of numbers to a float array.
+     * Provides a helper method to safely convert a list of numbers to a float array.
      *
      * @param vector the list to convert
      * @return the converted array
@@ -38,7 +38,7 @@ public class Tensors {
     }
 
     /**
-     * Savely extracts a float array from a JSON array.
+     * Safely extracts a float array from a JSON array.
      *
      * @param vector the JSON array to extract the float array from
      * @return the extracted float array

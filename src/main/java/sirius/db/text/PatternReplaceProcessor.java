@@ -24,7 +24,7 @@ public class PatternReplaceProcessor extends ChainableTokenProcessor {
      * Creates a new processor.
      *
      * @param pattern     the pattern to match
-     * @param replacement the replacement to use a definec by {@link java.util.regex.Matcher#replaceAll(String)}
+     * @param replacement the replacement to use a defined by {@link java.util.regex.Matcher#replaceAll(String)}
      */
     public PatternReplaceProcessor(Pattern pattern, String replacement) {
         this.pattern = pattern;

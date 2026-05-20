@@ -46,7 +46,7 @@ public @interface Analyzed {
     String ANALYZER_TRIGRAM = "trigram";
 
     /**
-     * Spexifies index options passed to elasticsearch.
+     * Specifies index options passed to elasticsearch.
      */
     enum IndexOption {
         /**

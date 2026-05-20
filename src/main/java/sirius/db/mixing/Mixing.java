@@ -229,7 +229,7 @@ public class Mixing implements Initializable {
     /**
      * Returns all known descriptors.
      *
-     * @return an unmodifyable list of all known descriptors
+     * @return an unmodifiable list of all known descriptors
      */
     public Collection<EntityDescriptor> getDescriptors() {
         return descriptorsByType.values();
@@ -238,7 +238,7 @@ public class Mixing implements Initializable {
     /**
      * Determines if the database specific schema synchronization should execute safe updates during the startup.
      *
-     * @return <tt>true</tt> if actions with no dataloss should be executed during startup, <tt>false</tt> otherwise
+     * @return <tt>true</tt> if actions with no data loss should be executed during startup, <tt>false</tt> otherwise
      */
     public boolean shouldExecuteSafeSchemaChanges() {
         return UPDATE_SCHEMA_MODE_SAFE.equals(autoUpdateSchemaMode) || shouldExecuteUnsafeSchemaChanges();
@@ -247,7 +247,7 @@ public class Mixing implements Initializable {
     /**
      * Determines if the database specific schema synchronization should execute ALL updates during the startup.
      *
-     * @return <tt>true</tt> if actions, even ones with dataloss, should be executed during startup,
+     * @return <tt>true</tt> if actions, even ones with data loss, should be executed during startup,
      * <tt>false</tt> otherwise
      */
     public boolean shouldExecuteUnsafeSchemaChanges() {

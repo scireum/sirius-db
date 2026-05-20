@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * Represents the base class for all entities which are managed via {@link Elastic} and stored in Elasticsearch.
  * <p>
- * If possible, it is highly recommended marking a field to be useed as routing for this entity to increase performance
+ * If possible, it is highly recommended marking a field to be used as routing for this entity to increase performance
  * noticeably. This is done by annotating the field with {@link sirius.db.es.annotations.RoutedBy}.
  * <p>
  * For more info on why its a good idea to use custom routing, visit:
@@ -59,7 +59,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     /**
      * Contains the {@link #ID} which is auto-generated when inserting a new entity into Elasticsearch.
      * <p>
-     * It is {@link NullAllowed} as it is filled during the update but after the save checkes have completed.
+     * It is {@link NullAllowed} as it is filled during the update but after the save checks have completed.
      */
     @NullAllowed
     private String id;
@@ -212,7 +212,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
     }
 
     /**
-     * Checks wether the query with the given name matched this entity.
+     * Checks whether the query with the given name matched this entity.
      *
      * @param queryName the name of the query to check
      * @return true if the query with the given name matched this entity, false otherwise

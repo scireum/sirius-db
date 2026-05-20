@@ -89,7 +89,7 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     /**
      * Returns the delete handler.
      *
-     * @return the handler which deciedes how to tread deletes of the referenced entity
+     * @return the handler which decides how to tread deletes of the referenced entity
      */
     public OnDelete getDeleteHandler() {
         return deleteHandler;

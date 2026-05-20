@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * {@link AfterDelete after delete handler}.
  * <p>
  * If the value is set to <tt>true</tt> (default), the entity is considered complex to delete. If <tt>false</tt>
- * is specified, it isn't considered complex to delete, even if there are cascadeing actions (setting fields in other
+ * is specified, it isn't considered complex to delete, even if there are cascading actions (setting fields in other
  * entities to null or deleting other entities).
  */
 @Documented

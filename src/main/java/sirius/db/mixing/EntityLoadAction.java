@@ -30,7 +30,7 @@ public class EntityLoadAction implements ClassLoadAction {
 
     /**
      * Once a new instance is created - which only happens during framework initialization, we reset the list of known
-     * entities as a new discrovery run will start.
+     * entities as a new discovery run will start.
      */
     public EntityLoadAction() {
         mappableClasses.clear();

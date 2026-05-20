@@ -247,10 +247,10 @@ public class AggregationBuilder {
     }
 
     /**
-     * Adds the given aggregation as source aggregation to a {@link #COMPOSITE} aggegation.
+     * Adds the given aggregation as a source aggregation to a {@link #COMPOSITE} aggregation.
      *
      * @param sourceAggregation the source aggregation to add.
-     * @return the aggregation builder itself for fluent methdo calls
+     * @return the aggregation builder itself for fluent method calls
      */
     public AggregationBuilder addSourceAggregation(AggregationBuilder sourceAggregation) {
         if (sourceAggregations == null) {
@@ -263,10 +263,10 @@ public class AggregationBuilder {
     }
 
     /**
-     * Adds a terms aggregation for the given field as a source to a {@link #COMPOSITE} aggegation.
+     * Adds a terms aggregation for the given field as a source to a {@link #COMPOSITE} aggregation.
      *
      * @param field the field to aggregate the terms from
-     * @return the aggregation builder itself for fluent methdo calls
+     * @return the aggregation builder itself for fluent method calls
      */
     public AggregationBuilder addTermSourceAggregation(Mapping field) {
         return addSourceAggregation(AggregationBuilder.createTerms(field).size(-1));
@@ -278,8 +278,8 @@ public class AggregationBuilder {
      * The key is produced by {@link AggregationResult#getCompoundAfterKey()} and can be passed into this method
      * to access the "next page".
      *
-     * @param afterKey the compond after key to parse and install
-     * @return the aggregation builder itself for fluent methdo calls
+     * @param afterKey the compound after key to parse and install
+     * @return the aggregation builder itself for fluent method calls
      */
     public AggregationBuilder withCompoundAfterKey(@Nullable String afterKey) {
         if (Strings.isFilled(afterKey)) {

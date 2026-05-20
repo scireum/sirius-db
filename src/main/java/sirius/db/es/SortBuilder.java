@@ -136,7 +136,7 @@ public class SortBuilder {
      * Sort on a nested object.
      *
      * @param path   the nested object to sort on
-     * @param filter the filter to check wether objects should be taken into account when sorting
+     * @param filter the filter to check whether objects should be taken into account when sorting
      * @return the builder itself for fluent method calls
      */
     public SortBuilder nested(Mapping path, ElasticConstraint filter) {

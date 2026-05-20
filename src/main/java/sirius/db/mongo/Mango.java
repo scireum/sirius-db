@@ -53,17 +53,17 @@ public class Mango extends SecondaryCapableMapper<MongoEntity, MongoConstraint, 
     public static final String ID_FIELD = "_id";
 
     /**
-     * Defines the value used to desclare an index as sorted in ascending order.
+     * Defines the value used to declare an index as sorted in ascending order.
      */
     public static final String INDEX_ASCENDING = "1";
 
     /**
-     * Defines the value used to desclare an index as sorted in descending order.
+     * Defines the value used to declare an index as sorted in descending order.
      */
     public static final String INDEX_DESCENDING = "-1";
 
     /**
-     * Defines the value used to desclare create a fulltext index for the given column.
+     * Defines the value used to declare create a fulltext index for the given column.
      */
     public static final String INDEX_AS_FULLTEXT = "text";
 

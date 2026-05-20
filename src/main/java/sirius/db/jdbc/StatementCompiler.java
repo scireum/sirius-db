@@ -105,7 +105,7 @@ class StatementCompiler {
         }
     }
 
-    /*
+    /**
      * Searches for an occurrence of a block [ .. ]. Everything before the [ is
      * compiled and added to the result SQL. Everything between the brackets is
      * compiled and if a parameter was found it is added to the result SQL. The
@@ -135,7 +135,7 @@ class StatementCompiler {
         }
     }
 
-    /*
+    /**
      * Replaces all occurrences of parameters ${..} or #{..} by parameters given
      * in context.
      */
@@ -167,10 +167,10 @@ class StatementCompiler {
         }
     }
 
-    /*
+    /**
      * Checks for a condition like [:fooMode AND y = 10 ].
-     *
-     * These will be cut and the whole block is only compiles if the condition (fooMode in this case) is a paremter
+     * <p>
+     * These will be cut and the whole block is only compiles if the condition (fooMode in this case) is a parameter
      * which is set to true.
      */
     private String checkForBlockCondition(String sql) throws SQLException {
@@ -297,7 +297,7 @@ class StatementCompiler {
         return endIndex;
     }
 
-    /*
+    /**
      * Returns the next index of ${ or #{ in the given string.
      */
     @Nullable

@@ -218,7 +218,7 @@ class ElasticQueryTest {
     }
 
     @Test
-    fun `queries with multiple occurences of the same constraint works`() {
+    fun `queries with multiple occurrences of the same constraint works`() {
         val queryTestEntity = QueryTestEntity()
         queryTestEntity.value = "NOREF"
         queryTestEntity.counter = 1

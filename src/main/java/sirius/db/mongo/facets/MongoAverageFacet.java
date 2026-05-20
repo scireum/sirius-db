@@ -22,7 +22,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Represents a term facet which computes the avarage of a given field.
+ * Represents a term facet which computes the average of a given field.
  */
 public class MongoAverageFacet extends MongoFacet {
 

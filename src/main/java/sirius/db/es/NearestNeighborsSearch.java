@@ -20,7 +20,7 @@ import javax.annotation.Nonnull;
  * Describes a kNN "Nearest Neighbors" search.
  * <p>
  * Although named as such in the Elastic documentation, this is not a true kNN search. Instead, it is an approximate
- * nearest neightbor (ANN) search based on hierarchical navigable small world graphs (HNSW).
+ * nearest neighbor (ANN) search based on hierarchical navigable small world graphs (HNSW).
  *
  * @see ElasticQuery#knn(NearestNeighborsSearch)
  */

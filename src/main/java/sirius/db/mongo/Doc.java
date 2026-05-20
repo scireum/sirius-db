@@ -216,7 +216,7 @@ public class Doc {
     }
 
     /**
-     * Retruns the underlying Mongo DB Obect.
+     * Returns the underlying Mongo DB object.
      *
      * @return the underlying object
      */

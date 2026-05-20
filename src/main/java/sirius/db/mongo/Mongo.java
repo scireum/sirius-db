@@ -218,7 +218,7 @@ public class Mongo implements Startable, Stoppable {
      *                       {@link #find(String)} or {@link #findInSecondary(String)} to enforce a proper read
      *                       reference. However, as this only permits to use <tt>PRIMARY</tt> or <tt>NEAREST</tt>, we
      *                       still permit to specify a custom preference here. Note that <tt>null</tt> and
-     *                       <tt>PRIMARY</tt> are treated indentically.
+     *                       <tt>PRIMARY</tt> are treated identically.
      * @return a query builder to create a find statement
      */
     public Finder find(String database, @Nullable ReadPreference readPreference) {
@@ -321,7 +321,7 @@ public class Mongo implements Startable, Stoppable {
      * If the execution duration of a query is longer than this threshold, it is logged into
      * {@link sirius.db.DB#SLOW_DB_LOG} for further analysis.
      *
-     * @return the log thresold for queries in milliseconds
+     * @return the log threshold for queries in milliseconds
      */
     protected long getLogQueryThresholdMillis() {
         if (logQueryThresholdMillis < 0) {

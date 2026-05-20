@@ -86,7 +86,7 @@ public class MongoDateRangeFacet extends MongoFacet {
             String fieldName = descriptor.findProperty(field.toString()).getPropertyName();
             bucketFacet.append("groupBy", "$" + fieldName);
 
-            // The boundaries are [min, max) meaning a value has to fullfill: min <= value < max
+            // The boundaries are [min, max) meaning a value has to fulfill: min <= value < max
             List<Object> boundaries = Arrays.asList(QueryBuilder.FILTERS.transform(range.getFrom()),
                                                     QueryBuilder.FILTERS.transform(range.getUntil().plusSeconds(1)));
             bucketFacet.append("boundaries", boundaries);
