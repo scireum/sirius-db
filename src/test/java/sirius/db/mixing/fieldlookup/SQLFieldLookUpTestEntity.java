@@ -14,6 +14,7 @@ import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.StringList;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class SQLFieldLookUpTestEntity extends SQLEntity {
@@ -29,7 +30,7 @@ public class SQLFieldLookUpTestEntity extends SQLEntity {
 
     public static final Mapping BIRTHDAY = Mapping.named("birthday");
     @NullAllowed
-    private LocalDateTime birthday;
+    private LocalDate birthday;
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
     @Length(100)
@@ -52,11 +53,11 @@ public class SQLFieldLookUpTestEntity extends SQLEntity {
         this.cool = cool;
     }
 
-    public LocalDateTime getBirthday() {
+    public LocalDate getBirthday() {
         return birthday;
     }
 
-    public void setBirthday(LocalDateTime birthday) {
+    public void setBirthday(LocalDate birthday) {
         this.birthday = birthday;
     }
 

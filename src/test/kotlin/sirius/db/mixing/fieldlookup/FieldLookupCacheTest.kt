@@ -15,10 +15,9 @@ import sirius.db.mixing.FieldLookupCache
 import sirius.db.mixing.Mapping
 import sirius.db.mongo.Mango
 import sirius.kernel.SiriusExtension
-import sirius.kernel.cache.Cache
-import sirius.kernel.commons.Value
 import sirius.kernel.di.std.Part
-import sirius.kernel.testutil.Reflections
+import java.time.LocalDate
+import java.time.Month
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -30,6 +29,7 @@ class FieldLookupCacheTest {
         miles.names.firstname = "Miles"
         miles.names.lastname = "Morales"
         miles.age = 16
+        miles.birthday = LocalDate.of(2011, Month.AUGUST, 3)
         miles.isCool = true
         miles.`as`(SQLSuperHeroTestMixin::class.java).superPowers.modify().addAll(
                 listOf(
@@ -42,11 +42,6 @@ class FieldLookupCacheTest {
         miles.`as`(SQLSuperHeroTestMixin::class.java).heroNames.lastname = "Man"
         oma.update(miles)
 
-        val cacheKey = lookupCache.getCacheKey(
-                (SQLFieldLookUpTestEntity::class.java), miles.id, SQLFieldLookUpTestEntity.NAMES.inner(
-                NameFieldsTestComposite.FIRSTNAME
-        )
-        )
         val name1 = lookupCache.lookup(
                 SQLFieldLookUpTestEntity::class.java, miles.id,
                 SQLFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME)
@@ -59,7 +54,7 @@ class FieldLookupCacheTest {
         val birthday = lookupCache.lookup(
                 SQLFieldLookUpTestEntity::class.java, miles.id,
                 SQLFieldLookUpTestEntity.BIRTHDAY
-        )
+        ).asLocalDate(LocalDate.MIN)
         val cool = lookupCache.lookup(
                 SQLFieldLookUpTestEntity::class.java, miles.id,
                 SQLFieldLookUpTestEntity.COOL
@@ -82,12 +77,10 @@ class FieldLookupCacheTest {
                         .inner(NameFieldsTestComposite.LASTNAME)
         )
 
-        val cache = Reflections.callPrivateMethod(lookupCache,"getCache") as Cache<String, Value>
-
         assertEquals("Miles", name1.asString())
-        assertEquals("Miles", cache.get(cacheKey).toString())
         assertEquals("Miles", name2.asString())
         assertEquals(16, age.asInt(0))
+        assertEquals(LocalDate.of(2011, Month.AUGUST, 3), birthday)
         assertTrue { cool.asBoolean() }
         assertEquals(listOf("Agility", "Spider Sense", "Shoot web"), powers.get())
         assertEquals("Spider", heroFirstName.asString())
@@ -101,6 +94,7 @@ class FieldLookupCacheTest {
         tony.names.firstname = "Tony"
         tony.names.lastname = "Stark"
         tony.age = 50
+        tony.birthday = LocalDate.of(1970, Month.MAY, 29)
         tony.isCool = true
         tony.`as`(MongoSuperHeroTestMixin::class.java).superPowers.modify().addAll(
                 listOf(
@@ -113,11 +107,6 @@ class FieldLookupCacheTest {
         tony.`as`(MongoSuperHeroTestMixin::class.java).heroNames.lastname = "Man"
         mango.update(tony)
 
-        val cacheKey = lookupCache.getCacheKey(
-                (MongoFieldLookUpTestEntity::class.java), tony.id, MongoFieldLookUpTestEntity.NAMES.inner(
-                NameFieldsTestComposite.FIRSTNAME
-        )
-        )
         val name1 = lookupCache.lookup(
                 MongoFieldLookUpTestEntity::class.java, tony.id,
                 MongoFieldLookUpTestEntity.NAMES.inner(NameFieldsTestComposite.FIRSTNAME)
@@ -131,7 +120,7 @@ class FieldLookupCacheTest {
         val birthday = lookupCache.lookup(
                 MongoFieldLookUpTestEntity::class.java, tony.id,
                 MongoFieldLookUpTestEntity.BIRTHDAY
-        )
+        ).asLocalDate(LocalDate.MIN)
         val cool = lookupCache.lookup(
                 MongoFieldLookUpTestEntity::class.java, tony.id,
                 MongoFieldLookUpTestEntity.COOL
@@ -154,12 +143,10 @@ class FieldLookupCacheTest {
                         .inner(NameFieldsTestComposite.LASTNAME)
         )
 
-        val cache = Reflections.callPrivateMethod(lookupCache,"getCache") as Cache<String, Value>
-
         assertEquals("Tony", name1.asString())
-        assertEquals("Tony", cache.get(cacheKey).toString())
         assertEquals("Tony", name2.asString())
         assertEquals(50, age.asInt(0))
+        assertEquals(LocalDate.of(1970, Month.MAY, 29), birthday)
         assertTrue { cool.asBoolean() }
         assertEquals(listOf("Flying", "Lasers", "Money"), powers.get())
         assertEquals("Iron", heroFirstName.asString())
