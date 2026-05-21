@@ -30,8 +30,8 @@ class WrappedConnection extends DelegatingConnection<Connection> {
     private final ExecutionPoint connected = ExecutionPoint.fastSnapshot();
     private boolean longRunning;
 
-    WrappedConnection(Connection c, Database database) {
-        super(c);
+    WrappedConnection(Connection connection, Database database) {
+        super(connection);
         this.database = database;
         Databases.numUses.inc();
     }
@@ -55,16 +55,16 @@ class WrappedConnection extends DelegatingConnection<Connection> {
 
     @Override
     public void close() throws SQLException {
-        try (Operation op = new Operation(() -> database.name + ".close()", Duration.ofSeconds(5))) {
+        try (var _ = new Operation(() -> database.name + ".close()", Duration.ofSeconds(5))) {
             delegate.close();
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             // Most likely this exception will be a false alert because DBCP 1.2.2 cannot deal with connections which
             // are closed by their driver (due to network issues).
             // The next release of DBCP will fix this problem. The exception is logged at INFO level in case a "real"
             // problem occurred. If we wouldn't call delegate.close, the connection would remain active and might block
             // the pool.
             Databases.LOG.INFO("Error closing connection");
-            Databases.LOG.INFO(e);
+            Databases.LOG.INFO(exception);
         } finally {
             watch.submitMicroTiming("SQL", "Connection Duration: " + database.name);
             if (!longRunning && watch.elapsedMillis() > Databases.getLogConnectionThresholdMillis()) {

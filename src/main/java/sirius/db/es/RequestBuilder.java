@@ -53,8 +53,8 @@ class RequestBuilder {
     private static final String PARAM_ERROR = "error";
     private static final int MAX_CONTENT_LONG_LENGTH = 1024;
 
-    private String method;
-    private RestClient restClient;
+    private final String method;
+    private final RestClient restClient;
     private Map<String, String> params;
     private ObjectNode data;
     private String rawData;
@@ -110,29 +110,29 @@ class RequestBuilder {
     }
 
     protected RequestBuilder tryExecute(String uri) throws OptimisticLockException {
-        Watch w = Watch.start();
-        try (Operation op = new Operation(() -> Strings.apply("Elastic: %s %s", method, uri), Duration.ofSeconds(30))) {
+        Watch watch = Watch.start();
+        try (var _ = new Operation(() -> Strings.apply("Elastic: %s %s", method, uri), Duration.ofSeconds(30))) {
             Request request = setupRequest(uri);
             responseEntity = restClient.performRequest(request).getEntity();
             return this;
-        } catch (ResponseException e) {
-            return handleResponseException(e);
-        } catch (IOException e) {
+        } catch (ResponseException exception) {
+            return handleResponseException(exception);
+        } catch (IOException exception) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage(
                                     "An IO exception occurred when performing a request against elasticsearch: %s")
                             .handle();
         } finally {
-            elastic.callDuration.addValue(w.elapsedMillis());
+            elastic.callDuration.addValue(watch.elapsedMillis());
             if (Microtiming.isEnabled()) {
-                w.submitMicroTiming("ELASTIC", method + ": " + uri);
+                watch.submitMicroTiming("ELASTIC", method + ": " + uri);
             }
-            if (w.elapsedMillis() > Elastic.getLogQueryThresholdMillis()) {
+            if (watch.elapsedMillis() > Elastic.getLogQueryThresholdMillis()) {
                 elastic.numSlowQueries.inc();
                 DB.SLOW_DB_LOG.INFO("A slow Elasticsearch query was executed (%s): %s\n%s\n%s",
-                                    w.duration(),
+                                    watch.duration(),
                                     method + ": " + uri,
                                     Strings.limit(buildContent().orElse("no content"), MAX_CONTENT_LONG_LENGTH),
                                     ExecutionPoint.snapshot().toString());
@@ -156,27 +156,27 @@ class RequestBuilder {
         return request;
     }
 
-    private RequestBuilder handleResponseException(ResponseException e) throws OptimisticLockException {
+    private RequestBuilder handleResponseException(ResponseException exception) throws OptimisticLockException {
         if (customExceptionHandler != null) {
-            HttpEntity result = customExceptionHandler.apply(e);
+            HttpEntity result = customExceptionHandler.apply(exception);
             if (result != null) {
                 responseEntity = result;
                 return this;
             }
         }
 
-        ObjectNode error = extractErrorJSON(e);
-        if (e.getResponse().getStatusLine().getStatusCode() == 409) {
+        ObjectNode error = extractErrorJSON(exception);
+        if (exception.getResponse().getStatusLine().getStatusCode() == 409) {
             throw new OptimisticLockException(error != null ?
-                                              Json.tryValueString(error, PARAM_REASON).orElse(e.getMessage()) :
-                                              e.getMessage(), e);
+                                              Json.tryValueString(error, PARAM_REASON).orElse(exception.getMessage()) :
+                                              exception.getMessage(), exception);
         }
 
         throw Exceptions.handle()
                         .to(Elastic.LOG)
-                        .error(e)
+                        .error(exception)
                         .withSystemErrorMessage("Elasticsearch (%s) reported an error: %s (%s)",
-                                                e.getResponse().getHost(),
+                                                exception.getResponse().getHost(),
                                                 error != null ?
                                                 Json.tryValueString(error, PARAM_REASON).orElse("unknown") :
                                                 "unknown",
@@ -204,10 +204,10 @@ class RequestBuilder {
     protected RequestBuilder execute(String uri) {
         try {
             return tryExecute(uri);
-        } catch (OptimisticLockException e) {
+        } catch (OptimisticLockException exception) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage("An unexpected optimistic locking error occurred: %s")
                             .handle();
         }
@@ -244,21 +244,21 @@ class RequestBuilder {
                          .handle();
     }
 
-    protected ObjectNode extractErrorJSON(ResponseException e) {
+    protected ObjectNode extractErrorJSON(ResponseException exception) {
         try {
-            HttpEntity httpEntity = e.getResponse().getEntity();
-            if (e.getResponse().getEntity().getContentLength() == 0) {
+            HttpEntity httpEntity = exception.getResponse().getEntity();
+            if (exception.getResponse().getEntity().getContentLength() == 0) {
                 return null;
             }
             ObjectNode response = Json.parseObject(EntityUtils.toString(httpEntity));
             return Json.getObject(response, PARAM_ERROR);
-        } catch (IOException ex) {
-            Exceptions.handle(Elastic.LOG, ex);
+        } catch (IOException ioException) {
+            Exceptions.handle(Elastic.LOG, ioException);
             throw Exceptions.handle()
                             .to(Elastic.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage("Elasticsearch (%s) reported an error which cannot be unpacked: %s",
-                                                    e.getResponse().getHost())
+                                                    exception.getResponse().getHost())
                             .handle();
         }
     }
@@ -274,10 +274,10 @@ class RequestBuilder {
             }
 
             return responseObject;
-        } catch (IOException e) {
+        } catch (IOException exception) {
             throw Exceptions.handle()
                             .to(Elastic.LOG)
-                            .error(e)
+                            .error(exception)
                             .withSystemErrorMessage(
                                     "An IO exception occurred when performing a request against elasticsearch: %s")
                             .handle();

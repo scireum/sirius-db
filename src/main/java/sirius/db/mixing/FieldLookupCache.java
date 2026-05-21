@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  */
 @Register(classes = FieldLookupCache.class)
 public class FieldLookupCache {
-    private Cache<String, Value> cache = CacheManager.createLocalCache("mixing-field-lookup");
+    private final Cache<String, Value> cache = CacheManager.createLocalCache("mixing-field-lookup");
 
     @Part
     private Mixing mixing;
@@ -126,14 +126,5 @@ public class FieldLookupCache {
      */
     public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, Mapping field) {
         return lookup(ref.getType(), ref.getId(), field);
-    }
-
-    /**
-     * Provides the value of cache.
-     *
-     * @return the value of cache
-     */
-    private Cache<String, Value> getCache(){
-        return cache;
     }
 }

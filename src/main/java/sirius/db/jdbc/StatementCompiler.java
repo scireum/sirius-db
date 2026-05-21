@@ -32,10 +32,10 @@ import java.util.List;
 class StatementCompiler {
 
     private PreparedStatement statement;
-    private List<Tuple<Integer, Object>> parameters = new ArrayList<>();
-    private Connection connection;
-    private StringBuilder effectiveQueryBuilder;
-    private boolean retrieveGeneratedKeys;
+    private final List<Tuple<Integer, Object>> parameters = new ArrayList<>();
+    private final Connection connection;
+    private final StringBuilder effectiveQueryBuilder;
+    private final boolean retrieveGeneratedKeys;
     private String originalSQL;
     private List<Object> params;
     private Context context;
@@ -94,9 +94,9 @@ class StatementCompiler {
         int index = 0;
         for (Object param : params) {
             if (param instanceof Collection<?>) {
-                for (Object obj : (Collection<?>) param) {
-                    parameters.add(Tuple.create(++index, obj));
-                    Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
+                for (Object object : (Collection<?>) param) {
+                    parameters.add(Tuple.create(++index, object));
+                    Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(object));
                 }
             } else {
                 parameters.add(Tuple.create(++index, param));
@@ -247,13 +247,13 @@ class StatementCompiler {
 
         try {
             return Reflection.evalAccessPath(accessPath, paramValue);
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw new SQLException(NLS.fmtr("StatementCompiler.cannotEvalAccessPath")
                                       .set("name", parameterName)
                                       .set("path", accessPath)
                                       .set("value", paramValue)
                                       .set("query", originalSQL)
-                                      .format(), e);
+                                      .format(), exception);
         }
     }
 
@@ -280,7 +280,7 @@ class StatementCompiler {
         }
 
         if (paramValue instanceof String stringValue) {
-            return stringValue.length() > 0;
+            return !stringValue.isEmpty();
         }
 
         return true;

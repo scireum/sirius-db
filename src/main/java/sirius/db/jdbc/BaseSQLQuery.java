@@ -106,8 +106,8 @@ public abstract class BaseSQLQuery {
      * @throws SQLException in case of a database error
      */
     public void iterateAll(Consumer<Row> consumer, @Nullable Limit limit) throws SQLException {
-        iterate(r -> {
-            consumer.accept(r);
+        iterate(row -> {
+            consumer.accept(row);
             return true;
         }, limit);
     }
@@ -161,27 +161,26 @@ public abstract class BaseSQLQuery {
     /*
      * Converts the current row of the given result set into a Row object
      */
-    protected Row loadIntoRow(ResultSet rs) throws SQLException {
+    protected Row loadIntoRow(ResultSet resultSet) throws SQLException {
         Row row = new Row();
         List<String> fetchedFieldNames = null;
         if (fieldNames == null) {
-            fetchedFieldNames = new ArrayList<>(rs.getMetaData().getColumnCount());
+            fetchedFieldNames = new ArrayList<>(resultSet.getMetaData().getColumnCount());
         }
-        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+        for (int col = 1; col <= resultSet.getMetaData().getColumnCount(); col++) {
             String fieldName;
             if (fieldNames != null) {
                 fieldName = fieldNames.get(col - 1);
             } else {
-                fieldName = rs.getMetaData().getColumnLabel(col);
+                fieldName = resultSet.getMetaData().getColumnLabel(col);
                 fetchedFieldNames.add(fieldName);
             }
-            Object obj = rs.getObject(col);
-            if (obj instanceof Blob blob) {
-                writeBlobToParameter(fieldName, blob);
-            } else if (obj instanceof String string) {
-                row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, string.replace("\0", "")));
-            } else {
-                row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
+            Object obj = resultSet.getObject(col);
+            switch (obj) {
+                case Blob blob -> writeBlobToParameter(fieldName, blob);
+                case String string ->
+                        row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, string.replace("\0", "")));
+                default -> row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
             }
         }
 

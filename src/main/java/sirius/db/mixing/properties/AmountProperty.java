@@ -71,13 +71,13 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
                                     field.getName(),
                                     field.getDeclaringClass().getName());
                 }
-            } catch (Exception e) {
+            } catch (Exception exception) {
                 Mixing.LOG.WARN(
                         "An error occurred while ensuring that the initial value of %s in %s is Amount.NOTHING: %s (%s)",
                         field.getName(),
                         field.getDeclaringClass().getName(),
-                        e.getMessage(),
-                        e.getClass().getName());
+                        exception.getMessage(),
+                        exception.getClass().getName());
             }
             propertyConsumer.accept(amountProperty);
         }
@@ -133,7 +133,7 @@ public class AmountProperty extends NumberProperty implements SQLPropertyInfo, E
         } catch (IllegalArgumentException originalFormatException) {
             try {
                 return applyNumericRounding(Amount.ofRoundedUserString(value.asString()));
-            } catch (Exception ignored) {
+            } catch (Exception _) {
                 throw originalFormatException;
             }
         }

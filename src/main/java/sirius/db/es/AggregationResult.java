@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import sirius.kernel.commons.Amount;
-import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Json;
 import sirius.kernel.commons.Tuple;
 
@@ -35,7 +34,7 @@ public class AggregationResult {
     private static final String KEY_BUCKETS = "buckets";
     private static final AggregationResult EMPTY = new AggregationResult(Json.createObject());
 
-    private ObjectNode data;
+    private final ObjectNode data;
 
     /**
      * Uses {@link #of(ObjectNode)} to generate a new instance while handling <tt>null</tt> values for data gracefully.
@@ -116,16 +115,14 @@ public class AggregationResult {
     public Optional<Bucket> getFirstBucket() {
         JsonNode buckets = data.get(KEY_BUCKETS);
 
-        if (buckets instanceof ArrayNode array && !array.isEmpty()) {
-            return Optional.of(new Bucket(null, (ObjectNode) array.get(0)));
-        } else if (buckets instanceof ObjectNode object) {
-            return object.properties()
-                         .stream()
-                         .findFirst()
-                         .map(entry -> new Bucket(entry.getKey(), (ObjectNode) entry.getValue()));
-        } else {
-            return Optional.empty();
-        }
+        return switch (buckets) {
+            case ArrayNode array when !array.isEmpty() -> Optional.of(new Bucket(null, (ObjectNode) array.get(0)));
+            case ObjectNode object -> object.properties()
+                                            .stream()
+                                            .findFirst()
+                                            .map(entry -> new Bucket(entry.getKey(), (ObjectNode) entry.getValue()));
+            default -> Optional.empty();
+        };
     }
 
     /**
@@ -200,8 +197,6 @@ public class AggregationResult {
      *
      * @return the raw {@link ObjectNode}
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    @Explain("This data is normally read only and performing a deep copy is not worth the overhead.")
     public ObjectNode getJSONObject() {
         return data;
     }

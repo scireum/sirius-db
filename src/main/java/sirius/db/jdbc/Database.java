@@ -68,7 +68,7 @@ public class Database {
     private final int maxIdle;
     private final boolean testOnBorrow;
     private final String validationQuery;
-    private MonitoredDataSource ds;
+    private MonitoredDataSource dataSource;
     private Set<Capability> capabilities;
     private static final Pattern SANE_COLUMN_NAME = Pattern.compile("\\w+");
     private static final Pattern HOST_AND_PORT_PATTERN = Pattern.compile("//([^:]+):(\\d+)");
@@ -77,47 +77,51 @@ public class Database {
      * Use the get(name) method to create a new object.
      */
     protected Database(String name) {
-        Extension ext = Sirius.getSettings().getExtension("jdbc.database", name);
-        if (ext == null) {
+        Extension extension = Sirius.getSettings().getExtension("jdbc.database", name);
+        if (extension == null) {
             throw Exceptions.handle()
                             .to(Databases.LOG)
                             .withSystemErrorMessage("Unknown JDBC database: %s", name)
                             .handle();
         }
-        Extension profile = Sirius.getSettings().getExtension("jdbc.profile", ext.get("profile").asString("default"));
-        Context ctx = profile.getContext();
-        ctx.putAll(ext.getContext());
+        Extension profile =
+                Sirius.getSettings().getExtension("jdbc.profile", extension.get("profile").asString("default"));
+        Context context = profile.getContext();
+        context.putAll(extension.getContext());
         this.name = name;
-        this.driver = ext.get(KEY_DRIVER).isEmptyString() ?
-                      Formatter.create(profile.get(KEY_DRIVER).asString()).setDirect(ctx).format() :
-                      ext.get(KEY_DRIVER).asString();
-        this.service = ext.get(KEY_SERVICE).isEmptyString() ?
-                       Formatter.create(profile.get(KEY_SERVICE).asString()).setDirect(ctx).format() :
-                       ext.get(KEY_SERVICE).asString();
-        this.url = ext.get(KEY_URL).isEmptyString() ?
-                   Formatter.create(profile.get(KEY_URL).asString()).setDirect(ctx).format() :
-                   ext.get(KEY_URL).asString();
-        this.hostUrl = ext.get(KEY_HOST_URL).isEmptyString() ?
-                       Formatter.create(profile.get(KEY_HOST_URL).asString()).setDirect(ctx).format() :
-                       ext.get(KEY_HOST_URL).asString();
+        this.driver = extension.get(KEY_DRIVER).isEmptyString() ?
+                      Formatter.create(profile.get(KEY_DRIVER).asString()).setDirect(context).format() :
+                      extension.get(KEY_DRIVER).asString();
+        this.service = extension.get(KEY_SERVICE).isEmptyString() ?
+                       Formatter.create(profile.get(KEY_SERVICE).asString()).setDirect(context).format() :
+                       extension.get(KEY_SERVICE).asString();
+        this.url = extension.get(KEY_URL).isEmptyString() ?
+                   Formatter.create(profile.get(KEY_URL).asString()).setDirect(context).format() :
+                   extension.get(KEY_URL).asString();
+        this.hostUrl = extension.get(KEY_HOST_URL).isEmptyString() ?
+                       Formatter.create(profile.get(KEY_HOST_URL).asString()).setDirect(context).format() :
+                       extension.get(KEY_HOST_URL).asString();
         applyPortMapping();
-        this.username = ext.get(KEY_USER).isEmptyString() ?
-                        Formatter.create(profile.get(KEY_USER).asString()).setDirect(ctx).format() :
-                        ext.get(KEY_USER).asString();
-        this.password = ext.get(KEY_PASSWORD).isEmptyString() ?
-                        Formatter.create(profile.get(KEY_PASSWORD).asString()).setDirect(ctx).format() :
-                        ext.get(KEY_PASSWORD).asString();
-        this.initialSize = ext.get(KEY_INITIAL_SIZE).isFilled() ?
-                           ext.get(KEY_INITIAL_SIZE).asInt(0) :
+        this.username = extension.get(KEY_USER).isEmptyString() ?
+                        Formatter.create(profile.get(KEY_USER).asString()).setDirect(context).format() :
+                        extension.get(KEY_USER).asString();
+        this.password = extension.get(KEY_PASSWORD).isEmptyString() ?
+                        Formatter.create(profile.get(KEY_PASSWORD).asString()).setDirect(context).format() :
+                        extension.get(KEY_PASSWORD).asString();
+        this.initialSize = extension.get(KEY_INITIAL_SIZE).isFilled() ?
+                           extension.get(KEY_INITIAL_SIZE).asInt(0) :
                            profile.get(KEY_INITIAL_SIZE).asInt(0);
-        this.maxActive = ext.get(KEY_MAX_ACTIVE).isFilled() ?
-                         ext.get(KEY_MAX_ACTIVE).asInt(10) :
+        this.maxActive = extension.get(KEY_MAX_ACTIVE).isFilled() ?
+                         extension.get(KEY_MAX_ACTIVE).asInt(10) :
                          profile.get(KEY_MAX_ACTIVE).asInt(10);
-        this.maxIdle =
-                ext.get(KEY_MAX_IDLE).isFilled() ? ext.get(KEY_MAX_IDLE).asInt(1) : profile.get(KEY_MAX_IDLE).asInt(1);
-        this.validationQuery = ext.get(KEY_VALIDATION_QUERY).isEmptyString() ?
-                               Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString()).setDirect(ctx).format() :
-                               ext.get(KEY_VALIDATION_QUERY).asString();
+        this.maxIdle = extension.get(KEY_MAX_IDLE).isFilled() ?
+                       extension.get(KEY_MAX_IDLE).asInt(1) :
+                       profile.get(KEY_MAX_IDLE).asInt(1);
+        this.validationQuery = extension.get(KEY_VALIDATION_QUERY).isEmptyString() ?
+                               Formatter.create(profile.get(KEY_VALIDATION_QUERY).asString())
+                                        .setDirect(context)
+                                        .format() :
+                               extension.get(KEY_VALIDATION_QUERY).asString();
         this.testOnBorrow = Strings.isFilled(validationQuery);
     }
 
@@ -156,11 +160,11 @@ public class Database {
      * @return the connection pool as DataSource
      */
     public DataSource getDatasource() {
-        if (ds == null) {
-            ds = new MonitoredDataSource();
+        if (dataSource == null) {
+            dataSource = new MonitoredDataSource();
             initialize();
         }
-        return ds;
+        return dataSource;
     }
 
     /**
@@ -175,7 +179,7 @@ public class Database {
      * @throws SQLException in case of a database error
      */
     public Connection getConnection() throws SQLException {
-        try (Operation op = createOperation("getConnection()")) {
+        try (var _ = createOperation("getConnection()")) {
             return new WrappedConnection(getDatasource().getConnection(), this);
         }
     }
@@ -198,7 +202,7 @@ public class Database {
     @SuppressWarnings("squid:S2095")
     @Explain("We return this method - therefore properly calling close is the responsibility of the caller.")
     public Connection getLongRunningConnection() throws SQLException {
-        try (Operation op = createOperation("getLongRunningConnection()")) {
+        try (var _ = createOperation("getLongRunningConnection()")) {
             return new WrappedConnection(getDatasource().getConnection(), this).markAsLongRunning();
         }
     }
@@ -216,11 +220,11 @@ public class Database {
             return getConnection();
         }
 
-        try (Operation op = createOperation("getHostConnection()")) {
+        try (var _ = createOperation("getHostConnection()")) {
             try {
                 Class.forName(driver);
-            } catch (ClassNotFoundException e) {
-                Exceptions.handle(OMA.LOG, e);
+            } catch (ClassNotFoundException exception) {
+                Exceptions.handle(OMA.LOG, exception);
             }
 
             return DriverManager.getConnection(hostUrl, username, password);
@@ -244,72 +248,72 @@ public class Database {
     /**
      * Creates a new call wrapper which permits safe and convenient function calls.
      *
-     * @param fun        name of the function to call
-     * @param returnType the SQL type ({@link Types}) of the return value of this function
+     * @param functionName name of the function to call
+     * @param returnType   the SQL type ({@link Types}) of the return value of this function
      * @return a new call which can be supplied with parameters and executed against the database
      */
-    public SQLCall createFunctionCall(String fun, Integer returnType) {
-        return new SQLCall(this, fun, returnType);
+    public SQLCall createFunctionCall(String functionName, Integer returnType) {
+        return new SQLCall(this, functionName, returnType);
     }
 
     /**
      * Creates a new call wrapper which permits safe and convenient procedure calls.
      *
-     * @param fun name of the procedure to call
+     * @param procedureName name of the procedure to call
      * @return a new call which can be supplied with parameters and executed against the database
      */
-    public SQLCall createProcedureCall(String fun) {
-        return new SQLCall(this, fun, null);
+    public SQLCall createProcedureCall(String procedureName) {
+        return new SQLCall(this, procedureName, null);
     }
 
     /**
      * Generates an INSERT statement for the given table inserting all supplied parameters in <tt>ctx</tt>.
      *
-     * @param table the target table to insert a row
-     * @param ctx   contains names and values to insert into the database
+     * @param table   the target table to insert a row
+     * @param context contains names and values to insert into the database
      * @return a Row containing all generated keys
      * @throws SQLException in case of a database error
      */
     @SuppressWarnings("squid:S2077")
     @Explain("prepareValues verifies the field names and converts all values into parameters for the prepared statement")
-    public Row insertRow(String table, Context ctx) throws SQLException {
-        try (Connection c = getConnection()) {
+    public Row insertRow(String table, Context context) throws SQLException {
+        try (Connection connection = getConnection()) {
             StringBuilder fields = new StringBuilder();
             StringBuilder values = new StringBuilder();
             List<Object> valueList = new ArrayList<>();
-            prepareValues(ctx, fields, values, valueList);
+            prepareValues(context, fields, values, valueList);
             String sql = "INSERT INTO " + table + " (" + fields + ") VALUES(" + values + ")";
-            try (PreparedStatement stmt = hasCapability(Capability.GENERATED_KEYS) ?
-                                          c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS) :
-                                          c.prepareStatement(sql)) {
-                fillValues(valueList, sql, stmt);
-                stmt.executeUpdate();
-                return dbs.fetchGeneratedKeys(stmt);
+            try (PreparedStatement statement = hasCapability(Capability.GENERATED_KEYS) ?
+                                               connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS) :
+                                               connection.prepareStatement(sql)) {
+                fillValues(valueList, sql, statement);
+                statement.executeUpdate();
+                return dbs.fetchGeneratedKeys(statement);
             }
         }
     }
 
-    protected void fillValues(List<Object> valueList, String sql, PreparedStatement stmt) {
+    protected void fillValues(List<Object> values, String sql, PreparedStatement statement) {
         int index = 0;
-        for (Object o : valueList) {
+        for (Object value : values) {
             try {
-                Databases.convertAndSetParameter(stmt, ++index, o);
-            } catch (Exception e) {
-                throw new IllegalArgumentException(e.getMessage()
+                Databases.convertAndSetParameter(statement, ++index, value);
+            } catch (Exception exception) {
+                throw new IllegalArgumentException(exception.getMessage()
                                                    + " - Index: "
                                                    + index
                                                    + ", Value: "
-                                                   + o
+                                                   + value
                                                    + ", Query: "
-                                                   + sql, e);
+                                                   + sql, exception);
             }
         }
     }
 
-    protected void prepareValues(Context ctx, StringBuilder fields, StringBuilder values, List<Object> valueList) {
-        for (Map.Entry<String, Object> entry : ctx.entrySet()) {
+    protected void prepareValues(Context context, StringBuilder fields, StringBuilder values, List<Object> valueList) {
+        for (Map.Entry<String, Object> entry : context.entrySet()) {
             if (entry.getValue() != null) {
-                if (fields.length() > 0) {
+                if (!fields.isEmpty()) {
                     fields.append(", ");
                     values.append(", ");
                 }
@@ -343,17 +347,17 @@ public class Database {
     }
 
     private void initialize() {
-        if (ds != null) {
-            ds.setDriverClassName(driver);
-            ds.setUrl(url);
-            ds.setUsername(username);
-            ds.setPassword(password);
-            ds.setInitialSize(initialSize);
-            ds.setMaxTotal(maxActive == 0 ? 20 : maxActive);
-            ds.setMaxIdle(maxIdle);
-            ds.setTestOnBorrow(testOnBorrow);
-            ds.setValidationQuery(validationQuery);
-            ds.setMaxWait(Duration.ofSeconds(1));
+        if (dataSource != null) {
+            dataSource.setDriverClassName(driver);
+            dataSource.setUrl(url);
+            dataSource.setUsername(username);
+            dataSource.setPassword(password);
+            dataSource.setInitialSize(initialSize);
+            dataSource.setMaxTotal(maxActive == 0 ? 20 : maxActive);
+            dataSource.setMaxIdle(maxIdle);
+            dataSource.setTestOnBorrow(testOnBorrow);
+            dataSource.setValidationQuery(validationQuery);
+            dataSource.setMaxWait(Duration.ofSeconds(1));
         }
     }
 
@@ -399,10 +403,10 @@ public class Database {
      * @return the number of open but unused connection
      */
     public int getNumIdle() {
-        if (ds == null) {
+        if (dataSource == null) {
             return 0;
         }
-        return ds.getNumIdle();
+        return dataSource.getNumIdle();
     }
 
     /**
@@ -411,10 +415,10 @@ public class Database {
      * @return the number of open and active connection
      */
     public int getNumActive() {
-        if (ds == null) {
+        if (dataSource == null) {
             return 0;
         }
-        return ds.getNumActive();
+        return dataSource.getNumActive();
     }
 
     /**
