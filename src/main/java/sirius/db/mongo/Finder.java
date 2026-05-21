@@ -160,7 +160,7 @@ public class Finder extends QueryBuilder<Finder> {
      * Adds a limit to the query.
      *
      * @param skip  the number of items to skip (used for pagination).
-     * @param limit the max. number of items to return (exluding those who have been skipped).
+     * @param limit the max. number of items to return (excluding those who have been skipped).
      * @return the builder itself for fluent method calls
      */
     public Finder limit(int skip, int limit) {
@@ -211,7 +211,7 @@ public class Finder extends QueryBuilder<Finder> {
      * Executes the query for the given collection and returns a single document.
      *
      * @param type the type of entities to search
-     * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
+     * @return the found document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
      */
     public Optional<Doc> singleIn(Class<?> type) {
         return singleIn(getRelationName(type));
@@ -221,7 +221,7 @@ public class Finder extends QueryBuilder<Finder> {
      * Executes the query for the given collection and returns a single document.
      *
      * @param collection the collection to search in
-     * @return the founbd document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
+     * @return the found document wrapped as <tt>Optional</tt> or an empty one, if no document was found.
      */
     public Optional<Doc> singleIn(String collection) {
         Watch watch = Watch.start();

@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  */
 @Register(classes = FieldLookupCache.class)
 public class FieldLookupCache {
-    private Cache<String, Value> cache = CacheManager.createLocalCache("mixing-field-lookup");
+    private final Cache<String, Value> cache = CacheManager.createLocalCache("mixing-field-lookup");
 
     @Part
     private Mixing mixing;
@@ -46,7 +46,7 @@ public class FieldLookupCache {
      * @param type  the type of the entity to resolve
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
-     * @param <E>   the generic type of the entitiy
+     * @param <E>   the generic type of the entity
      * @return the value of the field or an empty value if either the field is empty or the given ID was <tt>null</tt>
      */
     public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, Mapping field) {
@@ -83,7 +83,7 @@ public class FieldLookupCache {
      * @param type  the type of the entity to resolve
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
-     * @param <E>   the generic type of the entitiy
+     * @param <E>   the generic type of the entity
      * @return the value of the cache key or an empty string if either the field is empty or the given ID was <tt>null</tt>
      */
     @Nonnull
@@ -97,7 +97,7 @@ public class FieldLookupCache {
      * @param type  the type of the entity to resolve
      * @param id    the id of the entity to resolve
      * @param field the field to resolve
-     * @param <E>   the generic type of the entitiy
+     * @param <E>   the generic type of the entity
      * @return the value of the field or an empty value if either the field is empty or the given ID was <tt>null</tt>
      */
     public <E extends BaseEntity<?>> Value lookup(Class<E> type, Object id, String field) {
@@ -109,7 +109,7 @@ public class FieldLookupCache {
      *
      * @param ref   the reference which points to the entity to resolve
      * @param field the field to resolve
-     * @param <E>   the generic type of the entitiy
+     * @param <E>   the generic type of the entity
      * @return the value of the field or an empty value if either the field is empty or if the given reference was empty
      */
     public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, String field) {
@@ -121,19 +121,10 @@ public class FieldLookupCache {
      *
      * @param ref   the reference which points to the entity to resolve
      * @param field the field to resolve
-     * @param <E>   the generic type of the entitiy
+     * @param <E>   the generic type of the entity
      * @return the value of the field or an empty value if either the field is empty or if the given reference was empty
      */
     public <E extends BaseEntity<?>> Value lookup(BaseEntityRef<?, E> ref, Mapping field) {
         return lookup(ref.getType(), ref.getId(), field);
-    }
-
-    /**
-     * Provides the value of cache.
-     *
-     * @return the value of cache
-     */
-    private Cache<String, Value> getCache(){
-        return cache;
     }
 }

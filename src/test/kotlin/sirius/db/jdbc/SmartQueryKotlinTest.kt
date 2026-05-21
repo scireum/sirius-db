@@ -321,7 +321,7 @@ class SmartQueryKotlinTest {
     }
 
     @Test
-    fun `select non existant entity ref`() {
+    fun `select non existent entity ref`() {
         val testEntityWithNullRef = TestEntityWithNullRef()
         testEntityWithNullRef.name = "bliblablub"
         oma.update(testEntityWithNullRef)

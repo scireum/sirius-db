@@ -32,10 +32,10 @@ import java.util.List;
 class StatementCompiler {
 
     private PreparedStatement statement;
-    private List<Tuple<Integer, Object>> parameters = new ArrayList<>();
-    private Connection connection;
-    private StringBuilder effectiveQueryBuilder;
-    private boolean retrieveGeneratedKeys;
+    private final List<Tuple<Integer, Object>> parameters = new ArrayList<>();
+    private final Connection connection;
+    private final StringBuilder effectiveQueryBuilder;
+    private final boolean retrieveGeneratedKeys;
     private String originalSQL;
     private List<Object> params;
     private Context context;
@@ -94,9 +94,9 @@ class StatementCompiler {
         int index = 0;
         for (Object param : params) {
             if (param instanceof Collection<?>) {
-                for (Object obj : (Collection<?>) param) {
-                    parameters.add(Tuple.create(++index, obj));
-                    Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(obj));
+                for (Object object : (Collection<?>) param) {
+                    parameters.add(Tuple.create(++index, object));
+                    Databases.LOG.FINE("SETTING: " + index + " TO " + NLS.toMachineString(object));
                 }
             } else {
                 parameters.add(Tuple.create(++index, param));
@@ -105,7 +105,7 @@ class StatementCompiler {
         }
     }
 
-    /*
+    /**
      * Searches for an occurrence of a block [ .. ]. Everything before the [ is
      * compiled and added to the result SQL. Everything between the brackets is
      * compiled and if a parameter was found it is added to the result SQL. The
@@ -135,7 +135,7 @@ class StatementCompiler {
         }
     }
 
-    /*
+    /**
      * Replaces all occurrences of parameters ${..} or #{..} by parameters given
      * in context.
      */
@@ -167,10 +167,10 @@ class StatementCompiler {
         }
     }
 
-    /*
+    /**
      * Checks for a condition like [:fooMode AND y = 10 ].
-     *
-     * These will be cut and the whole block is only compiles if the condition (fooMode in this case) is a paremter
+     * <p>
+     * These will be cut and the whole block is only compiled if the condition (fooMode in this case) is a parameter
      * which is set to true.
      */
     private String checkForBlockCondition(String sql) throws SQLException {
@@ -247,13 +247,13 @@ class StatementCompiler {
 
         try {
             return Reflection.evalAccessPath(accessPath, paramValue);
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw new SQLException(NLS.fmtr("StatementCompiler.cannotEvalAccessPath")
                                       .set("name", parameterName)
                                       .set("path", accessPath)
                                       .set("value", paramValue)
                                       .set("query", originalSQL)
-                                      .format(), e);
+                                      .format(), exception);
         }
     }
 
@@ -280,7 +280,7 @@ class StatementCompiler {
         }
 
         if (paramValue instanceof String stringValue) {
-            return stringValue.length() > 0;
+            return !stringValue.isEmpty();
         }
 
         return true;
@@ -297,7 +297,7 @@ class StatementCompiler {
         return endIndex;
     }
 
-    /*
+    /**
      * Returns the next index of ${ or #{ in the given string.
      */
     @Nullable

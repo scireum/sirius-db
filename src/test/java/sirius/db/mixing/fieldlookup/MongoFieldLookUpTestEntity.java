@@ -13,7 +13,7 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.StringList;
 import sirius.db.mongo.MongoEntity;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class MongoFieldLookUpTestEntity extends MongoEntity {
 
@@ -28,7 +28,7 @@ public class MongoFieldLookUpTestEntity extends MongoEntity {
 
     public static final Mapping BIRTHDAY = Mapping.named("birthday");
     @NullAllowed
-    private LocalDateTime birthday;
+    private LocalDate birthday;
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
     private final StringList superPowers = new StringList();
@@ -49,11 +49,11 @@ public class MongoFieldLookUpTestEntity extends MongoEntity {
         this.cool = cool;
     }
 
-    public LocalDateTime getBirthday() {
+    public LocalDate getBirthday() {
         return birthday;
     }
 
-    public void setBirthday(LocalDateTime birthday) {
+    public void setBirthday(LocalDate birthday) {
         this.birthday = birthday;
     }
 

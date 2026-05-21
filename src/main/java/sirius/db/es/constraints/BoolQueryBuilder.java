@@ -169,9 +169,9 @@ public class BoolQueryBuilder {
     }
 
     /**
-     * Compiles the boolen query into a constraint.
+     * Compiles the boolean query into a constraint.
      *
-     * @return the query as constraint
+     * @return the query as a constraint
      */
     @SuppressWarnings({"squid:MethodCyclomaticComplexity", "java:S1067"})
     @Explain("Splitting this method or its constraints would most probably increase the complexity.")

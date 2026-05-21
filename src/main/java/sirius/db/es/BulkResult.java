@@ -20,7 +20,7 @@ import java.util.Set;
 /**
  * Represents the result of a {@link BulkContext}.
  * <p>
- * For each invokation of {@link BulkContext#commit()}, a result is generated which may be used to handle errors
+ * For each invocation of {@link BulkContext#commit()}, a result is generated which may be used to handle errors
  * encountered while performing the queued commands.
  */
 public class BulkResult {

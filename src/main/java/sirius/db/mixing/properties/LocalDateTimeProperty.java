@@ -97,7 +97,7 @@ public class LocalDateTimeProperty extends Property implements ESPropertyInfo, S
         try {
             return LocalDateTime.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(valueAsString))
                                 .truncatedTo(ChronoUnit.MILLIS);
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             return LocalDateTime.from(DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(valueAsString))
                                 .truncatedTo(ChronoUnit.MILLIS);
         }

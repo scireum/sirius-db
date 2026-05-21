@@ -89,7 +89,7 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     /**
      * Returns the delete handler.
      *
-     * @return the handler which deciedes how to tread deletes of the referenced entity
+     * @return the handler which decides how to treat deletes of the referenced entity
      */
     public OnDelete getDeleteHandler() {
         return deleteHandler;
@@ -167,19 +167,6 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * Note, this might cause a database lookup if the entity is not prefetched.
      *
      * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
-     * @deprecated use {@link #fetchCachedValue()} or {@link #forceFetchValue()} instead
-     */
-    @Deprecated
-    public E fetchValue() {
-        return fetchCachedValue();
-    }
-
-    /**
-     * Returns the effective entity object which is referenced.
-     * <p>
-     * Note, this might cause a database lookup if the entity is not prefetched.
-     *
-     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
      */
     public E fetchCachedValue() {
         if (value != null) {
@@ -228,19 +215,6 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      */
     public E forceFetchValueFromSecondary() {
         return findInSecondary(type, id).orElse(null);
-    }
-
-    /**
-     * Returns the effective entity object which is referenced using a secondary node of a DB cluster.
-     * <p>
-     * Note, this values returned by this method will never be cached and a new lookup is always performed.
-     *
-     * @return the entity being referenced or <tt>null</tt> if no entity is referenced.
-     * @deprecated use {@link #fetchCachedValueFromSecondary()} or {@link #forceFetchValueFromSecondary()} instead
-     */
-    @Deprecated
-    public E fetchValueFromSecondary() {
-        return fetchCachedValueFromSecondary();
     }
 
     /**

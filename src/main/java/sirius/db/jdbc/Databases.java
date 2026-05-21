@@ -124,8 +124,8 @@ public class Databases implements Initializable {
 
         protected int determineHighestUtilization() {
             int highestUtilization = 0;
-            for (Database db : datasources.values()) {
-                highestUtilization = Math.max(highestUtilization, db.getNumActive() * 100 / db.getSize());
+            for (Database database : datasources.values()) {
+                highestUtilization = Math.max(highestUtilization, database.getNumActive() * 100 / database.getSize());
             }
             return highestUtilization;
         }
@@ -145,13 +145,13 @@ public class Databases implements Initializable {
      * @return a wrapper providing access to the given database
      */
     public Database get(String name) {
-        Database ds = datasources.get(name);
-        if (ds == null) {
+        Database database = datasources.get(name);
+        if (database == null) {
             synchronized (datasources) {
-                ds = datasources.computeIfAbsent(name, k -> new Database(name));
+                database = datasources.computeIfAbsent(name, k -> new Database(name));
             }
         }
-        return ds;
+        return database;
     }
 
     /**
@@ -259,8 +259,8 @@ public class Databases implements Initializable {
 
         try {
             return LocalDateTime.of(year, month, day, hour, minute, second);
-        } catch (DateTimeException e) {
-            Exceptions.ignore(e);
+        } catch (DateTimeException exception) {
+            Exceptions.ignore(exception);
             return Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
         }
     }
@@ -303,40 +303,35 @@ public class Databases implements Initializable {
      * This is required, as simply invoking <tt>PreparedStatement.setObject</tt> might lead to unexpected behavior
      * (e.g. for Clickhouse, this then treats <tt>Date</tt> values wrong.
      *
-     * @param stmt          the statement to add the parameter to
+     * @param statement     the statement to add the parameter to
      * @param oneBasedIndex the one based index of the parameter
      * @param value         the value to add. This will be converted using {@link #convertValue(Object)}
      * @throws SQLException in case of a database error
      */
-    public static void convertAndSetParameter(PreparedStatement stmt, int oneBasedIndex, Object value)
+    public static void convertAndSetParameter(PreparedStatement statement, int oneBasedIndex, Object value)
             throws SQLException {
         Object effectiveValue = convertValue(value);
-        if (effectiveValue instanceof Long number) {
-            stmt.setLong(oneBasedIndex, number);
-        } else if (effectiveValue instanceof Integer number) {
-            stmt.setInt(oneBasedIndex, number);
-        } else if (effectiveValue instanceof Date date) {
-            stmt.setDate(oneBasedIndex, date);
-        } else if (effectiveValue instanceof Time time) {
-            stmt.setTime(oneBasedIndex, time);
-        } else if (effectiveValue instanceof String string) {
-            stmt.setString(oneBasedIndex, string);
-        } else {
-            stmt.setObject(oneBasedIndex, effectiveValue);
+        switch (effectiveValue) {
+            case Long number -> statement.setLong(oneBasedIndex, number);
+            case Integer number -> statement.setInt(oneBasedIndex, number);
+            case Date date -> statement.setDate(oneBasedIndex, date);
+            case Time time -> statement.setTime(oneBasedIndex, time);
+            case String string -> statement.setString(oneBasedIndex, string);
+            case null, default -> statement.setObject(oneBasedIndex, effectiveValue);
         }
     }
 
     /**
      * Reads and returns all available columns of the given result set as upper case.
      *
-     * @param rs the result set to parse
+     * @param resultSet the result set to parse
      * @return a set of columns within the given result set
      * @throws SQLException in case of a database error
      */
-    public Set<String> readColumns(ResultSet rs) throws SQLException {
+    public Set<String> readColumns(ResultSet resultSet) throws SQLException {
         Set<String> result = new HashSet<>();
-        for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-            result.add(rs.getMetaData().getColumnLabel(col).toUpperCase());
+        for (int column = 1; column <= resultSet.getMetaData().getColumnCount(); column++) {
+            result.add(resultSet.getMetaData().getColumnLabel(column).toUpperCase());
         }
 
         return result;
@@ -345,17 +340,18 @@ public class Databases implements Initializable {
     /**
      * Returns all generated keys wrapped as row
      *
-     * @param stmt the statement which was used to perform an update or insert
+     * @param statement the statement which was used to perform an update or insert
      * @return a row containing all generated keys
      * @throws SQLException in case of an error thrown by the database or driver
      */
-    public Row fetchGeneratedKeys(PreparedStatement stmt) throws SQLException {
-        try (ResultSet rs = stmt.getGeneratedKeys()) {
+    public Row fetchGeneratedKeys(PreparedStatement statement) throws SQLException {
+        try (ResultSet resultSet = statement.getGeneratedKeys()) {
             Row row = new Row();
-            if (rs != null && rs.next()) {
-                for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
-                    row.fields.put(rs.getMetaData().getColumnLabel(col).toUpperCase(),
-                                   Tuple.create(rs.getMetaData().getColumnLabel(col), rs.getObject(col)));
+            if (resultSet != null && resultSet.next()) {
+                for (int column = 1; column <= resultSet.getMetaData().getColumnCount(); column++) {
+                    row.fields.put(resultSet.getMetaData().getColumnLabel(column).toUpperCase(),
+                                   Tuple.create(resultSet.getMetaData().getColumnLabel(column),
+                                                resultSet.getObject(column)));
                 }
             }
             return row;

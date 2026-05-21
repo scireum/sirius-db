@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 /**
  * Specifies the realm to use for an entity.
  * <p>
- * This can be used to determine which datasource is used to reprenset an entity class.
+ * This can be used to determine which datasource is used to represent an entity class.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

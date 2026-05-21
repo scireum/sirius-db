@@ -57,14 +57,13 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
             return QueryBuilder.FILTERS.text(value.toLowerCase());
         }
 
-        if (mode == QueryField.Mode.EQUAL) {
-            return factory.eq(field, getCaseOptimizedValue(field, value).orElse(value));
-        } else if (mode == QueryField.Mode.PREFIX) {
-            return QueryBuilder.FILTERS.prefix(field, value);
-        } else {
-            throw new IllegalArgumentException("MongoQueryCompiler only supports either a search in the FULLTEXT_FIELD "
-                                               + "or an equals or prefix search in a string field");
-        }
+        return switch (mode) {
+            case EQUAL -> factory.eq(field, getCaseOptimizedValue(field, value).orElse(value));
+            case PREFIX -> QueryBuilder.FILTERS.prefix(field, value);
+            default -> throw new IllegalArgumentException(
+                    "MongoQueryCompiler only supports either a search in the FULLTEXT_FIELD "
+                    + "or an equals or prefix search in a string field");
+        };
     }
 
     @Override

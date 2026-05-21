@@ -166,7 +166,7 @@ public class SuggesterBuilder {
      * Most probably this will use a base query, create a copy and add an additional constraint like:
      * {@code .collate(query.copy().eq(SOME_FIELD, "{{suggestion}}")}.
      *
-     * @param query the query to derive the fitlers from
+     * @param query the query to derive the filters from
      * @param prune <tt>true</tt> if options that didn't match the given query should remain in the response,
      *              <tt>false</tt> otherwise
      * @return the builder itself for fluent method calls

@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
 public @interface Indices {
 
     /**
-     * Contains all index annoations placed on an entity class.
+     * Contains all index annotations placed on an entity class.
      *
      * @return an array of all index annotations
      */

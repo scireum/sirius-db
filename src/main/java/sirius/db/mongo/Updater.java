@@ -216,7 +216,7 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
-     * Removes all occurences of the given values from the list in the given field.
+     * Removes all occurrences of the given values from the list in the given field.
      *
      * @param field  the field containing the list
      * @param values the values to remove
@@ -227,7 +227,7 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
-     * Removes all occurences of the given values from the list in the given field.
+     * Removes all occurrences of the given values from the list in the given field.
      *
      * @param field  the field containing the list
      * @param values the values to remove
@@ -248,7 +248,7 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
-     * Removes all occurences of the given value from the list in the given field.
+     * Removes all occurrences of the given value from the list in the given field.
      *
      * @param field the field containing the list
      * @param value the value to remove
@@ -259,7 +259,7 @@ public class Updater extends QueryBuilder<Updater> {
     }
 
     /**
-     * Removes all occurences of the given value from the list in the given field.
+     * Removes all occurrences of the given value from the list in the given field.
      *
      * @param field the field containing the list
      * @param value the value to remove

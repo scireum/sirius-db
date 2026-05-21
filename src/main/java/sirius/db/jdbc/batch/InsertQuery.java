@@ -56,7 +56,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
     /**
      * Inserts an entity into the database.
      * <p>
-     * Note that on the occurence of a {@link SQLException}, the underlying statement and connection are closed,
+     * Note that on the occurrence of a {@link SQLException}, the underlying statement and connection are closed,
      * as the might have become inconsistent. On the next call a new connection and statement is created transparently.
      * <p>
      * If exceptions are expected, e.g. {@link SQLIntegrityConstraintViolationException} for optimistic locking

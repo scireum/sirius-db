@@ -404,7 +404,7 @@ public class ElasticFilterFactory extends FilterFactory<ElasticConstraint> {
      * Note that this must be applied using {@link sirius.db.es.ElasticQuery#must(ElasticConstraint)}, as otherwise,
      * all scoring is suppressed via a <tt>BooleanTermQuery.filter</tt> (when using <tt>ElasticQuery.where</tt>).
      *
-     * @param constraint the constraint to be fullfilled
+     * @param constraint the constraint to be fulfilled
      * @param boost      the boost value to attach to an entity matching the given constraint
      * @return a new constraint which represents the given one along with the boost to apply
      * @see ElasticConstraint#withConstantScore(float)

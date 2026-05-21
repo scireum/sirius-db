@@ -51,14 +51,14 @@ class WrappedPreparedStatement implements PreparedStatement {
     private static final Duration LONG_RUNNING_QUERY_OPERATION = Duration.ofMinutes(15);
     private static final Duration QUERY_OPERATION = Duration.ofSeconds(30);
 
-    private PreparedStatement delegate;
-    private final String preparedSQL;
-    private boolean longRunning;
+    private final PreparedStatement delegate;
+    private final String preparedSql;
+    private final boolean longRunning;
 
-    WrappedPreparedStatement(PreparedStatement preparedStatement, boolean longRunning, String preparedSQL) {
+    WrappedPreparedStatement(PreparedStatement preparedStatement, boolean longRunning, String preparedSql) {
         this.delegate = preparedStatement;
         this.longRunning = longRunning;
-        this.preparedSQL = preparedSQL;
+        this.preparedSql = preparedSql;
     }
 
     protected void updateStatistics(String sql, Watch watch) {
@@ -82,7 +82,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeQuery(sql);
         } finally {
             updateStatistics(sql, watch);
@@ -101,13 +101,13 @@ class WrappedPreparedStatement implements PreparedStatement {
     @Override
     public ResultSet executeQuery() throws SQLException {
         if (Databases.LOG.isFINE()) {
-            Databases.LOG.FINE(preparedSQL);
+            Databases.LOG.FINE(preparedSql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> preparedSQL, determineOperationDuration())) {
+        try (var _ = new Operation(() -> preparedSql, determineOperationDuration())) {
             return delegate.executeQuery();
         } finally {
-            updateStatistics(preparedSQL, watch);
+            updateStatistics(preparedSql, watch);
         }
     }
 
@@ -117,7 +117,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql);
         } finally {
             updateStatistics(sql, watch);
@@ -132,13 +132,13 @@ class WrappedPreparedStatement implements PreparedStatement {
     @Override
     public int executeUpdate() throws SQLException {
         if (Databases.LOG.isFINE()) {
-            Databases.LOG.FINE(preparedSQL);
+            Databases.LOG.FINE(preparedSql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> preparedSQL, determineOperationDuration())) {
+        try (var _ = new Operation(() -> preparedSql, determineOperationDuration())) {
             return delegate.executeUpdate();
         } finally {
-            updateStatistics(preparedSQL, watch);
+            updateStatistics(preparedSql, watch);
         }
     }
 
@@ -253,16 +253,16 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setDate(int parameterIndex, Date x) throws SQLException {
+    public void setDate(int parameterIndex, Date date) throws SQLException {
         if (isDelegatingToClickHouse(delegate)) {
             // Clickhouse uses fromUnixTimestamp64Nano to pass the nanos from a date to the database. The nanos will be
             // obtained after creating an Instant from the date using the local timezone Calendar. Since this function
             // expects nanos in UTC, we must set it with a UTC Calendar to avoid date shifting.
             // eg: a LocalDate of 2023-10-01 in GMT+2 will be converted to an Instant of 2023-09-30T22:00:00Z in UTC.
             // https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions#fromunixtimestamp64nano
-            delegate.setDate(parameterIndex, x, getUtcCalendar());
+            delegate.setDate(parameterIndex, date, getUtcCalendar());
         } else {
-            delegate.setDate(parameterIndex, x);
+            delegate.setDate(parameterIndex, date);
         }
     }
 
@@ -272,13 +272,13 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setTime(int parameterIndex, Time x) throws SQLException {
-        delegate.setTime(parameterIndex, x);
+    public void setTime(int parameterIndex, Time time) throws SQLException {
+        delegate.setTime(parameterIndex, time);
     }
 
     @Override
-    public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-        delegate.setTimestamp(parameterIndex, x);
+    public void setTimestamp(int parameterIndex, Timestamp timestamp) throws SQLException {
+        delegate.setTimestamp(parameterIndex, timestamp);
     }
 
     @Override
@@ -287,7 +287,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql);
         } finally {
             updateStatistics(sql, watch);
@@ -295,8 +295,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
-        delegate.setAsciiStream(parameterIndex, x, length);
+    public void setAsciiStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
+        delegate.setAsciiStream(parameterIndex, inputStream, length);
     }
 
     @Override
@@ -322,7 +322,7 @@ class WrappedPreparedStatement implements PreparedStatement {
      * standard interface.
      *
      * @param parameterIndex the first parameter is 1, the second is 2, ...
-     * @param x              a {@code java.io.InputStream} object that contains the
+     * @param inputStream    a {@code java.io.InputStream} object that contains the
      *                       Unicode parameter value
      * @param length         the number of bytes in the stream
      * @throws SQLException if parameterIndex does not correspond to a parameter
@@ -334,8 +334,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     @Deprecated(forRemoval = true)
     @SuppressWarnings("squid:S1133")
     @Explain("We cannot change a Java core API")
-    public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
-        delegate.setUnicodeStream(parameterIndex, x, length);
+    public void setUnicodeStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
+        delegate.setUnicodeStream(parameterIndex, inputStream, length);
     }
 
     @Override
@@ -349,8 +349,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
-        delegate.setBinaryStream(parameterIndex, x, length);
+    public void setBinaryStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
+        delegate.setBinaryStream(parameterIndex, inputStream, length);
     }
 
     @Override
@@ -369,8 +369,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
-        delegate.setObject(parameterIndex, x, targetSqlType);
+    public void setObject(int parameterIndex, Object object, int targetSqlType) throws SQLException {
+        delegate.setObject(parameterIndex, object, targetSqlType);
     }
 
     @Override
@@ -384,8 +384,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x) throws SQLException {
-        if (isDelegatingToClickHouse(delegate) && x instanceof Timestamp timestamp) {
+    public void setObject(int parameterIndex, Object object) throws SQLException {
+        if (isDelegatingToClickHouse(delegate) && object instanceof Timestamp timestamp) {
             // Timestamps, translated in ClickHouse as DateTime data type, have a resolution of 1 second.
             // If we pass it to the regular setObject, parsing errors will occur unless nanoseconds are dropped, or
             // we delegate to the method responsible for it. Note that we then need to use the correct UTC Calendar
@@ -393,7 +393,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             // https://clickhouse.com/docs/sql-reference/data-types/datetime
             delegate.setTimestamp(parameterIndex, timestamp, getUtcCalendar());
         } else {
-            delegate.setObject(parameterIndex, x);
+            delegate.setObject(parameterIndex, object);
         }
     }
 
@@ -420,22 +420,22 @@ class WrappedPreparedStatement implements PreparedStatement {
     @Override
     public boolean execute() throws SQLException {
         if (Databases.LOG.isFINE()) {
-            Databases.LOG.FINE(preparedSQL);
+            Databases.LOG.FINE(preparedSql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> preparedSQL, Duration.ofSeconds(30))) {
+        try (var _ = new Operation(() -> preparedSql, Duration.ofSeconds(30))) {
             return delegate.execute();
         } finally {
-            updateStatistics(preparedSQL, watch);
+            updateStatistics(preparedSql, watch);
         }
     }
 
     @Override
     public int[] executeBatch() throws SQLException {
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> "executeBatch: " + preparedSQL, determineOperationDuration())) {
+        try (var _ = new Operation(() -> "executeBatch: " + preparedSql, determineOperationDuration())) {
             int[] result = delegate.executeBatch();
-            watch.submitMicroTiming("SQL", "Batch: " + preparedSQL);
+            watch.submitMicroTiming("SQL", "Batch: " + preparedSql);
             Databases.numQueries.inc();
             if (!longRunning) {
                 Databases.queryDuration.addValue(watch.elapsedMillis());
@@ -443,7 +443,7 @@ class WrappedPreparedStatement implements PreparedStatement {
                     Databases.numSlowQueries.inc();
                     DB.SLOW_DB_LOG.INFO("A slow JDBC batch query was executed (%s): %s (%s rows)\n%s",
                                         watch.duration(),
-                                        preparedSQL,
+                                        preparedSql,
                                         result.length,
                                         ExecutionPoint.snapshot().toString());
                 }
@@ -464,8 +464,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setRef(int parameterIndex, Ref x) throws SQLException {
-        delegate.setRef(parameterIndex, x);
+    public void setRef(int parameterIndex, Ref ref) throws SQLException {
+        delegate.setRef(parameterIndex, ref);
     }
 
     @Override
@@ -474,13 +474,13 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setBlob(int parameterIndex, Blob x) throws SQLException {
-        delegate.setBlob(parameterIndex, x);
+    public void setBlob(int parameterIndex, Blob blob) throws SQLException {
+        delegate.setBlob(parameterIndex, blob);
     }
 
     @Override
-    public void setClob(int parameterIndex, Clob x) throws SQLException {
-        delegate.setClob(parameterIndex, x);
+    public void setClob(int parameterIndex, Clob clob) throws SQLException {
+        delegate.setClob(parameterIndex, clob);
     }
 
     @Override
@@ -489,8 +489,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setArray(int parameterIndex, Array x) throws SQLException {
-        delegate.setArray(parameterIndex, x);
+    public void setArray(int parameterIndex, Array array) throws SQLException {
+        delegate.setArray(parameterIndex, array);
     }
 
     @Override
@@ -504,8 +504,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
-        delegate.setDate(parameterIndex, x, cal);
+    public void setDate(int parameterIndex, Date date, Calendar calendar) throws SQLException {
+        delegate.setDate(parameterIndex, date, calendar);
     }
 
     @Override
@@ -514,7 +514,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql, autoGeneratedKeys);
         } finally {
             updateStatistics(sql, watch);
@@ -522,8 +522,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
-        delegate.setTime(parameterIndex, x, cal);
+    public void setTime(int parameterIndex, Time time, Calendar calendar) throws SQLException {
+        delegate.setTime(parameterIndex, time, calendar);
     }
 
     @Override
@@ -532,7 +532,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql, columnIndexes);
         } finally {
             updateStatistics(sql, watch);
@@ -540,8 +540,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
-        delegate.setTimestamp(parameterIndex, x, cal);
+    public void setTimestamp(int parameterIndex, Timestamp timestamp, Calendar calendar) throws SQLException {
+        delegate.setTimestamp(parameterIndex, timestamp, calendar);
     }
 
     @Override
@@ -555,7 +555,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.executeUpdate(sql, columnNames);
         } finally {
             updateStatistics(sql, watch);
@@ -568,7 +568,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql, autoGeneratedKeys);
         } finally {
             updateStatistics(sql, watch);
@@ -576,8 +576,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setURL(int parameterIndex, URL x) throws SQLException {
-        delegate.setURL(parameterIndex, x);
+    public void setURL(int parameterIndex, URL url) throws SQLException {
+        delegate.setURL(parameterIndex, url);
     }
 
     @Override
@@ -586,8 +586,8 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setRowId(int parameterIndex, RowId x) throws SQLException {
-        delegate.setRowId(parameterIndex, x);
+    public void setRowId(int parameterIndex, RowId rowId) throws SQLException {
+        delegate.setRowId(parameterIndex, rowId);
     }
 
     @Override
@@ -596,7 +596,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql, columnIndexes);
         } finally {
             updateStatistics(sql, watch);
@@ -619,7 +619,7 @@ class WrappedPreparedStatement implements PreparedStatement {
             Databases.LOG.FINE(sql);
         }
         Watch watch = Watch.start();
-        try (Operation op = new Operation(() -> sql, determineOperationDuration())) {
+        try (var _ = new Operation(() -> sql, determineOperationDuration())) {
             return delegate.execute(sql, columnNames);
         } finally {
             updateStatistics(sql, watch);
@@ -682,18 +682,18 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
-        delegate.setObject(parameterIndex, x, targetSqlType, scaleOrLength);
+    public void setObject(int parameterIndex, Object object, int targetSqlType, int scaleOrLength) throws SQLException {
+        delegate.setObject(parameterIndex, object, targetSqlType, scaleOrLength);
     }
 
     @Override
-    public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
-        delegate.setAsciiStream(parameterIndex, x, length);
+    public void setAsciiStream(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+        delegate.setAsciiStream(parameterIndex, inputStream, length);
     }
 
     @Override
-    public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
-        delegate.setBinaryStream(parameterIndex, x, length);
+    public void setBinaryStream(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+        delegate.setBinaryStream(parameterIndex, inputStream, length);
     }
 
     @Override
@@ -702,13 +702,13 @@ class WrappedPreparedStatement implements PreparedStatement {
     }
 
     @Override
-    public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
-        delegate.setAsciiStream(parameterIndex, x);
+    public void setAsciiStream(int parameterIndex, InputStream inputStream) throws SQLException {
+        delegate.setAsciiStream(parameterIndex, inputStream);
     }
 
     @Override
-    public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
-        delegate.setBinaryStream(parameterIndex, x);
+    public void setBinaryStream(int parameterIndex, InputStream inputStream) throws SQLException {
+        delegate.setBinaryStream(parameterIndex, inputStream);
     }
 
     @Override

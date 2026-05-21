@@ -71,7 +71,7 @@ public abstract class SafeList<T> implements Iterable<T> {
     protected abstract T copyValue(T value);
 
     /**
-     * Provides access to the list which was origrinally used to supply contents.
+     * Provides access to the list which was originally used to supply contents.
      * <p>
      * In contrast to {@link #modify()} this will not create a new list if none is present yet.
      * Therefore the result might be readonly. The is mainly used by the storage engine to
@@ -88,7 +88,7 @@ public abstract class SafeList<T> implements Iterable<T> {
     }
 
     /**
-     * Sets the underyling list to use.
+     * Sets the underlying list to use.
      * <p>
      * As {@link #original()} this should only be used by the storage engine to insert a database specific
      * implementation which can later be re-used.

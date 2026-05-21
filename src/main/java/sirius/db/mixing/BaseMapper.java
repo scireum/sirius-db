@@ -331,7 +331,7 @@ public abstract class BaseMapper<B extends BaseEntity<?>, C extends Constraint, 
     /**
      * Asserts that the given entity is deletable.
      * <p>
-     * This effecifely checks if the entity is referenced by other entities using {@link BaseEntityRef.OnDelete#REJECT}.
+     * This effectively checks if the entity is referenced by other entities using {@link BaseEntityRef.OnDelete#REJECT}.
      *
      * @param entity the entity to check
      * @param <E>    the generic entity type
