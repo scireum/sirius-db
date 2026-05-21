@@ -317,7 +317,7 @@ public class Databases implements Initializable {
             case Date date -> statement.setDate(oneBasedIndex, date);
             case Time time -> statement.setTime(oneBasedIndex, time);
             case String string -> statement.setString(oneBasedIndex, string);
-            default -> statement.setObject(oneBasedIndex, effectiveValue);
+            case null, default -> statement.setObject(oneBasedIndex, effectiveValue);
         }
     }
 

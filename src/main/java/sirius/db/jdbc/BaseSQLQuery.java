@@ -180,7 +180,7 @@ public abstract class BaseSQLQuery {
                 case Blob blob -> writeBlobToParameter(fieldName, blob);
                 case String string ->
                         row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, string.replace("\0", "")));
-                default -> row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
+                case null, default -> row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
             }
         }
 
