@@ -14,7 +14,6 @@ import sirius.db.mixing.types.StringList;
 import sirius.db.mongo.MongoEntity;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public class MongoFieldLookUpTestEntity extends MongoEntity {
 

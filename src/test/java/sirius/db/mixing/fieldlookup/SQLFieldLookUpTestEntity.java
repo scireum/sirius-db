@@ -15,7 +15,6 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.StringList;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public class SQLFieldLookUpTestEntity extends SQLEntity {
 

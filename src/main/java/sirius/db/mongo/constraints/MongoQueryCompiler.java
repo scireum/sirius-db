@@ -58,8 +58,8 @@ public class MongoQueryCompiler extends QueryCompiler<MongoConstraint> {
         }
 
         return switch (mode) {
-            case QueryField.Mode.EQUAL -> factory.eq(field, getCaseOptimizedValue(field, value).orElse(value));
-            case QueryField.Mode.PREFIX -> QueryBuilder.FILTERS.prefix(field, value);
+            case EQUAL -> factory.eq(field, getCaseOptimizedValue(field, value).orElse(value));
+            case PREFIX -> QueryBuilder.FILTERS.prefix(field, value);
             default -> throw new IllegalArgumentException(
                     "MongoQueryCompiler only supports either a search in the FULLTEXT_FIELD "
                     + "or an equals or prefix search in a string field");

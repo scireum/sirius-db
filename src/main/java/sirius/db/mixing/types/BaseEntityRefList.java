@@ -103,7 +103,7 @@ public abstract class BaseEntityRefList<E extends BaseEntity<String>, L extends 
     }
 
     /**
-     * Returns all entity in the list by resolving them against the database.
+     * Returns all entities in the list by resolving them against the database.
      * <p>
      * This will perform N uncached lookups against the database - use with caution.
      *
