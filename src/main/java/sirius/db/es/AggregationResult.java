@@ -121,7 +121,7 @@ public class AggregationResult {
                                             .stream()
                                             .findFirst()
                                             .map(entry -> new Bucket(entry.getKey(), (ObjectNode) entry.getValue()));
-            default -> Optional.empty();
+            case null, default -> Optional.empty();
         };
     }
 
