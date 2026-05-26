@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Tests for the {@link SmartQuery} class, focusing on validating SQL expressions in aggregation fields and group by clauses,
+ * Tests the {@link SmartQuery} class by validating SQL expressions in aggregation fields and group-by clauses.
  */
 public class SmartQueryTest {
 
