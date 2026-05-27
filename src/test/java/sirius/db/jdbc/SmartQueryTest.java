@@ -1,7 +1,6 @@
 package sirius.db.jdbc;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import sirius.db.jdbc.constraints.SQLConstraint;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Strings;
@@ -9,6 +8,13 @@ import sirius.kernel.commons.Strings;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+/**
+ * Tests the {@link SmartQuery} class by validating SQL expressions in aggregation fields and group-by clauses.
+ */
 public class SmartQueryTest {
 
     @Test
@@ -18,7 +24,7 @@ public class SmartQueryTest {
         query.aggregationField(Strings.apply("SUM(%s) as totalValue",
                                              SmartQueryTestLargeTableEntity.TEST_NUMBER.getName()));
 
-        Assert.assertEquals("SUM(testNumber) as totalValue", query.aggregationFields.getFirst());
+        assertEquals("SUM(testNumber) as totalValue", query.aggregationFields.getFirst());
     }
 
     @Test
@@ -27,7 +33,7 @@ public class SmartQueryTest {
 
         query.groupBy(Strings.apply("LOWER(%s)", SmartQueryTestSortingEntity.VALUE_ONE.getName()));
 
-        Assert.assertEquals("LOWER(valueOne)", query.groupBys.getFirst());
+        assertEquals("LOWER(valueOne)", query.groupBys.getFirst());
     }
 
     @Test
@@ -58,7 +64,7 @@ public class SmartQueryTest {
                 SmartQueryTestSortingEntity.ID,
                 "1",
                 previousSortingColumns);
-        Assert.assertEquals("((valueOne = value1 AND valueTwo = value2) AND id > 1)", constraint.toString());
+        assertEquals("((valueOne = value1 AND valueTwo = value2) AND id > 1)", constraint.toString());
     }
 
     @Test
@@ -69,15 +75,15 @@ public class SmartQueryTest {
                 SmartQueryTestSortingEntity.ID,
                 "1",
                 previousSortingColumns);
-        Assert.assertEquals("id > 1", constraint.toString());
+        assertEquals("id > 1", constraint.toString());
     }
 
     private void assertInvalidSQLExpression(Runnable runnable) {
         try {
             runnable.run();
-            Assert.fail("Expected an IllegalArgumentException.");
+            fail("Expected an IllegalArgumentException.");
         } catch (IllegalArgumentException exception) {
-            Assert.assertNotNull(exception.getMessage());
+            assertNotNull(exception.getMessage());
         }
     }
 }
