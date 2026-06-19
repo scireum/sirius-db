@@ -88,6 +88,15 @@ public class SmartQueryTest {
     }
 
     @Test
+    public void testGroupBy_withForbiddenKeywordInsideStringLiteral_acceptsExpression() {
+        SmartQuery<SmartQueryTestSortingEntity> query = new SmartQuery<>(null, null);
+
+        query.groupBy("IF(valueOne = 'EXECUTE-FOOBAR', 1, 0)");
+
+        assertEquals("IF(valueOne = 'EXECUTE-FOOBAR', 1, 0)", query.groupBys.getFirst());
+    }
+
+    @Test
     public void testAggregationField_withUnterminatedStringLiteral_rejectsExpression() {
         assertInvalidSQLExpression(() -> new SmartQuery<SmartQueryTestSortingEntity>(null, null)
                 .aggregationField("countIf(valueOne = 'unterminated)"));
