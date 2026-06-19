@@ -74,7 +74,10 @@ public class SQLExpressionValidator {
     private static boolean containsForbiddenSQLKeyword(String expression) {
         int index = 0;
         while (index < expression.length()) {
-            if (isSQLIdentifierPart(expression.charAt(index))) {
+            char current = expression.charAt(index);
+            if (current == '\'') {
+                index = skipStringLiteral(expression, index);
+            } else if (isSQLIdentifierPart(current)) {
                 int end = determineIdentifierEnd(expression, index);
                 String identifier = expression.substring(index, end).toUpperCase();
                 if (FORBIDDEN_SQL_EXPRESSION_KEYWORDS.contains(identifier)) {
@@ -87,6 +90,41 @@ public class SQLExpressionValidator {
         }
 
         return false;
+    }
+
+    /**
+     * Skips over a single-quoted SQL string literal so that its content is treated as data, not as SQL syntax.
+     * <p>
+     * Both the SQL-style escaped quote ({@code ''}) and backslash escapes ({@code \'}) are honored.
+     *
+     * @param expression the expression being scanned
+     * @param start      the index of the opening quote
+     * @return the index right after the closing quote
+     * @throws IllegalArgumentException if the literal is never terminated, as this is invalid SQL which would fail
+     *                                  once executed
+     */
+    private static int skipStringLiteral(String expression, int start) {
+        int index = start + 1;
+        while (index < expression.length()) {
+            char current = expression.charAt(index);
+            if (current == '\\') {
+                // Skip over the escape-character and the character it escapes as it doesn't matter what it is in a
+                // string literal (it especially mustn't be treated as the end of the string literal).
+                index += 2;
+            } else if (current == '\'') {
+                if (index + 1 < expression.length() && expression.charAt(index + 1) == '\'') {
+                    // Skip over special SQL-style escaped quote character (via two single quotes in a row).
+                    index += 2;
+                } else {
+                    // This is the closing quote. Return the index right after it.
+                    return index + 1;
+                }
+            } else {
+                index++;
+            }
+        }
+
+        throw new IllegalArgumentException("Expression contains an unterminated string literal: " + expression);
     }
 
     private static int determineIdentifierEnd(String expression, int start) {

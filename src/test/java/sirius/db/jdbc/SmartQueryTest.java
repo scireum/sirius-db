@@ -78,6 +78,27 @@ public class SmartQueryTest {
         assertEquals("id > 1", constraint.toString());
     }
 
+    @Test
+    public void testAggregationField_withForbiddenKeywordInsideStringLiteral_acceptsExpression() {
+        SmartQuery<SmartQueryTestSortingEntity> query = new SmartQuery<>(null, null);
+
+        query.aggregationField("countIf(valueOne = 'EXECUTE-FOOBAR') as filteredCount");
+
+        assertEquals("countIf(valueOne = 'EXECUTE-FOOBAR') as filteredCount", query.aggregationFields.getFirst());
+    }
+
+    @Test
+    public void testAggregationField_withUnterminatedStringLiteral_rejectsExpression() {
+        assertInvalidSQLExpression(() -> new SmartQuery<SmartQueryTestSortingEntity>(null, null)
+                .aggregationField("countIf(valueOne = 'unterminated)"));
+    }
+
+    @Test
+    public void testAggregationField_withForbiddenKeywordOutsideStringLiteral_rejectsExpression() {
+        assertInvalidSQLExpression(() -> new SmartQuery<SmartQueryTestSortingEntity>(null, null)
+                .aggregationField("countIf(valueOne = 'safe') UNION SELECT id"));
+    }
+
     private void assertInvalidSQLExpression(Runnable runnable) {
         try {
             runnable.run();
