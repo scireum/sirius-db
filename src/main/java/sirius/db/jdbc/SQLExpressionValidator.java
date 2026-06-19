@@ -95,7 +95,8 @@ public class SQLExpressionValidator {
     /**
      * Skips over a single-quoted SQL string literal so that its content is treated as data, not as SQL syntax.
      * <p>
-     * Both the SQL-style escaped quote ({@code ''}) and backslash escapes ({@code \'}) are honored.
+     * Only the SQL-standard escaped quote ({@code ''}) is honored. Backslash escapes are intentionally not
+     * treated as escapes as they are dialect-specific.
      *
      * @param expression the expression being scanned
      * @param start      the index of the opening quote
@@ -107,11 +108,7 @@ public class SQLExpressionValidator {
         int index = start + 1;
         while (index < expression.length()) {
             char current = expression.charAt(index);
-            if (current == '\\') {
-                // Skip over the escape-character and the character it escapes as it doesn't matter what it is in a
-                // string literal (it especially mustn't be treated as the end of the string literal).
-                index += 2;
-            } else if (current == '\'') {
+            if (current == '\'') {
                 if (index + 1 < expression.length() && expression.charAt(index + 1) == '\'') {
                     // Skip over special SQL-style escaped quote character (via two single quotes in a row).
                     index += 2;

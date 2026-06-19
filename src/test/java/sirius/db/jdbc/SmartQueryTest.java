@@ -99,6 +99,14 @@ public class SmartQueryTest {
                 .aggregationField("countIf(valueOne = 'safe') UNION SELECT id"));
     }
 
+    @Test
+    public void testAggregationField_withBackslashEscapedQuoteHidingKeyword_rejectsExpression() {
+        // A backslash must not be treated as an escape for the closing quote, otherwise the trailing UNION SELECT
+        // (which is real SQL in dialects with standard string handling) would be hidden inside the literal.
+        assertInvalidSQLExpression(() -> new SmartQuery<SmartQueryTestSortingEntity>(null, null)
+                .aggregationField("countIf(valueOne = 'abc\\') UNION SELECT id"));
+    }
+
     private void assertInvalidSQLExpression(Runnable runnable) {
         try {
             runnable.run();
