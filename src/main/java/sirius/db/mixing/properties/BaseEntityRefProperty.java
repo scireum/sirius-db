@@ -18,7 +18,6 @@ import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.types.BaseEntityRef;
 import sirius.kernel.Sirius;
 import sirius.kernel.async.TaskContext;
-import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Watch;
 import sirius.kernel.di.std.Part;
@@ -278,7 +277,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         TaskContext taskContext = TaskContext.get();
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeSetNull")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_OWNER, String.valueOf(e))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 
