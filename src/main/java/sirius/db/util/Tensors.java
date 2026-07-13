@@ -8,7 +8,7 @@
 
 package sirius.db.util;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ArrayNode;
 
 import java.nio.ByteBuffer;
 import java.util.Base64;

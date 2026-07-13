@@ -8,9 +8,9 @@
 
 package sirius.db.es;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.mixing.BaseEntity;
 import sirius.db.mixing.BaseMapper;
 import sirius.db.mixing.Mapping;
@@ -143,7 +143,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         ArrayNode matchedQueriesArray = Json.getArray(searchHit, MATCHED_QUERIES);
         return matchedQueriesArray.valueStream()
                                   .filter(Objects::nonNull)
-                                  .map(JsonNode::asText)
+                                  .map(JsonNode::asString)
                                   .collect(Collectors.toSet());
     }
 

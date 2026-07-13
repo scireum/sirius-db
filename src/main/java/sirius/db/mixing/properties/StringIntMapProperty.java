@@ -8,7 +8,7 @@
 
 package sirius.db.mixing.properties;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.bson.Document;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.es.IndexMappings;

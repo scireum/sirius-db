@@ -8,9 +8,9 @@
 
 package sirius.db.es;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.Mapping;
 import sirius.kernel.commons.Json;

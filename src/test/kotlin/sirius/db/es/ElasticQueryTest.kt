@@ -129,9 +129,9 @@ class ElasticQueryTest {
         val buckets = query.rawAggregations.withArray("/test/keys/buckets")
 
         assertEquals(3, buckets.size())
-        assertEquals("1", buckets.get(0).path("key").asText())
-        assertEquals("2", buckets.get(1).path("key").asText())
-        assertEquals("test", buckets.get(2).path("key").asText())
+        assertEquals("1", buckets.get(0).path("key").asString())
+        assertEquals("2", buckets.get(1).path("key").asString())
+        assertEquals("test", buckets.get(2).path("key").asString())
     }
 
     @Test
@@ -156,7 +156,7 @@ class ElasticQueryTest {
         val buckets = query.rawAggregations.withArray("/test/filter/keys/buckets")
 
         assertEquals(1, buckets.size())
-        assertEquals("3", buckets.get(0).path("key").asText())
+        assertEquals("3", buckets.get(0).path("key").asString())
     }
 
     @Test

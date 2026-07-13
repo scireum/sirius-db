@@ -8,8 +8,8 @@
 
 package sirius.db.es.types;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.es.ESPropertyInfo;
 import sirius.db.mixing.AccessPath;
 import sirius.db.mixing.EntityDescriptor;

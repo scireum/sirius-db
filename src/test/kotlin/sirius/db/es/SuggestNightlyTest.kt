@@ -9,7 +9,6 @@
 package sirius.db.es
 
 
-import com.fasterxml.jackson.databind.node.ObjectNode
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -101,7 +100,7 @@ class SuggestNightlyTest {
             suggestTestEntity3.shop = 2
             elastic.update(suggestTestEntity3)
         }
-        val matchPhrase = Json.createObject().set<ObjectNode>(
+        val matchPhrase = Json.createObject().set(
                 "match",
                 Json.createObject().set(
                         SuggestTestEntity.CONTENT.name,
