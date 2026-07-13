@@ -284,6 +284,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
+                            .set(PARAM_OWNER, String.valueOf(e))
                             .set(PARAM_FIELD, getFullLabel())
                             .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
                             .set(PARAM_SOURCE, getDescriptor().getLabel())
@@ -293,6 +294,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
                             .set(PARAM_COUNT, count)
+                            .set(PARAM_OWNER, String.valueOf(e))
                             .set(PARAM_FIELD, getFullLabel())
                             .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
                             .set(PARAM_SOURCE, getDescriptor().getLabel())
