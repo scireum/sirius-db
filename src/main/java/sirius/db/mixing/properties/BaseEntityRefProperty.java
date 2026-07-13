@@ -302,7 +302,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
 
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeDelete")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_OWNER, String.valueOf(e))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 

@@ -224,7 +224,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         TaskContext taskContext = TaskContext.get();
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeSetNull")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, Strings.limit(e, 30))
+                                             .set(PARAM_OWNER, String.valueOf(e))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 
