@@ -160,12 +160,12 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
     }
 
     @Override
-    public void parseValues(Object e, Values values) {
+    public void parseValues(Object entity, Values values) {
         List<String> stringData = new ArrayList<>();
         for (int i = 0; i < values.length(); i++) {
             values.at(i).ifFilled(value -> stringData.add(value.toString()));
         }
-        setValue(e, stringData);
+        setValue(entity, stringData);
     }
 
     protected BaseEntityRefList<?, ?> getReferenceEntityRefList() {
@@ -219,17 +219,17 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         }
     }
 
-    protected void onDeleteSetNull(Object e) {
+    protected void onDeleteSetNull(Object entity) {
         TaskContext taskContext = TaskContext.get();
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeSetNull")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, String.valueOf(e))
+                                             .set(PARAM_OWNER, String.valueOf(entity))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
 
-        Object idBeingDeleted = ((BaseEntity<?>) e).getId();
+        Object idBeingDeleted = ((BaseEntity<?>) entity).getId();
         if (referenceInstance instanceof MongoEntity) {
             // MongoDB provides a fast and efficient way of removing and ID from a list...
             mongo.update()
@@ -252,18 +252,18 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedSetNull"), watch.elapsedMillis());
     }
 
-    protected void onDeleteCascade(Object e) {
+    protected void onDeleteCascade(Object entity) {
         TaskContext taskContext = TaskContext.get();
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeDelete")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, String.valueOf(e))
+                                             .set(PARAM_OWNER, String.valueOf(entity))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
-                         .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                         .eq(nameAsMapping, ((BaseEntity<?>) entity).getId())
                          .streamBlockwise()
                          .forEach(other -> cascadeDelete(taskContext, other));
     }
@@ -274,16 +274,16 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
         taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedDelete"), watch.elapsedMillis(), true);
     }
 
-    protected void onDeleteReject(Object e) {
+    protected void onDeleteReject(Object entity) {
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         long count = referenceInstance.getMapper()
                                       .select(referenceInstance.getClass())
-                                      .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                                      .eq(nameAsMapping, ((BaseEntity<?>) entity).getId())
                                       .count();
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
-                            .set(PARAM_OWNER, String.valueOf(e))
+                            .set(PARAM_OWNER, String.valueOf(entity))
                             .set(PARAM_FIELD, getFullLabel())
                             .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
                             .set(PARAM_SOURCE, getDescriptor().getLabel())
@@ -293,7 +293,7 @@ public class BaseEntityRefListProperty extends Property implements ESPropertyInf
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
                             .set(PARAM_COUNT, count)
-                            .set(PARAM_OWNER, String.valueOf(e))
+                            .set(PARAM_OWNER, String.valueOf(entity))
                             .set(PARAM_FIELD, getFullLabel())
                             .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
                             .set(PARAM_SOURCE, getDescriptor().getLabel())

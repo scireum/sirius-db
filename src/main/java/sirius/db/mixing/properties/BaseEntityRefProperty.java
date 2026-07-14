@@ -273,18 +273,18 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         return true;
     }
 
-    protected void onDeleteSetNull(Object e) {
+    protected void onDeleteSetNull(Object entity) {
         TaskContext taskContext = TaskContext.get();
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeSetNull")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, String.valueOf(e))
+                                             .set(PARAM_OWNER, String.valueOf(entity))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
-                         .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                         .eq(nameAsMapping, ((BaseEntity<?>) entity).getId())
                          .streamBlockwise()
                          .forEach(other -> cascadeSetNull(taskContext, other));
     }
@@ -296,19 +296,19 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedSetNull"), watch.elapsedMillis());
     }
 
-    protected void onDeleteCascade(Object e) {
+    protected void onDeleteCascade(Object entity) {
         TaskContext taskContext = TaskContext.get();
 
         taskContext.smartLogLimited(() -> NLS.fmtr("BaseEntityRefProperty.cascadeDelete")
                                              .set(PARAM_TYPE, getDescriptor().getPluralLabel())
-                                             .set(PARAM_OWNER, String.valueOf(e))
+                                             .set(PARAM_OWNER, String.valueOf(entity))
                                              .set(PARAM_FIELD, getLabel())
                                              .format());
 
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         referenceInstance.getMapper()
                          .select(referenceInstance.getClass())
-                         .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                         .eq(nameAsMapping, ((BaseEntity<?>) entity).getId())
                          .streamBlockwise()
                          .forEach(other -> cascadeDelete(taskContext, other));
     }
@@ -319,16 +319,16 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
         taskContext.addTiming(NLS.get("BaseEntityRefProperty.cascadedDelete"), watch.elapsedMillis(), true);
     }
 
-    protected void onDeleteReject(Object e) {
+    protected void onDeleteReject(Object entity) {
         BaseEntity<?> referenceInstance = (BaseEntity<?>) getDescriptor().getReferenceInstance();
         long count = referenceInstance.getMapper()
                                       .select(referenceInstance.getClass())
-                                      .eq(nameAsMapping, ((BaseEntity<?>) e).getId())
+                                      .eq(nameAsMapping, ((BaseEntity<?>) entity).getId())
                                       .count();
         if (count == 1) {
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChild")
-                            .set(PARAM_OWNER, String.valueOf(e))
+                            .set(PARAM_OWNER, String.valueOf(entity))
                             .set(PARAM_FIELD, getFullLabel())
                             .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
                             .set(PARAM_SOURCE, getDescriptor().getLabel())
@@ -338,7 +338,7 @@ public abstract class BaseEntityRefProperty<I extends Serializable, E extends Ba
             throw Exceptions.createHandled()
                             .withNLSKey("BaseEntityRefProperty.cannotDeleteEntityWithChildren")
                             .set(PARAM_COUNT, count)
-                            .set(PARAM_OWNER, String.valueOf(e))
+                            .set(PARAM_OWNER, String.valueOf(entity))
                             .set(PARAM_FIELD, getFullLabel())
                             .set(PARAM_TYPE, getReferencedDescriptor().getLabel())
                             .set(PARAM_SOURCE, getDescriptor().getLabel())
