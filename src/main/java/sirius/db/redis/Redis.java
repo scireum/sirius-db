@@ -396,7 +396,9 @@ public class Redis implements Startable, Stoppable {
                                                 CallContext.getNodeName(),
                                                 SetParams.setParams().nx().ex(lockTimeout.getSeconds()));
                     if ("OK".equals(response)) {
-                        redis.setex(key + SUFFIX_DATE, lockTimeout.getSeconds(), LocalDateTime.now().toString());
+                        redis.set(key + SUFFIX_DATE,
+                                  LocalDateTime.now().toString(),
+                                  SetParams.setParams().ex(lockTimeout.getSeconds()));
                         return true;
                     }
 
