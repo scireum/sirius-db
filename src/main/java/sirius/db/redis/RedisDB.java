@@ -264,7 +264,7 @@ public class RedisDB {
     }
 
     /**
-     * Broadcasts a message to a pub-sub topic in redis.
+     * Broadcasts a message to a pubsub topic in redis.
      *
      * @param topic   the name of the topic to broadcast to
      * @param message the message to send

@@ -49,7 +49,7 @@ import java.util.function.Supplier;
  * Provides a thin layer to access Redis.
  * <p>
  * The configuration is loaded from <tt>redis.pools</tt>. By default, the <b>system</b> pool is used,
- * but multiple database can be used at the same time.
+ * but multiple databases can be used at the same time.
  */
 @Register(classes = {Redis.class, Startable.class, Stoppable.class})
 public class Redis implements Startable, Stoppable {
@@ -72,7 +72,7 @@ public class Redis implements Startable, Stoppable {
     private static final String SUFFIX_DATE = "_date";
 
     /**
-     * Contains the logger for all redis related messages.
+     * Contains the logger for all redis-related messages.
      */
     public static final Log LOG = Log.get("redis");
 
@@ -192,7 +192,7 @@ public class Redis implements Startable, Stoppable {
     }
 
     /**
-     * Provides access the to default (system) database.
+     * Provides access to the default (system) database.
      *
      * @return the default database
      */
@@ -302,7 +302,7 @@ public class Redis implements Startable, Stoppable {
         public final String name;
 
         /**
-         * The current value of the lock which can be used to determine who holds the lock
+         * The current value of the lock that can be used to determine who holds the lock
          */
         public final String value;
 
@@ -314,7 +314,7 @@ public class Redis implements Startable, Stoppable {
         /**
          * The maximal time to live of the lock.
          * <p>
-         * The lock will be auto released after a certain amount of seconds in case of a server crash
+         * The lock will be auto-released after a certain number of seconds in case of a server crash
          */
         public final Long ttl;
 
@@ -381,7 +381,7 @@ public class Redis implements Startable, Stoppable {
      * out due to a single node crash. However, it is very important to choose a sane value here.
      *
      * @param lock           the name of the lock to acquire
-     * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
+     * @param acquireTimeout the max duration during which retires (in 1-second intervals) will be performed
      * @param lockTimeout    the max duration for which the lock will be kept before auto-releasing it
      * @return <tt>true</tt> if the lock was acquired, <tt>false</tt> otherwise
      */
@@ -428,7 +428,7 @@ public class Redis implements Startable, Stoppable {
      * thrown).
      *
      * @param lock           the name of the lock to acquire
-     * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
+     * @param acquireTimeout the max duration during which retires (in 1-second intervals) will be performed
      * @param lockTimeout    the max duration for which the lock will be kept before auto-releasing it
      * @param lockedTask     the task to execute while holding the given lock. The task will not be executed if the
      *                       lock cannot be acquired within the given period
