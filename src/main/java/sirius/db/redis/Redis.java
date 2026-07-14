@@ -8,8 +8,8 @@
 
 package sirius.db.redis;
 
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.params.SetParams;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
@@ -102,7 +102,8 @@ public class Redis implements Startable, Stoppable {
 
     private void subscribe(Subscriber subscriber, JedisPubSub subscription) {
         while (subscriptionsActive.get()) {
-            try (Jedis redis = getConnection()) {
+            try {
+                UnifiedJedis redis = getConnection();
                 LOG.INFO("Starting subscription for: %s", subscriber.getTopic());
                 redis.subscribe(subscription, subscriber.getTopic());
                 if (subscriptionsActive.get()) {
@@ -202,7 +203,7 @@ public class Redis implements Startable, Stoppable {
         return system;
     }
 
-    private Jedis getConnection() {
+    private UnifiedJedis getConnection() {
         return getSystem().getConnection();
     }
 
@@ -223,7 +224,7 @@ public class Redis implements Startable, Stoppable {
      * @param <T>         the generic type of the result
      * @return a result computed by <tt>task</tt>
      */
-    public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
+    public <T> T query(Supplier<String> description, Function<UnifiedJedis, T> task) {
         return getSystem().query(description, task);
     }
 
@@ -233,7 +234,7 @@ public class Redis implements Startable, Stoppable {
      * @param description a description of the actions performed used for debugging and tracing
      * @param task        the actual task to perform using redis
      */
-    public void exec(Supplier<String> description, Consumer<Jedis> task) {
+    public void exec(Supplier<String> description, Consumer<UnifiedJedis> task) {
         getSystem().exec(description, task);
     }
 
@@ -346,7 +347,7 @@ public class Redis implements Startable, Stoppable {
         return result;
     }
 
-    protected Optional<LockInfo> computeLockInfo(Jedis redis, String key) {
+    protected Optional<LockInfo> computeLockInfo(UnifiedJedis redis, String key) {
         String owner = redis.get(key);
         String since = redis.get(key + SUFFIX_DATE);
 
