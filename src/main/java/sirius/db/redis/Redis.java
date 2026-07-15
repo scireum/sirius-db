@@ -8,8 +8,8 @@
 
 package sirius.db.redis;
 
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.params.SetParams;
 import sirius.kernel.Sirius;
 import sirius.kernel.Startable;
@@ -49,7 +49,7 @@ import java.util.function.Supplier;
  * Provides a thin layer to access Redis.
  * <p>
  * The configuration is loaded from <tt>redis.pools</tt>. By default, the <b>system</b> pool is used,
- * but multiple database can be used at the same time.
+ * but multiple databases can be used at the same time.
  */
 @Register(classes = {Redis.class, Startable.class, Stoppable.class})
 public class Redis implements Startable, Stoppable {
@@ -72,7 +72,7 @@ public class Redis implements Startable, Stoppable {
     private static final String SUFFIX_DATE = "_date";
 
     /**
-     * Contains the logger for all redis related messages.
+     * Contains the logger for all redis-related messages.
      */
     public static final Log LOG = Log.get("redis");
 
@@ -102,7 +102,8 @@ public class Redis implements Startable, Stoppable {
 
     private void subscribe(Subscriber subscriber, JedisPubSub subscription) {
         while (subscriptionsActive.get()) {
-            try (Jedis redis = getConnection()) {
+            try {
+                UnifiedJedis redis = getConnection();
                 LOG.INFO("Starting subscription for: %s", subscriber.getTopic());
                 redis.subscribe(subscription, subscriber.getTopic());
                 if (subscriptionsActive.get()) {
@@ -191,7 +192,7 @@ public class Redis implements Startable, Stoppable {
     }
 
     /**
-     * Provides access the to default (system) database.
+     * Provides access to the default (system) database.
      *
      * @return the default database
      */
@@ -202,7 +203,7 @@ public class Redis implements Startable, Stoppable {
         return system;
     }
 
-    private Jedis getConnection() {
+    private UnifiedJedis getConnection() {
         return getSystem().getConnection();
     }
 
@@ -223,7 +224,7 @@ public class Redis implements Startable, Stoppable {
      * @param <T>         the generic type of the result
      * @return a result computed by <tt>task</tt>
      */
-    public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
+    public <T> T query(Supplier<String> description, Function<UnifiedJedis, T> task) {
         return getSystem().query(description, task);
     }
 
@@ -233,7 +234,7 @@ public class Redis implements Startable, Stoppable {
      * @param description a description of the actions performed used for debugging and tracing
      * @param task        the actual task to perform using redis
      */
-    public void exec(Supplier<String> description, Consumer<Jedis> task) {
+    public void exec(Supplier<String> description, Consumer<UnifiedJedis> task) {
         getSystem().exec(description, task);
     }
 
@@ -301,7 +302,7 @@ public class Redis implements Startable, Stoppable {
         public final String name;
 
         /**
-         * The current value of the lock which can be used to determine who holds the lock
+         * The current value of the lock that can be used to determine who holds the lock
          */
         public final String value;
 
@@ -313,7 +314,7 @@ public class Redis implements Startable, Stoppable {
         /**
          * The maximal time to live of the lock.
          * <p>
-         * The lock will be auto released after a certain amount of seconds in case of a server crash
+         * The lock will be auto-released after a certain number of seconds in case of a server crash
          */
         public final Long ttl;
 
@@ -346,7 +347,7 @@ public class Redis implements Startable, Stoppable {
         return result;
     }
 
-    protected Optional<LockInfo> computeLockInfo(Jedis redis, String key) {
+    protected Optional<LockInfo> computeLockInfo(UnifiedJedis redis, String key) {
         String owner = redis.get(key);
         String since = redis.get(key + SUFFIX_DATE);
 
@@ -380,7 +381,7 @@ public class Redis implements Startable, Stoppable {
      * out due to a single node crash. However, it is very important to choose a sane value here.
      *
      * @param lock           the name of the lock to acquire
-     * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
+     * @param acquireTimeout the max duration during which retires (in 1-second intervals) will be performed
      * @param lockTimeout    the max duration for which the lock will be kept before auto-releasing it
      * @return <tt>true</tt> if the lock was acquired, <tt>false</tt> otherwise
      */
@@ -395,7 +396,9 @@ public class Redis implements Startable, Stoppable {
                                                 CallContext.getNodeName(),
                                                 SetParams.setParams().nx().ex(lockTimeout.getSeconds()));
                     if ("OK".equals(response)) {
-                        redis.setex(key + SUFFIX_DATE, lockTimeout.getSeconds(), LocalDateTime.now().toString());
+                        redis.set(key + SUFFIX_DATE,
+                                  LocalDateTime.now().toString(),
+                                  SetParams.setParams().ex(lockTimeout.getSeconds()));
                         return true;
                     }
 
@@ -425,7 +428,7 @@ public class Redis implements Startable, Stoppable {
      * thrown).
      *
      * @param lock           the name of the lock to acquire
-     * @param acquireTimeout the max duration during which retires (in 1 second intervals) will be performed
+     * @param acquireTimeout the max duration during which retires (in 1-second intervals) will be performed
      * @param lockTimeout    the max duration for which the lock will be kept before auto-releasing it
      * @param lockedTask     the task to execute while holding the given lock. The task will not be executed if the
      *                       lock cannot be acquired within the given period

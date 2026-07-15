@@ -9,12 +9,12 @@
 package sirius.db.redis;
 
 import redis.clients.jedis.ClientSetInfoConfig;
+import redis.clients.jedis.ConnectionPoolConfig;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.RedisSentinelClient;
+import redis.clients.jedis.UnifiedJedis;
 import sirius.kernel.async.CallContext;
 import sirius.kernel.async.Operation;
 import sirius.kernel.commons.Strings;
@@ -29,8 +29,10 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -66,8 +68,7 @@ public class RedisDB {
      */
     private final boolean enableClientInfo;
 
-    protected JedisPool jedis;
-    protected JedisSentinelPool sentinelPool;
+    protected UnifiedJedis jedis;
 
     protected RedisDB(Redis redisInstance, Extension config) {
         this.redisInstance = redisInstance;
@@ -97,14 +98,8 @@ public class RedisDB {
     protected void close() {
         available = false;
 
-        if (sentinelPool != null) {
-            JedisSentinelPool copy = this.sentinelPool;
-            this.sentinelPool = null;
-            copy.close();
-        }
-
         if (jedis != null) {
-            JedisPool copy = this.jedis;
+            UnifiedJedis copy = this.jedis;
             this.jedis = null;
             copy.close();
         }
@@ -116,73 +111,86 @@ public class RedisDB {
      * Note that this method should be used with absolute care and calling {@link #query(Supplier, Function)}
      * or {@link #exec(Supplier, Consumer)} is preferred as it ensures monitoring and proper connection handling.
      *
-     * @return access to a Redis connection from the managed pool. Note that {@link Jedis#close()} has to be called
-     * in any case to ensure that the connection is returned to the pool.
+     * @return access to the managed Redis client.
      */
-    public Jedis getConnection() {
-        if (sentinelPool != null) {
-            return sentinelPool.getResource();
-        }
+    public UnifiedJedis getConnection() {
         if (jedis != null) {
-            return jedis.getResource();
+            return jedis;
         }
 
         return setupConnection();
     }
 
-    private synchronized Jedis setupConnection() {
-        if (sentinelPool == null && Strings.isFilled(sentinels)) {
-            JedisPoolConfig poolConfig = new JedisPoolConfig();
-            poolConfig.setMaxTotal(maxActive);
-            poolConfig.setMaxIdle(maxIdle);
-
-            sentinelPool = new JedisSentinelPool(masterName,
-                                                 Arrays.stream(sentinels.split(","))
-                                                       .map(String::trim)
-                                                       .collect(Collectors.toSet()),
-                                                 poolConfig,
-                                                 connectTimeout,
-                                                 readTimeout,
-                                                 null,
-                                                 db);
-            return sentinelPool.getResource();
-        }
-        if (sentinelPool != null) {
-            return sentinelPool.getResource();
+    private synchronized UnifiedJedis setupConnection() {
+        if (jedis != null) {
+            return jedis;
         }
 
-        if (jedis == null) {
-            if (Strings.isEmpty(host)) {
-                Redis.LOG.SEVERE(Strings.apply(
-                        "Missing a Redis host for config '%s'! This might lead to undefined behaviour."
-                        + " Please specify redis.host or redis.sentinels!",
-                        name));
-            }
-
-            JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-            jedisPoolConfig.setMaxTotal(maxActive);
-            jedisPoolConfig.setMaxIdle(maxIdle);
-
-            Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(determineServiceName(), host, port);
-            HostAndPort hostAndPort =
-                    new HostAndPort(effectiveHostAndPort.getFirst(), effectiveHostAndPort.getSecond());
-
-            DefaultJedisClientConfig jedisClientConfig = DefaultJedisClientConfig.builder()
-                                                                                 .database(db)
-                                                                                 .clientName(CallContext.getNodeName())
-                                                                                 .connectionTimeoutMillis(connectTimeout)
-                                                                                 .socketTimeoutMillis(readTimeout)
-                                                                                 .clientSetInfoConfig(new ClientSetInfoConfig(
-                                                                                         !enableClientInfo))
-                                                                                 .password(Strings.isFilled(password) ?
-                                                                                           password :
-                                                                                           null)
-                                                                                 .build();
-
-            jedis = new JedisPool(jedisPoolConfig, hostAndPort, jedisClientConfig);
+        if (Strings.isFilled(sentinels)) {
+            jedis = RedisSentinelClient.builder()
+                                       .masterName(masterName)
+                                       .sentinels(parseSentinels())
+                                       .clientConfig(createClientConfig())
+                                       .sentinelClientConfig(createClientConfig())
+                                       .poolConfig(createPoolConfig())
+                                       .build();
+            return jedis;
         }
 
-        return jedis.getResource();
+        if (Strings.isEmpty(host)) {
+            Redis.LOG.SEVERE(Strings.apply(
+                    "Missing a Redis host for config '%s'! This might lead to undefined behaviour."
+                    + " Please specify redis.host or redis.sentinels!",
+                    name));
+        }
+
+        Tuple<String, Integer> effectiveHostAndPort = PortMapper.mapPort(determineServiceName(), host, port);
+        HostAndPort hostAndPort = new HostAndPort(effectiveHostAndPort.getFirst(), effectiveHostAndPort.getSecond());
+
+        jedis = RedisClient.builder()
+                           .hostAndPort(hostAndPort)
+                           .clientConfig(createClientConfig())
+                           .poolConfig(createPoolConfig())
+                           .build();
+
+        return jedis;
+    }
+
+    private Set<HostAndPort> parseSentinels() {
+        return Arrays.stream(sentinels.split(","))
+                     .map(String::trim)
+                     .filter(Strings::isFilled)
+                     .map(this::parseHostAndPort)
+                     .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private HostAndPort parseHostAndPort(String hostAndPort) {
+        int separator = hostAndPort.lastIndexOf(':');
+        if (separator < 0 || separator == hostAndPort.length() - 1) {
+            return new HostAndPort(hostAndPort, 26379);
+        }
+
+        String sentinelHost = hostAndPort.substring(0, separator);
+        int sentinelPort = Integer.parseInt(hostAndPort.substring(separator + 1));
+        return new HostAndPort(sentinelHost, sentinelPort);
+    }
+
+    private ConnectionPoolConfig createPoolConfig() {
+        ConnectionPoolConfig poolConfig = new ConnectionPoolConfig();
+        poolConfig.setMaxTotal(maxActive);
+        poolConfig.setMaxIdle(maxIdle);
+        return poolConfig;
+    }
+
+    private DefaultJedisClientConfig createClientConfig() {
+        return DefaultJedisClientConfig.builder()
+                                       .database(db)
+                                       .clientName(CallContext.getNodeName())
+                                       .connectionTimeoutMillis(connectTimeout)
+                                       .socketTimeoutMillis(readTimeout)
+                                       .clientSetInfoConfig(new ClientSetInfoConfig(!enableClientInfo))
+                                       .password(Strings.isFilled(password) ? password : null)
+                                       .build();
     }
 
     private String determineServiceName() {
@@ -197,9 +205,10 @@ public class RedisDB {
      * @param <T>         the generic type of the result
      * @return a result computed by <tt>task</tt>
      */
-    public <T> T query(Supplier<String> description, Function<Jedis, T> task) {
+    public <T> T query(Supplier<String> description, Function<UnifiedJedis, T> task) {
         Watch w = Watch.start();
-        try (var _ = new Operation(description, Duration.ofSeconds(10)); Jedis redis = getConnection()) {
+        try (var _ = new Operation(description, Duration.ofSeconds(10))) {
+            UnifiedJedis redis = getConnection();
             return task.apply(redis);
         } catch (Exception exception) {
             throw Exceptions.handle(Redis.LOG, exception);
@@ -217,7 +226,7 @@ public class RedisDB {
      * @param description a description of the actions performed used for debugging and tracing
      * @param task        the actual task to perform using redis
      */
-    public void exec(Supplier<String> description, Consumer<Jedis> task) {
+    public void exec(Supplier<String> description, Consumer<UnifiedJedis> task) {
         query(description, r -> {
             task.accept(r);
             return null;
@@ -255,7 +264,7 @@ public class RedisDB {
     }
 
     /**
-     * Broadcasts a message to a pub-sub topic in redis.
+     * Broadcasts a message to a pubsub topic in redis.
      *
      * @param topic   the name of the topic to broadcast to
      * @param message the message to send
@@ -273,7 +282,7 @@ public class RedisDB {
      */
     public Map<String, String> getInfo() {
         try {
-            return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
+            return Arrays.stream(query(() -> "info", UnifiedJedis::info).split("\n"))
                          .map(line -> Strings.split(line, ":"))
                          .filter(keyAndValue -> Strings.areAllFilled(keyAndValue.getFirst(), keyAndValue.getSecond()))
                          // Modules are listed under the same "key", so we skip them from here
@@ -292,7 +301,7 @@ public class RedisDB {
      */
     public List<String> getModules() {
         try {
-            return Arrays.stream(query(() -> "info", Jedis::info).split("\n"))
+            return Arrays.stream(query(() -> "info", UnifiedJedis::info).split("\n"))
                          .map(line -> Strings.split(line, ":"))
                          .filter(keyAndValue -> INFO_MODULE.equals(keyAndValue.getFirst()))
                          .map(Tuple::getSecond)
