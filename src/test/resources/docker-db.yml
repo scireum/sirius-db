@@ -6,7 +6,7 @@ services:
     hostname: redis
 
   mongo:
-    image: mongo:8.0.8
+    image: mongo:8.3.7
     ports:
       - "27017"
     hostname: mongo
