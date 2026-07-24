@@ -143,7 +143,7 @@ public abstract class ElasticEntity extends BaseEntity<String> {
         ArrayNode matchedQueriesArray = Json.getArray(searchHit, MATCHED_QUERIES);
         return matchedQueriesArray.valueStream()
                                   .filter(Objects::nonNull)
-                                  .map(JsonNode::asString)
+                                  .map(jsonNode -> jsonNode.asString(""))
                                   .collect(Collectors.toSet());
     }
 

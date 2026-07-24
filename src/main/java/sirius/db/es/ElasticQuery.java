@@ -497,7 +497,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return jsonSorts.valueStream().map(JsonNode::asString).toList();
+        return jsonSorts.valueStream().map(jsonNode -> jsonNode.asString("")).toList();
     }
 
     /**
