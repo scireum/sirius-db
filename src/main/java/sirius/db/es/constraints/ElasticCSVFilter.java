@@ -8,7 +8,7 @@
 
 package sirius.db.es.constraints;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.query.constraints.CSVFilter;

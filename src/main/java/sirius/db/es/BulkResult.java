@@ -8,8 +8,8 @@
 
 package sirius.db.es;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.kernel.commons.Json;
 import sirius.kernel.health.Exceptions;
 

@@ -42,7 +42,7 @@ class LowLevelClientTest {
         var data = elastic.getLowLevelClient().get("test1", "TEST", null, true)
 
         assertTrue { data.get("found").booleanValue() }
-        assertEquals("World", data.get("_source").get("Hello").asText())
+        assertEquals("World", data.get("_source").get("Hello").asString(""))
 
         elastic.getLowLevelClient().delete("test1", "TEST", null, null, null)
         data = elastic.getLowLevelClient().get("test1", "TEST", null, true)

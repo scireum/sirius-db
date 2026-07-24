@@ -8,10 +8,10 @@
 
 package sirius.db.es;
 
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonPointer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.es.constraints.BoolQueryBuilder;
 import sirius.db.es.constraints.ElasticConstraint;
 import sirius.db.mixing.DateRange;
@@ -497,7 +497,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Collections.emptyList();
         }
 
-        return jsonSorts.valueStream().map(JsonNode::asText).toList();
+        return jsonSorts.valueStream().map(jsonNode -> jsonNode.asString("")).toList();
     }
 
     /**
@@ -1170,7 +1170,7 @@ public class ElasticQuery<E extends ElasticEntity> extends Query<ElasticQuery<E>
             return Elastic.make(descriptor, (ObjectNode) jsonEntity);
         }
 
-        String indexName = jsonEntity.get("_index").asText(null);
+        String indexName = jsonEntity.get("_index").asString(null);
         return additionalDescriptors.stream()
                                     .filter(additionalDescriptor -> Strings.areEqual(elastic.determineEffectiveIndex(
                                             additionalDescriptor), indexName))

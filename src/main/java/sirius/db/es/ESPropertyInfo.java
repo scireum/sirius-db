@@ -8,7 +8,7 @@
 
 package sirius.db.es;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.es.annotations.ESOption;
 import sirius.db.es.annotations.IndexMode;
 

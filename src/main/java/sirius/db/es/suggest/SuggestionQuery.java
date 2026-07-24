@@ -8,7 +8,7 @@
 
 package sirius.db.es.suggest;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import sirius.db.es.Elastic;
 import sirius.db.es.ElasticEntity;
 import sirius.db.es.LowLevelClient;
