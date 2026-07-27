@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>5.9.0</version>
+            <version>5.9.1</version>
         </dependency>
 
         <!-- Changelog: https://github.com/redis/jedis/releases -->
