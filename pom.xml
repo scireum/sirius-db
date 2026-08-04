@@ -19,7 +19,7 @@
     <url>https://www.sirius-lib.net</url>
 
     <properties>
-        <sirius.kernel>53.0.1</sirius.kernel>
+        <sirius.kernel>53.0.2</sirius.kernel>
     </properties>
 
     <repositories>
