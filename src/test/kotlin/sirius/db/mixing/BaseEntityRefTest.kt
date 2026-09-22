@@ -104,7 +104,7 @@ class BaseEntityRefTest {
     }
 
     @Test
-    fun `is compares an entity via its id even if its toString is empty`() {
+    fun `is compares an entity via its ID even if its toString is empty`() {
         val entity = EmptyToStringEntity()
         entity.setId(42)
 
@@ -128,7 +128,7 @@ class BaseEntityRefTest {
     }
 
     @Test
-    fun `is resolves plain ids`() {
+    fun `is resolves plain IDs`() {
         val reference = SQLEntityRef.on(EmptyToStringEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
         reference.setId(42L)
 
@@ -139,7 +139,7 @@ class BaseEntityRefTest {
     }
 
     @Test
-    fun `is compares another reference via its id`() {
+    fun `is compares another reference via its ID`() {
         val parentEntity = WriteOnceParentEntity()
         parentEntity.setId(42)
 
