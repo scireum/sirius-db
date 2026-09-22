@@ -14,12 +14,15 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import sirius.db.es.Elastic
 import sirius.db.jdbc.OMA
+import sirius.db.jdbc.SQLEntityRef
+import sirius.db.mixing.types.BaseEntityRef
 import sirius.db.mongo.Mango
 import sirius.kernel.SiriusExtension
 import sirius.kernel.di.std.Part
 import sirius.kernel.health.HandledException
 import java.time.Duration
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @ExtendWith(SiriusExtension::class)
 class BaseEntityRefTest {
@@ -98,6 +101,63 @@ class BaseEntityRefTest {
             writeOnceChildEntity.parent.setValue(writeOnceParentEntity)
             oma.update(writeOnceChildEntity)
         }
+    }
+
+    @Test
+    fun `is compares an entity via its id even if its toString is empty`() {
+        val entity = EmptyToStringEntity()
+        entity.setId(42)
+
+        val reference = SQLEntityRef.on(EmptyToStringEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        reference.setId(42L)
+
+        assertTrue { reference.`is`(entity) }
+        assertFalse { reference.`is`(EmptyToStringEntity().apply { setId(43) }) }
+    }
+
+    @Test
+    fun `is reports an empty reference for null and empty values`() {
+        val emptyReference = SQLEntityRef.on(EmptyToStringEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        val filledReference = SQLEntityRef.on(EmptyToStringEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        filledReference.setId(42L)
+
+        assertTrue { emptyReference.`is`(null) }
+        assertTrue { emptyReference.`is`("") }
+        assertFalse { filledReference.`is`(null) }
+        assertFalse { filledReference.`is`("") }
+    }
+
+    @Test
+    fun `is resolves plain ids`() {
+        val reference = SQLEntityRef.on(EmptyToStringEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        reference.setId(42L)
+
+        assertTrue { reference.`is`(42L) }
+        assertTrue { reference.`is`("42") }
+        assertFalse { reference.`is`(43L) }
+        assertFalse { reference.`is`("not a number") }
+    }
+
+    @Test
+    fun `is compares another reference via its id`() {
+        val parentEntity = WriteOnceParentEntity()
+        parentEntity.setId(42)
+
+        val referenceWithLoadedValue = SQLEntityRef.on(WriteOnceParentEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        referenceWithLoadedValue.setValue(parentEntity)
+        val referenceWithIdOnly = SQLEntityRef.on(WriteOnceParentEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        referenceWithIdOnly.setId(42L)
+
+        assertTrue { referenceWithIdOnly.`is`(referenceWithLoadedValue) }
+        assertTrue { referenceWithLoadedValue.`is`(referenceWithIdOnly) }
+    }
+
+    @Test
+    fun `is considers two empty references to be equal`() {
+        val emptyReference = SQLEntityRef.on(WriteOnceParentEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+        val anotherEmptyReference = SQLEntityRef.on(WriteOnceParentEntity::class.java, BaseEntityRef.OnDelete.IGNORE)
+
+        assertTrue { emptyReference.`is`(anotherEmptyReference) }
     }
 
     companion object {
