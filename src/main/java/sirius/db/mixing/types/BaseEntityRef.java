@@ -295,10 +295,10 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     }
 
     /**
-     * Determines if the referenced entity is equal to the given entity, entity reference or id.
+     * Determines if the referenced entity is equal to the given entity, entity reference or ID.
      *
-     * @param entityOrId the entity, entity reference, or id to check for
-     * @return <tt>true</tt> if the entities are the same (based on their id), <tt>false</tt> otherwise.
+     * @param entityOrId the entity, entity reference, or ID to check for
+     * @return <tt>true</tt> if the entities are the same (based on their ID), <tt>false</tt> otherwise.
      */
     public boolean is(Object entityOrId) {
         if (entityOrId instanceof BaseEntity<?> baseEntity) {
