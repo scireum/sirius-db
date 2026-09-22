@@ -301,12 +301,12 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
      * @return <tt>true</tt> if the entities are the same (based on their id), <tt>false</tt> otherwise.
      */
     public boolean is(Object entityOrId) {
-        if (Strings.isEmpty(entityOrId)) {
-            return isEmpty();
+        if (entityOrId instanceof BaseEntity<?> baseEntity) {
+            return Objects.equals(baseEntity.getId(), id);
         }
 
-        if (entityOrId instanceof BaseEntity<?>) {
-            return Objects.equals(((BaseEntity<?>) entityOrId).getId(), id);
+        if (Strings.isEmpty(entityOrId)) {
+            return isEmpty();
         }
 
         return Objects.equals(coerceToId(entityOrId), id);
