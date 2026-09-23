@@ -295,18 +295,22 @@ public abstract class BaseEntityRef<I extends Serializable, E extends BaseEntity
     }
 
     /**
-     * Determines if the referenced entity is equal to the given entity or id.
+     * Determines if the referenced entity is equal to the given entity, entity reference or ID.
      *
-     * @param entityOrId the entity or id to check for
-     * @return <tt>true</tt> if the entities are the same (based on their id), <tt>false</tt> otherwise.
+     * @param entityOrId the entity, entity reference, or ID to check for
+     * @return <tt>true</tt> if the entities are the same (based on their ID), <tt>false</tt> otherwise.
      */
     public boolean is(Object entityOrId) {
-        if (Strings.isEmpty(entityOrId)) {
-            return isEmpty();
+        if (entityOrId instanceof BaseEntity<?> baseEntity) {
+            return Objects.equals(baseEntity.getId(), id);
         }
 
-        if (entityOrId instanceof BaseEntity<?>) {
-            return Objects.equals(((BaseEntity<?>) entityOrId).getId(), id);
+        if (entityOrId instanceof BaseEntityRef<?, ?> baseEntityRef) {
+            return Objects.equals(baseEntityRef.getId(), id);
+        }
+
+        if (Strings.isEmpty(entityOrId)) {
+            return isEmpty();
         }
 
         return Objects.equals(coerceToId(entityOrId), id);
