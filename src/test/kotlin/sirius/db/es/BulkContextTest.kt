@@ -126,6 +126,32 @@ class BulkContextTest {
         assertTrue { result.getFailedIds().contains(refreshed.id) }
     }
 
+    @Test
+    fun `exceeding the maximum request size commits queued commands first`() {
+        val bulkContext = elastic.batch().withMaxRequestSize(100_000)
+        elastic.select(LargeBatchTestEntity::class.java).delete()
+        val payload = "x".repeat(40_000)
+
+        bulkContext.tryUpdate(LargeBatchTestEntity().withPayload(payload))
+        bulkContext.tryUpdate(LargeBatchTestEntity().withPayload(payload))
+        // Both documents (~80 KB) still fit into a single request...
+        assertEquals(4, bulkContext.countQueuedCommands())
+
+        // ...but the third one does not, therefore the queue is committed first and only the new document remains.
+        bulkContext.tryUpdate(LargeBatchTestEntity().withPayload(payload))
+        assertEquals(2, bulkContext.countQueuedCommands())
+
+        bulkContext.commit()
+        // The size counter has been reset by the commit, so two more documents fit again without a pre-commit.
+        bulkContext.tryUpdate(LargeBatchTestEntity().withPayload(payload))
+        bulkContext.tryUpdate(LargeBatchTestEntity().withPayload(payload))
+        assertEquals(4, bulkContext.countQueuedCommands())
+        bulkContext.commit()
+        elastic.refresh(LargeBatchTestEntity::class.java)
+
+        assertEquals(5, elastic.select(LargeBatchTestEntity::class.java).count())
+    }
+
     companion object {
         @Part
         private lateinit var elastic: Elastic

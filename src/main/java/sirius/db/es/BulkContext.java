@@ -56,6 +56,8 @@ public class BulkContext implements Closeable {
     private final LowLevelClient.Refresh refresh;
     private LowLevelClient client;
     private List<ObjectNode> commands;
+    private int currentSize;
+    private int maxRequestSize = MAX_REQUEST_SIZE;
 
     @Part
     private static Elastic elastic;
@@ -152,16 +154,28 @@ public class BulkContext implements Closeable {
      * @param nodes the nodes which size should be checked
      */
     private void commitIfNeededAndAdd(ObjectNode... nodes) {
-        int currentSize = commands.stream().map(this::calculateNodeLength).reduce(0, Integer::sum);
+        int addedSize = 0;
         for (ObjectNode node : nodes) {
-            currentSize += calculateNodeLength(node);
+            addedSize += calculateNodeLength(node);
         }
-        if (currentSize >= MAX_REQUEST_SIZE) {
+        if (currentSize + addedSize >= maxRequestSize) {
             // The given commands will exceed the maximum request size, so we commit the current queued commands
             // before adding new ones
             commit().throwFailures();
         }
         commands.addAll(List.of(nodes));
+        currentSize += addedSize;
+    }
+
+    /**
+     * Overwrites the maximum request size, which is only intended to be used by tests.
+     *
+     * @param maxRequestSize the maximum request size in characters after which queued commands are committed
+     * @return the bulk context itself for fluent method calls
+     */
+    BulkContext withMaxRequestSize(int maxRequestSize) {
+        this.maxRequestSize = maxRequestSize;
+        return this;
     }
 
     private int calculateNodeLength(ObjectNode node) {
@@ -229,6 +243,7 @@ public class BulkContext implements Closeable {
                             .handle();
         } finally {
             commands.clear();
+            currentSize = 0;
         }
     }
 
