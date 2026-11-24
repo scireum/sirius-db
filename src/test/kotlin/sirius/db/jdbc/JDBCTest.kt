@@ -147,7 +147,39 @@ class JDBCTest {
         sqlQuery.iterate({ row -> row.fieldsList.size == 2 }, Limit.UNLIMITED)
     }
 
+    @Test
+    fun `SQLQuery maps the values of every row to their column labels`() {
+        val rows = databases["test"].createQuery(MULTI_ROW_QUERY).queryList()
+
+        assertEquals(2, rows.size)
+        assertEquals(listOf("firstColumn", "SecondColumn", "thirdColumn"), rows[0].fieldsList.map { it.first })
+        assertEquals(listOf("firstColumn", "SecondColumn", "thirdColumn"), rows[1].fieldsList.map { it.first })
+        assertEquals(1, rows[0].getValue("FIRSTCOLUMN").asInt(0))
+        assertEquals("a", rows[0].getValue("secondcolumn").asString())
+        assertNull(rows[0].getValue("thirdColumn").get())
+        assertEquals(2, rows[1].getValue("FIRSTCOLUMN").asInt(0))
+        assertEquals("b", rows[1].getValue("secondcolumn").asString())
+        assertEquals("c", rows[1].getValue("thirdColumn").asString())
+    }
+
+    @Test
+    fun `SQLQuery yields the same rows when executed repeatedly`() {
+        val sqlQuery = databases["test"].createQuery(MULTI_ROW_QUERY)
+
+        val firstRun = sqlQuery.queryList().map { row -> row.fieldsList.map { it.first to it.second } }
+        val secondRun = sqlQuery.queryList().map { row -> row.fieldsList.map { it.first to it.second } }
+
+        assertEquals(2, firstRun.size)
+        assertEquals(firstRun, secondRun)
+    }
+
     companion object {
+        /**
+         * Yields two rows with mixed case column labels and a NULL value in the first row only.
+         */
+        private const val MULTI_ROW_QUERY =
+            "SELECT 1 AS firstColumn, 'a' AS SecondColumn, NULL AS thirdColumn UNION ALL SELECT 2, 'b', 'c'"
+
         @Part
         private lateinit var databases: Databases
     }

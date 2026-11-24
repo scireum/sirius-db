@@ -244,6 +244,38 @@ class BatchContextTest {
     }
 
     @Test
+    fun `custom query maps rows correctly when executed repeatedly`() {
+        val first = TestEntity()
+        first.firstname = "RepeatedFirst"
+        first.lastname = "CustomRepeatedOne"
+        oma.update(first)
+        val second = TestEntity()
+        second.firstname = "RepeatedSecond"
+        second.lastname = "CustomRepeatedTwo"
+        oma.update(second)
+        val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
+        val find = batchContext.customQuery(
+            TestEntity::class.java,
+            false,
+            "SELECT lastname AS familyName, firstname FROM testentity WHERE lastname = ?"
+        )
+
+        find.setParameter(1, "CustomRepeatedOne")
+        val firstRow = find.query().queryFirst()!!
+        find.setParameter(1, "CustomRepeatedTwo")
+        val secondRow = find.query().queryFirst()!!
+
+        assertEquals(listOf("familyName", "firstname"), firstRow.fieldsList.map { it.first })
+        assertEquals("CustomRepeatedOne", firstRow.getValue("FAMILYNAME").asString())
+        assertEquals("RepeatedFirst", firstRow.getValue("FIRSTNAME").asString())
+        assertEquals(listOf("familyName", "firstname"), secondRow.fieldsList.map { it.first })
+        assertEquals("CustomRepeatedTwo", secondRow.getValue("FAMILYNAME").asString())
+        assertEquals("RepeatedSecond", secondRow.getValue("FIRSTNAME").asString())
+
+        batchContext.close()
+    }
+
+    @Test
     fun `use after close is prevented`() {
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         batchContext.close()
