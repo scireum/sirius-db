@@ -113,8 +113,19 @@ public abstract class BaseSQLQuery {
         }, limit);
     }
 
-    protected void processResultSet(Predicate<Row> handler, Limit effectiveLimit, ResultSet resultSet)
+    /**
+     * Feeds the rows of the given result set into the handler until the handler or the limit stops the iteration.
+     *
+     * @param handler   the handler to invoke for each row which passes the limit. Returning <tt>false</tt> aborts the
+     *                  iteration
+     * @param limit     the limit which controls which and how many rows are passed to the handler. Can be
+     *                  <tt>null</tt> to indicate that there is no limit
+     * @param resultSet the result set to read the rows from
+     * @throws SQLException in case of a database error
+     */
+    protected void processResultSet(Predicate<Row> handler, @Nullable Limit limit, ResultSet resultSet)
             throws SQLException {
+        Limit effectiveLimit = limit != null ? limit : Limit.UNLIMITED;
         while (resultSet.next()) {
             Row row = loadIntoRow(resultSet);
             if (effectiveLimit.nextRow() && !handler.test(row)) {

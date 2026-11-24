@@ -276,6 +276,29 @@ class BatchContextTest {
     }
 
     @Test
+    fun `custom query iterates all rows if no limit is given`() {
+        for (i in 1..3) {
+            val testEntity = TestEntity()
+            testEntity.firstname = "Unlimited$i"
+            testEntity.lastname = "CustomUnlimited"
+            oma.update(testEntity)
+        }
+        val firstnames = mutableListOf<String>()
+
+        BatchContext({ "Test" }, Duration.ofMinutes(2)).use { batchContext ->
+            val find = batchContext.customQuery(
+                TestEntity::class.java,
+                false,
+                "SELECT firstname FROM testentity WHERE lastname = ? ORDER BY firstname"
+            )
+            find.setParameter(1, "CustomUnlimited")
+            find.query().iterateAll({ row -> firstnames.add(row.getValue("FIRSTNAME").asString()) }, null)
+        }
+
+        assertEquals(listOf("Unlimited1", "Unlimited2", "Unlimited3"), firstnames)
+    }
+
+    @Test
     fun `use after close is prevented`() {
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         batchContext.close()
