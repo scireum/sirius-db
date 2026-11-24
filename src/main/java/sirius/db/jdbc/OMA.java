@@ -20,6 +20,7 @@ import sirius.db.mixing.Property;
 import sirius.db.mongo.SecondaryCapableMapper;
 import sirius.kernel.async.Future;
 import sirius.kernel.commons.Context;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Tuple;
 import sirius.kernel.commons.Value;
@@ -417,7 +418,19 @@ public class OMA extends SecondaryCapableMapper<SQLEntity, SQLConstraint, SmartQ
         }
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Loads the entity with the given id from the table of the given descriptor, using the given connection.
+     *
+     * @param id               the id of the entity to find
+     * @param entityDescriptor the descriptor of the entity type to load
+     * @param connection       the connection to run the query on
+     * @param <E>              the generic type of the entity to find
+     * @return the entity wrapped as optional or an empty optional if no entity was found
+     * @throws Exception in case of a database or system error
+     */
+    @SuppressWarnings({"unchecked", "java:S2077"})
+    @Explain("The table name stems from the entity metadata (annotation, class name or system config), never from "
+             + "user input, and the id is a bound parameter.")
     protected <E extends SQLEntity> Optional<E> execFind(Object id,
                                                          EntityDescriptor entityDescriptor,
                                                          Connection connection) throws Exception {
