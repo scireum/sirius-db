@@ -98,7 +98,7 @@ public class LocalDateProperty extends Property implements ESPropertyInfo, SQLPr
 
         try {
             return LocalDate.from(DateTimeFormatter.ISO_OFFSET_DATE.parse(valueAsString));
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(valueAsString));
         }
     }
