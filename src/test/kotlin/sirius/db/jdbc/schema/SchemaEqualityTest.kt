@@ -119,6 +119,23 @@ class SchemaEqualityTest {
     }
 
     @Test
+    fun `subclasses are never equal to their base class`() {
+        val subTable = object : Table() {}.apply { name = "users" }
+        val subKey = object : Key() {}.apply { name = "idx_name" }
+        val subForeignKey = object : ForeignKey() {}.apply { name = "fk_user" }
+        val subColumn = object : TableColumn() {}.apply { name = "name" }
+
+        assertNotEquals<Any>(table("users"), subTable)
+        assertNotEquals<Any>(subTable, table("users"))
+        assertNotEquals<Any>(key("idx_name"), subKey)
+        assertNotEquals<Any>(subKey, key("idx_name"))
+        assertNotEquals<Any>(foreignKey("fk_user"), subForeignKey)
+        assertNotEquals<Any>(subForeignKey, foreignKey("fk_user"))
+        assertNotEquals<Any>(column("name"), subColumn)
+        assertNotEquals<Any>(subColumn, column("name"))
+    }
+
+    @Test
     fun `columns are equal by name respecting case`() {
         assertEquals(column("name"), column("name"))
         assertNotEquals(column("name"), column("NAME"))

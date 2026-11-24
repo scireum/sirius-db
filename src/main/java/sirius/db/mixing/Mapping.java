@@ -27,7 +27,7 @@ import java.util.Objects;
  * }
  * </pre>
  */
-public class Mapping {
+public final class Mapping {
 
     /**
      * Used to join several field names (e.g. for composites or mixins).

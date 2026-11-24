@@ -240,7 +240,7 @@ public class TableColumn {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof TableColumn)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         return Strings.areEqual(((TableColumn) obj).name, name);

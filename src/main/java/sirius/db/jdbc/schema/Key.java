@@ -65,7 +65,7 @@ public class Key {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof Key)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         return Strings.equalIgnoreCase(name, ((Key) obj).name);

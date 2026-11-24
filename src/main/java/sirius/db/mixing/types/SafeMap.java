@@ -8,6 +8,8 @@
 
 package sirius.db.mixing.types;
 
+import sirius.kernel.commons.Explain;
+
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Iterator;
@@ -194,6 +196,8 @@ public abstract class SafeMap<K, V> implements Iterable<Map.Entry<K, V>> {
     }
 
     @Override
+    @SuppressWarnings("java:S2162")
+    @Explain("Like java.util.Map, maps with equal contents are equal regardless of their concrete class.")
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;

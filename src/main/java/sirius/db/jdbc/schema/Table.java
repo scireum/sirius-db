@@ -200,7 +200,7 @@ public class Table {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof Table)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         return Strings.equalIgnoreCase(name, ((Table) obj).name);

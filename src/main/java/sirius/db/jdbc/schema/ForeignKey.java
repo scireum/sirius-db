@@ -99,7 +99,7 @@ public class ForeignKey {
             return false;
         }
 
-        if (!(obj instanceof ForeignKey)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
 

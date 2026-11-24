@@ -1099,7 +1099,7 @@ public class EntityDescriptor {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof EntityDescriptor)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
 
