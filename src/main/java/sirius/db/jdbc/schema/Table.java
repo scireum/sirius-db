@@ -203,11 +203,11 @@ public class Table {
         if (!(obj instanceof Table)) {
             return false;
         }
-        return ((Table) obj).name.equalsIgnoreCase(name);
+        return Strings.equalIgnoreCase(name, ((Table) obj).name);
     }
 
     @Override
     public int hashCode() {
-        return name == null ? 0 : name.hashCode();
+        return SchemaNames.hashIgnoringCase(name);
     }
 }

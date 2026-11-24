@@ -68,12 +68,12 @@ public class Key {
         if (!(obj instanceof Key)) {
             return false;
         }
-        return ((Key) obj).name.equalsIgnoreCase(name);
+        return Strings.equalIgnoreCase(name, ((Key) obj).name);
     }
 
     @Override
     public int hashCode() {
-        return name == null ? 0 : name.hashCode();
+        return SchemaNames.hashIgnoringCase(name);
     }
 
     /**
