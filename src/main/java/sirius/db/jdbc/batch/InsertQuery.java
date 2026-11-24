@@ -78,7 +78,7 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                             .error(e)
                             .withSystemErrorMessage(
                                     "An integrity check failed while executing an InsertQuery for %s: %s (%s)",
-                                    type.getName())
+                                    getTypeName())
                             .handle();
         }
     }
@@ -149,14 +149,14 @@ public class InsertQuery<E extends SQLEntity> extends BatchQuery<E> {
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage("A database error occurred while executing an InsertQuery"
-                                                    + " for %s: %s (%s)", type.getName())
+                                                    + " for %s: %s (%s)", getTypeName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage("An error occurred while executing an InsertQuery"
-                                                    + " for %s: %s (%s)", type.getName())
+                                                    + " for %s: %s (%s)", getTypeName())
                             .handle();
         }
     }

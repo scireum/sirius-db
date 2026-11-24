@@ -84,14 +84,14 @@ public class FindQuery<E extends SQLEntity> extends BatchQuery<E> {
                             .error(e)
                             .withSystemErrorMessage(
                                     "A database error occurred while executing a FindQuery for %s: %s (%s)",
-                                    type.getName())
+                                    getTypeName())
                             .handle();
         } catch (Exception e) {
             throw Exceptions.handle()
                             .to(OMA.LOG)
                             .error(e)
                             .withSystemErrorMessage("An error occurred while executing a FindQuery for %s: %s (%s)",
-                                                    type.getName())
+                                                    getTypeName())
                             .handle();
         }
     }

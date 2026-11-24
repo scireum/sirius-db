@@ -178,6 +178,19 @@ public abstract class BatchQuery<E extends SQLEntity> {
     protected abstract void buildSQL() throws SQLException;
 
     /**
+     * Returns the name of the entity type for use in error messages.
+     * <p>
+     * The type may still be unknown if the query was created without one and failed before it could be derived from
+     * the first entity. Error handlers use this method so that they report the original problem instead of failing
+     * with a {@link NullPointerException} themselves.
+     *
+     * @return the fully qualified name of the entity type, or a placeholder if it is not known yet
+     */
+    protected String getTypeName() {
+        return type == null ? "<unknown entity type>" : type.getName();
+    }
+
+    /**
      * Determines the descriptor for the entity type.
      *
      * @return the descriptor for the type of entities this query can process
