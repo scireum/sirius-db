@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -163,18 +164,19 @@ public abstract class BaseSQLQuery {
      */
     protected Row loadIntoRow(ResultSet resultSet) throws SQLException {
         Row row = new Row();
-        List<String> fetchedFieldNames = null;
-        if (fieldNames == null) {
-            fetchedFieldNames = new ArrayList<>(resultSet.getMetaData().getColumnCount());
-        }
-        for (int col = 1; col <= resultSet.getMetaData().getColumnCount(); col++) {
-            String fieldName;
-            if (fieldNames != null) {
-                fieldName = fieldNames.get(col - 1);
-            } else {
-                fieldName = resultSet.getMetaData().getColumnLabel(col);
-                fetchedFieldNames.add(fieldName);
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
+        List<String> columnLabels = fieldNames;
+        if (columnLabels == null) {
+            List<String> fetchedLabels = new ArrayList<>(columnCount);
+            for (int col = 1; col <= columnCount; col++) {
+                fetchedLabels.add(metaData.getColumnLabel(col));
             }
+            columnLabels = Collections.unmodifiableList(fetchedLabels);
+            fieldNames = columnLabels;
+        }
+        for (int col = 1; col <= columnCount; col++) {
+            String fieldName = columnLabels.get(col - 1);
             Object obj = resultSet.getObject(col);
             switch (obj) {
                 case Blob blob -> writeBlobToParameter(fieldName, blob);
@@ -182,10 +184,6 @@ public abstract class BaseSQLQuery {
                         row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, string.replace("\0", "")));
                 case null, default -> row.fields.put(fieldName.toUpperCase(), Tuple.create(fieldName, obj));
             }
-        }
-
-        if (fieldNames == null) {
-            fieldNames = Collections.unmodifiableList(fetchedFieldNames);
         }
 
         return row;
