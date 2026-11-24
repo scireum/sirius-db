@@ -50,8 +50,8 @@ class JDBCTest {
         database.insertRow("test_a", mapOf("a" to "Test", "b" to 2))
         assertEquals(database.createQuery("SELECT * FROM test_a").queryList().size, 2)
         assertEquals(
-                database.createQuery("SELECT * FROM test_a ORDER BY a ASC").queryFirst()!!.getValue("A").asString(),
-                "Hello"
+            database.createQuery("SELECT * FROM test_a ORDER BY a ASC").queryFirst()!!.getValue("A").asString(),
+            "Hello"
         )
     }
 
@@ -119,7 +119,8 @@ class JDBCTest {
     @Test
     fun `the statement compiler omits a conditional clause`() {
         val database = databases["test"]
-        val sqlQuery = database.createQuery("SELECT * FROM test_a [:disabled WHERE a = \${filter}]").set("disabled", false)
+        val sqlQuery =
+            database.createQuery("SELECT * FROM test_a [:disabled WHERE a = \${filter}]").set("disabled", false)
                 .set("filter", null)
         assertEquals(sqlQuery.queryList().size, 2)
     }
@@ -128,7 +129,7 @@ class JDBCTest {
     fun `the statement compiler includes an active conditional clause`() {
         val database = databases["test"]
         val sqlQuery = database.createQuery("SELECT * FROM test_a [:enabled WHERE a = \${filter}]").set("enabled", true)
-                .set("filter", "Hello")
+            .set("filter", "Hello")
         assertEquals(sqlQuery.queryList().size, 1)
     }
 

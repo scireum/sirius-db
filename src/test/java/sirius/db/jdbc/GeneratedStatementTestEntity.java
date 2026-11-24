@@ -43,5 +43,4 @@ public class GeneratedStatementTestEntity extends SQLEntity {
     public void setTestNumber(int testNumber) {
         this.testNumber = testNumber;
     }
-
 }

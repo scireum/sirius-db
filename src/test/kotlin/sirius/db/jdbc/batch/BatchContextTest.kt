@@ -31,10 +31,10 @@ class BatchContextTest {
     fun `insert works`() {
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
-                TestEntity::class.java,
-                TestEntity.FIRSTNAME,
-                TestEntity.LASTNAME,
-                TestEntity.AGE
+            TestEntity::class.java,
+            TestEntity.FIRSTNAME,
+            TestEntity.LASTNAME,
+            TestEntity.AGE
         )
         for (i in 0..99) {
             val testEntity = TestEntity()
@@ -52,10 +52,10 @@ class BatchContextTest {
     fun `batch insert works`() {
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
-                TestEntity::class.java,
-                TestEntity.FIRSTNAME,
-                TestEntity.LASTNAME,
-                TestEntity.AGE
+            TestEntity::class.java,
+            TestEntity.FIRSTNAME,
+            TestEntity.LASTNAME,
+            TestEntity.AGE
         )
         for (i in 0..99) {
             val testEntity = TestEntity()
@@ -231,7 +231,7 @@ class BatchContextTest {
         oma.update(testEntity)
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val find =
-                batchContext.customQuery(TestEntity::class.java, false, "SELECT * FROM testentity WHERE lastname = ?")
+            batchContext.customQuery(TestEntity::class.java, false, "SELECT * FROM testentity WHERE lastname = ?")
         find.setParameter(1, "CustomTest")
 
         assertEquals("CustomTest", find.query().queryFirst()!!.getValue("LASTNAME").asString())
@@ -250,10 +250,10 @@ class BatchContextTest {
 
         assertThrows<IllegalStateException> {
             batchContext.insertQuery(
-                    TestEntity::class.java,
-                    TestEntity.FIRSTNAME,
-                    TestEntity.LASTNAME,
-                    TestEntity.AGE
+                TestEntity::class.java,
+                TestEntity.FIRSTNAME,
+                TestEntity.LASTNAME,
+                TestEntity.AGE
             )
         }
         assertEquals(0, oma.getDatabase(Mixing.DEFAULT_REALM)!!.getNumActive())
@@ -263,10 +263,10 @@ class BatchContextTest {
     fun `use of query after close is prevented`() {
         val batchContext = BatchContext({ "Test" }, Duration.ofMinutes(2))
         val insert = batchContext.insertQuery(
-                TestEntity::class.java,
-                TestEntity.FIRSTNAME,
-                TestEntity.LASTNAME,
-                TestEntity.AGE
+            TestEntity::class.java,
+            TestEntity.FIRSTNAME,
+            TestEntity.LASTNAME,
+            TestEntity.AGE
         )
         batchContext.close()
 
