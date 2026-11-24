@@ -10,7 +10,6 @@ package sirius.db.jdbc;
 
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.ComplexDelete;
-import sirius.db.mixing.annotations.Length;
 
 /**
  * Testentity for SmartQuerySpec with many items in the table

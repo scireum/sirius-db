@@ -27,7 +27,7 @@ public class ESDataTypesEntity extends ElasticEntity {
     public static final int AMOUNT_SCALE = 6;
 
     public enum TestEnum {
-        Test1, Test2;
+        TEST1, TEST2;
 
         @Override
         public String toString() {
@@ -35,37 +35,37 @@ public class ESDataTypesEntity extends ElasticEntity {
         }
     }
 
-    private static final Mapping LONG_VALUE = Mapping.named("longValue");
+    public static final Mapping LONG_VALUE = Mapping.named("longValue");
     @NullAllowed
     private Long longValue;
 
-    private static final Mapping INT_VALUE = Mapping.named("intValue");
+    public static final Mapping INT_VALUE = Mapping.named("intValue");
     @NullAllowed
     private Integer intValue;
 
-    private static final Mapping STRING_VALUE = Mapping.named("stringValue");
+    public static final Mapping STRING_VALUE = Mapping.named("stringValue");
     @Length(255)
     @NullAllowed
     private String stringValue;
 
-    private static final Mapping AMOUNT_VALUE = Mapping.named("amountValue");
+    public static final Mapping AMOUNT_VALUE = Mapping.named("amountValue");
     @NullAllowed
     @Numeric(precision = 20, scale = AMOUNT_SCALE)
     private Amount amountValue = Amount.NOTHING;
 
-    private static final Mapping LOCALDATE_VALUE = Mapping.named("localDateValue");
+    public static final Mapping LOCALDATE_VALUE = Mapping.named("localDateValue");
     @NullAllowed
     private LocalDate localDateValue;
 
-    private static final Mapping LOCALDATETIME_VALUE = Mapping.named("localDateTimeValue");
+    public static final Mapping LOCALDATETIME_VALUE = Mapping.named("localDateTimeValue");
     @NullAllowed
     private LocalDateTime localDateTimeValue;
 
-    private static final Mapping BOOL_VALUE = Mapping.named("boolValue");
+    public static final Mapping BOOL_VALUE = Mapping.named("boolValue");
     @NullAllowed
     private Boolean boolValue;
 
-    private static final Mapping ENUM_VALUE = Mapping.named("enumValue");
+    public static final Mapping ENUM_VALUE = Mapping.named("enumValue");
     @NullAllowed
     private TestEnum enumValue;
 

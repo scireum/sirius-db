@@ -142,7 +142,7 @@ class DefaultValuesTest {
                 ), //Amount.NOTHING should be considered null and therefore have no default
                 Arguments.of("string", Value.EMPTY),
                 Arguments.of("emptyString", Value.of("")),
-                Arguments.of("enumWithValue", Value.of(DataTypesEntity.TestEnum.Test2)),
+                Arguments.of("enumWithValue", Value.of(DataTypesEntity.TestEnum.TEST2)),
             )
         }
 
@@ -161,7 +161,7 @@ class DefaultValuesTest {
                 Arguments.of("emptyString", ""),
                 Arguments.of("filledString", "STRING"),
                 Arguments.of("enumTest", null),
-                Arguments.of("enumWithValue", "Test2"),
+                Arguments.of("enumWithValue", "TEST2"),
             )
         }
 

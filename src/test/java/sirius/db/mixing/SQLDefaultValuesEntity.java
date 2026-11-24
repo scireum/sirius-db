@@ -59,7 +59,7 @@ public class SQLDefaultValuesEntity extends SQLEntity {
     private DataTypesEntity.TestEnum enumTest;
 
     public static final Mapping ENUM_WITH_VALUE = Mapping.named("enumWithValue");
-    private DataTypesEntity.TestEnum enumWithValue = DataTypesEntity.TestEnum.Test2;
+    private DataTypesEntity.TestEnum enumWithValue = DataTypesEntity.TestEnum.TEST2;
 
     public boolean isPrimitiveBoolean() {
         return primitiveBoolean;

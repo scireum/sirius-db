@@ -8,7 +8,6 @@
 
 package sirius.db.es;
 
-import sirius.db.es.ElasticEntity;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.AfterSave;
 import sirius.db.mixing.annotations.Transient;

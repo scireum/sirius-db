@@ -13,8 +13,6 @@ import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 
-import javax.annotation.Nullable;
-
 /**
  * Testentity for SmartQuerySpec
  */

@@ -11,9 +11,6 @@ package sirius.db.jdbc;
 import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.ComplexDelete;
 import sirius.db.mixing.annotations.Length;
-import sirius.db.mixing.types.BaseEntityRef;
-
-import javax.annotation.Nullable;
 
 /**
  * Testentity for UpdateStatementSpec

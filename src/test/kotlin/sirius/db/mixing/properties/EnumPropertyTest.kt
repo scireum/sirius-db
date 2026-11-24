@@ -26,16 +26,16 @@ class EnumPropertyTest {
         val property = mixing.getDescriptor(ESDataTypesEntity::class.java).findProperty("enumValue")
         val esDataTypesEntity = ESDataTypesEntity()
 
-        property?.parseValueFromImport(esDataTypesEntity, Value.of("Test1"))
-        assertEquals(ESDataTypesEntity.TestEnum.Test1, esDataTypesEntity.testEnum)
+        property?.parseValueFromImport(esDataTypesEntity, Value.of("TEST1"))
+        assertEquals(ESDataTypesEntity.TestEnum.TEST1, esDataTypesEntity.testEnum)
 
         property?.parseValueFromImport(esDataTypesEntity, Value.of("test1"))
-        assertEquals(ESDataTypesEntity.TestEnum.Test1, esDataTypesEntity.testEnum)
+        assertEquals(ESDataTypesEntity.TestEnum.TEST1, esDataTypesEntity.testEnum)
 
         assertThrows<HandledException> { property?.parseValueFromImport(esDataTypesEntity, Value.of("test0")) }
 
         property?.parseValueFromImport(esDataTypesEntity, Value.of("test25"))
-        assertEquals(ESDataTypesEntity.TestEnum.Test2, esDataTypesEntity.testEnum)
+        assertEquals(ESDataTypesEntity.TestEnum.TEST2, esDataTypesEntity.testEnum)
     }
 
     companion object {

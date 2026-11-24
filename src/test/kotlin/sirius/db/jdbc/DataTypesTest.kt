@@ -84,7 +84,7 @@ class DataTypesTest {
         assertEquals(2018, test.localDateValue.year)
         assertEquals(1, test.localDateValue.month.value)
         assertEquals(1, test.localDateValue.dayOfMonth)
-        assertEquals(DataTypesEntity.TestEnum.Test2, test.testEnum)
+        assertEquals(DataTypesEntity.TestEnum.TEST2, test.testEnum)
     }
 
     @Test
@@ -136,7 +136,7 @@ class DataTypesTest {
         assertEquals(2018, test.localDateValue.year)
         assertEquals(1, test.localDateValue.month.value)
         assertEquals(1, test.localDateValue.dayOfMonth)
-        assertEquals(DataTypesEntity.TestEnum.Test2, test.testEnum)
+        assertEquals(DataTypesEntity.TestEnum.TEST2, test.testEnum)
     }
 
     @Test

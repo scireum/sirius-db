@@ -14,6 +14,7 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Numeric;
 import sirius.db.mixing.annotations.Trim;
 import sirius.kernel.commons.Amount;
+import sirius.kernel.commons.Explain;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -23,7 +24,7 @@ public class DataTypesEntity extends SQLEntity {
     public static final int AMOUNT_SCALE = 6;
 
     public enum TestEnum {
-        Test1, TestTest, Test2
+        TEST1, TESTTEST, TEST2
     }
 
     @DefaultValue("100")
@@ -61,7 +62,7 @@ public class DataTypesEntity extends SQLEntity {
     @NullAllowed
     private Boolean boolValue;
 
-    @DefaultValue("Test2")
+    @DefaultValue("TEST2")
     @NullAllowed
     private TestEnum enumValue;
 
@@ -69,6 +70,8 @@ public class DataTypesEntity extends SQLEntity {
     @Length(10)
     private TestEnum enumValueFixedLength;
 
+    @SuppressWarnings("java:S1068")
+    @Explain("Persisted by Mixing via reflection; keeps a primitive field with an initializer in the schema.")
     private int intValue2 = 5;
 
     public long getLongValue() {
