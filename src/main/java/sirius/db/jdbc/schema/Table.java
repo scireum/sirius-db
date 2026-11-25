@@ -200,14 +200,14 @@ public class Table {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof Table)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
-        return ((Table) obj).name.equalsIgnoreCase(name);
+        return Strings.equalIgnoreCase(name, ((Table) obj).name);
     }
 
     @Override
     public int hashCode() {
-        return name == null ? 0 : name.hashCode();
+        return SchemaNames.hashIgnoringCase(name);
     }
 }

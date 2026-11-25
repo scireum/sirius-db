@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.List;
@@ -157,7 +158,8 @@ public class DateRange {
      */
     public static final DateRange BEFORE_THIS_YEAR = new DateRange("beforeThisYear",
                                                                    () -> NLS.get("DateRange.beforeThisYear"),
-                                                                   () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
+                                                                   () -> LocalDate.of(1900, Month.JANUARY, 1)
+                                                                                  .atStartOfDay(),
                                                                    () -> LocalDate.now()
                                                                                   .withDayOfYear(1)
                                                                                   .atStartOfDay());
@@ -167,7 +169,8 @@ public class DateRange {
      */
     public static final DateRange BEFORE_LAST_YEAR = new DateRange("beforeLastYear",
                                                                    () -> NLS.get("DateRange.beforeLastYear"),
-                                                                   () -> LocalDate.of(1900, 01, 01).atStartOfDay(),
+                                                                   () -> LocalDate.of(1900, Month.JANUARY, 1)
+                                                                                  .atStartOfDay(),
                                                                    () -> LocalDate.now()
                                                                                   .minusYears(1)
                                                                                   .withDayOfYear(1)

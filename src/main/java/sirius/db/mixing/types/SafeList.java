@@ -212,6 +212,8 @@ public abstract class SafeList<T> implements Iterable<T> {
     }
 
     @Override
+    @SuppressWarnings("java:S2162")
+    @Explain("Like java.util.List, lists with equal contents are equal regardless of their concrete class.")
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;

@@ -13,6 +13,7 @@ import sirius.db.mixing.annotations.Index;
 import sirius.db.mixing.annotations.Length;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Unique;
+import sirius.kernel.commons.Explain;
 
 @Index(name = "lastname", columns = "lastname")
 public class TestEntity extends SQLEntity {
@@ -35,9 +36,13 @@ public class TestEntity extends SQLEntity {
     private int age;
 
     public static final Mapping ORDER_NUMBER = Mapping.named("orderNumber");
+    @SuppressWarnings("java:S1068")
+    @Explain("Persisted by Mixing via reflection; the field defines a column used by tests.")
     private int orderNumber = 0;
 
     public static final Mapping ANDX = Mapping.named("andx");
+    @SuppressWarnings("java:S1068")
+    @Explain("Persisted by Mixing via reflection; the field defines a column used by tests.")
     private int andx = 0;
 
     public String getFirstname() {

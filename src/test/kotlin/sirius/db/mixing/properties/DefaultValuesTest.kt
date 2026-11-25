@@ -32,8 +32,8 @@ class DefaultValuesTest {
     @MethodSource("provideParametersForValuesInitialized")
     fun `the default values are properly initialized`(propertyName: String, expectedDefaultValue: Value) {
         assertEquals(
-                expectedDefaultValue,
-                mixing.getDescriptor(SQLDefaultValuesEntity::class.java).findProperty(propertyName)?.defaultValue
+            expectedDefaultValue,
+            mixing.getDescriptor(SQLDefaultValuesEntity::class.java).findProperty(propertyName)?.defaultValue
         )
     }
 
@@ -41,9 +41,9 @@ class DefaultValuesTest {
     @MethodSource("provideParametersForValuesTransformed")
     fun `column default values are properly transformed`(propertyName: String, expectedDefault: String?) {
         assertEquals(
-                mixing.getDescriptor(SQLDefaultValuesEntity::class.java).findProperty(propertyName)
-                        ?.getColumnDefaultValue(),
-                expectedDefault,
+            mixing.getDescriptor(SQLDefaultValuesEntity::class.java).findProperty(propertyName)
+                ?.getColumnDefaultValue(),
+            expectedDefault,
         )
     }
 
@@ -110,8 +110,8 @@ class DefaultValuesTest {
     @ParameterizedTest
     @MethodSource("provideParametersForAmountInitialized")
     fun `amount fields initialized with a non-empty Amount should persist the default when emptied`(
-            input: Value,
-            output: Amount
+        input: Value,
+        output: Amount
     ) {
         val property = mixing.getDescriptor(SQLDefaultValuesEntity::class.java).findProperty("amountZero")
         val entity = SQLDefaultValuesEntity()
@@ -129,39 +129,39 @@ class DefaultValuesTest {
         @JvmStatic
         fun provideParametersForValuesInitialized(): Stream<Arguments> {
             return Stream.of(
-                    Arguments.of("primitiveBoolean", Value.of(false)),
-                    Arguments.of("primitiveBooleanTrue", Value.of(true)),
-                    Arguments.of("booleanObject", Value.EMPTY),
-                    Arguments.of("primitiveInt", Value.of(0)),
-                    Arguments.of("primitiveIntWithValue", Value.of(50)),
-                    Arguments.of("amountWithValue", Value.of(Amount.ONE_HUNDRED)),
-                    Arguments.of("amountZero", Value.of(Amount.ZERO)),
-                    Arguments.of(
-                            "amountNothing",
-                            Value.EMPTY
-                    ), //Amount.NOTHING should be considered null and therefore have no default
-                    Arguments.of("string", Value.EMPTY),
-                    Arguments.of("emptyString", Value.of("")),
-                    Arguments.of("enumWithValue", Value.of(DataTypesEntity.TestEnum.Test2)),
+                Arguments.of("primitiveBoolean", Value.of(false)),
+                Arguments.of("primitiveBooleanTrue", Value.of(true)),
+                Arguments.of("booleanObject", Value.EMPTY),
+                Arguments.of("primitiveInt", Value.of(0)),
+                Arguments.of("primitiveIntWithValue", Value.of(50)),
+                Arguments.of("amountWithValue", Value.of(Amount.ONE_HUNDRED)),
+                Arguments.of("amountZero", Value.of(Amount.ZERO)),
+                Arguments.of(
+                    "amountNothing",
+                    Value.EMPTY
+                ), //Amount.NOTHING should be considered null and therefore have no default
+                Arguments.of("string", Value.EMPTY),
+                Arguments.of("emptyString", Value.of("")),
+                Arguments.of("enumWithValue", Value.of(DataTypesEntity.TestEnum.TEST2)),
             )
         }
 
         @JvmStatic
         fun provideParametersForValuesTransformed(): Stream<Arguments> {
             return Stream.of(
-                    Arguments.of("primitiveBoolean", "0"),
-                    Arguments.of("primitiveBooleanTrue", "1"),
-                    Arguments.of("booleanObject", null),
-                    Arguments.of("primitiveInt", "0"),
-                    Arguments.of("primitiveIntWithValue", "50"),
-                    Arguments.of("amountWithValue", "100.000"),
-                    Arguments.of("amountZero", "0.000"),
-                    Arguments.of("amountNothing", null),
-                    Arguments.of("string", null),
-                    Arguments.of("emptyString", ""),
-                    Arguments.of("filledString", "STRING"),
-                    Arguments.of("enumTest", null),
-                    Arguments.of("enumWithValue", "Test2"),
+                Arguments.of("primitiveBoolean", "0"),
+                Arguments.of("primitiveBooleanTrue", "1"),
+                Arguments.of("booleanObject", null),
+                Arguments.of("primitiveInt", "0"),
+                Arguments.of("primitiveIntWithValue", "50"),
+                Arguments.of("amountWithValue", "100.000"),
+                Arguments.of("amountZero", "0.000"),
+                Arguments.of("amountNothing", null),
+                Arguments.of("string", null),
+                Arguments.of("emptyString", ""),
+                Arguments.of("filledString", "STRING"),
+                Arguments.of("enumTest", null),
+                Arguments.of("enumWithValue", "TEST2"),
             )
         }
 
@@ -169,10 +169,10 @@ class DefaultValuesTest {
         fun provideParametersForAmountInitialized(): Stream<Arguments> {
             val valueFive = 5
             return Stream.of(
-                    Arguments.of(Value.EMPTY, Amount.ZERO),
-                    Arguments.of(Value.of(5), Amount.of(valueFive)),
-                    Arguments.of(Value.of(Amount.NOTHING), Amount.ZERO),
-                    Arguments.of(Value.of(Amount.of(44.1)), Amount.of(44.1)),
+                Arguments.of(Value.EMPTY, Amount.ZERO),
+                Arguments.of(Value.of(5), Amount.of(valueFive)),
+                Arguments.of(Value.of(Amount.NOTHING), Amount.ZERO),
+                Arguments.of(Value.of(Amount.of(44.1)), Amount.of(44.1)),
             )
         }
     }

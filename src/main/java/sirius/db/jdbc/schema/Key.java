@@ -65,15 +65,15 @@ public class Key {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof Key)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
-        return ((Key) obj).name.equalsIgnoreCase(name);
+        return Strings.equalIgnoreCase(name, ((Key) obj).name);
     }
 
     @Override
     public int hashCode() {
-        return name == null ? 0 : name.hashCode();
+        return SchemaNames.hashIgnoringCase(name);
     }
 
     /**

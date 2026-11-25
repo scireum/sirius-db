@@ -193,21 +193,21 @@ class ElasticDataTypesTest {
     @Test
     fun `reading and writing TestEnum works`() {
         var esDataTypesEntity = ESDataTypesEntity()
-        esDataTypesEntity.testEnum = ESDataTypesEntity.TestEnum.Test1
+        esDataTypesEntity.testEnum = ESDataTypesEntity.TestEnum.TEST1
         elastic.update(esDataTypesEntity)
         esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        assertEquals(ESDataTypesEntity.TestEnum.Test1, esDataTypesEntity.testEnum)
+        assertEquals(ESDataTypesEntity.TestEnum.TEST1, esDataTypesEntity.testEnum)
     }
 
     @Test
     fun `reading and writing TestEnum as ordinal works`() {
         var esDataTypesEntity = ESDataTypesEntity()
-        esDataTypesEntity.testEnum2 = ESDataTypesEntity.TestEnum.Test2
+        esDataTypesEntity.testEnum2 = ESDataTypesEntity.TestEnum.TEST2
         elastic.update(esDataTypesEntity)
         esDataTypesEntity = elastic.refreshOrFail(esDataTypesEntity)
 
-        assertEquals(ESDataTypesEntity.TestEnum.Test2, esDataTypesEntity.testEnum2)
+        assertEquals(ESDataTypesEntity.TestEnum.TEST2, esDataTypesEntity.testEnum2)
     }
 
     @Test

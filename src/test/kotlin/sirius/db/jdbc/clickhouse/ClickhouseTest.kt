@@ -44,7 +44,7 @@ class ClickhouseTest {
         clickhouseTestEntity.setaBooleanSetToTrue(true)
         clickhouseTestEntity.setaBooleanSetToFalse(false)
         clickhouseTestEntity.stringList.add("string1").add("string2")
-        clickhouseTestEntity.enumValue = ClickhouseTestEntity.TestEnum.Test2
+        clickhouseTestEntity.enumValue = ClickhouseTestEntity.TestEnum.TEST2
         oma.update(clickhouseTestEntity)
         val readBack =
             oma.select(ClickhouseTestEntity::class.java).eq(ClickhouseTestEntity.FIXED_STRING, "X").queryFirst()
@@ -63,7 +63,7 @@ class ClickhouseTest {
         assertEquals(nowInstant, readBack.instant)
         assertEquals(listOf("string1", "string2"), readBack.stringList.data())
         assertEquals(listOf(), readBack.emptyList.data())
-        assertEquals(ClickhouseTestEntity.TestEnum.Test2, readBack.enumValue)
+        assertEquals(ClickhouseTestEntity.TestEnum.TEST2, readBack.enumValue)
     }
 
     @Test
@@ -84,7 +84,7 @@ class ClickhouseTest {
             clickhouseTestEntity.string = "Test"
             clickhouseTestEntity.fixedString = "B"
             clickhouseTestEntity.int8WithDefault = 0
-            clickhouseTestEntity.enumValue = ClickhouseTestEntity.TestEnum.Test1
+            clickhouseTestEntity.enumValue = ClickhouseTestEntity.TestEnum.TEST1
             insert.insert(clickhouseTestEntity, true, true)
         }
         insert.commit()

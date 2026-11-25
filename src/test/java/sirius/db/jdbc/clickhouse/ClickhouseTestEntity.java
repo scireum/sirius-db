@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 public class ClickhouseTestEntity extends SQLEntity {
 
     public enum TestEnum {
-        Test1, Test2
+        TEST1, TEST2
     }
 
     public static final Mapping INSTANT = Mapping.named("instant");

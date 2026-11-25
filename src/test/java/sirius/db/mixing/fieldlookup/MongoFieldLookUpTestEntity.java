@@ -12,6 +12,7 @@ import sirius.db.mixing.Mapping;
 import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.types.StringList;
 import sirius.db.mongo.MongoEntity;
+import sirius.kernel.commons.Explain;
 
 import java.time.LocalDate;
 
@@ -31,6 +32,8 @@ public class MongoFieldLookUpTestEntity extends MongoEntity {
     private LocalDate birthday;
 
     public static final Mapping SUPER_POWERS = Mapping.named("superPowers");
+    @SuppressWarnings("java:S1068")
+    @Explain("Persisted by Mixing via reflection; keeps a list field next to the looked up fields.")
     private final StringList superPowers = new StringList();
 
     public int getAge() {

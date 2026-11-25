@@ -16,6 +16,7 @@ import sirius.db.mixing.annotations.NullAllowed;
 import sirius.db.mixing.annotations.Unique;
 import sirius.db.mixing.annotations.ValidatedBy;
 import sirius.db.mongo.Mango;
+import sirius.kernel.commons.Explain;
 import sirius.kernel.commons.Strings;
 import sirius.kernel.commons.Value;
 import sirius.kernel.commons.Values;
@@ -905,6 +906,8 @@ public abstract class Property extends Composable {
     }
 
     @Override
+    @SuppressWarnings("java:S2162")
+    @Explain("A property is identified by its descriptor and name, independent of the concrete property class.")
     public boolean equals(Object obj) {
         if (obj == null) {
             return false;

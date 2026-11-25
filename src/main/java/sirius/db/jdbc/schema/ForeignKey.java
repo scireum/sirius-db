@@ -99,16 +99,16 @@ public class ForeignKey {
             return false;
         }
 
-        if (!(obj instanceof ForeignKey)) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
 
-        return ((ForeignKey) obj).name.equalsIgnoreCase(name);
+        return Strings.equalIgnoreCase(name, ((ForeignKey) obj).name);
     }
 
     @Override
     public int hashCode() {
-        return name == null ? 0 : name.hashCode();
+        return SchemaNames.hashIgnoringCase(name);
     }
 
     /**
