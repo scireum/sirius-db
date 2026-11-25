@@ -419,9 +419,9 @@ public class OMA extends SecondaryCapableMapper<SQLEntity, SQLConstraint, SmartQ
     }
 
     /**
-     * Loads the entity with the given id from the table of the given descriptor, using the given connection.
+     * Loads the entity with the given ID from the table of the given descriptor, using the given connection.
      *
-     * @param id               the id of the entity to find
+     * @param id               the ID of the entity to find
      * @param entityDescriptor the descriptor of the entity type to load
      * @param connection       the connection to run the query on
      * @param <E>              the generic type of the entity to find
@@ -430,7 +430,7 @@ public class OMA extends SecondaryCapableMapper<SQLEntity, SQLConstraint, SmartQ
      */
     @SuppressWarnings({"unchecked", "java:S2077"})
     @Explain("The table name stems from the entity metadata (annotation, class name or system config), never from "
-             + "user input, and the id is a bound parameter.")
+             + "user input, and the ID is a bound parameter.")
     protected <E extends SQLEntity> Optional<E> execFind(Object id,
                                                          EntityDescriptor entityDescriptor,
                                                          Connection connection) throws Exception {
